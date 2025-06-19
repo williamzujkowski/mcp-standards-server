@@ -1,0 +1,155 @@
+name: NIST Compliance Check
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: "3.11"
+  POETRY_VERSION: "1.6.1"
+  MIN_CONTROL_COVERAGE: 70
+
+jobs:
+  scan-controls:
+    name: NIST Control Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run NIST compliance scan
+        run: |
+          poetry run mcp-standards scan \
+            --output-format json \
+            --output-file nist-compliance-report.json \
+            --deep
+      
+      - name: Generate OSCAL SSP
+        run: |
+          poetry run mcp-standards ssp \
+            --output ssp-$(date +%Y%m%d).json \
+            --format oscal
+      
+      - name: Check control coverage
+        run: |
+          python -c "
+          import json
+          with open('nist-compliance-report.json') as f:
+              report = json.load(f)
+          controls = report.get('unique_controls', [])
+          coverage = len(controls)
+          print(f'NIST Control Coverage: {coverage} controls')
+          if coverage < ${{ env.MIN_CONTROL_COVERAGE }}:
+              print(f'ERROR: Control coverage ({coverage}) below minimum ({${{ env.MIN_CONTROL_COVERAGE }}})')
+              exit(1)
+          "
+      
+      - name: Upload compliance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: nist-compliance-report
+          path: |
+            nist-compliance-report.json
+            ssp-*.json
+      
+      - name: Comment PR with compliance status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('nist-compliance-report.json', 'utf8'));
+            const controls = report.unique_controls || [];
+            const coverage = controls.length;
+            
+            const comment = `## 🔒 NIST Compliance Report
+            
+            **Control Coverage**: ${coverage} controls implemented
+            **Status**: ${coverage >= ${{ env.MIN_CONTROL_COVERAGE }} ? '✅ Passing' : '❌ Below minimum'}
+            
+            ### Top Implemented Controls:
+            ${controls.slice(0, 10).map(c => `- ${c}`).join('\n')}
+            
+            [View full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+  
+  validate-annotations:
+    name: Validate NIST Annotations
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Check annotation format
+        run: |
+          python scripts/validate-nist-annotations.py
+      
+      - name: Verify evidence documentation
+        run: |
+          find src -name "*.py" -exec grep -l "@nist-controls:" {} \; | \
+          xargs -I {} sh -c 'grep -q "@evidence:" {} || echo "Missing @evidence in: {}"'
+  
+  security-controls-matrix:
+    name: Generate Security Controls Matrix
+    runs-on: ubuntu-latest
+    needs: scan-controls
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download compliance report
+        uses: actions/download-artifact@v3
+        with:
+          name: nist-compliance-report
+      
+      - name: Generate controls matrix
+        run: |
+          python scripts/generate-controls-matrix.py \
+            --input nist-compliance-report.json \
+            --output controls-matrix.md
+      
+      - name: Update documentation
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cp controls-matrix.md docs/nist/
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add docs/nist/controls-matrix.md
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "Update NIST controls matrix [skip ci]"
+          git push

@@ -1,23 +1,22 @@
 # MCP Standards Server
 
-A Model Context Protocol (MCP) server that provides intelligent NIST 800-53r5 compliance checking, code analysis, and standards enforcement for modern development workflows.
+A Model Context Protocol (MCP) server that provides intelligent NIST 800-53r5 compliance checking, code analysis, and standards enforcement for modern development workflows. Built using the official [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk).
 
 ## Features
 
 - 🔒 **NIST 800-53r5 Compliance**: Automated control mapping and evidence generation
-- 🤖 **LLM Integration**: Natural language queries for standards and compliance
+- 🤖 **MCP Protocol**: Native MCP server implementation for LLM integration
 - 📊 **Multi-Language Support**: Python, JavaScript, TypeScript, Go, Java
-- 🚀 **Real-time Analysis**: WebSocket-based MCP protocol implementation
+- 🚀 **Standards Engine**: Natural language queries for standards and compliance
 - 📝 **OSCAL Support**: Generate System Security Plans (SSPs) automatically
-- 🔍 **Deep Code Analysis**: AST-based pattern recognition for security controls
+- 🔍 **Code Analysis**: Deep AST-based pattern recognition for security controls
 
 ## Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
-- Poetry 1.6+
-- Docker & Docker Compose (optional)
+- [uv](https://github.com/astral-sh/uv) package manager
 - Redis (optional, for caching)
 
 ### Installation
@@ -28,53 +27,103 @@ git clone https://github.com/yourusername/mcp-standards-server.git
 cd mcp-standards-server
 ```
 
-2. Install dependencies:
+2. Install uv (if not already installed):
 ```bash
-poetry install
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-3. Copy environment configuration:
+3. Create virtual environment and install dependencies:
+```bash
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e .
+```
+
+4. Copy environment configuration:
 ```bash
 cp .env.example .env
 # Edit .env with your settings
 ```
 
-4. Initialize a project:
-```bash
-poetry run mcp-standards init
-```
+### Running the MCP Server
 
-### Usage
-
-#### Start the MCP Server
+The server implements the Model Context Protocol and can be used with any MCP-compatible client:
 
 ```bash
-# Development mode
-poetry run mcp-standards server --reload
+# Run the MCP server
+mcp-standards-server
 
-# Production mode with Docker
-docker-compose up -d
+# Or run directly with Python
+python -m src.server
 ```
 
-#### Scan Your Codebase
+### Using with Claude Desktop
 
-```bash
-# Basic scan
-poetry run mcp-standards scan
+Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
-# Deep analysis with OSCAL output
-poetry run mcp-standards scan --deep --output-format oscal --output-file ssp.json
+```json
+{
+  "mcpServers": {
+    "mcp-standards": {
+      "command": "/path/to/venv/bin/mcp-standards-server"
+    }
+  }
+}
 ```
 
-#### Generate Compliant Code
+## MCP Tools
 
-```bash
-# Generate a secure API endpoint
-poetry run mcp-standards generate api-endpoint --controls AC-3,AU-2
+The server provides the following MCP tools:
 
-# Generate authentication module
-poetry run mcp-standards generate auth-module --language python
+### `load_standards`
+Load standards based on natural language or notation queries:
 ```
+Query: "secure api design"
+Response: Loads CS:api, SEC:api, and related standards
+```
+
+### `analyze_code`
+Analyze code for NIST control implementations:
+```
+Input: Python code snippet
+Output: Detected NIST controls, recommendations, and compliance score
+```
+
+### `suggest_controls`
+Get NIST control recommendations based on requirements:
+```
+Input: "Building user authentication system"
+Output: Suggests IA-2, IA-5, AC-7, and related controls
+```
+
+### `generate_template`
+Generate NIST-compliant code templates:
+```
+Template types: api-endpoint, auth-module, logging-setup, encryption-utils
+Languages: Python, JavaScript, TypeScript, Go, Java
+```
+
+### `validate_compliance`
+Validate code/project against NIST compliance requirements:
+```
+Input: File or directory path
+Output: Compliance report with gaps and recommendations
+```
+
+## MCP Resources
+
+The server exposes these resources:
+
+- `standards://catalog` - Complete catalog of available standards
+- `standards://nist-controls` - NIST 800-53r5 control catalog
+- `standards://templates` - Code templates library
+
+## MCP Prompts
+
+Pre-configured prompts for common scenarios:
+
+- `secure-api-design` - Design secure APIs with NIST compliance
+- `compliance-checklist` - Generate project-specific compliance checklists
 
 ## NIST Control Annotations
 
@@ -95,7 +144,8 @@ def authenticate_user(username: str, password: str) -> User:
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   LLM Client    │────▶│   MCP Server     │────▶│ Standards Engine│
+│   MCP Client    │────▶│   MCP Server     │────▶│ Standards Engine│
+│  (LLM/Claude)   │     │  (This Project)  │     │                 │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
                                │                           │
                                ▼                           ▼
@@ -104,85 +154,65 @@ def authenticate_user(username: str, password: str) -> User:
                         └──────────────────┘     └─────────────────┘
 ```
 
-## Configuration
-
-The project uses a hierarchical configuration system:
-
-1. **Project Config** (`.mcp-standards/config.yaml`):
-   - NIST profile selection
-   - Language preferences
-   - Scan exclusions
-
-2. **Environment Variables** (`.env`):
-   - Server settings
-   - Database connections
-   - Security keys
-
-3. **Standards Mapping** (`src/data/standards/`):
-   - Control definitions
-   - Pattern mappings
-   - Evidence templates
-
-## API Documentation
-
-### MCP Protocol Methods
-
-- `load_standards`: Load standards based on natural language or notation
-- `analyze_code`: Analyze code for NIST control implementations
-- `suggest_controls`: Get control recommendations for code patterns
-- `generate_ssp`: Create OSCAL-compliant System Security Plans
-
-### REST API Endpoints
-
-- `GET /health`: Health check
-- `POST /api/scan`: Trigger code scan
-- `GET /api/controls`: List implemented controls
-- `POST /api/generate`: Generate compliant code
-
 ## Development
 
 ### Running Tests
 
 ```bash
-# All tests
-poetry run pytest
+# Install dev dependencies
+uv pip install -e ".[dev]"
+
+# Run all tests
+pytest
 
 # With coverage
-poetry run pytest --cov=src --cov-report=html
+pytest --cov=src --cov-report=html
 
-# Specific test file
-poetry run pytest tests/test_nist_mapper.py
+# Run specific test
+pytest tests/test_models.py
 ```
 
 ### Code Quality
 
 ```bash
-# Format code
-poetry run black src/ tests/
-
-# Lint
-poetry run ruff check src/ tests/
+# Format and lint
+ruff check src/ tests/
+ruff format src/ tests/
 
 # Type checking
-poetry run mypy src/
+mypy src/
 ```
 
-### Pre-commit Hooks
+### Docker
+
+Build and run with Docker:
 
 ```bash
-poetry run pre-commit install
-poetry run pre-commit run --all-files
+# Build image
+docker build -t mcp-standards-server .
+
+# Run container
+docker run -it mcp-standards-server
 ```
+
+## Configuration
+
+The server can be configured through environment variables:
+
+- `STANDARDS_PATH` - Path to standards repository (default: `./data/standards`)
+- `REDIS_URL` - Redis connection URL for caching (optional)
+- `LOG_LEVEL` - Logging level (default: `INFO`)
+- `MCP_SERVER_NAME` - Server name for MCP protocol (default: `mcp-standards-server`)
 
 ## Security Considerations
 
 This project implements the following security controls:
 
-- **Authentication** (IA-2): JWT-based authentication with MFA support
-- **Access Control** (AC-3): Role-based access control for API endpoints
-- **Encryption** (SC-8, SC-13): TLS for data in transit, AES-256 for data at rest
+- **Authentication** (IA-2): Integration with MCP client authentication
+- **Access Control** (AC-3): Tool-level access control
+- **Encryption** (SC-8, SC-13): Secure communication via MCP protocol
 - **Audit Logging** (AU-2, AU-3): Comprehensive security event logging
-- **Input Validation** (SI-10): All inputs validated and sanitized
+- **Input Validation** (SI-10): All tool inputs validated
 
 ## Contributing
 
@@ -198,6 +228,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
+- Built with the [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - Based on the [williamzujkowski/standards](https://github.com/williamzujkowski/standards) repository
 - Implements NIST 800-53r5 security controls
-- Uses the Model Context Protocol (MCP) specification
