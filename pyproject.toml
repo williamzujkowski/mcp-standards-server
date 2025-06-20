@@ -96,6 +96,12 @@ select = [
 ignore = [
     "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function calls in argument defaults
+    "ARG001", # unused function argument
+    "ARG002", # unused method argument  
+    "SIM102", # use single if statement
+    "SIM105", # use contextlib.suppress
+    "B904",   # raise from exception
+    "F402",   # import shadowed by loop variable
 ]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ARG002", "SIM117", "B017"]  # Allow unused args, nested with, and Exception in tests
