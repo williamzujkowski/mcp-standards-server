@@ -34,20 +34,31 @@ Welcome to the comprehensive documentation for the MCP Standards Server - a prod
 
 ## 🎯 Key Features
 
-### 🔍 **Multi-Language Analysis**
-Complete AST-based analysis for Python, JavaScript/TypeScript, Go, and Java with security pattern detection and NIST control mapping.
+### 🔍 **Enhanced Multi-Language Analysis**
+- Complete AST-based analysis for Python, JavaScript/TypeScript, Go, and Java
+- **200+ NIST control patterns** across all 20 families
+- Advanced security pattern detection with confidence scoring
+- Control relationship suggestions and gap analysis
 
 ### 📊 **Complete Standards Library**
 - **17 imported standards** from official repository
 - **Real-time YAML loading** with JSON indexing
 - **Natural language queries** for standards content
 - **Token-aware loading** for LLM optimization
+- **Standards versioning** and update management
 
 ### 📋 **OSCAL 1.0.0 Compliance**
 - Generate complete System Security Plans (SSPs)
 - Component-based architecture modeling
 - SHA256 integrity checking for exports
 - NIST profile support (low/moderate/high)
+
+### 📈 **Control Coverage Analysis**
+- Comprehensive coverage reports in markdown/JSON/HTML
+- Family-level coverage percentages
+- Control relationship mapping
+- Missing control suggestions
+- High-confidence control identification
 
 ### 🤖 **Complete MCP Integration**
 - **6 MCP Tools**: load_standards, analyze_code, suggest_controls, generate_template, validate_compliance, scan_with_llm

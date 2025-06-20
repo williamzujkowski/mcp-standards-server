@@ -191,3 +191,9 @@ test-reports/
 *.crt
 *.p12
 secrets/
+
+# Benchmarks
+.benchmarks/
+
+# UV lock file
+uv.lock

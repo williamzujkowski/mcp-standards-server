@@ -5,22 +5,23 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 ## 🚀 Features
 
 ### Core Compliance
-- 🔒 **NIST 800-53r5 Compliance**: Automated control mapping with 91.56% test coverage
+- 🔒 **NIST 800-53r5 Compliance**: Detects 200+ controls across all 20 families with 91.56% test coverage
 - 📊 **17 Standards Imported**: Complete standards library from official repository
 - 📝 **OSCAL 1.0.0 Support**: Generate System Security Plans (SSPs) automatically
-- 🔍 **Multi-Language Analysis**: Python, JavaScript/TypeScript, Go, Java with AST parsing
+- 🔍 **Multi-Language Analysis**: Python, JavaScript/TypeScript, Go, Java with enhanced AST parsing
 
 ### MCP Integration
 - 🤖 **Native MCP Server**: Official SDK implementation with full protocol support
 - 🌐 **Dynamic Resources**: Real-time standards access with 20+ resource endpoints
 - 💬 **Smart Prompts**: 5 specialized prompt templates for compliance queries
-- 🔄 **Live Standards**: Direct access to current standards documentation
+- 🔄 **Live Standards**: Direct access to current standards documentation with versioning
 
 ### Developer Tools
-- 🛠️ **Complete CLI**: init, scan, generate, validate, ssp commands
+- 🛠️ **Complete CLI**: init, scan, generate, validate, ssp, coverage, standards commands
 - 📋 **Code Templates**: NIST-compliant templates for common patterns
 - 🔧 **Git Integration**: Automated hooks for pre-commit compliance checking
 - 🎯 **VS Code Support**: Integrated settings and workflow
+- 📈 **Coverage Analysis**: Comprehensive control coverage reports with gap analysis
 
 ## Quick Start
 
@@ -80,6 +81,12 @@ mcp-standards scan --profile high --output-format json
 
 # Validate against specific controls
 mcp-standards validate --controls "AC-3,AU-2,IA-2"
+
+# Generate control coverage report
+mcp-standards coverage --output-format markdown
+
+# Export coverage report
+mcp-standards coverage --output-format html --output-file coverage.html
 ```
 
 #### Generate Secure Code
@@ -391,15 +398,30 @@ compliance:
 
 ## 🛡️ Security & Compliance
 
-### Implemented NIST Controls
-- **AC-3**: Access Enforcement - Role-based access control in templates
-- **AU-2**: Audit Events - Comprehensive security event logging
-- **IA-2**: Identification and Authentication - MFA and JWT examples
-- **SC-8**: Transmission Confidentiality - HTTPS enforcement
-- **SI-10**: Information Input Validation - Input sanitization
-- **SI-11**: Error Handling - Secure error responses
-- **CM-2/CM-3**: Configuration Management - Git hooks integration
-- **SA-11/SA-15**: Developer Security - Secure coding templates
+### Comprehensive NIST 800-53r5 Coverage
+The server now detects **200+ controls** across all 20 NIST families:
+
+#### Key Control Families
+- **Access Control (AC)**: 25 controls including RBAC, least privilege, session management
+- **Audit & Accountability (AU)**: 16 controls for comprehensive logging and audit trails
+- **System & Communications Protection (SC)**: 45 controls including encryption, boundary protection
+- **System & Information Integrity (SI)**: 23 controls for input validation, malware protection
+- **Identification & Authentication (IA)**: 12 controls including MFA, federated identity
+- **Configuration Management (CM)**: 12 controls for baselines and change control
+- **Contingency Planning (CP)**: 13 controls for backup and disaster recovery
+- **Risk Assessment (RA)**: 10 controls for vulnerability scanning and risk analysis
+- **Incident Response (IR)**: 10 controls for incident handling and forensics
+- **Supply Chain Risk Management (SR)**: 12 controls including SBOM generation
+
+#### High-Priority Controls Detected
+- **IA-2(1)**: Multi-factor Authentication
+- **SC-8/SC-13**: Encryption in Transit and at Rest
+- **SI-10**: Input Validation and SQL Injection Prevention
+- **AU-2/AU-3**: Security Event Logging with Full Context
+- **AC-3/AC-6**: Role-Based Access Control with Least Privilege
+- **CP-9/CP-10**: Information System Backup and Recovery
+- **RA-5**: Vulnerability Scanning
+- **MP-6**: Media Sanitization
 
 ### Security Features
 - **91.56% Test Coverage** - Exceeding industry standards
