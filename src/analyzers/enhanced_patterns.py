@@ -6,6 +6,7 @@ Enhanced NIST Control Pattern Detection
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -722,7 +723,7 @@ class EnhancedNISTPatterns:
 
         return controls
 
-    def get_evidence_statements(self, code: str) -> list[dict[str, any]]:
+    def get_evidence_statements(self, code: str) -> list[dict[str, Any]]:
         """Generate evidence statements for detected patterns"""
         evidence = []
         matches = self.get_patterns_for_code(code)
@@ -775,7 +776,7 @@ class EnhancedNISTPatterns:
             "RA": 10, "SC": 45, "SI": 23, "SR": 12, "PT": 8
         }
 
-        family_counts = defaultdict(int)
+        family_counts: dict[str, int] = defaultdict(int)
         for control in detected_controls:
             family = control.split('-')[0]
             family_counts[family] += 1

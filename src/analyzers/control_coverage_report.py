@@ -246,7 +246,7 @@ class ControlCoverageReporter:
 
     def _group_by_family(self, controls: set[str]) -> dict[str, int]:
         """Group controls by family"""
-        families = defaultdict(int)
+        families: dict[str, int] = defaultdict(int)
         for control in controls:
             family = control.split('-')[0]
             families[family] += 1

@@ -8,6 +8,7 @@ Tokenizer module for accurate token counting
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -312,6 +313,7 @@ class TokenizerFactory:
             return cls._instances[cache_key]
 
         # Create new instance
+        tokenizer: BaseTokenizer
         try:
             if tokenizer_type == TokenizerType.TIKTOKEN:
                 tokenizer = TiktokenTokenizer(model or "gpt-3.5-turbo")
@@ -427,7 +429,7 @@ class TokenBudget:
         """Get budget usage percentage"""
         return (self.allocated_tokens / self.total_tokens) * 100 if self.total_tokens > 0 else 0
 
-    def get_allocation_summary(self) -> dict[str, any]:
+    def get_allocation_summary(self) -> dict[str, Any]:
         """Get summary of token allocations"""
         return {
             "total_budget": self.total_tokens,

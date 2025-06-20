@@ -68,13 +68,18 @@ def test_standards_path(tmp_path):
             "CS:api": {
                 "file": "CS/api.yaml",
                 "type": "CS",
-                "section": "api"
+                "section": "api",
+                "category": "cs"
             },
             "CS:security": {
                 "file": "CS/security.yaml",
                 "type": "CS",
-                "section": "security"
+                "section": "security",
+                "category": "cs"
             }
+        },
+        "categories": {
+            "cs": ["CS:api", "CS:security"]
         }
     }
     index_file = standards_dir / "standards_index.json"

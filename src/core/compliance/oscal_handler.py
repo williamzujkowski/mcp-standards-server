@@ -71,7 +71,7 @@ class OSCALHandler:
         component_uuid = str(uuid.uuid4())
 
         # Group annotations by control
-        control_groups = {}
+        control_groups: dict[str, list[CodeAnnotation]] = {}
         for ann in annotations:
             for control_id in ann.control_ids:
                 if control_id not in control_groups:

@@ -129,11 +129,11 @@ def get_python_imports(code: str) -> list[dict[str, Any]]:
                 for item in items.split(','):
                     item = item.strip()
                     if ' as ' in item:
-                        name, alias = item.split(' as ')
+                        name, alias_str = item.split(' as ')
                         imports.append({
                             'module': module,
                             'name': name.strip(),
-                            'alias': alias.strip(),
+                            'alias': alias_str.strip(),
                             'line': i,
                             'type': 'from'
                         })
@@ -200,7 +200,7 @@ def get_python_decorators(code: str) -> list[dict[str, Any]]:
                                 'line': i + 1,
                                 'name': match.group(1),
                                 'target_line': j + 1,
-                                'target_name': func_match.group(1) if func_match else class_match.group(1),
+                                'target_name': func_match.group(1) if func_match else (class_match.group(1) if class_match else ''),
                                 'target_type': 'function' if func_match else 'class'
                             })
                             break
@@ -281,7 +281,7 @@ def get_javascript_imports(code: str) -> list[dict[str, Any]]:
                     'line': i,
                     'type': import_type,
                     'names': match.group(1),
-                    'module': match.group(2) if match.lastindex > 1 else match.group(1)
+                    'module': match.group(2) if match.lastindex and match.lastindex > 1 else match.group(1)
                 })
 
     return imports

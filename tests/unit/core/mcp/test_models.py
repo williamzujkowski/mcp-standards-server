@@ -191,8 +191,12 @@ class TestSessionInfoExtended:
         active_session = SessionInfo(
             session_id="test123",
             user_id="user1",
-            auth_level=AuthenticationLevel.FULL,
-            expires_at=datetime.now() + timedelta(hours=1)
+            created_at=datetime.now(),
+            last_activity=datetime.now(),
+            auth_level=AuthenticationLevel.MFA,
+            expires_at=datetime.now() + timedelta(hours=1),
+            permissions=[],
+            metadata={}
         )
         assert active_session.is_expired() is False
 
@@ -200,7 +204,11 @@ class TestSessionInfoExtended:
         expired_session = SessionInfo(
             session_id="test456",
             user_id="user2",
-            auth_level=AuthenticationLevel.READ_ONLY,
-            expires_at=datetime.now() - timedelta(hours=1)
+            created_at=datetime.now() - timedelta(hours=2),
+            last_activity=datetime.now() - timedelta(hours=2),
+            auth_level=AuthenticationLevel.BASIC,
+            expires_at=datetime.now() - timedelta(hours=1),
+            permissions=[],
+            metadata={}
         )
         assert expired_session.is_expired() is True

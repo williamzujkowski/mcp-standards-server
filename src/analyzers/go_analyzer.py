@@ -170,7 +170,7 @@ class GoAnalyzer(BaseAnalyzer):
 
     def _analyze_imports(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze import statements for security packages"""
-        annotations = []
+        annotations: list[CodeAnnotation] = []
 
         # Extract imports - Go uses import blocks or single imports
         import_pattern = r'import\s+(?:\(\s*((?:[^)]+))\s*\)|"([^"]+)")'
