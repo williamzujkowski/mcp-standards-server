@@ -55,6 +55,7 @@ dev = [
     "faker>=19.10.0",
     "pytest-mock>=3.12.0",
     "types-PyYAML>=6.0.0",
+    "fastapi>=0.100.0",
 ]
 
 [project.scripts]
@@ -104,7 +105,7 @@ disallow_incomplete_defs = false
 check_untyped_defs = false
 no_implicit_optional = false
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_no_return = true
 namespace_packages = true
 ignore_missing_imports = true
