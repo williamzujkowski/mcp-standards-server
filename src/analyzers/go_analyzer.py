@@ -434,7 +434,7 @@ class GoAnalyzer(BaseAnalyzer):
             with open(file_path, encoding='utf-8') as f:
                 content = f.read()
                 return content[:position].count('\n') + 1
-        except:
+        except Exception:
             return 1
 
     def suggest_controls(self, code: str) -> list[str]:

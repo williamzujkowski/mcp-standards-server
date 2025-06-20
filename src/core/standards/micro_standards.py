@@ -8,6 +8,7 @@ Micro Standards Generator - Creates 500-token digestible chunks
 import hashlib
 import json
 from dataclasses import dataclass
+from typing import Tuple
 from datetime import datetime
 from pathlib import Path
 from typing import Any

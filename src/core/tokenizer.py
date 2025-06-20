@@ -62,9 +62,9 @@ class TiktokenTokenizer(BaseTokenizer):
             self.encoding = tiktoken.encoding_for_model(model)
             self.model = model
             logger.info(f"Initialized tiktoken tokenizer for model: {model}")
-        except ImportError:
+        except ImportError as e:
             logger.error("tiktoken not installed. Install with: pip install tiktoken")
-            raise ImportError("tiktoken is required for TiktokenTokenizer")
+            raise ImportError("tiktoken is required for TiktokenTokenizer") from e
         except Exception as e:
             logger.error(f"Failed to initialize tiktoken: {e}")
             # Fall back to cl100k_base encoding
@@ -120,7 +120,7 @@ class TiktokenTokenizer(BaseTokenizer):
         try:
             # Encode and decode to ensure valid UTF-8
             text = text.encode('utf-8', errors='ignore').decode('utf-8')
-        except:
+        except Exception:
             pass
 
         # Try to truncate at word boundary
@@ -146,9 +146,9 @@ class TransformersTokenizer(BaseTokenizer):
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model_name = model_name
             logger.info(f"Initialized transformers tokenizer for model: {model_name}")
-        except ImportError:
+        except ImportError as e:
             logger.error("transformers not installed. Install with: pip install transformers")
-            raise ImportError("transformers is required for TransformersTokenizer")
+            raise ImportError("transformers is required for TransformersTokenizer") from e
         except Exception as e:
             logger.error(f"Failed to initialize transformers tokenizer: {e}")
             raise
