@@ -3,12 +3,12 @@ MCP Protocol Data Models
 @nist-controls: AC-4, AU-2, AU-3
 @evidence: Data validation and audit trail models
 """
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class MCPMessage(BaseModel):
@@ -19,18 +19,20 @@ class MCPMessage(BaseModel):
     """
     id: str = Field(..., description="Unique message ID", min_length=1, max_length=128)
     method: str = Field(..., description="RPC method name", min_length=1, max_length=64)
-    params: Dict[str, Any] = Field(default_factory=dict, description="Method parameters")
+    params: dict[str, Any] = Field(default_factory=dict, description="Method parameters")
     timestamp: float = Field(..., description="Unix timestamp")
-    
-    @validator('method')
-    def validate_method(cls, v):
+
+    @field_validator('method')
+    @classmethod
+    def validate_method(cls, v: str) -> str:
         """Validate method name format"""
         if not v.replace('_', '').replace('.', '').isalnum():
             raise ValueError('Method name must be alphanumeric with underscores or dots')
         return v
-    
-    @validator('timestamp')
-    def validate_timestamp(cls, v):
+
+    @field_validator('timestamp')
+    @classmethod
+    def validate_timestamp(cls, v: float) -> float:
         """Ensure timestamp is reasonable"""
         now = datetime.now().timestamp()
         if v > now + 300:  # 5 minutes in future
@@ -38,9 +40,9 @@ class MCPMessage(BaseModel):
         if v < now - 86400:  # 24 hours in past
             raise ValueError('Timestamp cannot be more than 24 hours in the past')
         return v
-    
-    class Config:
-        json_schema_extra = {
+
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "id": "msg_123",
                 "method": "load_standards",
@@ -48,6 +50,7 @@ class MCPMessage(BaseModel):
                 "timestamp": 1234567890.123
             }
         }
+    }
 
 
 class MCPResponse(BaseModel):
@@ -57,16 +60,17 @@ class MCPResponse(BaseModel):
     @evidence: Non-repudiation through response tracking
     """
     id: str = Field(..., description="Message ID this responds to")
-    result: Optional[Dict[str, Any]] = Field(None, description="Success result")
-    error: Optional[Dict[str, Any]] = Field(None, description="Error details")
+    result: dict[str, Any] | None = Field(None, description="Success result")
+    error: dict[str, Any] | None = Field(None, description="Error details")
     timestamp: float = Field(..., description="Response timestamp")
-    
-    @validator('error')
-    def validate_error_or_result(cls, v, values):
+
+    @field_validator('error')
+    @classmethod
+    def validate_error_or_result(cls, v: dict[str, Any] | None, info: Any) -> dict[str, Any] | None:
         """Ensure either result or error is present, not both"""
-        if v is not None and values.get('result') is not None:
+        if v is not None and info.data.get('result') is not None:
             raise ValueError('Cannot have both result and error')
-        if v is None and values.get('result') is None:
+        if v is None and info.data.get('result') is None:
             raise ValueError('Must have either result or error')
         return v
 
@@ -87,8 +91,8 @@ class ComplianceContext:
     user_agent: str
     auth_method: str = "jwt"
     risk_score: float = 0.0
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging"""
         return {
             "user_id": self.user_id,
@@ -129,13 +133,13 @@ class SessionInfo:
     last_activity: datetime
     expires_at: datetime
     auth_level: AuthenticationLevel
-    permissions: List[str]
-    metadata: Dict[str, Any]
-    
+    permissions: list[str]
+    metadata: dict[str, Any]
+
     def is_expired(self) -> bool:
         """Check if session is expired"""
         return datetime.now() > self.expires_at
-    
+
     def is_idle_timeout(self, idle_minutes: int = 30) -> bool:
         """Check if session has been idle too long"""
         idle_time = datetime.now() - self.last_activity
@@ -150,10 +154,11 @@ class MCPError(BaseModel):
     """
     code: str = Field(..., description="Error code")
     message: str = Field(..., description="Human-readable error message")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error context")
-    
-    @validator('message')
-    def sanitize_message(cls, v):
+    details: dict[str, Any] | None = Field(None, description="Additional error context")
+
+    @field_validator('message')
+    @classmethod
+    def sanitize_message(cls, v: str) -> str:
         """Remove sensitive information from error messages"""
         # Remove file paths
         import re

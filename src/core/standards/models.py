@@ -3,12 +3,12 @@ Standards Engine Data Models
 @nist-controls: AC-4, SC-28, SI-12
 @evidence: Data models for standards management
 """
-from typing import Dict, List, Set, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class StandardType(Enum):
@@ -36,7 +36,7 @@ class StandardType(Enum):
     GH = "github"
     TOOL = "tools"
     UNIFIED = "unified"
-    
+
     @classmethod
     def from_string(cls, value: str) -> 'StandardType':
         """Convert string to StandardType"""
@@ -61,11 +61,11 @@ class StandardSection:
     tokens: int
     version: str
     last_updated: datetime
-    dependencies: List[str] = field(default_factory=list)
-    nist_controls: Set[str] = field(default_factory=set)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_dict(self) -> Dict[str, Any]:
+    dependencies: list[str] = field(default_factory=list)
+    nist_controls: set[str] = field(default_factory=set)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             "id": self.id,
@@ -88,12 +88,13 @@ class StandardQuery(BaseModel):
     @evidence: Validated standard query format
     """
     query: str = Field(..., description="Standard query string")
-    context: Optional[str] = Field(None, description="Additional context for query")
+    context: str | None = Field(None, description="Additional context for query")
     version: str = Field("latest", description="Standard version")
-    token_limit: Optional[int] = Field(None, description="Maximum tokens to return")
-    
-    @validator('query')
-    def validate_query(cls, v):
+    token_limit: int | None = Field(None, description="Maximum tokens to return")
+
+    @field_validator('query')
+    @classmethod
+    def validate_query(cls, v: str) -> str:
         """Validate query format"""
         if not v.strip():
             raise ValueError("Query cannot be empty")
@@ -101,9 +102,10 @@ class StandardQuery(BaseModel):
         if any(char in v for char in ['<', '>', '\\', '\0']):
             raise ValueError("Query contains invalid characters")
         return v.strip()
-    
-    @validator('token_limit')
-    def validate_token_limit(cls, v):
+
+    @field_validator('token_limit')
+    @classmethod
+    def validate_token_limit(cls, v: int | None) -> int | None:
         """Ensure reasonable token limits"""
         if v is not None:
             if v < 100:
@@ -119,12 +121,12 @@ class StandardLoadResult(BaseModel):
     @nist-controls: AU-10
     @evidence: Auditable standard loading results
     """
-    standards: List[Dict[str, Any]] = Field(..., description="Loaded standard sections")
-    metadata: Dict[str, Any] = Field(..., description="Load metadata")
-    query_info: Dict[str, Any] = Field(default_factory=dict, description="Query processing info")
-    
-    class Config:
-        json_schema_extra = {
+    standards: list[dict[str, Any]] = Field(..., description="Loaded standard sections")
+    metadata: dict[str, Any] = Field(..., description="Load metadata")
+    query_info: dict[str, Any] = Field(default_factory=dict, description="Query processing info")
+
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "standards": [
                     {
@@ -147,6 +149,7 @@ class StandardLoadResult(BaseModel):
                 }
             }
         }
+    }
 
 
 @dataclass
@@ -157,24 +160,21 @@ class NaturalLanguageMapping:
     @evidence: Controlled mapping of queries to standards
     """
     query_pattern: str
-    standard_refs: List[str]
+    standard_refs: list[str]
     confidence: float
-    keywords: List[str]
-    
+    keywords: list[str]
+
     def matches(self, query: str) -> bool:
         """Check if query matches this mapping"""
         query_lower = query.lower()
-        
+
         # Check for exact pattern match
         if self.query_pattern in query_lower:
             return True
-            
+
         # Check for keyword matches
         matching_keywords = sum(1 for kw in self.keywords if kw in query_lower)
-        if matching_keywords >= len(self.keywords) * 0.6:  # 60% threshold
-            return True
-            
-        return False
+        return matching_keywords >= len(self.keywords) * 0.6  # 60% threshold
 
 
 class StandardCache(BaseModel):
@@ -184,16 +184,16 @@ class StandardCache(BaseModel):
     @evidence: Secure caching with TTL
     """
     key: str
-    value: List[Dict[str, Any]]
+    value: list[dict[str, Any]]
     created_at: datetime
     expires_at: datetime
     access_count: int = 0
-    
+
     def is_expired(self) -> bool:
         """Check if cache entry is expired"""
         return datetime.utcnow() > self.expires_at
-    
-    def increment_access(self):
+
+    def increment_access(self) -> None:
         """Track cache hits"""
         self.access_count += 1
 
@@ -220,23 +220,23 @@ class TokenBudget:
     total_limit: int
     used: int = 0
     reserved: int = 0
-    
+
     @property
     def available(self) -> int:
         """Calculate available tokens"""
         return self.total_limit - self.used - self.reserved
-    
+
     def can_fit(self, tokens: int) -> bool:
         """Check if tokens fit in budget"""
         return tokens <= self.available
-    
+
     def allocate(self, tokens: int) -> bool:
         """Allocate tokens from budget"""
         if self.can_fit(tokens):
             self.used += tokens
             return True
         return False
-    
+
     def reserve(self, tokens: int) -> bool:
         """Reserve tokens for future use"""
         if tokens <= (self.total_limit - self.used - self.reserved):

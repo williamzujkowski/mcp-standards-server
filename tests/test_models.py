@@ -3,19 +3,24 @@ Test MCP Models
 @nist-controls: SA-11, CA-7
 @evidence: Unit tests for data models
 """
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
 
 from src.core.mcp.models import (
-    MCPMessage, MCPResponse, ComplianceContext,
-    AuthenticationLevel, SessionInfo, MCPError
+    AuthenticationLevel,
+    ComplianceContext,
+    MCPError,
+    MCPMessage,
+    MCPResponse,
+    SessionInfo,
 )
 
 
 class TestMCPMessage:
     """Test MCPMessage model"""
-    
+
     def test_valid_message(self):
         """Test creating valid MCP message"""
         msg = MCPMessage(
@@ -27,7 +32,7 @@ class TestMCPMessage:
         assert msg.id == "test_123"
         assert msg.method == "load_standards"
         assert msg.params["query"] == "CS:api"
-    
+
     def test_invalid_method_name(self):
         """Test validation of method name"""
         with pytest.raises(ValidationError):
@@ -37,7 +42,7 @@ class TestMCPMessage:
                 params={},
                 timestamp=datetime.now().timestamp()
             )
-    
+
     def test_future_timestamp_rejected(self):
         """Test that future timestamps are rejected"""
         future_time = datetime.now().timestamp() + 3600  # 1 hour future
@@ -52,7 +57,7 @@ class TestMCPMessage:
 
 class TestMCPResponse:
     """Test MCPResponse model"""
-    
+
     def test_success_response(self):
         """Test creating success response"""
         resp = MCPResponse(
@@ -63,7 +68,7 @@ class TestMCPResponse:
         )
         assert resp.result["status"] == "success"
         assert resp.error is None
-    
+
     def test_error_response(self):
         """Test creating error response"""
         resp = MCPResponse(
@@ -74,7 +79,7 @@ class TestMCPResponse:
         )
         assert resp.result is None
         assert resp.error["code"] == "ERROR"
-    
+
     def test_cannot_have_both_result_and_error(self):
         """Test that response cannot have both result and error"""
         with pytest.raises(ValidationError):
@@ -88,7 +93,7 @@ class TestMCPResponse:
 
 class TestComplianceContext:
     """Test ComplianceContext"""
-    
+
     def test_context_creation(self):
         """Test creating compliance context"""
         ctx = ComplianceContext(
@@ -103,7 +108,7 @@ class TestComplianceContext:
         assert ctx.user_id == "user123"
         assert ctx.auth_method == "jwt"  # Default
         assert ctx.risk_score == 0.0  # Default
-    
+
     def test_context_to_dict(self):
         """Test converting context to dictionary"""
         ctx = ComplianceContext(
@@ -123,7 +128,7 @@ class TestComplianceContext:
 
 class TestSessionInfo:
     """Test SessionInfo"""
-    
+
     def test_session_expiry(self):
         """Test session expiry check"""
         now = datetime.now()
@@ -138,7 +143,7 @@ class TestSessionInfo:
             metadata={}
         )
         assert session.is_expired()
-    
+
     def test_idle_timeout(self):
         """Test idle timeout check"""
         now = datetime.now()
@@ -158,7 +163,7 @@ class TestSessionInfo:
 
 class TestMCPError:
     """Test MCPError model"""
-    
+
     def test_error_message_sanitization(self):
         """Test that sensitive info is removed from errors"""
         error = MCPError(

@@ -3,13 +3,17 @@ MCP Standards CLI - Command-line interface
 @nist-controls: AC-3, AU-2, SI-10
 @evidence: Secure CLI with audit logging
 """
-import typer
-from pathlib import Path
-from typing import Optional
+import asyncio
 import json
+from pathlib import Path
+
+import typer
 import yaml
 from rich import print
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
+from ..compliance.scanner import ComplianceScanner
 
 app = typer.Typer(
     name="mcp-standards",
@@ -24,7 +28,7 @@ def init(
     project_path: Path = typer.Argument(Path.cwd(), help="Project path to initialize"),
     profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
     language: str = typer.Option(None, help="Primary language (auto-detect if not specified)")
-):
+) -> None:
     """
     Initialize MCP standards for a project
     @nist-controls: CM-2, CM-3
@@ -32,11 +36,11 @@ def init(
     """
     console.print(f"[bold green]Initializing MCP Standards for {project_path}[/bold green]")
     console.print("[yellow]Full CLI implementation coming in Phase 2[/yellow]")
-    
+
     # Create config directory
     config_dir = project_path / ".mcp-standards"
     config_dir.mkdir(exist_ok=True)
-    
+
     # Create basic config
     config = {
         "version": "1.0.0",
@@ -44,11 +48,11 @@ def init(
         "language": language or "python",
         "initialized": True
     }
-    
+
     config_file = config_dir / "config.yaml"
     with open(config_file, 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
-    
+
     console.print(f"[bold green]✓[/bold green] Created configuration at {config_file}")
 
 
@@ -57,15 +61,15 @@ def server(
     host: str = typer.Option("127.0.0.1", help="Server host"),
     port: int = typer.Option(8000, help="Server port"),
     reload: bool = typer.Option(False, help="Enable auto-reload for development")
-):
+) -> None:
     """
     Start the MCP Standards Server
     @nist-controls: AC-3, SC-8, AU-2
     @evidence: Secure server with access control and encryption
     """
-    console.print(f"[bold green]Starting MCP Standards Server[/bold green]")
+    console.print("[bold green]Starting MCP Standards Server[/bold green]")
     console.print(f"Host: [cyan]{host}:{port}[/cyan]")
-    
+
     # Start server
     import uvicorn
     uvicorn.run(
@@ -81,37 +85,69 @@ def server(
 def scan(
     path: Path = typer.Argument(Path.cwd(), help="Path to scan"),
     output_format: str = typer.Option("table", help="Output format (table/json/yaml/oscal)"),
-    output_file: Optional[Path] = typer.Option(None, help="Output file"),
+    output_file: Path | None = typer.Option(None, help="Output file"),
     deep: bool = typer.Option(False, help="Perform deep analysis")
-):
+) -> None:
     """
     Scan codebase for NIST control implementations
     @nist-controls: CA-7, RA-5, SA-11
     @evidence: Continuous monitoring and vulnerability scanning
     """
-    console.print(f"[bold]Scanning {path} for NIST controls...[/bold]")
-    console.print("[yellow]Code analysis implementation coming in Phase 1[/yellow]")
+    # Validate path exists
+    if not path.exists():
+        console.print(f"[red]Error: Path '{path}' does not exist[/red]")
+        raise typer.Exit(1)
     
-    # Placeholder result
-    result = {
-        "status": "not_implemented",
-        "message": "Code scanning will be implemented in Phase 1",
-        "path": str(path),
-        "deep": deep
-    }
+    # Create scanner instance
+    scanner = ComplianceScanner()
     
-    if output_format == "json":
+    # Run the scan with progress indicator
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+        console=console
+    ) as progress:
+        task = progress.add_task(f"Scanning {path}...", total=None)
+        
+        # Run async scan
+        scan_results = asyncio.run(scanner.scan_directory(path))
+        
+        progress.update(task, completed=True)
+    
+    # Generate report
+    report = scanner.generate_report(scan_results, output_format)
+    
+    # Output results
+    if output_format == "table":
+        # Table format is handled by the formatter
+        scanner.format_output(report, output_format)
+    else:
+        # Format as requested
+        formatted_output = scanner.format_output(report, output_format)
+        
         if output_file:
             with open(output_file, 'w') as f:
-                json.dump(result, f, indent=2)
+                f.write(formatted_output)
+            console.print(f"[green]✓[/green] Report saved to {output_file}")
         else:
-            print(json.dumps(result, indent=2))
-    else:
-        console.print(result)
+            print(formatted_output)
+    
+    # Show summary for non-table formats
+    if output_format != "table":
+        summary = report["summary"]
+        console.print(f"\n[bold]Scan Summary:[/bold]")
+        console.print(f"  • Files scanned: {summary['total_files']}")
+        console.print(f"  • Files with controls: {summary['files_with_controls']}")
+        console.print(f"  • Coverage: {summary['coverage_percentage']}%")
+        console.print(f"  • Issues found: {summary['total_issues']}")
+        
+        if summary['critical_issues'] > 0:
+            console.print(f"  • [red]Critical issues: {summary['critical_issues']}[/red]")
 
 
 @app.command()
-def version():
+def version() -> None:
     """Show version information"""
     console.print("[bold]MCP Standards Server[/bold]")
     console.print("Version: 0.1.0")

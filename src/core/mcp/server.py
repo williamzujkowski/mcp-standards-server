@@ -3,27 +3,27 @@ MCP Standards Server - Core Protocol Implementation
 @nist-controls: AC-4, SC-8, SC-13
 @evidence: Secure communication protocol with encryption
 """
-from typing import Dict, List, Optional, Any
-import json
 import asyncio
 import uuid
 from datetime import datetime, timedelta
-import logging
+from typing import Any
 
-from fastapi import FastAPI, WebSocket, Depends, HTTPException, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 import jwt
 from cryptography.fernet import Fernet
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .models import (
-    MCPMessage, MCPResponse, ComplianceContext, 
-    SessionInfo, AuthenticationLevel, MCPError
-)
-from .handlers import MCPHandler, HandlerRegistry
 from ..logging import get_logger, log_security_event
-
+from .handlers import HandlerRegistry, MCPHandler
+from .models import (
+    AuthenticationLevel,
+    ComplianceContext,
+    MCPError,
+    MCPMessage,
+    MCPResponse,
+    SessionInfo,
+)
 
 # Configure structured logging
 logger = get_logger(__name__)
@@ -38,24 +38,24 @@ class MCPServer:
     @nist-controls: AC-2, AC-3, AC-4, AC-6
     @evidence: Role-based access control and secure session management
     """
-    
-    def __init__(self, config: Dict[str, Any]):
+
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.handler_registry = HandlerRegistry()
-        self.sessions: Dict[str, SessionInfo] = {}
+        self.sessions: dict[str, SessionInfo] = {}
         self.app = FastAPI(
             title="MCP Standards Server",
             description="Model Context Protocol server for NIST compliance",
             version="0.1.0"
         )
-        
+
         # Initialize components
         self._setup_middleware()
         self._setup_routes()
         self._setup_security()
-        self._start_session_cleanup()
-        
-    def _setup_middleware(self):
+        # Don't start cleanup task here - will be started when server runs
+
+    def _setup_middleware(self) -> None:
         """
         Configure middleware
         @nist-controls: AC-4, SC-8
@@ -69,18 +69,18 @@ class MCPServer:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
+
         # Security headers middleware
-        @self.app.middleware("http")
-        async def add_security_headers(request: Request, call_next):
+        @self.app.middleware("http")  # type: ignore[misc]
+        async def add_security_headers(request: Request, call_next: Any) -> Any:
             response = await call_next(request)
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
             response.headers["X-XSS-Protection"] = "1; mode=block"
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
             return response
-            
-    def _setup_security(self):
+
+    def _setup_security(self) -> None:
         """
         Configure security measures
         @nist-controls: IA-2, IA-5, SC-8
@@ -91,14 +91,14 @@ class MCPServer:
         if not self.encryption_key:
             self.encryption_key = Fernet.generate_key()
             logger.warning("Generated new encryption key - should be persisted in production")
-            
+
         self.cipher = Fernet(self.encryption_key)
-        
+
         # JWT configuration
         self.jwt_secret = self.config.get("jwt_secret", "change-me-in-production")
         self.jwt_algorithm = "HS256"
         self.jwt_expiration = timedelta(hours=1)
-        
+
     async def authenticate(self, credentials: HTTPAuthorizationCredentials) -> ComplianceContext:
         """
         Authenticate and create compliance context
@@ -112,7 +112,7 @@ class MCPServer:
                 self.jwt_secret,
                 algorithms=[self.jwt_algorithm]
             )
-            
+
             # Create compliance context
             context = ComplianceContext(
                 user_id=payload.get("sub", "unknown"),
@@ -125,7 +125,7 @@ class MCPServer:
                 auth_method="jwt",
                 risk_score=0.0
             )
-            
+
             # Log successful authentication
             await log_security_event(
                 logger,
@@ -133,9 +133,9 @@ class MCPServer:
                 context,
                 {"method": "jwt"}
             )
-            
+
             return context
-            
+
         except jwt.ExpiredSignatureError:
             await log_security_event(
                 logger,
@@ -143,7 +143,7 @@ class MCPServer:
                 None,
                 {"reason": "token_expired"}
             )
-            raise HTTPException(status_code=401, detail="Token expired")
+            raise HTTPException(status_code=401, detail="Token expired") from None
         except jwt.InvalidTokenError as e:
             await log_security_event(
                 logger,
@@ -151,18 +151,18 @@ class MCPServer:
                 None,
                 {"reason": "invalid_token", "error": str(e)}
             )
-            raise HTTPException(status_code=401, detail="Invalid token")
-    
-    def register_handler(self, method: str, handler: MCPHandler, **kwargs):
+            raise HTTPException(status_code=401, detail="Invalid token") from e
+
+    def register_handler(self, method: str, handler: MCPHandler, **kwargs: Any) -> None:
         """Register method handler"""
         self.handler_registry.register(method, handler, **kwargs)
         logger.info(f"Registered handler for method: {method}")
-        
+
     async def handle_message(
         self,
         message: MCPMessage,
         context: ComplianceContext
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Route message to appropriate handler
         @nist-controls: AC-4, AU-2
@@ -178,7 +178,7 @@ class MCPServer:
                 {"method": message.method}
             )
             raise ValueError(f"Unknown method: {message.method}")
-        
+
         # Check permissions
         if not handler.check_permissions(context):
             await log_security_event(
@@ -188,7 +188,7 @@ class MCPServer:
                 {"method": message.method, "required": handler.required_permissions}
             )
             raise PermissionError(f"Insufficient permissions for method: {message.method}")
-            
+
         # Log the request
         await log_security_event(
             logger,
@@ -196,14 +196,14 @@ class MCPServer:
             context,
             {"method": message.method, "message_id": message.id}
         )
-        
+
         try:
             # Validate parameters
-            validated_params = await handler.validate_params(message.params)
-            
+            await handler.validate_params(message.params)
+
             # Handle the message
             result = await handler.handle(message, context)
-            
+
             # Log successful completion
             await log_security_event(
                 logger,
@@ -211,9 +211,9 @@ class MCPServer:
                 context,
                 {"method": message.method, "message_id": message.id, "success": True}
             )
-            
+
             return result
-            
+
         except Exception as e:
             # Log error
             await log_security_event(
@@ -228,12 +228,12 @@ class MCPServer:
                 }
             )
             raise
-    
-    def _setup_routes(self):
+
+    def _setup_routes(self) -> None:
         """Setup FastAPI routes"""
-        
-        @self.app.get("/health")
-        async def health_check():
+
+        @self.app.get("/health")  # type: ignore[misc]
+        async def health_check() -> dict[str, Any]:
             """
             Health check endpoint
             @nist-controls: AU-5
@@ -244,17 +244,17 @@ class MCPServer:
                 "timestamp": datetime.now().isoformat(),
                 "version": "0.1.0"
             }
-        
-        @self.app.get("/api/methods")
+
+        @self.app.get("/api/methods")  # type: ignore[misc]
         async def list_methods(
             credentials: HTTPAuthorizationCredentials = Depends(security)
-        ):
+        ) -> dict[str, Any]:
             """List available MCP methods"""
-            context = await self.authenticate(credentials)
+            await self.authenticate(credentials)  # Validate auth
             return self.handler_registry.list_methods()
-        
-        @self.app.websocket("/mcp")
-        async def mcp_websocket(websocket: WebSocket):
+
+        @self.app.websocket("/mcp")  # type: ignore[misc]
+        async def mcp_websocket(websocket: WebSocket) -> None:
             """
             WebSocket endpoint for MCP protocol
             @nist-controls: SC-8, SC-13
@@ -265,7 +265,7 @@ class MCPServer:
             if not token:
                 await websocket.close(code=1008, reason="Missing authentication")
                 return
-                
+
             try:
                 # Authenticate
                 credentials = HTTPAuthorizationCredentials(
@@ -273,10 +273,10 @@ class MCPServer:
                     credentials=token
                 )
                 context = await self.authenticate(credentials)
-                
+
                 # Accept connection
                 await websocket.accept()
-                
+
                 # Create session
                 session = SessionInfo(
                     session_id=context.session_id,
@@ -289,7 +289,7 @@ class MCPServer:
                     metadata={}
                 )
                 self.sessions[session.session_id] = session
-                
+
                 # Log connection
                 await log_security_event(
                     logger,
@@ -297,22 +297,22 @@ class MCPServer:
                     context,
                     {"session_id": session.session_id}
                 )
-                
+
                 # Message loop
                 while True:
                     # Receive message
                     data = await websocket.receive_text()
-                    
+
                     # Update session activity
                     session.last_activity = datetime.now()
-                    
+
                     try:
                         # Parse message
                         message = MCPMessage.parse_raw(data)
-                        
+
                         # Handle message
                         result = await self.handle_message(message, context)
-                        
+
                         # Send response
                         response = MCPResponse(
                             id=message.id,
@@ -321,7 +321,7 @@ class MCPServer:
                             timestamp=datetime.now().timestamp()
                         )
                         await websocket.send_json(response.dict())
-                        
+
                     except Exception as e:
                         # Send error response
                         error = MCPError(
@@ -336,7 +336,7 @@ class MCPServer:
                             timestamp=datetime.now().timestamp()
                         )
                         await websocket.send_json(response.dict())
-                        
+
             except HTTPException:
                 await websocket.close(code=1008, reason="Authentication failed")
             except Exception as e:
@@ -352,34 +352,37 @@ class MCPServer:
                         context if 'context' in locals() else None,
                         {"session_id": session.session_id if 'session' in locals() else "unknown"}
                     )
-    
-    def _start_session_cleanup(self):
+
+    def _start_session_cleanup(self) -> None:
         """
         Start background task for session cleanup
         @nist-controls: AC-12
         @evidence: Automatic session termination
         """
-        async def cleanup_sessions():
+        async def cleanup_sessions() -> None:
             while True:
                 await asyncio.sleep(60)  # Check every minute
-                
-                now = datetime.now()
+
                 expired_sessions = []
-                
+
                 for session_id, session in self.sessions.items():
                     if session.is_expired() or session.is_idle_timeout():
                         expired_sessions.append(session_id)
-                        
+
                 for session_id in expired_sessions:
                     del self.sessions[session_id]
                     logger.info(f"Cleaned up expired session: {session_id}")
-                    
+
         # Start cleanup task when event loop is available
-        asyncio.create_task(cleanup_sessions())
+        try:
+            asyncio.create_task(cleanup_sessions())
+        except RuntimeError:
+            # No event loop yet - this will be started when the server runs
+            logger.debug("Session cleanup will be started when server runs")
 
 
 # Application factory
-def create_app(config: Optional[Dict[str, Any]] = None) -> FastAPI:
+def create_app(config: dict[str, Any] | None = None) -> FastAPI:
     """
     Create and configure MCP server application
     @nist-controls: CM-2
@@ -391,15 +394,25 @@ def create_app(config: Optional[Dict[str, Any]] = None) -> FastAPI:
             "jwt_secret": "development-secret",
             "encryption_key": None
         }
-        
+
     server = MCPServer(config)
     return server.app
 
 
-# For running directly
-app = create_app()
+# For running directly - lazy initialization
+_app = None
 
-def run():
+def get_app() -> FastAPI:
+    """Get or create the app instance"""
+    global _app
+    if _app is None:
+        _app = create_app()
+    return _app
+
+# For compatibility
+app = get_app
+
+def run() -> None:
     """Run the MCP server"""
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

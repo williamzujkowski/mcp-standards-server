@@ -3,24 +3,26 @@ Standards Engine - Intelligent loading and caching
 @nist-controls: AC-4, SC-28, SI-12
 @evidence: Information flow control and secure caching
 """
-from typing import Dict, List, Optional, Set, Any, Tuple
-from pathlib import Path
 import json
-import yaml
 import re
-from datetime import datetime, timedelta
-from collections import defaultdict
-import hashlib
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import redis
+import yaml
 from redis.exceptions import RedisError
 
+from ..logging import audit_log, get_logger
 from .models import (
-    StandardType, StandardSection, StandardQuery, StandardLoadResult,
-    NaturalLanguageMapping, StandardCache, TokenBudget, TokenOptimizationStrategy
+    NaturalLanguageMapping,
+    StandardLoadResult,
+    StandardQuery,
+    StandardSection,
+    StandardType,
+    TokenBudget,
+    TokenOptimizationStrategy,
 )
-from ..logging import get_logger, audit_log
-
 
 logger = get_logger(__name__)
 
@@ -32,11 +34,11 @@ class NaturalLanguageMapper:
     @nist-controls: AC-4
     @evidence: Controlled query mapping
     """
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.mappings = self._initialize_mappings()
-        
-    def _initialize_mappings(self) -> List[NaturalLanguageMapping]:
+
+    def _initialize_mappings(self) -> list[NaturalLanguageMapping]:
         """Initialize standard mappings"""
         return [
             NaturalLanguageMapping(
@@ -100,8 +102,8 @@ class NaturalLanguageMapper:
                 keywords=["kubernetes", "k8s", "container", "orchestration"]
             )
         ]
-    
-    def map_query(self, query: str) -> Tuple[List[str], float]:
+
+    def map_query(self, query: str) -> tuple[list[str], float]:
         """
         Map natural language query to standard notations
         Returns (standard_refs, confidence)
@@ -109,13 +111,13 @@ class NaturalLanguageMapper:
         matched_standards = []
         total_confidence = 0.0
         match_count = 0
-        
+
         for mapping in self.mappings:
             if mapping.matches(query):
                 matched_standards.extend(mapping.standard_refs)
                 total_confidence += mapping.confidence
                 match_count += 1
-                
+
         # Remove duplicates while preserving order
         seen = set()
         unique_standards = []
@@ -123,10 +125,10 @@ class NaturalLanguageMapper:
             if std not in seen:
                 seen.add(std)
                 unique_standards.append(std)
-                
+
         # Calculate average confidence
         avg_confidence = total_confidence / match_count if match_count > 0 else 0.0
-        
+
         return unique_standards, avg_confidence
 
 
@@ -136,32 +138,32 @@ class StandardsEngine:
     @nist-controls: AC-3, AC-4, CM-7
     @evidence: Access control and least functionality
     """
-    
+
     def __init__(
         self,
         standards_path: Path,
-        redis_client: Optional[redis.Redis] = None,
+        redis_client: redis.Redis | None = None,
         cache_ttl: int = 3600
     ):
         self.standards_path = standards_path
         self.redis_client = redis_client
         self.cache_ttl = cache_ttl
         self.nl_mapper = NaturalLanguageMapper()
-        self.loaded_standards: Dict[str, StandardSection] = {}
-        
+        self.loaded_standards: dict[str, StandardSection] = {}
+
         # Initialize schema if available
         self.schema = self._load_schema()
-        
-    def _load_schema(self) -> Optional[Dict[str, Any]]:
+
+    def _load_schema(self) -> dict[str, Any] | None:
         """Load standards schema"""
         schema_path = self.standards_path / "standards-schema.yaml"
         if schema_path.exists():
             with open(schema_path) as f:
-                return yaml.safe_load(f)
+                return yaml.safe_load(f)  # type: ignore[no-any-return]
         return None
-    
-    @audit_log(["AC-4", "SI-10"])
-    async def parse_query(self, query: str) -> Tuple[List[str], Dict[str, Any]]:
+
+    @audit_log(["AC-4", "SI-10"])  # type: ignore[misc]
+    async def parse_query(self, query: str) -> tuple[list[str], dict[str, Any]]:
         """
         Parse various query formats
         Returns (standard_refs, query_info)
@@ -175,7 +177,7 @@ class StandardsEngine:
             "query_type": "unknown",
             "confidence": 1.0
         }
-        
+
         # Natural language query
         if ':' not in query and not query.startswith('load'):
             refs, confidence = self.nl_mapper.map_query(query)
@@ -183,7 +185,7 @@ class StandardsEngine:
             query_info["confidence"] = confidence
             query_info["mapped_refs"] = refs
             return refs, query_info
-            
+
         # Direct notation (CS:api, SEC:*, etc.)
         if ':' in query:
             parts = []
@@ -194,21 +196,21 @@ class StandardsEngine:
             query_info["query_type"] = "direct_notation"
             query_info["refs"] = parts
             return parts, query_info
-            
+
         # Load command
         if query.startswith('load'):
             # Extract the query part
             query = query[4:].strip()
-            return await self.parse_query(query)
-            
+            return await self.parse_query(query)  # type: ignore[no-any-return]
+
         return [], query_info
-    
+
     def _validate_standard_ref(self, ref: str) -> bool:
         """Validate standard reference format"""
         pattern = r'^[A-Z]+:[a-zA-Z0-9_\-\*]+$'
         return bool(re.match(pattern, ref))
-    
-    @audit_log(["AC-4", "SC-28"])
+
+    @audit_log(["AC-4", "SC-28"])  # type: ignore[misc]
     async def load_standards(
         self,
         query_obj: StandardQuery
@@ -219,23 +221,23 @@ class StandardsEngine:
         @evidence: Information flow control with caching
         """
         start_time = datetime.now()
-        
+
         # Parse the query
         standard_refs, query_info = await self.parse_query(query_obj.query)
-        
+
         # Add context-based standards
         if query_obj.context:
             context_refs = await self._analyze_context(query_obj.context)
             standard_refs.extend(context_refs)
             query_info["context_refs"] = context_refs
-            
+
         # Initialize token budget
         budget = TokenBudget(total_limit=query_obj.token_limit or 50000)
-        
+
         # Load each standard
         loaded = []
         total_tokens = 0
-        
+
         for ref in standard_refs:
             # Check cache first
             cached_sections = await self._get_from_cache(ref, query_obj.version)
@@ -244,7 +246,7 @@ class StandardsEngine:
             else:
                 sections = await self._load_standard_sections(ref, query_obj.version)
                 await self._save_to_cache(ref, query_obj.version, sections)
-            
+
             for section in sections:
                 if budget.can_fit(section.tokens):
                     budget.allocate(section.tokens)
@@ -264,48 +266,48 @@ class StandardsEngine:
                     else:
                         # Can't fit even optimized version
                         break
-                        
+
                 if not budget.available:
                     break
-                    
+
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
         query_info["processing_time_ms"] = int(processing_time)
-        
+
         # Build result
         result = StandardLoadResult(
             standards=[s.to_dict() for s in loaded],
             metadata={
                 "version": query_obj.version,
                 "token_count": total_tokens,
-                "refs_loaded": list(set(s.id for s in loaded)),
+                "refs_loaded": list({s.id for s in loaded}),
                 "total_sections": len(loaded)
             },
             query_info=query_info
         )
-        
+
         logger.info(
             f"Loaded {len(loaded)} standard sections ({total_tokens} tokens)",
             extra={"query": query_obj.query, "refs": standard_refs}
         )
-        
+
         return result
-    
+
     async def _get_from_cache(
         self,
         ref: str,
         version: str
-    ) -> Optional[List[StandardSection]]:
+    ) -> list[StandardSection] | None:
         """Get sections from cache"""
         if not self.redis_client:
             return None
-            
+
         cache_key = f"standard:{ref}:{version}"
-        
+
         try:
             cached_data = self.redis_client.get(cache_key)
             if cached_data:
-                data = json.loads(cached_data)
+                data = json.loads(cached_data)  # type: ignore[arg-type]
                 sections = []
                 for item in data:
                     # Reconstruct StandardSection
@@ -325,22 +327,22 @@ class StandardsEngine:
                 return sections
         except (RedisError, json.JSONDecodeError) as e:
             logger.error(f"Cache retrieval error: {e}")
-            
+
         return None
-    
+
     async def _save_to_cache(
         self,
         ref: str,
         version: str,
-        sections: List[StandardSection]
+        sections: list[StandardSection]
     ) -> None:
         """Save sections to cache"""
         if not self.redis_client or not sections:
             return
-            
+
         cache_key = f"standard:{ref}:{version}"
         cache_data = [s.to_dict() for s in sections]
-        
+
         try:
             self.redis_client.setex(
                 cache_key,
@@ -349,23 +351,23 @@ class StandardsEngine:
             )
         except RedisError as e:
             logger.error(f"Cache save error: {e}")
-    
+
     async def _load_standard_sections(
         self,
         ref: str,
         version: str
-    ) -> List[StandardSection]:
+    ) -> list[StandardSection]:
         """Load sections for a standard reference"""
         # Parse reference (e.g., "CS:api" or "SEC:*")
         parts = ref.split(':')
         if len(parts) != 2:
             raise ValueError(f"Invalid standard reference: {ref}")
-            
+
         std_type = parts[0]
         section = parts[1]
-        
+
         sections = []
-        
+
         if section == '*':
             # Load all sections
             sections = await self._load_all_sections(std_type, version)
@@ -374,15 +376,15 @@ class StandardsEngine:
             section_data = await self._load_section(std_type, section, version)
             if section_data:
                 sections.append(section_data)
-                
+
         return sections
-    
+
     async def _load_section(
         self,
         std_type: str,
         section: str,
         version: str
-    ) -> Optional[StandardSection]:
+    ) -> StandardSection | None:
         """Load a specific section from file"""
         # This is a placeholder - in real implementation, would load from actual files
         # For now, return mock data
@@ -398,12 +400,12 @@ class StandardsEngine:
             nist_controls=set(),
             metadata={}
         )
-    
+
     async def _load_all_sections(
         self,
         std_type: str,
         version: str
-    ) -> List[StandardSection]:
+    ) -> list[StandardSection]:
         """Load all sections for a standard type"""
         # Placeholder - would load from actual files
         sections = []
@@ -412,12 +414,12 @@ class StandardsEngine:
             if section_data:
                 sections.append(section_data)
         return sections
-    
-    async def _analyze_context(self, context: str) -> List[str]:
+
+    async def _analyze_context(self, context: str) -> list[str]:
         """Analyze context to suggest additional standards"""
         # Simple keyword analysis
         suggested = []
-        
+
         context_lower = context.lower()
         if "test" in context_lower:
             suggested.append("TS:*")
@@ -425,15 +427,15 @@ class StandardsEngine:
             suggested.append("SEC:*")
         if "api" in context_lower:
             suggested.append("CS:api")
-            
+
         return suggested
-    
+
     async def _optimize_for_tokens(
         self,
         section: StandardSection,
         max_tokens: int,
         strategy: TokenOptimizationStrategy
-    ) -> Optional[StandardSection]:
+    ) -> StandardSection | None:
         """
         Optimize section for token limit
         @nist-controls: SA-8
@@ -441,12 +443,12 @@ class StandardsEngine:
         """
         if section.tokens <= max_tokens:
             return section
-            
+
         if strategy == TokenOptimizationStrategy.TRUNCATE:
             # Simple truncation
             ratio = max_tokens / section.tokens
             truncated_content = section.content[:int(len(section.content) * ratio)]
-            
+
             return StandardSection(
                 id=section.id,
                 type=section.type,
@@ -459,10 +461,10 @@ class StandardsEngine:
                 nist_controls=section.nist_controls,
                 metadata={**section.metadata, "optimized": True}
             )
-            
+
         # Other strategies would be implemented here
         return None
-    
+
     def _count_tokens(self, text: str) -> int:
         """Estimate token count (simplified)"""
         # Rough estimate: ~1 token per 4 characters
