@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .enhanced_patterns import EnhancedNISTPatterns
+
 
 @dataclass
 class SecurityPattern:
@@ -41,6 +43,7 @@ class BaseAnalyzer(ABC):
 
     def __init__(self):
         self.security_patterns: list[SecurityPattern] = []
+        self.enhanced_patterns = EnhancedNISTPatterns()
 
     @abstractmethod
     def analyze_file(self, file_path: Path) -> list[CodeAnnotation]:
@@ -156,6 +159,32 @@ class BaseAnalyzer(ABC):
                     confidence=1.0  # Explicit annotations have full confidence
                 ))
 
+        return annotations
+
+    def analyze_with_enhanced_patterns(self, code: str, file_path: str) -> list[CodeAnnotation]:
+        """Analyze code using enhanced NIST pattern detection"""
+        annotations = []
+        
+        # Get all matching patterns
+        pattern_matches = self.enhanced_patterns.get_patterns_for_code(code)
+        
+        for pattern, match in pattern_matches:
+            # Find the line number
+            lines_before = code[:match.start()].count('\n')
+            line_number = lines_before + 1
+            
+            # Generate evidence
+            evidence = pattern.evidence_template.format(match=match.group(0))
+            
+            annotations.append(CodeAnnotation(
+                file_path=file_path,
+                line_number=line_number,
+                control_ids=pattern.control_ids,
+                evidence=evidence,
+                component=pattern.pattern_type,
+                confidence=pattern.confidence
+            ))
+        
         return annotations
 
     def _has_authentication(self, code: str) -> bool:

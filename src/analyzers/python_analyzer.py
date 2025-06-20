@@ -46,6 +46,10 @@ class PythonAnalyzer(BaseAnalyzer):
         # Find implicit patterns
         implicit_annotations = self._analyze_implicit_patterns(code, str(file_path))
         annotations.extend(implicit_annotations)
+        
+        # Use enhanced pattern detection
+        enhanced_annotations = self.analyze_with_enhanced_patterns(code, str(file_path))
+        annotations.extend(enhanced_annotations)
 
         # AST-based analysis
         try:

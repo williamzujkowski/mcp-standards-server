@@ -518,6 +518,70 @@ def validate(
 
 
 @app.command()
+def coverage(
+    path: Path = typer.Argument(Path.cwd(), help="Path to analyze"),
+    output_format: str = typer.Option("markdown", help="Output format (markdown/json/html)"),
+    output_file: Path | None = typer.Option(None, help="Output file (stdout if not specified)"),
+    detailed: bool = typer.Option(False, help="Include detailed file-level analysis")
+) -> None:
+    """
+    Generate NIST control coverage report
+    @nist-controls: CA-7, AU-6, PM-31
+    @evidence: Automated coverage analysis and reporting
+    """
+    from ..analyzers.control_coverage_report import ControlCoverageReporter
+    
+    console.print(f"[bold]Analyzing NIST control coverage for {path}[/bold]\n")
+    
+    # Initialize reporter
+    reporter = ControlCoverageReporter()
+    
+    # Initialize analyzers
+    analyzers = {
+        'python': PythonAnalyzer(),
+        'javascript': JavaScriptAnalyzer(),
+        'go': GoAnalyzer(),
+        'java': JavaAnalyzer()
+    }
+    
+    # Analyze project
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+        console=console
+    ) as progress:
+        task = progress.add_task("Analyzing project...", total=None)
+        metrics = reporter.analyze_project(path, analyzers)
+        progress.update(task, completed=True)
+    
+    # Generate report
+    report = reporter.generate_report(metrics, output_format)
+    
+    # Output report
+    if output_file:
+        output_file.write_text(report)
+        console.print(f"[green]✓[/green] Coverage report saved to {output_file}")
+    else:
+        if output_format == "markdown":
+            # Pretty print markdown to console
+            from rich.markdown import Markdown
+            console.print(Markdown(report))
+        else:
+            print(report)
+    
+    # Summary statistics
+    if output_file or output_format != "markdown":
+        console.print(f"\n[bold]Summary:[/bold]")
+        console.print(f"  • Total controls: [cyan]{metrics.total_controls_detected}[/cyan]")
+        console.print(f"  • Control families: [cyan]{len(metrics.control_families)}[/cyan]")
+        console.print(f"  • High confidence: [green]{len(metrics.high_confidence_controls)}[/green]")
+        
+        if metrics.suggested_missing_controls:
+            console.print(f"  • [yellow]Suggested additions: {sum(len(v) for v in metrics.suggested_missing_controls.values())}[/yellow]")
+
+
+@app.command()
 def version() -> None:
     """Show version information"""
     console.print("[bold]MCP Standards Server[/bold]")
