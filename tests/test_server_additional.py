@@ -152,6 +152,6 @@ class TestAdditionalServerFunctions:
         """Test reading NIST controls resource"""
         resource = await read_resource(AnyUrl("standards://nist-controls"))
         
-        assert resource.uri == "standards://nist-controls"
+        assert str(resource.uri) == "standards://nist-controls"
         assert resource.mimeType == "application/json"
         assert "controls" in resource.text

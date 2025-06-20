@@ -79,11 +79,12 @@ class TestMCPHandler:
     @pytest.fixture
     def message(self):
         """Create test message"""
+        import time
         return MCPMessage(
             id="test-123",
             method="test.method",
             params={},
-            timestamp=1234567890.0
+            timestamp=time.time()
         )
     
     def test_handler_has_required_methods(self, simple_handler):

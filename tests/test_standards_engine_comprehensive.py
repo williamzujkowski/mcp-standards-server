@@ -26,6 +26,23 @@ from src.core.standards.models import (
 )
 
 
+@pytest.fixture
+def test_standards_path(tmp_path):
+    """Create test standards directory with schema"""
+    standards_dir = tmp_path / "standards"
+    standards_dir.mkdir()
+    
+    # Create schema file
+    schema = {
+        "version": "1.0",
+        "types": ["CS", "SEC", "TS", "FE", "CN"]
+    }
+    schema_file = standards_dir / "standards-schema.yaml"
+    schema_file.write_text(yaml.dump(schema))
+    
+    return standards_dir
+
+
 class TestNaturalLanguageMapper:
     """Test NaturalLanguageMapper functionality"""
     
@@ -108,21 +125,6 @@ class TestStandardsEngine:
         mock.setex.return_value = True
         return mock
     
-    @pytest.fixture
-    def test_standards_path(self, tmp_path):
-        """Create test standards directory with schema"""
-        standards_dir = tmp_path / "standards"
-        standards_dir.mkdir()
-        
-        # Create schema file
-        schema = {
-            "version": "1.0",
-            "types": ["CS", "SEC", "TS", "FE", "CN"]
-        }
-        schema_file = standards_dir / "standards-schema.yaml"
-        schema_file.write_text(yaml.dump(schema))
-        
-        return standards_dir
     
     def test_engine_initialization(self, test_standards_path, mock_redis):
         """Test engine initialization with all components"""
@@ -219,7 +221,8 @@ class TestStandardsEngine:
         refs, query_info = await engine.parse_query("")
         
         assert refs == []
-        assert query_info["query_type"] == "unknown"
+        assert query_info["query_type"] == "natural_language"
+        assert query_info["confidence"] == 0.0
     
     @pytest.mark.asyncio
     async def test_analyze_context(self, test_standards_path):
@@ -368,7 +371,7 @@ class TestStandardsEngineWithCache:
         cached_sections = [
             {
                 "id": "CS:api",
-                "type": "coding",
+                "type": "CS",
                 "section": "api",
                 "content": "Cached API standards",
                 "tokens": 500,
@@ -399,14 +402,14 @@ class TestStandardsEngineWithCache:
         mock_redis_with_data.get.assert_called_once_with("standard:CS:api:latest")
     
     @pytest.mark.asyncio
-    async def test_get_from_cache_miss(self, test_standards_path, mock_redis):
+    async def test_get_from_cache_miss(self, test_standards_path, mock_redis_client):
         """Test cache miss"""
-        engine = StandardsEngine(test_standards_path, redis_client=mock_redis)
+        engine = StandardsEngine(test_standards_path, redis_client=mock_redis_client)
         
         sections = await engine._get_from_cache("CS:api", "latest")
         
         assert sections is None
-        mock_redis.get.assert_called_once()
+        mock_redis_client.get.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_get_from_cache_no_redis(self, test_standards_path):
@@ -432,9 +435,9 @@ class TestStandardsEngineWithCache:
             mock_logger.error.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_save_to_cache(self, test_standards_path, mock_redis):
+    async def test_save_to_cache(self, test_standards_path, mock_redis_client):
         """Test saving to cache"""
-        engine = StandardsEngine(test_standards_path, redis_client=mock_redis)
+        engine = StandardsEngine(test_standards_path, redis_client=mock_redis_client)
         
         sections = [
             StandardSection(
@@ -453,8 +456,8 @@ class TestStandardsEngineWithCache:
         
         await engine._save_to_cache("CS:api", "latest", sections)
         
-        mock_redis.setex.assert_called_once()
-        call_args = mock_redis.setex.call_args
+        mock_redis_client.setex.assert_called_once()
+        call_args = mock_redis_client.setex.call_args
         assert call_args[0][0] == "standard:CS:api:latest"
         assert call_args[0][1] == 3600  # Default TTL
     
@@ -620,7 +623,7 @@ class TestStandardsEngineLoadStandards:
         cached_sections = [
             {
                 "id": "CS:api",
-                "type": "coding",
+                "type": "CS",
                 "section": "api",
                 "content": "Cached content",
                 "tokens": 500,

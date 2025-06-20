@@ -178,8 +178,14 @@ class StandardsEngine:
             "confidence": 1.0
         }
 
+        # Load command (check first before other patterns)
+        if query.startswith('load'):
+            # Extract the query part
+            query = query[4:].strip()
+            return await self.parse_query(query)  # type: ignore[no-any-return]
+
         # Natural language query
-        if ':' not in query and not query.startswith('load'):
+        if ':' not in query:
             refs, confidence = self.nl_mapper.map_query(query)
             query_info["query_type"] = "natural_language"
             query_info["confidence"] = confidence
@@ -196,12 +202,6 @@ class StandardsEngine:
             query_info["query_type"] = "direct_notation"
             query_info["refs"] = parts
             return parts, query_info
-
-        # Load command
-        if query.startswith('load'):
-            # Extract the query part
-            query = query[4:].strip()
-            return await self.parse_query(query)  # type: ignore[no-any-return]
 
         return [], query_info
 
@@ -257,7 +257,7 @@ class StandardsEngine:
                     optimized = await self._optimize_for_tokens(
                         section,
                         budget.available,
-                        TokenOptimizationStrategy.SUMMARIZE
+                        TokenOptimizationStrategy.TRUNCATE
                     )
                     if optimized and budget.can_fit(optimized.tokens):
                         budget.allocate(optimized.tokens)
@@ -423,7 +423,7 @@ class StandardsEngine:
         context_lower = context.lower()
         if "test" in context_lower:
             suggested.append("TS:*")
-        if "security" in context_lower:
+        if "security" in context_lower or "secure" in context_lower:
             suggested.append("SEC:*")
         if "api" in context_lower:
             suggested.append("CS:api")

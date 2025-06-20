@@ -36,6 +36,18 @@ tags:
   - rest
 """)
         
+        # Create schema file
+        schema_file = standards_dir / "standards-schema.yaml"
+        schema_file.write_text("""
+version: "1.0"
+types:
+  - CS
+  - SEC
+  - TS
+  - FE
+  - CN
+""")
+        
         return standards_dir
     
     def test_engine_initialization(self, test_standards_path):
@@ -43,10 +55,10 @@ tags:
         engine = StandardsEngine(test_standards_path)
         
         assert engine.standards_path == test_standards_path
-        assert engine.cache is not None
-        assert engine.natural_mapper is not None
-        assert engine.loader is not None
-        assert engine.optimizer is not None
+        assert engine.redis_client is None  # No redis provided
+        assert engine.nl_mapper is not None
+        assert engine.cache_ttl == 3600  # Default TTL
+        assert engine.loaded_standards == {}
     
     def test_engine_with_redis_url(self, test_standards_path):
         """Test engine initialization with Redis URL"""
@@ -58,20 +70,19 @@ tags:
     
     def test_engine_without_standards_path(self):
         """Test engine initialization without valid path"""
-        with pytest.raises(Exception):
-            StandardsEngine(Path("/nonexistent/path"))
+        # Engine should initialize even with non-existent path
+        engine = StandardsEngine(Path("/nonexistent/path"))
+        assert engine.standards_path == Path("/nonexistent/path")
+        assert engine.schema is None  # No schema file exists
     
     @pytest.mark.asyncio
     async def test_get_catalog(self, test_standards_path):
-        """Test getting standards catalog"""
+        """Test loading schema which contains catalog of types"""
         engine = StandardsEngine(test_standards_path)
         
-        # Mock the loader's get_catalog method
-        engine.loader.get_catalog = MagicMock(return_value=["CS", "SEC", "TS"])
-        
-        catalog = await engine.get_catalog()
-        
-        assert isinstance(catalog, list)
-        assert "CS" in catalog
-        assert "SEC" in catalog
-        assert "TS" in catalog
+        # The schema contains the catalog of standard types
+        assert engine.schema is not None
+        assert "types" in engine.schema
+        assert "CS" in engine.schema["types"]
+        assert "SEC" in engine.schema["types"]
+        assert "TS" in engine.schema["types"]

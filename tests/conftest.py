@@ -304,11 +304,12 @@ func EncryptData(plaintext []byte, key []byte) ([]byte, error) {
 def mock_redis_client():
     """Mock Redis client for testing"""
     client = MagicMock()
-    client.get = AsyncMock(return_value=None)
-    client.set = AsyncMock(return_value=True)
-    client.delete = AsyncMock(return_value=1)
-    client.exists = AsyncMock(return_value=0)
-    client.expire = AsyncMock(return_value=True)
+    client.get = MagicMock(return_value=None)
+    client.set = MagicMock(return_value=True)
+    client.setex = MagicMock(return_value=True)
+    client.delete = MagicMock(return_value=1)
+    client.exists = MagicMock(return_value=0)
+    client.expire = MagicMock(return_value=True)
     return client
 
 
