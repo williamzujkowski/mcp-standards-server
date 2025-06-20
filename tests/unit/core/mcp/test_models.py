@@ -175,3 +175,32 @@ class TestMCPError:
         assert "[REDACTED]" in error.message
         assert "secret123" not in error.message
         assert "/home/user" not in error.message
+
+
+# ============================================================
+# Merged from tests/test_models_additional.py (MCP models only)
+# ============================================================
+
+
+class TestSessionInfoExtended:
+    """Extended tests for SessionInfo model"""
+
+    def test_session_expiry(self):
+        """Test session expiry logic"""
+        # Active session
+        active_session = SessionInfo(
+            session_id="test123",
+            user_id="user1",
+            auth_level=AuthenticationLevel.FULL,
+            expires_at=datetime.now() + timedelta(hours=1)
+        )
+        assert active_session.is_expired() is False
+
+        # Expired session
+        expired_session = SessionInfo(
+            session_id="test456",
+            user_id="user2",
+            auth_level=AuthenticationLevel.READ_ONLY,
+            expires_at=datetime.now() - timedelta(hours=1)
+        )
+        assert expired_session.is_expired() is True
