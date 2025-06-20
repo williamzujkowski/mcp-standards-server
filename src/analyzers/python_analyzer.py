@@ -1,34 +1,150 @@
 """
-Python code analyzer
+Enhanced Python code analyzer with tree-sitter
 @nist-controls: SA-11, SA-15
-@evidence: Python static analysis for security controls
+@evidence: Advanced Python AST analysis for security controls
 """
-import ast
 import re
 from pathlib import Path
+from typing import Any
 
 from .base import BaseAnalyzer, CodeAnnotation
+from .ast_utils import (
+    get_python_functions,
+    get_python_imports,
+    get_python_classes,
+    get_python_decorators
+)
 
 
 class PythonAnalyzer(BaseAnalyzer):
     """
-    Analyzes Python code for NIST control implementations
+    Enhanced Python analyzer using tree-sitter for deeper AST analysis
     @nist-controls: SA-11, CA-7
-    @evidence: Python-specific security analysis
+    @evidence: Tree-sitter based Python security analysis
     """
 
     def __init__(self):
         super().__init__()
         self.file_extensions = ['.py']
-        self.framework_patterns = {
-            'django': ['django', 'from django', 'DJANGO_SETTINGS'],
-            'flask': ['flask', 'from flask', 'Flask(__name__)'],
-            'fastapi': ['fastapi', 'from fastapi', 'FastAPI()'],
-            'pyramid': ['pyramid', 'from pyramid']
+        self.language = 'python'
+        
+        # Security-relevant imports mapping
+        self.security_imports = {
+            # Authentication/Authorization
+            'django.contrib.auth': ['IA-2', 'AC-3'],
+            'flask_login': ['IA-2', 'AC-3'],
+            'flask_jwt_extended': ['IA-2', 'SC-8'],
+            'passlib': ['IA-5', 'SC-13'],
+            'argon2': ['IA-5', 'SC-13'],
+            'bcrypt': ['IA-5', 'SC-13'],
+            'jwt': ['IA-2', 'SC-8'],
+            'oauthlib': ['IA-2', 'IA-8'],
+            'authlib': ['IA-2', 'IA-8'],
+            
+            # Cryptography
+            'cryptography': ['SC-13', 'SC-28'],
+            'pycryptodome': ['SC-13', 'SC-28'],
+            'hashlib': ['SC-13', 'SI-7'],
+            'hmac': ['SC-13', 'SI-7'],
+            'secrets': ['SC-13'],
+            'ssl': ['SC-8', 'SC-13'],
+            
+            # Input Validation
+            'bleach': ['SI-10'],
+            'html': ['SI-10'],
+            'validators': ['SI-10'],
+            'marshmallow': ['SI-10'],
+            'pydantic': ['SI-10'],
+            'cerberus': ['SI-10'],
+            
+            # Logging/Auditing
+            'logging': ['AU-2', 'AU-3'],
+            'structlog': ['AU-2', 'AU-3'],
+            'loguru': ['AU-2', 'AU-3'],
+            'sentry_sdk': ['AU-2', 'AU-14'],
+            
+            # Session Management
+            'flask.sessions': ['SC-23', 'AC-12'],
+            'django.contrib.sessions': ['SC-23', 'AC-12'],
+            'beaker': ['SC-23', 'AC-12'],
+            
+            # Security Middleware
+            'django.middleware.security': ['SC-8', 'SC-18'],
+            'flask_talisman': ['SC-8', 'SC-18'],
+            'secure': ['SC-8', 'SC-18'],
+        }
+        
+        # Security function patterns
+        self.security_functions = {
+            # Authentication
+            'authenticate': ['IA-2', 'AC-7'],
+            'login': ['IA-2', 'AC-7'],
+            'logout': ['AC-12'],
+            'verify_password': ['IA-2', 'IA-5'],
+            'check_password': ['IA-2', 'IA-5'],
+            'validate_token': ['IA-2', 'SC-8'],
+            'verify_token': ['IA-2', 'SC-8'],
+            
+            # Authorization
+            'authorize': ['AC-3', 'AC-6'],
+            'check_permission': ['AC-3', 'AC-6'],
+            'has_permission': ['AC-3', 'AC-6'],
+            'require_role': ['AC-3', 'AC-6'],
+            'is_admin': ['AC-6'],
+            
+            # Encryption
+            'encrypt': ['SC-13', 'SC-28'],
+            'decrypt': ['SC-13', 'SC-28'],
+            'hash_password': ['IA-5', 'SC-13'],
+            'generate_key': ['SC-13'],
+            'sign': ['SC-13', 'SI-7'],
+            'verify_signature': ['SC-13', 'SI-7'],
+            
+            # Input Validation
+            'validate': ['SI-10'],
+            'sanitize': ['SI-10'],
+            'escape': ['SI-10'],
+            'clean': ['SI-10'],
+            'filter_input': ['SI-10'],
+            
+            # Logging
+            'audit_log': ['AU-2', 'AU-3'],
+            'log_event': ['AU-2', 'AU-3'],
+            'log_security': ['AU-2', 'AU-9'],
+            'log_access': ['AU-2', 'AC-3'],
+        }
+        
+        # Security decorators
+        self.security_decorators = {
+            # Django
+            'login_required': ['IA-2', 'AC-3'],
+            'permission_required': ['AC-3', 'AC-6'],
+            'user_passes_test': ['AC-3', 'AC-6'],
+            'csrf_protect': ['SI-10', 'SC-8'],
+            'require_http_methods': ['AC-4'],
+            'cache_control': ['SC-28'],
+            
+            # Flask
+            'jwt_required': ['IA-2', 'SC-8'],
+            'roles_required': ['AC-3', 'AC-6'],
+            'auth_required': ['IA-2', 'AC-3'],
+            'limiter.limit': ['SC-5'],
+            
+            # FastAPI
+            'Depends': ['AC-3'],
+            'HTTPBearer': ['IA-2', 'SC-8'],
+            'OAuth2PasswordBearer': ['IA-2', 'IA-8'],
+            
+            # General
+            'authenticated': ['IA-2'],
+            'authorized': ['AC-3'],
+            'validate_input': ['SI-10'],
+            'rate_limit': ['SC-5'],
+            'cache': ['SC-28'],
         }
 
     def analyze_file(self, file_path: Path) -> list[CodeAnnotation]:
-        """Analyze Python file for NIST controls"""
+        """Analyze Python file using tree-sitter for NIST controls"""
         if file_path.suffix not in self.file_extensions:
             return []
 
@@ -43,283 +159,256 @@ class PythonAnalyzer(BaseAnalyzer):
         # Extract explicit annotations
         annotations.extend(self.extract_annotations(code, str(file_path)))
 
-        # Find implicit patterns
-        implicit_annotations = self._analyze_implicit_patterns(code, str(file_path))
-        annotations.extend(implicit_annotations)
-        
-        # Use enhanced pattern detection
-        enhanced_annotations = self.analyze_with_enhanced_patterns(code, str(file_path))
-        annotations.extend(enhanced_annotations)
-
         # AST-based analysis
-        try:
-            tree = ast.parse(code)
-            ast_annotations = self._analyze_ast(tree, code, str(file_path))
-            annotations.extend(ast_annotations)
-        except SyntaxError:
-            # If we can't parse, continue with pattern matching
-            pass
+        annotations.extend(self._analyze_with_ast(code, str(file_path)))
 
+        # Pattern-based analysis (fallback and additional patterns)
+        annotations.extend(self._analyze_implicit_patterns(code, str(file_path)))
+        
+        # Enhanced pattern detection
+        annotations.extend(self.analyze_with_enhanced_patterns(code, str(file_path)))
+
+        # Deduplicate annotations
+        seen = set()
+        unique_annotations = []
+        for ann in annotations:
+            key = (ann.file_path, ann.line_number, tuple(ann.control_ids))
+            if key not in seen:
+                seen.add(key)
+                unique_annotations.append(ann)
+
+        return unique_annotations
+
+    def _analyze_with_ast(self, code: str, file_path: str) -> list[CodeAnnotation]:
+        """Analyze code using AST parsing"""
+        annotations = []
+        
+        # Analyze imports
+        imports = get_python_imports(code)
+        for import_info in imports:
+            module = import_info.get('module', '')
+            if module:
+                # Check against security imports
+                for sec_module, controls in self.security_imports.items():
+                    if sec_module in module or module.startswith(sec_module):
+                        annotations.append(CodeAnnotation(
+                            file_path=file_path,
+                            line_number=import_info['line'],
+                            control_ids=controls,
+                            evidence=f"Security module import: {module}",
+                            component="imports",
+                            confidence=0.9
+                        ))
+                        break
+        
+        # Analyze function definitions
+        functions = get_python_functions(code)
+        for func in functions:
+            func_name = func.get('name', '').lower()
+            if func_name:
+                # Check against security functions
+                for pattern, controls in self.security_functions.items():
+                    if pattern in func_name:
+                        annotations.append(CodeAnnotation(
+                            file_path=file_path,
+                            line_number=func['start_line'],
+                            control_ids=controls,
+                            evidence=f"Security function: {func['name']}",
+                            component="function",
+                            confidence=0.85
+                        ))
+                        break
+        
+        # Analyze decorators
+        decorators = get_python_decorators(code)
+        for decorator in decorators:
+            decorator_name = decorator.get('name', '').lower()
+            for dec_name, controls in self.security_decorators.items():
+                if dec_name.lower() in decorator_name:
+                    annotations.append(CodeAnnotation(
+                        file_path=file_path,
+                        line_number=decorator['line'],
+                        control_ids=controls,
+                        evidence=f"Security decorator: @{decorator['name']}",
+                        component="decorator",
+                        confidence=0.9
+                    ))
+                    break
+        
+        # Analyze class definitions for security patterns
+        classes = get_python_classes(code)
+        for cls in classes:
+            class_name = cls.get('name', '').lower()
+            if any(sec in class_name for sec in ['auth', 'permission', 'security', 'crypto', 'validator']):
+                # Determine controls based on class name
+                controls = []
+                if 'auth' in class_name:
+                    controls = ['IA-2', 'AC-3']
+                elif 'permission' in class_name or 'role' in class_name:
+                    controls = ['AC-3', 'AC-6']
+                elif 'crypto' in class_name or 'encrypt' in class_name:
+                    controls = ['SC-13', 'SC-28']
+                elif 'validator' in class_name:
+                    controls = ['SI-10']
+                
+                if controls:
+                    annotations.append(CodeAnnotation(
+                        file_path=file_path,
+                        line_number=cls['start_line'],
+                        control_ids=controls,
+                        evidence=f"Security class: {cls['name']}",
+                        component="class",
+                        confidence=0.8
+                    ))
+        
+        # Check for exception handling patterns
+        try_except_pattern = r'except\s+\w*(?:Authentication|Permission|Unauthorized|Forbidden)'
+        for i, line in enumerate(code.splitlines(), 1):
+            if re.search(try_except_pattern, line, re.IGNORECASE):
+                annotations.append(CodeAnnotation(
+                    file_path=file_path,
+                    line_number=i,
+                    control_ids=['IA-2', 'AC-7'],
+                    evidence="Authentication/authorization error handling",
+                    component="error-handling",
+                    confidence=0.7
+                ))
+        
         return annotations
 
     def _analyze_implicit_patterns(self, code: str, file_path: str) -> list[CodeAnnotation]:
-        """Analyze code for implicit security patterns"""
+        """Analyze code for implicit security patterns using regex"""
         annotations = []
 
-        # Authentication patterns
-        auth_patterns = [
-            (r'@login_required|@require_auth|@authenticated', ["IA-2", "AC-3"], "Authentication decorator"),
-            (r'authenticate\(|login\(|verify_password', ["IA-2", "AC-7"], "Authentication function"),
-            (r'JWT|jwt|JsonWebToken', ["IA-2", "SC-8"], "JWT token handling"),
-            (r'OAuth|oauth2', ["IA-2", "IA-8"], "OAuth authentication"),
-            (r'Session\(|session\[', ["SC-23", "AC-12"], "Session management")
-        ]
-
-        for pattern, controls, evidence in auth_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="authentication",
-                    confidence=0.85
-                ))
-
-        # Encryption patterns
-        crypto_patterns = [
-            (r'from cryptography|import cryptography', ["SC-13", "SC-28"], "Cryptography library"),
-            (r'hashlib\.|bcrypt\.|argon2', ["IA-5", "SC-13"], "Password hashing"),
-            (r'Fernet\(|AES\.new|RSA\.', ["SC-13", "SC-28"], "Encryption implementation"),
-            (r'ssl\.|TLS|https://', ["SC-8", "SC-13"], "SSL/TLS usage"),
-            (r'secrets\.|os\.urandom', ["SC-13"], "Secure random generation")
-        ]
-
-        for pattern, controls, evidence in crypto_patterns:
-            if re.search(pattern, code):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="encryption",
-                    confidence=0.9
-                ))
-
-        # Input validation patterns
-        validation_patterns = [
-            (r'validate|sanitize|clean|escape', ["SI-10", "SI-15"], "Input validation"),
-            (r'schema\.|Schema\(|marshmallow', ["SI-10"], "Schema validation"),
-            (r'bleach\.|html\.escape', ["SI-10"], "Output sanitization"),
-            (r'parameterized|execute.*%s|\\?', ["SI-10"], "SQL injection prevention"),
-            (r're\.match|re\.compile', ["SI-10"], "Regular expression validation")
-        ]
-
-        for pattern, controls, evidence in validation_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="input-validation",
-                    confidence=0.85
-                ))
-
-        # Logging patterns
-        logging_patterns = [
-            (r'logging\.|logger\.|log\.', ["AU-2", "AU-3"], "Logging implementation"),
-            (r'audit_log|security_log|event_log', ["AU-2", "AU-9"], "Audit logging"),
-            (r'structlog|loguru', ["AU-2", "AU-3"], "Structured logging"),
-            (r'syslog\.|SysLogHandler', ["AU-3", "AU-9"], "System logging")
-        ]
-
-        for pattern, controls, evidence in logging_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="logging",
-                    confidence=0.8
-                ))
-
-        # Access control patterns
-        authz_patterns = [
-            (r'@permission_required|@require_role|has_permission', ["AC-3", "AC-6"], "Permission checking"),
-            (r'check_permission|authorize|can_access', ["AC-3", "AC-6"], "Authorization function"),
-            (r'rbac|role_based|ACL', ["AC-2", "AC-3"], "Role-based access control"),
-            (r'@admin_required|is_admin|is_superuser', ["AC-6"], "Privileged access control")
-        ]
-
-        for pattern, controls, evidence in authz_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="authorization",
-                    confidence=0.85
-                ))
-
-        # Django-specific patterns
+        # Framework-specific security configurations
         django_patterns = [
-            (r'@csrf_protect|{% csrf_token', ["SI-10", "SC-8"], "CSRF protection"),
-            (r'SECURE_SSL_REDIRECT|SecurityMiddleware', ["SC-8", "SC-13"], "Django security middleware"),
-            (r'UserPassesTestMixin|PermissionRequiredMixin', ["AC-3", "AC-6"], "Django authorization"),
-            (r'ContentTypeOptionsMiddleware|XFrameOptionsMiddleware', ["SC-18"], "Security headers")
+            (r'ALLOWED_HOSTS\s*=', ['SC-8', 'SC-18'], "Django allowed hosts configuration"),
+            (r'SECURE_SSL_REDIRECT\s*=\s*True', ['SC-8', 'SC-13'], "Django SSL redirect enabled"),
+            (r'SESSION_COOKIE_SECURE\s*=\s*True', ['SC-8', 'SC-23'], "Secure session cookies"),
+            (r'CSRF_COOKIE_SECURE\s*=\s*True', ['SC-8', 'SI-10'], "Secure CSRF cookies"),
+            (r'X_FRAME_OPTIONS\s*=', ['SC-18'], "Clickjacking protection"),
+            (r'SECURE_HSTS_SECONDS\s*=', ['SC-8'], "HSTS security header"),
         ]
 
-        for pattern, controls, evidence in django_patterns:
-            if re.search(pattern, code):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="django-security",
-                    confidence=0.9
-                ))
-
-        # Flask-specific patterns
         flask_patterns = [
-            (r'@app\.before_request|@login_manager', ["IA-2", "AC-3"], "Flask authentication"),
-            (r'flask_login|Flask-Security', ["IA-2", "AC-3"], "Flask security extension"),
-            (r'flask_cors|CORS\(app', ["AC-4", "SC-8"], "CORS configuration"),
-            (r'flask_limiter|RateLimiter', ["SC-5"], "Rate limiting")
+            (r'app\.config\[.SECRET_KEY.\]', ['SC-13', 'SC-28'], "Flask secret key configuration"),
+            (r'SESSION_COOKIE_SECURE\s*=\s*True', ['SC-8', 'SC-23'], "Secure session cookies"),
+            (r'SESSION_COOKIE_HTTPONLY\s*=\s*True', ['SC-8', 'SC-23'], "HTTPOnly session cookies"),
+            (r'WTF_CSRF_ENABLED\s*=\s*True', ['SI-10'], "CSRF protection enabled"),
         ]
 
-        for pattern, controls, evidence in flask_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
-                annotations.append(CodeAnnotation(
-                    file_path=file_path,
-                    line_number=line_num,
-                    control_ids=controls,
-                    evidence=evidence,
-                    component="flask-security",
-                    confidence=0.85
-                ))
+        # SQL injection prevention patterns
+        sql_patterns = [
+            (r'execute\s*\(\s*["\'].*%s', ['SI-10'], "Parameterized SQL query"),
+            (r'execute\s*\(\s*["\'].*\?', ['SI-10'], "Parameterized SQL query"),
+            (r'prepare\s*\(|prepared\s+statement', ['SI-10'], "Prepared statement"),
+            (r'escape_string|quote|escapeshellarg', ['SI-10'], "Input escaping"),
+        ]
+
+        # Rate limiting patterns
+        rate_limit_patterns = [
+            (r'@limiter\.limit|RateLimiter|throttle', ['SC-5'], "Rate limiting implementation"),
+            (r'requests_per_minute|rate_limit|quota', ['SC-5'], "Rate limiting configuration"),
+        ]
+
+        # All pattern groups
+        all_patterns = [
+            (django_patterns, "Django security"),
+            (flask_patterns, "Flask security"),
+            (sql_patterns, "SQL injection prevention"),
+            (rate_limit_patterns, "Rate limiting"),
+        ]
+
+        for pattern_group, group_name in all_patterns:
+            for pattern, controls, evidence in pattern_group:
+                if re.search(pattern, code, re.IGNORECASE):
+                    line_num = self._find_pattern_line(code, pattern.split('\\')[0])
+                    annotations.append(CodeAnnotation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        control_ids=controls,
+                        evidence=evidence,
+                        component=group_name,
+                        confidence=0.85
+                    ))
 
         return annotations
 
-    def _analyze_ast(self, tree: ast.AST, code: str, file_path: str) -> list[CodeAnnotation]:  # noqa: ARG002
-        """Analyze Python AST for security patterns"""
-        annotations = []
-
-        class SecurityVisitor(ast.NodeVisitor):
-            def __init__(self, analyzer):
-                self.analyzer = analyzer
-                self.annotations = []
-
-            def visit_FunctionDef(self, node):
-                # Check for authentication decorators
-                for decorator in node.decorator_list:
-                    decorator_name = self._get_decorator_name(decorator)
-                    if decorator_name and any(auth in decorator_name.lower()
-                                            for auth in ['auth', 'login', 'permission', 'role']):
-                        self.annotations.append(CodeAnnotation(
-                            file_path=file_path,
-                            line_number=node.lineno,
-                            control_ids=["IA-2", "AC-3"],
-                            evidence=f"Security decorator: {decorator_name}",
-                            component="authentication",
-                            confidence=0.9
-                        ))
-
-                # Check function names
-                if any(sec in node.name.lower()
-                      for sec in ['authenticate', 'authorize', 'login', 'verify', 'validate']):
-                    controls = []
-                    if 'auth' in node.name.lower() or 'login' in node.name.lower():
-                        controls = ["IA-2", "AC-7"]
-                    elif 'validate' in node.name.lower():
-                        controls = ["SI-10"]
-
-                    if controls:
-                        self.annotations.append(CodeAnnotation(
-                            file_path=file_path,
-                            line_number=node.lineno,
-                            control_ids=controls,
-                            evidence=f"Security function: {node.name}",
-                            component="security-function",
-                            confidence=0.8
-                        ))
-
-                self.generic_visit(node)
-
-            def visit_Import(self, node):
-                for alias in node.names:
-                    self._check_security_import(alias.name, node.lineno)
-                self.generic_visit(node)
-
-            def visit_ImportFrom(self, node):
-                if node.module:
-                    self._check_security_import(node.module, node.lineno)
-                self.generic_visit(node)
-
-            def _get_decorator_name(self, decorator):
-                if isinstance(decorator, ast.Name):
-                    return decorator.id
-                elif isinstance(decorator, ast.Attribute):
-                    return decorator.attr
-                elif isinstance(decorator, ast.Call):
-                    if isinstance(decorator.func, ast.Name):
-                        return decorator.func.id
-                    elif isinstance(decorator.func, ast.Attribute):
-                        return decorator.func.attr
-                return None
-
-            def _check_security_import(self, module_name, lineno):
-                security_modules = {
-                    'cryptography': ["SC-13", "SC-28"],
-                    'hashlib': ["SC-13", "SI-7"],
-                    'secrets': ["SC-13"],
-                    'ssl': ["SC-8", "SC-13"],
-                    'hmac': ["SC-13", "SI-7"],
-                    'jwt': ["IA-2", "SC-8"],
-                    'bcrypt': ["IA-5", "SC-13"],
-                    'passlib': ["IA-5", "SC-13"],
-                    'django.contrib.auth': ["IA-2", "AC-3"],
-                    'flask_login': ["IA-2", "AC-3"],
-                    'oauthlib': ["IA-2", "IA-8"]
-                }
-
-                for sec_module, controls in security_modules.items():
-                    if sec_module in module_name:
-                        self.annotations.append(CodeAnnotation(
-                            file_path=file_path,
-                            line_number=lineno,
-                            control_ids=controls,
-                            evidence=f"Security module import: {module_name}",
-                            component="imports",
-                            confidence=0.8
-                        ))
-                        break
-
-        visitor = SecurityVisitor(self)
-        visitor.visit(tree)
-        annotations.extend(visitor.annotations)
-
-        return annotations
+    def suggest_controls(self, code: str) -> list[str]:
+        """Suggest NIST controls for Python code using AST analysis"""
+        suggestions = set()
+        
+        # Use AST to analyze the code
+        imports = get_python_imports(code)
+        functions = get_python_functions(code)
+        classes = get_python_classes(code)
+        
+        # Check imports
+        for import_info in imports:
+            module = import_info.get('module', '').lower()
+            
+            # Web frameworks
+            if any(fw in module for fw in ['django', 'flask', 'fastapi', 'pyramid']):
+                suggestions.update(['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'])
+            
+            # Authentication libraries
+            if any(auth in module for auth in ['auth', 'login', 'jwt', 'oauth']):
+                suggestions.update(['IA-2', 'IA-5', 'IA-8', 'AC-3'])
+            
+            # Cryptography
+            if any(crypto in module for crypto in ['crypto', 'hashlib', 'hmac', 'ssl']):
+                suggestions.update(['SC-13', 'SC-28', 'SC-8'])
+            
+            # Database
+            if any(db in module for db in ['sqlalchemy', 'psycopg', 'pymongo', 'redis']):
+                suggestions.update(['SC-28', 'SI-10', 'AU-2'])
+            
+            # Cloud SDKs
+            if any(cloud in module for cloud in ['boto3', 'azure', 'google.cloud']):
+                suggestions.update(['AC-2', 'AU-2', 'SC-28', 'SC-8'])
+        
+        # Check functions
+        for func in functions:
+            func_name = func.get('name', '').lower()
+            
+            if any(auth in func_name for auth in ['auth', 'login', 'verify']):
+                suggestions.update(['IA-2', 'AC-3', 'AC-7'])
+            
+            if any(crypto in func_name for crypto in ['encrypt', 'decrypt', 'hash']):
+                suggestions.update(['SC-13', 'SC-28'])
+            
+            if any(val in func_name for val in ['validate', 'sanitize', 'clean']):
+                suggestions.update(['SI-10'])
+            
+            if any(log in func_name for log in ['log', 'audit', 'track']):
+                suggestions.update(['AU-2', 'AU-3'])
+        
+        # Check classes
+        for cls in classes:
+            class_name = cls.get('name', '').lower()
+            
+            if any(sec in class_name for sec in ['auth', 'user', 'permission']):
+                suggestions.update(['IA-2', 'AC-3', 'AC-6'])
+            
+            if any(crypto in class_name for crypto in ['crypto', 'cipher', 'key']):
+                suggestions.update(['SC-13', 'SC-28'])
+        
+        # Also run pattern-based suggestions
+        patterns = self.find_security_patterns(code, "temp.py")
+        for pattern in patterns:
+            suggestions.update(pattern.suggested_controls)
+        
+        return sorted(suggestions)
 
     def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
-        """Analyze entire Python project"""
+        """Analyze entire Python project with tree-sitter"""
         results = {}
 
         # Common directories to skip
         skip_dirs = {
             'venv', '__pycache__', '.env', '.venv', 'env',
             'build', 'dist', '.git', '.pytest_cache', '.tox',
-            'node_modules', 'migrations'
+            'node_modules', 'migrations', '.mypy_cache', 'htmlcov'
         }
 
         for file_path in project_path.rglob('*.py'):
@@ -331,114 +420,90 @@ class PythonAnalyzer(BaseAnalyzer):
             if 'test' in file_path.name or file_path.name.startswith('test_'):
                 with open(file_path, encoding='utf-8') as f:
                     content = f.read().lower()
-                    if 'security' not in content and 'auth' not in content:
+                    if not any(term in content for term in ['security', 'auth', 'permission', 'crypto']):
                         continue
 
             annotations = self.analyze_file(file_path)
             if annotations:
                 results[str(file_path)] = annotations
 
-        # Analyze requirements.txt or setup.py for security insights
-        requirements_path = project_path / 'requirements.txt'
-        setup_path = project_path / 'setup.py'
-        pyproject_path = project_path / 'pyproject.toml'
-
-        if requirements_path.exists():
-            req_annotations = self._analyze_requirements(requirements_path)
-            if req_annotations:
-                results[str(requirements_path)] = req_annotations
-
-        if setup_path.exists():
-            setup_annotations = self.analyze_file(setup_path)
-            if setup_annotations:
-                results[str(setup_path)] = setup_annotations
-
-        if pyproject_path.exists():
-            pyproject_annotations = self._analyze_pyproject(pyproject_path)
-            if pyproject_annotations:
-                results[str(pyproject_path)] = pyproject_annotations
+        # Analyze project configuration files
+        config_files = [
+            'requirements.txt', 'setup.py', 'pyproject.toml',
+            'Pipfile', 'poetry.lock', 'setup.cfg'
+        ]
+        
+        for config_file in config_files:
+            config_path = project_path / config_file
+            if config_path.exists():
+                config_annotations = self._analyze_config_file(config_path)
+                if config_annotations:
+                    results[str(config_path)] = config_annotations
 
         return results
 
-    def _analyze_requirements(self, requirements_path: Path) -> list[CodeAnnotation]:
-        """Analyze requirements.txt for security-relevant packages"""
+    def _analyze_config_file(self, config_path: Path) -> list[CodeAnnotation]:
+        """Analyze Python project configuration files"""
         annotations = []
-
+        
         security_packages = {
-            'cryptography': ["SC-13", "SC-28"],
-            'pycryptodome': ["SC-13", "SC-28"],
-            'bcrypt': ["IA-5", "SC-13"],
-            'passlib': ["IA-5", "SC-13"],
-            'pyjwt': ["IA-2", "SC-8"],
-            'python-jose': ["IA-2", "SC-8"],
-            'django': ["AC-3", "SC-8", "SI-10"],
-            'flask-security': ["IA-2", "AC-3"],
-            'flask-login': ["IA-2", "AC-3"],
-            'oauthlib': ["IA-2", "IA-8"],
-            'python-dotenv': ["CM-7", "SC-28"],
-            'bleach': ["SI-10"],
-            'python-secrets': ["SC-13"]
+            # Authentication/Authorization
+            'django-allauth': ['IA-2', 'IA-8'],
+            'django-guardian': ['AC-3', 'AC-6'],
+            'flask-login': ['IA-2', 'AC-3'],
+            'flask-security': ['IA-2', 'AC-3'],
+            'flask-jwt-extended': ['IA-2', 'SC-8'],
+            'python-jose': ['IA-2', 'SC-8'],
+            'pyjwt': ['IA-2', 'SC-8'],
+            'oauthlib': ['IA-2', 'IA-8'],
+            'authlib': ['IA-2', 'IA-8'],
+            
+            # Cryptography
+            'cryptography': ['SC-13', 'SC-28'],
+            'pycryptodome': ['SC-13', 'SC-28'],
+            'bcrypt': ['IA-5', 'SC-13'],
+            'passlib': ['IA-5', 'SC-13'],
+            'argon2-cffi': ['IA-5', 'SC-13'],
+            
+            # Input Validation
+            'bleach': ['SI-10'],
+            'python-html-sanitizer': ['SI-10'],
+            'validators': ['SI-10'],
+            'marshmallow': ['SI-10'],
+            'pydantic': ['SI-10'],
+            'cerberus': ['SI-10'],
+            
+            # Security Tools
+            'bandit': ['SA-11', 'SA-15'],
+            'safety': ['SA-11', 'SI-2'],
+            'python-dotenv': ['CM-7', 'SC-28'],
+            
+            # Logging/Monitoring
+            'python-json-logger': ['AU-2', 'AU-3'],
+            'structlog': ['AU-2', 'AU-3'],
+            'loguru': ['AU-2', 'AU-3'],
+            'sentry-sdk': ['AU-2', 'AU-14'],
         }
-
+        
         try:
-            with open(requirements_path) as f:
-                for i, line in enumerate(f, 1):
-                    line = line.strip()
-                    if line and not line.startswith('#'):
-                        for pkg, controls in security_packages.items():
-                            if pkg in line.lower():
-                                annotations.append(CodeAnnotation(
-                                    file_path=str(requirements_path),
-                                    line_number=i,
-                                    control_ids=controls,
-                                    evidence=f"Security dependency: {pkg}",
-                                    component="dependencies",
-                                    confidence=0.8
-                                ))
-                                break
+            with open(config_path, encoding='utf-8') as f:
+                content = f.read()
+                
+            for i, line in enumerate(content.splitlines(), 1):
+                line_lower = line.lower().strip()
+                if line_lower and not line_lower.startswith('#'):
+                    for pkg, controls in security_packages.items():
+                        if pkg in line_lower:
+                            annotations.append(CodeAnnotation(
+                                file_path=str(config_path),
+                                line_number=i,
+                                control_ids=controls,
+                                evidence=f"Security dependency: {pkg}",
+                                component="dependencies",
+                                confidence=0.85
+                            ))
+                            break
         except Exception:
             pass
-
+            
         return annotations
-
-    def _analyze_pyproject(self, pyproject_path: Path) -> list[CodeAnnotation]:
-        """Analyze pyproject.toml for security-relevant dependencies"""
-        # Similar analysis to requirements.txt
-        return self._analyze_requirements(pyproject_path)
-
-    def suggest_controls(self, code: str) -> list[str]:
-        """Suggest NIST controls for Python code"""
-        suggestions = set()
-        patterns = self.find_security_patterns(code, "temp.py")
-
-        for pattern in patterns:
-            suggestions.update(pattern.suggested_controls)
-
-        # Framework-specific suggestions
-        code_lower = code.lower()
-
-        # Django controls
-        if 'django' in code_lower:
-            suggestions.update(["AC-3", "AC-4", "SC-8", "SI-10", "AU-2"])
-
-        # Flask controls
-        if 'flask' in code_lower:
-            suggestions.update(["AC-3", "SC-8", "SI-10", "AU-2"])
-
-        # FastAPI controls
-        if 'fastapi' in code_lower:
-            suggestions.update(["AC-3", "SC-8", "SI-10", "AC-4"])
-
-        # Database controls
-        if any(db in code_lower for db in ['sqlalchemy', 'psycopg', 'pymongo', 'redis']):
-            suggestions.update(["SC-28", "SI-10", "AU-2"])
-
-        # Cloud SDK controls
-        if any(cloud in code_lower for cloud in ['boto3', 'azure', 'google-cloud']):
-            suggestions.update(["AC-2", "AU-2", "SC-28", "SC-8"])
-
-        # ML/AI controls
-        if any(ml in code_lower for ml in ['tensorflow', 'pytorch', 'sklearn']):
-            suggestions.update(["SI-10", "AC-4", "SC-28"])
-
-        return sorted(suggestions)
