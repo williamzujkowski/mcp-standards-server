@@ -1,0 +1,339 @@
+name: Docs/Standards/Compliance Standards
+category: general
+filename: docs/standards/COMPLIANCE_STANDARDS.md
+nist_controls:
+- AC-2
+sections:
+  Compliance Standards: '**Version:** 1.0.0
+
+    **Last Updated:** 2025-01-18
+
+    **Status:** Active
+
+    **Standard Code:** COMPLIANCE
+
+
+    ---'
+  Overview: This standard provides comprehensive guidelines for implementing NIST
+    800-53r5 compliance through code annotations and automated tracking throughout
+    the development lifecycle.
+  Purpose: This document establishes standards for integrating NIST 800-53r5 security
+    controls into our development workflow through automated tagging, continuous compliance
+    monitoring, and evidence collection.
+  Table of Contents: '1. [NIST Control Tagging](#nist-control-tagging)
+
+    2. [Annotation Formats](#annotation-formats)
+
+    3. [Evidence Collection](#evidence-collection)
+
+    4. [Compliance Workflow](#compliance-workflow)
+
+    5. [LLM Integration](#llm-integration)
+
+    6. [Common Control Mappings](#common-control-mappings)
+
+    7. [Validation Rules](#validation-rules)
+
+    8. [Best Practices](#best-practices)
+
+
+    ---'
+  NIST Control Tagging: "### When to Tag\n\nTag code, configuration, and documentation\
+    \ when implementing:\n\n1. **Security Functions**\n   - Authentication mechanisms\
+    \ \u2192 `ia-2`, `ia-5`\n   - Authorization logic \u2192 `ac-2`, `ac-3`, `ac-6`\n\
+    \   - Session management \u2192 `ac-12`\n   - Password policies \u2192 `ia-5.1`\n\
+    \n2. **Data Protection**\n   - Encryption at rest \u2192 `sc-28`\n   - Encryption\
+    \ in transit \u2192 `sc-8`, `sc-13`\n   - Data sanitization \u2192 `mp-6`\n  \
+    \ - Secure storage \u2192 `sc-28.1`\n\n3. **Audit & Logging**\n   - Security event\
+    \ logging \u2192 `au-2`, `au-3`\n   - Log retention \u2192 `au-11`\n   - Log protection\
+    \ \u2192 `au-9`\n   - Audit trails \u2192 `au-12`\n\n4. **Error Handling**\n \
+    \  - Error messages \u2192 `si-11`\n   - Exception handling \u2192 `si-11.a`\n\
+    \   - Information leakage prevention \u2192 `sc-30`\n\n5. **Configuration Security**\n\
+    \   - Secure defaults \u2192 `cm-6`, `cm-7`\n   - Hardening \u2192 `cm-6.1`\n\
+    \   - Least functionality \u2192 `cm-7`\n\n### Tagging Hierarchy\n\n```\nOrganization\
+    \ Level\n\u2514\u2500\u2500 Repository Level (@nist-baseline: moderate)\n    \u2514\
+    \u2500\u2500 File Level (@nist-context: authentication)\n        \u2514\u2500\u2500\
+    \ Function Level (@nist ac-2 \"User management\")\n            \u2514\u2500\u2500\
+    \ Line Level (// @nist-implements ac-2.a)\n```\n\n---"
+  Annotation Formats: "### Code Annotations\n\n#### TypeScript/JavaScript\n```typescript\n\
+    /**\n * @nist ac-2 Account Management\n * @nist ac-2.1 Automated System Account\
+    \ Management\n * @satisfies AC-2(a): Account type identification\n * @satisfies\
+    \ AC-2(d): Role specification\n * @evidence code, test, doc\n * @confidence 0.95\n\
+    \ */\nexport class AccountManager {\n  /**\n   * @nist-implements ac-2.a \"Account\
+    \ type selection\"\n   * @nist-implements ac-2.j \"Account review\"\n   */\n \
+    \ async createAccount(userData: UserData): Promise<Account> {\n    // @nist ac-2.a.1\
+    \ \"Identify account type\"\n    const accountType = this.identifyAccountType(userData);\n\
+    \n    // @nist ia-5.1 \"Password complexity validation\"\n    await this.validatePassword(userData.password);\n\
+    \n    // @nist au-2 \"Audit account creation\"\n    await this.audit.log('account.created',\
+    \ { userId: userData.id });\n\n    return account;\n  }\n}\n```\n\n#### Python\n\
+    ```python\nclass AuthenticationService:\n    \"\"\"\n    @nist ia-2 Identification\
+    \ and Authentication\n    @nist ia-2.1 MFA for Privileged Accounts\n    @evidence\
+    \ code, config\n    \"\"\"\n\n    def authenticate(self, credentials: Credentials)\
+    \ -> AuthResult:\n        \"\"\"\n        @nist-implements ia-2 \"User authentication\"\
+    \n        @nist-implements ia-8 \"System user identification\"\n        \"\"\"\
+    \n        # @nist ia-5 \"Authenticator management\"\n        if not self.validate_credentials(credentials):\n\
+    \            # @nist au-2 \"Failed authentication audit\"\n            self.audit_log.record_failure(credentials.username)\n\
+    \            raise AuthenticationError()\n```\n\n#### Go\n```go\n// AccountService\
+    \ manages user accounts\n// @nist ac-2 Account Management\n// @nist ac-3 Access\
+    \ Enforcement\ntype AccountService struct {\n    // Implementation\n}\n\n// CreateUser\
+    \ creates a new user account\n// @nist-implements ac-2.a \"Account creation\"\n\
+    // @nist-implements ia-5.1 \"Initial authenticator\"\nfunc (s *AccountService)\
+    \ CreateUser(data UserData) (*User, error) {\n    // @nist ac-2.d \"Specify authorized\
+    \ users\"\n    if err := s.validateUserData(data); err != nil {\n        return\
+    \ nil, err\n    }\n}\n```\n\n### Configuration Annotations\n\n#### YAML\n```yaml"
+  security-config.yaml: ''
+  '@nist-baseline: moderate': ''
+  '@nist-controls:': ''
+  '- sc-8: Transmission Confidentiality': ''
+  '- sc-13: Cryptographic Protection': ''
+  '- sc-23: Session Authenticity': ''
+  '- ac-12: Session Termination': "security:\n  tls:\n    # @nist sc-8 \"TLS configuration\"\
+    \n    # @nist sc-13.a \"FIPS-validated cryptography\"\n    version: \"1.3\"\n\
+    \    cipher_suites:\n      - TLS_AES_256_GCM_SHA384       # @nist sc-13 \"NIST-approved\"\
+    \n      - TLS_CHACHA20_POLY1305_SHA256  # @nist sc-13 \"NIST-approved\"\n\n  session:\n\
+    \    # @nist ac-12 \"Session termination\"\n    timeout_minutes: 30  # @nist ac-12.1.a\
+    \ \"Inactivity timeout\"\n    max_duration_hours: 12  # @nist ac-12.1.b \"Maximum\
+    \ session length\"\n```\n\n#### JSON\n```json\n{\n  \"_nist_controls\": [\"au-2\"\
+    , \"au-3\", \"au-11\"],\n  \"_nist_baseline\": \"moderate\",\n\n  \"logging\"\
+    : {\n    \"_nist\": \"au-2\",\n    \"level\": \"info\",\n    \"audit_events\"\
+    : {\n      \"_nist\": \"au-2.d\",\n      \"authentication\": true,\n      \"authorization\"\
+    : true,\n      \"data_access\": true,\n      \"configuration_changes\": true\n\
+    \    },\n    \"retention\": {\n      \"_nist\": \"au-11\",\n      \"days\": 90,\n\
+    \      \"archive\": true\n    }\n  }\n}\n```\n\n### Documentation Annotations\n\
+    \n#### Markdown with Frontmatter\n```markdown\n---\nnist_controls:\n  - control_id:\
+    \ ac-1\n    title: Access Control Policy and Procedures\n    implementation: documented\n\
+    \    evidence_type: policy\n    sections: [\"2\", \"3.1\", \"4\"]\n  - control_id:\
+    \ pl-2\n    title: System Security Plan\n    implementation: documented\n    evidence_type:\
+    \ plan\n---"
+  Security Architecture <!-- @nist ac-1, pl-2 -->: ''
+  Access Control Policy <!-- @nist ac-1 -->: 'This section defines... <!-- @nist-implements
+    ac-1.a.1 -->
+
+    ```
+
+
+    #### Inline Documentation Tags
+
+    ```markdown'
+  Authentication Design <!-- @nist ia-2, ia-5 -->: 'The system implements multi-factor
+    authentication <!-- @nist ia-2.1 --> using:
+
+
+    1. Something you know (password) <!-- @nist ia-5.1 -->
+
+    2. Something you have (TOTP) <!-- @nist ia-2.1 -->
+
+    3. Something you are (biometric) <!-- @nist ia-2.2 -->
+
+    ```
+
+
+    ---'
+  Evidence Collection: "### Automatic Evidence Types\n\n1. **Code Evidence**\n   -\
+    \ Function/class with @nist tags\n   - Implementation patterns\n   - Security\
+    \ controls in code\n\n2. **Test Evidence**\n   - Tests for tagged functions\n\
+    \   - Security test suites\n   - Compliance test results\n\n3. **Configuration\
+    \ Evidence**\n   - Security settings\n   - Hardening configurations\n   - Policy\
+    \ definitions\n\n4. **Documentation Evidence**\n   - Architecture documents\n\
+    \   - Security procedures\n   - API documentation\n\n### Evidence Metadata\n\n\
+    ```typescript\ninterface Evidence {\n  control_id: string;\n  evidence_type: 'code'\
+    \ | 'test' | 'config' | 'doc';\n  location: string;\n  description: string;\n\
+    \  confidence: number; // 0.0-1.0\n  last_validated: Date;\n  validation_method:\
+    \ 'automated' | 'manual' | 'hybrid';\n  artifacts: Array<{\n    type: string;\n\
+    \    path: string;\n    hash: string;\n  }>;\n}\n```\n\n---"
+  Compliance Workflow: "### Development Phase\n\n```mermaid\ngraph LR\n    A[Write\
+    \ Code] --> B{Security Feature?}\n    B -->|Yes| C[Add NIST Tags]\n    B -->|No|\
+    \ D[Continue]\n    C --> E[IDE Suggests Controls]\n    E --> F[Validate Tags]\n\
+    \    F --> D\n```\n\n### CI/CD Pipeline\n\n```yaml"
+  .github/workflows/compliance.yml: "name: Continuous Compliance\n\non: [push, pull_request]\n\
+    \njobs:\n  compliance-check:\n    steps:\n      - name: Validate NIST Tags\n \
+    \       run: nist-validator check\n\n      - name: Coverage Report\n        run:\
+    \ nist-validator coverage --min 80\n\n      - name: Evidence Collection\n    \
+    \    run: nist-validator collect-evidence\n\n      - name: Update SSP\n      \
+    \  if: github.ref == 'refs/heads/main'\n        run: nist-validator generate-ssp\n\
+    ```\n\n### Pre-Commit Hooks\n\n```bash\n#!/bin/bash"
+  .git/hooks/pre-commit: ''
+  Check for untagged security code: "security_files=$(git diff --cached --name-only\
+    \ | grep -E '\\.(ts|js|py|go)$')\n\nfor file in $security_files; do\n  if grep\
+    \ -E '(auth|encrypt|password|session|audit|log)' \"$file\" > /dev/null; then\n\
+    \    if ! grep -E '@nist\\s+[a-z]{2}-[0-9]' \"$file\" > /dev/null; then\n    \
+    \  echo \"\u26A0\uFE0F  Security code in $file may need NIST tags\"\n      echo\
+    \ \"Suggested controls based on content:\"\n      nist-suggest \"$file\"\n   \
+    \ fi\n  fi\ndone\n```\n\n---"
+  LLM Integration: "### Context for LLMs\n\nWhen working with code that needs NIST\
+    \ tags, provide this context:\n\n```markdown\nYou are helping tag code with NIST\
+    \ 800-53r5 controls.\n\nProject context:\n- Security baseline: moderate\n- System\
+    \ type: web application\n- Data classification: CUI\n\nWhen you see security-related\
+    \ code, suggest appropriate NIST controls:\n- Authentication \u2192 ia-2, ia-5\n\
+    - Authorization \u2192 ac-2, ac-3\n- Encryption \u2192 sc-8, sc-13\n- Logging\
+    \ \u2192 au-2, au-3\n\nFormat: @nist <control-id> \"<brief description>\"\n```\n\
+    \n### LLM Prompts for Control Suggestions\n\n```typescript\nconst CONTROL_SUGGESTION_PROMPT\
+    \ = `\nAnalyze this code and suggest NIST 800-53r5 controls:\n\n\\`\\`\\`${language}\n\
+    ${code}\n\\`\\`\\`\n\nConsider:\n1. Security functionality implemented\n2. Data\
+    \ protection measures\n3. Access control mechanisms\n4. Audit capabilities\n\n\
+    Return JSON:\n{\n  \"controls\": [\n    {\n      \"id\": \"control-id\",\n   \
+    \   \"rationale\": \"why this applies\",\n      \"confidence\": 0.0-1.0,\n   \
+    \   \"implementation_points\": [\"specific lines or functions\"]\n    }\n  ]\n\
+    }\n`;\n```\n\n---"
+  Common Control Mappings: '### Authentication & Identity
+
+
+    | Implementation | NIST Controls | Example |
+
+    |----------------|---------------|---------|
+
+    | User login | `ia-2`, `ia-8` | `@nist ia-2 "User authentication"` |
+
+    | Password validation | `ia-5.1` | `@nist ia-5.1 "Password complexity"` |
+
+    | MFA/2FA | `ia-2.1`, `ia-2.2` | `@nist ia-2.1 "Multi-factor auth"` |
+
+    | Session management | `ac-12` | `@nist ac-12 "Session termination"` |
+
+    | Account lockout | `ac-7` | `@nist ac-7 "Unsuccessful attempts"` |
+
+
+    ### Access Control
+
+
+    | Implementation | NIST Controls | Example |
+
+    |----------------|---------------|---------|
+
+    | RBAC | `ac-2`, `ac-3` | `@nist ac-3 "Role-based access"` |
+
+    | User provisioning | `ac-2.a` | `@nist ac-2.a "Account management"` |
+
+    | Least privilege | `ac-6` | `@nist ac-6 "Least privilege"` |
+
+    | Separation of duties | `ac-5` | `@nist ac-5 "Duty separation"` |
+
+
+    ### Data Protection
+
+
+    | Implementation | NIST Controls | Example |
+
+    |----------------|---------------|---------|
+
+    | TLS/HTTPS | `sc-8`, `sc-23` | `@nist sc-8 "Transmission protection"` |
+
+    | Encryption at rest | `sc-28` | `@nist sc-28 "Data at rest encryption"` |
+
+    | Cryptographic functions | `sc-13` | `@nist sc-13 "Crypto protection"` |
+
+    | Key management | `sc-12` | `@nist sc-12 "Key establishment"` |
+
+
+    ### Audit & Logging
+
+
+    | Implementation | NIST Controls | Example |
+
+    |----------------|---------------|---------|
+
+    | Security event logging | `au-2` | `@nist au-2 "Audit events"` |
+
+    | Log content | `au-3` | `@nist au-3 "Audit record content"` |
+
+    | Log retention | `au-11` | `@nist au-11 "Retention policy"` |
+
+    | Log protection | `au-9` | `@nist au-9 "Audit information protection"` |
+
+
+    ---'
+  Validation Rules: "### Required Elements\n\n1. **Control ID Format**: `[a-z]{2}-[0-9]+(\\\
+    .[0-9]+)?`\n   - Valid: `ac-2`, `ia-5.1`\n   - Invalid: `AC2`, `ac_2`, `2`\n\n\
+    2. **Required Attributes**:\n   - Control ID\n   - Brief description (for inline\
+    \ tags)\n   - Evidence type (for class/function level)\n\n3. **Consistency Rules**:\n\
+    \   - Child controls must have parent tagged\n   - Related controls should be\
+    \ tagged together\n   - Evidence must exist for claimed implementations\n\n###\
+    \ Validation Commands\n\n```bash"
+  Validate all tags in repository: nist-validator validate --all
+  Check specific file: nist-validator check src/auth/login.ts
+  Suggest missing tags: nist-validator suggest --security-only
+  Generate compliance report: 'nist-validator report --format html
+
+    ```
+
+
+    ---'
+  Best Practices: "### DO \u2705\n\n1. **Tag at the Right Level**\n   - Class/module\
+    \ level for general controls\n   - Function level for specific implementations\n\
+    \   - Line level for critical security operations\n\n2. **Be Specific**\n   -\
+    \ Use control enhancements (e.g., `ac-2.1`) when applicable\n   - Include satisfies\
+    \ statements for clarity\n   - Document confidence levels\n\n3. **Keep Tags Updated**\n\
+    \   - Update tags when refactoring\n   - Remove tags when deleting features\n\
+    \   - Review tags during code reviews\n\n4. **Use Automation**\n   - Let IDE suggest\
+    \ controls\n   - Use pre-commit hooks\n   - Enable CI/CD validation\n\n### DON'T\
+    \ \u274C\n\n1. **Over-Tag**\n   - Don't tag every line\n   - Avoid redundant tags\n\
+    \   - Skip obvious utility functions\n\n2. **Mis-Tag**\n   - Don't guess control\
+    \ numbers\n   - Avoid tagging unrelated code\n   - Don't use wrong evidence types\n\
+    \n3. **Under-Document**\n   - Always include descriptions\n   - Document non-obvious\
+    \ mappings\n   - Explain implementation choices\n\n### Code Review Checklist\n\
+    \n- [ ] Security features have NIST tags\n- [ ] Control IDs are valid\n- [ ] Evidence\
+    \ types are specified\n- [ ] Implementations match control requirements\n- [ ]\
+    \ Related controls are tagged together\n- [ ] Confidence levels are realistic\n\
+    - [ ] Documentation is updated\n\n---"
+  Quick Reference Card: "```\nCommon Tags:\n@nist ia-2      \u2192 Authentication\n\
+    @nist ac-3      \u2192 Authorization\n@nist sc-13     \u2192 Encryption\n@nist\
+    \ au-2      \u2192 Audit logging\n@nist ac-12     \u2192 Session timeout\n@nist\
+    \ ia-5.1    \u2192 Password policy\n@nist si-11     \u2192 Error handling\n@nist\
+    \ cm-6      \u2192 Configuration\n\nFormat:\n@nist <id> \"<description>\"\n@nist-implements\
+    \ <id> \"<what>\"\n@satisfies <ID>: <requirement>\n@evidence <type>, <type>\n\
+    @confidence <0.0-1.0>\n```\n\n---"
+  Implementation: '### Getting Started
+
+
+    1. Review this standard and identify applicable controls for your project
+
+    2. Install the NIST compliance tools: `./scripts/setup-nist-hooks.sh`
+
+    3. Start tagging security-related code with `@nist` annotations
+
+    4. Use the VS Code extension for real-time suggestions
+
+    5. Run validation with `./scripts/nist-pre-commit.sh`
+
+
+    ### Implementation Checklist
+
+
+    - [ ] Install git hooks for NIST validation
+
+    - [ ] Review and tag authentication code
+
+    - [ ] Review and tag authorization code
+
+    - [ ] Review and tag encryption implementations
+
+    - [ ] Review and tag logging/auditing code
+
+    - [ ] Configure CI/CD for continuous compliance
+
+    - [ ] Generate initial SSP documentation
+
+    - [ ] Set up evidence collection
+
+    - [ ] Train team on tagging standards
+
+
+    ---'
+  Related Standards: '- [MODERN_SECURITY_STANDARDS.md](MODERN_SECURITY_STANDARDS.md)
+    - Security implementation standards
+
+    - [CODING_STANDARDS.md](CODING_STANDARDS.md) - General coding standards
+
+    - [TESTING_STANDARDS.md](TESTING_STANDARDS.md) - Security testing requirements
+
+    - [CLAUDE.md](./docs/core/CLAUDE.md) - LLM context for compliance
+
+    - [UNIFIED_STANDARDS.md](UNIFIED_STANDARDS.md) - Comprehensive standards overview
+
+    - [NIST_IMPLEMENTATION_GUIDE.md](./docs/nist/NIST_IMPLEMENTATION_GUIDE.md) - Quick
+    start guide for NIST compliance'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:54.675474'
+  source: williamzujkowski/standards/docs/standards/COMPLIANCE_STANDARDS.md
+  checksum: e68afd90c8b17acd4dc7c23b212a712a37bfa5598b74217e0cf17fc3ccb2fb2b

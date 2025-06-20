@@ -5,7 +5,9 @@ MCP Standards Server - Main entry point
 @evidence: Secure MCP server implementation using official SDK
 """
 import asyncio
+import json
 import logging
+import yaml
 from pathlib import Path
 from typing import Any
 
@@ -423,7 +425,36 @@ async def list_resources() -> list[dict[str, Any]]:
     @nist-controls: AC-4
     @evidence: Controlled resource exposure
     """
-    return [
+    resources = []
+    
+    # Load dynamic resources from standards
+    standards_path = Path(__file__).parent.parent / "data" / "standards"
+    index_file = standards_path / "standards_index.json"
+    
+    if index_file.exists():
+        with open(index_file) as f:
+            index = json.load(f)
+        
+        # Add category resources
+        for category in index["categories"]:
+            resources.append({
+                "uri": f"standards://category/{category}",
+                "name": f"{category.title()} Standards",
+                "description": f"All standards in the {category} category",
+                "mimeType": "application/json"
+            })
+        
+        # Add individual standard resources (limit to most important)
+        for std_id, std_info in list(index["standards"].items())[:10]:
+            resources.append({
+                "uri": f"standards://document/{std_id}",
+                "name": std_info["name"],
+                "description": f"{std_info['category']} standard",
+                "mimeType": "application/json"
+            })
+    
+    # Add static resources
+    resources.extend([
         {
             "uri": "standards://catalog",
             "name": "Standards Catalog",
@@ -442,7 +473,9 @@ async def list_resources() -> list[dict[str, Any]]:
             "description": "NIST-compliant code templates",
             "mimeType": "text/plain"
         }
-    ]
+    ])
+    
+    return resources
 
 
 @app.read_resource()  # type: ignore[misc,no-untyped-call]
@@ -452,18 +485,132 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
     @nist-controls: AC-4
     @evidence: Controlled resource access
     """
-    if str(uri) == "standards://catalog":
+    uri_str = str(uri)
+    
+    # Handle dynamic resources from standards
+    if uri_str.startswith("standards://document/"):
+        # Load specific standard document
+        doc_id = uri_str.replace("standards://document/", "")
+        standards_path = Path(__file__).parent.parent / "data" / "standards"
+        
+        # Try to load the YAML file
+        yaml_file = standards_path / f"{doc_id.upper()}.yaml"
+        if yaml_file.exists():
+            with open(yaml_file) as f:
+                data = yaml.safe_load(f)
+            return TextResourceContents(
+                uri=uri,
+                mimeType="application/json",
+                text=json.dumps(data, indent=2)
+            )
+    
+    elif uri_str.startswith("standards://category/"):
+        # Load all standards in a category
+        category = uri_str.replace("standards://category/", "")
+        standards_path = Path(__file__).parent.parent / "data" / "standards"
+        index_file = standards_path / "standards_index.json"
+        
+        if index_file.exists():
+            with open(index_file) as f:
+                index = json.load(f)
+            
+            if category in index["categories"]:
+                category_data = {
+                    "category": category,
+                    "standards": []
+                }
+                
+                for std_id in index["categories"][category]:
+                    std_info = index["standards"][std_id]
+                    category_data["standards"].append({
+                        "id": std_id,
+                        "name": std_info["name"],
+                        "file": std_info["file"],
+                        "nist_controls": std_info["nist_controls"]
+                    })
+                
+                return TextResourceContents(
+                    uri=uri,
+                    mimeType="application/json",
+                    text=json.dumps(category_data, indent=2)
+                )
+    
+    elif uri_str == "standards://catalog":
+        # Return complete catalog
+        standards_path = Path(__file__).parent.parent / "data" / "standards"
+        index_file = standards_path / "standards_index.json"
+        
+        if index_file.exists():
+            with open(index_file) as f:
+                index = json.load(f)
+            return TextResourceContents(
+                uri=uri,
+                mimeType="application/json",
+                text=json.dumps(index, indent=2)
+            )
+        else:
+            return TextResourceContents(
+                uri=uri,
+                mimeType="application/json",
+                text='{"standards": ["CS", "TS", "SEC", "FE", "DE", "CN", "OBS"]}'
+            )
+            
+    elif uri_str == "standards://nist-controls":
+        # Return NIST controls (could be enhanced with full catalog)
         return TextResourceContents(
             uri=uri,
             mimeType="application/json",
-            text='{"standards": ["CS", "TS", "SEC", "FE", "DE", "CN", "OBS"]}'
+            text=json.dumps({
+                "controls": ["AC-2", "AC-3", "AU-2", "AU-3", "AU-4", "SC-8", "SC-13", "SI-10", "SI-11", "IA-2", "IA-5"],
+                "families": {
+                    "AC": "Access Control",
+                    "AU": "Audit and Accountability",
+                    "SC": "System and Communications Protection",
+                    "SI": "System and Information Integrity",
+                    "IA": "Identification and Authentication"
+                }
+            }, indent=2)
         )
-    elif str(uri) == "standards://nist-controls":
+    
+    elif uri_str == "standards://templates":
+        # Return available templates
+        from .core.templates import TemplateGenerator
+        generator = TemplateGenerator()
+        templates_info = {
+            "templates": {
+                "api": {
+                    "description": "Secure API endpoint with authentication and validation",
+                    "languages": ["python", "javascript"],
+                    "controls": ["AC-3", "AU-2", "IA-2", "SC-8", "SI-10"]
+                },
+                "auth": {
+                    "description": "Authentication module with MFA and password management",
+                    "languages": ["python"],
+                    "controls": ["IA-2", "IA-5", "IA-8", "AC-7"]
+                },
+                "logging": {
+                    "description": "Security logging with integrity protection",
+                    "languages": ["python"],
+                    "controls": ["AU-2", "AU-3", "AU-4", "AU-9", "AU-12"]
+                },
+                "encryption": {
+                    "description": "FIPS-validated encryption utilities",
+                    "languages": ["python"],
+                    "controls": ["SC-8", "SC-13", "SC-28"]
+                },
+                "database": {
+                    "description": "Secure database operations",
+                    "languages": ["python"],
+                    "controls": ["AC-3", "AU-2", "SC-8", "SI-10"]
+                }
+            }
+        }
         return TextResourceContents(
             uri=uri,
             mimeType="application/json",
-            text='{"controls": ["AC-2", "AC-3", "AU-2", "SC-8", "SC-13"]}'
+            text=json.dumps(templates_info, indent=2)
         )
+    
     else:
         raise ValueError(f"Resource not found: {uri}")
 
@@ -502,6 +649,54 @@ async def list_prompts() -> list[dict[str, Any]]:
                     "required": False
                 }
             ]
+        },
+        {
+            "name": "security-review",
+            "description": "Perform comprehensive security review",
+            "arguments": [
+                {
+                    "name": "code_context",
+                    "description": "Description of code/system to review",
+                    "required": True
+                },
+                {
+                    "name": "focus_areas",
+                    "description": "Specific areas to focus on",
+                    "required": False
+                }
+            ]
+        },
+        {
+            "name": "control-implementation",
+            "description": "Get implementation guidance for NIST controls",
+            "arguments": [
+                {
+                    "name": "control_id",
+                    "description": "NIST control ID (e.g., AC-3, SC-8)",
+                    "required": True
+                },
+                {
+                    "name": "technology",
+                    "description": "Technology stack or language",
+                    "required": False
+                }
+            ]
+        },
+        {
+            "name": "standards-query",
+            "description": "Query standards for specific requirements",
+            "arguments": [
+                {
+                    "name": "topic",
+                    "description": "Topic to search for in standards",
+                    "required": True
+                },
+                {
+                    "name": "domain",
+                    "description": "Domain/category to focus on",
+                    "required": False
+                }
+            ]
         }
     ]
 
@@ -536,6 +731,58 @@ async def get_prompt(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
+    
+    elif name == "security-review":
+        code_context = arguments.get("code_context", "application code")
+        focus_areas = arguments.get("focus_areas", "authentication, authorization, data protection")
+        return {
+            "description": f"Security review of {code_context}",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a cybersecurity expert specializing in NIST 800-53r5 compliance. Perform thorough security reviews with specific control recommendations."
+                },
+                {
+                    "role": "user",
+                    "content": f"Please perform a comprehensive security review of: {code_context}\n\nFocus areas: {focus_areas}\n\nProvide:\n1. Security vulnerabilities found\n2. Applicable NIST controls\n3. Risk assessment\n4. Remediation recommendations\n5. Implementation examples"
+                }
+            ]
+        }
+    
+    elif name == "control-implementation":
+        control_id = arguments.get("control_id", "AC-3")
+        technology = arguments.get("technology", "Python")
+        return {
+            "description": f"Implementation guidance for {control_id}",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a NIST compliance expert. Provide detailed, practical implementation guidance for NIST controls."
+                },
+                {
+                    "role": "user",
+                    "content": f"Provide implementation guidance for NIST control {control_id} using {technology}.\n\nInclude:\n1. Control description and requirements\n2. Implementation approaches\n3. Code examples\n4. Testing strategies\n5. Common pitfalls to avoid\n6. Related controls to consider"
+                }
+            ]
+        }
+    
+    elif name == "standards-query":
+        topic = arguments.get("topic", "security")
+        domain = arguments.get("domain", "development")
+        return {
+            "description": f"Standards query for {topic}",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": f"You have access to comprehensive standards documentation in the {domain} domain. Use this knowledge to provide detailed, standards-based guidance."
+                },
+                {
+                    "role": "user",
+                    "content": f"Search the standards for guidance on: {topic}\n\nProvide:\n1. Relevant standards sections\n2. Key requirements\n3. Implementation examples\n4. Best practices\n5. Common compliance gaps"
+                }
+            ]
+        }
+    
     else:
         raise ValueError(f"Unknown prompt: {name}")
 

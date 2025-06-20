@@ -1,0 +1,828 @@
+name: Docs/Standards/Web Design Ux Standards
+category: development
+filename: docs/standards/WEB_DESIGN_UX_STANDARDS.md
+nist_controls: []
+sections:
+  Web Design and UX Standards: '**Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** WD
+
+
+    ---
+
+
+    **Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active'
+  Table of Contents: '1. [Design Principles and Philosophy](#1-design-principles-and-philosophy)
+
+    2. [Visual Design Standards](#2-visual-design-standards)
+
+    3. [Typography and Content Layout](#3-typography-and-content-layout)
+
+    4. [Color Systems and Theming](#4-color-systems-and-theming)
+
+    5. [Component Design Systems](#5-component-design-systems)
+
+    6. [Interaction and Animation](#6-interaction-and-animation)
+
+    7. [Responsive and Adaptive Design](#7-responsive-and-adaptive-design)
+
+    8. [User Experience Patterns](#8-user-experience-patterns)
+
+
+    ---'
+  Overview: 'This standard provides comprehensive guidelines and best practices for
+    the subject area.
+
+    It aims to ensure consistency, quality, and maintainability across all related
+    implementations.'
+  1. Design Principles and Philosophy: '### 1.1 Core Design Principles
+
+
+    #### User-Centered Design **[REQUIRED]**
+
+    ```yaml'
+  Core UX principles: "user_centered_design:\n  principles:\n    clarity:\n      description:\
+    \ \"Interface should be self-explanatory\"\n      guidelines:\n        - Use clear,\
+    \ concise language\n        - Provide visual hierarchy\n        - Minimize cognitive\
+    \ load\n        - Show system status clearly\n\n    consistency:\n      description:\
+    \ \"Predictable patterns and behaviors\"\n      guidelines:\n        - Maintain\
+    \ pattern consistency\n        - Use standard UI conventions\n        - Keep terminology\
+    \ uniform\n        - Align with platform guidelines\n\n    efficiency:\n     \
+    \ description: \"Enable users to accomplish tasks quickly\"\n      guidelines:\n\
+    \        - Minimize steps to completion\n        - Provide keyboard shortcuts\n\
+    \        - Remember user preferences\n        - Offer smart defaults\n\n    feedback:\n\
+    \      description: \"Communicate system state and actions\"\n      guidelines:\n\
+    \        - Immediate response to actions\n        - Clear error messages\n   \
+    \     - Progress indicators\n        - Success confirmations\n\n    accessibility:\n\
+    \      description: \"Usable by everyone\"\n      guidelines:\n        - WCAG\
+    \ 2.1 AA compliance minimum\n        - Keyboard navigation support\n        -\
+    \ Screen reader compatibility\n        - Color contrast requirements\n```\n\n\
+    #### Design Process Standards **[REQUIRED]**\n```yaml"
+  Design workflow standards: "design_process:\n  phases:\n    research:\n      activities:\n\
+    \        - User interviews\n        - Competitive analysis\n        - Analytics\
+    \ review\n        - Stakeholder input\n      deliverables:\n        - User personas\n\
+    \        - Journey maps\n        - Problem statements\n        - Success metrics\n\
+    \n    ideation:\n      activities:\n        - Sketching sessions\n        - Design\
+    \ workshops\n        - Concept exploration\n        - Information architecture\n\
+    \      deliverables:\n        - Concept sketches\n        - User flows\n     \
+    \   - Site maps\n        - Wireframes\n\n    design:\n      activities:\n    \
+    \    - Visual design\n        - Interaction design\n        - Prototyping\n  \
+    \      - Design system creation\n      deliverables:\n        - High-fidelity\
+    \ mockups\n        - Interactive prototypes\n        - Design specifications\n\
+    \        - Component library\n\n    validation:\n      activities:\n        -\
+    \ Usability testing\n        - A/B testing\n        - Accessibility audit\n  \
+    \      - Performance testing\n      deliverables:\n        - Test results\n  \
+    \      - Improvement recommendations\n        - Final designs\n        - Handoff\
+    \ documentation\n```\n\n### 1.2 Design System Governance\n\n#### System Architecture\
+    \ **[REQUIRED]**\n```typescript\n// design-system/core/types.ts\nexport interface\
+    \ DesignToken {\n  name: string;\n  value: string | number;\n  type: 'color' |\
+    \ 'spacing' | 'typography' | 'shadow' | 'radius';\n  category: string;\n  description?:\
+    \ string;\n  deprecated?: boolean;\n}\n\nexport interface ComponentSpec {\n  name:\
+    \ string;\n  version: string;\n  status: 'draft' | 'beta' | 'stable' | 'deprecated';\n\
+    \  props: PropDefinition[];\n  variants: VariantDefinition[];\n  examples: ExampleDefinition[];\n\
+    \  accessibility: AccessibilitySpec;\n  guidelines: UsageGuidelines;\n}\n\nexport\
+    \ interface DesignSystem {\n  version: string;\n  tokens: Map<string, DesignToken>;\n\
+    \  components: Map<string, ComponentSpec>;\n  patterns: Map<string, PatternDefinition>;\n\
+    \  guidelines: DesignGuidelines;\n}\n```\n\n#### Version Control **[RECOMMENDED]**\n\
+    ```json\n// design-system/package.json\n{\n  \"name\": \"@company/design-system\"\
+    ,\n  \"version\": \"2.0.0\",\n  \"exports\": {\n    \"./tokens\": \"./dist/tokens/index.js\"\
+    ,\n    \"./components\": \"./dist/components/index.js\",\n    \"./styles\": \"\
+    ./dist/styles/index.css\"\n  },\n  \"peerDependencies\": {\n    \"react\": \"\
+    >=16.8.0\",\n    \"styled-components\": \">=5.0.0\"\n  },\n  \"designSystem\"\
+    : {\n    \"tokensVersion\": \"2.0.0\",\n    \"componentsVersion\": \"2.0.0\",\n\
+    \    \"documentationUrl\": \"https://design.company.com\",\n    \"migrationGuide\"\
+    : \"./MIGRATION.md\"\n  }\n}\n```\n\n---"
+  2. Visual Design Standards: "### 2.1 Grid Systems\n\n#### Layout Grid **[REQUIRED]**\n\
+    ```scss\n// styles/grid.scss\n// 12-column grid system with responsive breakpoints\n\
+    $grid-columns: 12;\n$grid-gutter-width: 24px;\n$grid-outer-margin: 24px;\n\n//\
+    \ Breakpoint definitions\n$breakpoints: (\n  xs: 0,      // Mobile portrait\n\
+    \  sm: 576px,  // Mobile landscape\n  md: 768px,  // Tablet portrait\n  lg: 992px,\
+    \  // Tablet landscape / Desktop\n  xl: 1200px, // Desktop\n  xxl: 1400px // Large\
+    \ desktop\n);\n\n// Container max-widths\n$container-max-widths: (\n  sm: 540px,\n\
+    \  md: 720px,\n  lg: 960px,\n  xl: 1140px,\n  xxl: 1320px\n);\n\n// Grid mixin\n\
+    @mixin make-grid($columns: $grid-columns, $gutter: $grid-gutter-width) {\n  display:\
+    \ grid;\n  grid-template-columns: repeat($columns, 1fr);\n  gap: $gutter;\n\n\
+    \  @each $breakpoint, $value in $breakpoints {\n    @media (min-width: $value)\
+    \ {\n      &.grid-#{$breakpoint} {\n        grid-template-columns: repeat(var(--grid-cols-#{$breakpoint},\
+    \ $columns), 1fr);\n      }\n    }\n  }\n}\n\n// Layout regions\n.layout {\n \
+    \ &__header {\n    grid-column: 1 / -1;\n    min-height: 64px;\n  }\n\n  &__sidebar\
+    \ {\n    grid-column: span 3;\n\n    @media (max-width: map-get($breakpoints,\
+    \ md)) {\n      grid-column: 1 / -1;\n    }\n  }\n\n  &__main {\n    grid-column:\
+    \ span 9;\n\n    @media (max-width: map-get($breakpoints, md)) {\n      grid-column:\
+    \ 1 / -1;\n    }\n  }\n}\n```\n\n#### Spacing System **[REQUIRED]**\n```scss\n\
+    // styles/spacing.scss\n// Base unit: 8px for consistent spatial rhythm\n$spacing-unit:\
+    \ 8px;\n\n// Spacing scale\n$spacing: (\n  0: 0,\n  1: $spacing-unit * 0.5,  \
+    \ // 4px\n  2: $spacing-unit,         // 8px\n  3: $spacing-unit * 1.5,   // 12px\n\
+    \  4: $spacing-unit * 2,     // 16px\n  5: $spacing-unit * 3,     // 24px\n  6:\
+    \ $spacing-unit * 4,     // 32px\n  7: $spacing-unit * 5,     // 40px\n  8: $spacing-unit\
+    \ * 6,     // 48px\n  9: $spacing-unit * 8,     // 64px\n  10: $spacing-unit *\
+    \ 10,   // 80px\n  11: $spacing-unit * 12,   // 96px\n  12: $spacing-unit * 16\
+    \    // 128px\n);\n\n// Spacing utilities\n@each $name, $value in $spacing {\n\
+    \  // Margin utilities\n  .m-#{$name} { margin: $value; }\n  .mt-#{$name} { margin-top:\
+    \ $value; }\n  .mr-#{$name} { margin-right: $value; }\n  .mb-#{$name} { margin-bottom:\
+    \ $value; }\n  .ml-#{$name} { margin-left: $value; }\n  .mx-#{$name} { margin-left:\
+    \ $value; margin-right: $value; }\n  .my-#{$name} { margin-top: $value; margin-bottom:\
+    \ $value; }\n\n  // Padding utilities\n  .p-#{$name} { padding: $value; }\n  .pt-#{$name}\
+    \ { padding-top: $value; }\n  .pr-#{$name} { padding-right: $value; }\n  .pb-#{$name}\
+    \ { padding-bottom: $value; }\n  .pl-#{$name} { padding-left: $value; }\n  .px-#{$name}\
+    \ { padding-left: $value; padding-right: $value; }\n  .py-#{$name} { padding-top:\
+    \ $value; padding-bottom: $value; }\n\n  // Gap utilities\n  .gap-#{$name} { gap:\
+    \ $value; }\n}\n```\n\n### 2.2 Visual Hierarchy\n\n#### Depth and Elevation **[REQUIRED]**\n\
+    ```scss\n// styles/elevation.scss\n// Material Design inspired elevation system\n\
+    $shadows: (\n  0: none,\n  1: (0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0,\
+    \ 0, 0, 0.24)),\n  2: (0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0,\
+    \ 0.12)),\n  3: (0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.10)),\n\
+    \  4: (0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)),\n  5:\
+    \ (0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22))\n);\n\n//\
+    \ Elevation mixins\n@mixin elevation($level) {\n  @if map-has-key($shadows, $level)\
+    \ {\n    box-shadow: map-get($shadows, $level);\n  } @else {\n    @warn \"Invalid\
+    \ elevation level: #{$level}\";\n  }\n}\n\n// Component elevation standards\n\
+    .card {\n  @include elevation(1);\n  transition: box-shadow 0.3s cubic-bezier(0.4,\
+    \ 0, 0.2, 1);\n\n  &:hover {\n    @include elevation(3);\n  }\n}\n\n.modal {\n\
+    \  @include elevation(5);\n}\n\n.dropdown {\n  @include elevation(2);\n}\n\n.tooltip\
+    \ {\n  @include elevation(2);\n}\n```\n\n#### Z-Index Management **[REQUIRED]**\n\
+    ```scss\n// styles/z-index.scss\n// Centralized z-index management\n$z-layers:\
+    \ (\n  base: 0,\n  dropdown: 1000,\n  sticky: 1100,\n  fixed: 1200,\n  modal-backdrop:\
+    \ 1300,\n  modal: 1400,\n  popover: 1500,\n  tooltip: 1600,\n  notification: 1700,\n\
+    \  debug: 9999\n);\n\n// Z-index function\n@function z($layer) {\n  @if map-has-key($z-layers,\
+    \ $layer) {\n    @return map-get($z-layers, $layer);\n  } @else {\n    @warn \"\
+    Invalid z-index layer: #{$layer}\";\n    @return 0;\n  }\n}\n\n// Usage examples\n\
+    .header--sticky {\n  position: sticky;\n  z-index: z(sticky);\n}\n\n.modal {\n\
+    \  z-index: z(modal);\n\n  &__backdrop {\n    z-index: z(modal-backdrop);\n  }\n\
+    }\n```\n\n---"
+  3. Typography and Content Layout: "### 3.1 Typography System\n\n#### Type Scale\
+    \ **[REQUIRED]**\n```scss\n// styles/typography.scss\n// Modular type scale (1.250\
+    \ - Major Third)\n$type-scale-ratio: 1.250;\n$type-base-size: 16px;\n\n// Font\
+    \ families\n$font-families: (\n  sans: (-apple-system, BlinkMacSystemFont, \"\
+    Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif),\n  serif: (Georgia,\
+    \ Cambria, \"Times New Roman\", Times, serif),\n  mono: (SFMono-Regular, Menlo,\
+    \ Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace)\n);\n\n//\
+    \ Type scale\n$type-scale: (\n  xs: $type-base-size / pow($type-scale-ratio, 2),\
+    \    // 10.24px\n  sm: $type-base-size / $type-scale-ratio,            // 12.8px\n\
+    \  base: $type-base-size,                              // 16px\n  md: $type-base-size\
+    \ * $type-scale-ratio,            // 20px\n  lg: $type-base-size * pow($type-scale-ratio,\
+    \ 2),    // 25px\n  xl: $type-base-size * pow($type-scale-ratio, 3),    // 31.25px\n\
+    \  2xl: $type-base-size * pow($type-scale-ratio, 4),   // 39.06px\n  3xl: $type-base-size\
+    \ * pow($type-scale-ratio, 5),   // 48.83px\n  4xl: $type-base-size * pow($type-scale-ratio,\
+    \ 6)    // 61.04px\n);\n\n// Line heights\n$line-heights: (\n  tight: 1.2,\n \
+    \ snug: 1.375,\n  normal: 1.5,\n  relaxed: 1.625,\n  loose: 2\n);\n\n// Font weights\n\
+    $font-weights: (\n  thin: 100,\n  light: 300,\n  normal: 400,\n  medium: 500,\n\
+    \  semibold: 600,\n  bold: 700,\n  black: 900\n);\n\n// Typography mixins\n@mixin\
+    \ text-style($size: base, $weight: normal, $line-height: normal) {\n  font-size:\
+    \ map-get($type-scale, $size);\n  font-weight: map-get($font-weights, $weight);\n\
+    \  line-height: map-get($line-heights, $line-height);\n}\n\n// Heading styles\n\
+    h1, .h1 {\n  @include text-style(3xl, bold, tight);\n  margin-bottom: map-get($spacing,\
+    \ 4);\n}\n\nh2, .h2 {\n  @include text-style(2xl, semibold, tight);\n  margin-bottom:\
+    \ map-get($spacing, 3);\n}\n\nh3, .h3 {\n  @include text-style(xl, semibold, snug);\n\
+    \  margin-bottom: map-get($spacing, 3);\n}\n\nh4, .h4 {\n  @include text-style(lg,\
+    \ medium, snug);\n  margin-bottom: map-get($spacing, 2);\n}\n\nh5, .h5 {\n  @include\
+    \ text-style(md, medium, normal);\n  margin-bottom: map-get($spacing, 2);\n}\n\
+    \nh6, .h6 {\n  @include text-style(base, medium, normal);\n  margin-bottom: map-get($spacing,\
+    \ 2);\n}\n\n// Body text\np {\n  @include text-style(base, normal, relaxed);\n\
+    \  margin-bottom: map-get($spacing, 4);\n}\n\n// Text utilities\n.text-xs { font-size:\
+    \ map-get($type-scale, xs); }\n.text-sm { font-size: map-get($type-scale, sm);\
+    \ }\n.text-base { font-size: map-get($type-scale, base); }\n.text-lg { font-size:\
+    \ map-get($type-scale, lg); }\n.text-xl { font-size: map-get($type-scale, xl);\
+    \ }\n```\n\n#### Readable Content **[REQUIRED]**\n```scss\n// styles/content.scss\n\
+    // Optimal reading experience standards\n\n// Maximum line length for readability\n\
+    $max-line-length: 65ch;\n$comfortable-line-length: 45-75ch;\n\n// Content container\n\
+    .content {\n  max-width: $max-line-length;\n  margin-left: auto;\n  margin-right:\
+    \ auto;\n\n  // Responsive font sizing\n  font-size: clamp(\n    map-get($type-scale,\
+    \ base),\n    2.5vw,\n    map-get($type-scale, md)\n  );\n\n  // Paragraph spacing\n\
+    \  p + p {\n    margin-top: map-get($spacing, 4);\n  }\n\n  // List styling\n\
+    \  ul, ol {\n    margin-bottom: map-get($spacing, 4);\n    padding-left: map-get($spacing,\
+    \ 5);\n\n    li {\n      margin-bottom: map-get($spacing, 2);\n    }\n  }\n\n\
+    \  // Blockquote styling\n  blockquote {\n    margin: map-get($spacing, 6) 0;\n\
+    \    padding-left: map-get($spacing, 4);\n    border-left: 4px solid var(--color-primary);\n\
+    \    font-style: italic;\n  }\n\n  // Code blocks\n  pre {\n    margin: map-get($spacing,\
+    \ 4) 0;\n    padding: map-get($spacing, 4);\n    background-color: var(--color-code-bg);\n\
+    \    border-radius: var(--radius-md);\n    overflow-x: auto;\n  }\n\n  // Inline\
+    \ code\n  code {\n    padding: 2px 4px;\n    background-color: var(--color-code-bg);\n\
+    \    border-radius: var(--radius-sm);\n    font-family: map-get($font-families,\
+    \ mono);\n    font-size: 0.875em;\n  }\n}\n\n// Responsive typography\n@media\
+    \ (max-width: map-get($breakpoints, sm)) {\n  .content {\n    font-size: map-get($type-scale,\
+    \ base);\n  }\n\n  h1, .h1 { @include text-style(2xl, bold, tight); }\n  h2, .h2\
+    \ { @include text-style(xl, semibold, tight); }\n  h3, .h3 { @include text-style(lg,\
+    \ semibold, snug); }\n}\n```\n\n### 3.2 Content Patterns\n\n#### Card Layouts\
+    \ **[REQUIRED]**\n```scss\n// components/card.scss\n.card {\n  background: var(--color-surface);\n\
+    \  border-radius: var(--radius-lg);\n  @include elevation(1);\n  overflow: hidden;\n\
+    \  transition: all 0.3s ease;\n\n  &__media {\n    position: relative;\n    padding-bottom:\
+    \ 56.25%; // 16:9 aspect ratio\n    overflow: hidden;\n\n    img {\n      position:\
+    \ absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height:\
+    \ 100%;\n      object-fit: cover;\n    }\n  }\n\n  &__content {\n    padding:\
+    \ map-get($spacing, 5);\n  }\n\n  &__title {\n    @include text-style(lg, semibold,\
+    \ snug);\n    margin-bottom: map-get($spacing, 2);\n  }\n\n  &__description {\n\
+    \    @include text-style(base, normal, normal);\n    color: var(--color-text-secondary);\n\
+    \    margin-bottom: map-get($spacing, 4);\n  }\n\n  &__actions {\n    display:\
+    \ flex;\n    gap: map-get($spacing, 3);\n    margin-top: auto;\n  }\n\n  // Interactive\
+    \ states\n  &--interactive {\n    cursor: pointer;\n\n    &:hover {\n      @include\
+    \ elevation(3);\n      transform: translateY(-2px);\n    }\n\n    &:active {\n\
+    \      @include elevation(1);\n      transform: translateY(0);\n    }\n  }\n}\n\
+    ```\n\n#### Data Tables **[REQUIRED]**\n```scss\n// components/table.scss\n.table\
+    \ {\n  width: 100%;\n  border-collapse: collapse;\n  background: var(--color-surface);\n\
+    \n  &__header {\n    background: var(--color-surface-variant);\n    border-bottom:\
+    \ 2px solid var(--color-border);\n  }\n\n  &__row {\n    border-bottom: 1px solid\
+    \ var(--color-border-light);\n\n    &:hover {\n      background: var(--color-surface-hover);\n\
+    \    }\n\n    &--selected {\n      background: var(--color-surface-selected);\n\
+    \    }\n  }\n\n  &__cell {\n    padding: map-get($spacing, 3) map-get($spacing,\
+    \ 4);\n    text-align: left;\n\n    &--numeric {\n      text-align: right;\n \
+    \     font-feature-settings: \"tnum\" 1; // Tabular numbers\n    }\n\n    &--actions\
+    \ {\n      text-align: right;\n      white-space: nowrap;\n    }\n  }\n\n  &__header-cell\
+    \ {\n    @extend .table__cell;\n    @include text-style(sm, semibold, normal);\n\
+    \    color: var(--color-text-secondary);\n    text-transform: uppercase;\n   \
+    \ letter-spacing: 0.05em;\n  }\n\n  // Responsive table\n  @media (max-width:\
+    \ map-get($breakpoints, md)) {\n    &--responsive {\n      display: block;\n\n\
+    \      .table__header {\n        display: none;\n      }\n\n      .table__row\
+    \ {\n        display: block;\n        margin-bottom: map-get($spacing, 4);\n \
+    \       border: 1px solid var(--color-border);\n        border-radius: var(--radius-md);\n\
+    \      }\n\n      .table__cell {\n        display: flex;\n        justify-content:\
+    \ space-between;\n\n        &::before {\n          content: attr(data-label);\n\
+    \          font-weight: map-get($font-weights, semibold);\n        }\n      }\n\
+    \    }\n  }\n}\n```\n\n---"
+  4. Color Systems and Theming: "### 4.1 Color Architecture\n\n#### Color Tokens **[REQUIRED]**\n\
+    ```scss\n// styles/colors.scss\n// Semantic color system with light/dark theme\
+    \ support\n\n// Brand colors\n$brand-colors: (\n  primary: #1976d2,\n  primary-light:\
+    \ #42a5f5,\n  primary-dark: #1565c0,\n  secondary: #dc004e,\n  secondary-light:\
+    \ #e33371,\n  secondary-dark: #9a0036\n);\n\n// Neutral palette\n$neutral-colors:\
+    \ (\n  0: #ffffff,\n  50: #fafafa,\n  100: #f5f5f5,\n  200: #eeeeee,\n  300: #e0e0e0,\n\
+    \  400: #bdbdbd,\n  500: #9e9e9e,\n  600: #757575,\n  700: #616161,\n  800: #424242,\n\
+    \  900: #212121,\n  1000: #000000\n);\n\n// Semantic colors\n$semantic-colors:\
+    \ (\n  success: #4caf50,\n  success-light: #80e27e,\n  success-dark: #087f23,\n\
+    \  warning: #ff9800,\n  warning-light: #ffcc80,\n  warning-dark: #c66900,\n  error:\
+    \ #f44336,\n  error-light: #ff7961,\n  error-dark: #ba000d,\n  info: #2196f3,\n\
+    \  info-light: #6ec6ff,\n  info-dark: #0069c0\n);\n\n// Theme definitions\n:root\
+    \ {\n  // Light theme (default)\n  --color-primary: #{map-get($brand-colors, primary)};\n\
+    \  --color-primary-light: #{map-get($brand-colors, primary-light)};\n  --color-primary-dark:\
+    \ #{map-get($brand-colors, primary-dark)};\n  --color-secondary: #{map-get($brand-colors,\
+    \ secondary)};\n\n  --color-background: #{map-get($neutral-colors, 50)};\n  --color-surface:\
+    \ #{map-get($neutral-colors, 0)};\n  --color-surface-variant: #{map-get($neutral-colors,\
+    \ 100)};\n\n  --color-text-primary: #{map-get($neutral-colors, 900)};\n  --color-text-secondary:\
+    \ #{map-get($neutral-colors, 600)};\n  --color-text-disabled: #{map-get($neutral-colors,\
+    \ 400)};\n\n  --color-border: #{map-get($neutral-colors, 300)};\n  --color-border-light:\
+    \ #{map-get($neutral-colors, 200)};\n\n  --color-success: #{map-get($semantic-colors,\
+    \ success)};\n  --color-warning: #{map-get($semantic-colors, warning)};\n  --color-error:\
+    \ #{map-get($semantic-colors, error)};\n  --color-info: #{map-get($semantic-colors,\
+    \ info)};\n}\n\n// Dark theme\n[data-theme=\"dark\"] {\n  --color-background:\
+    \ #{map-get($neutral-colors, 900)};\n  --color-surface: #{map-get($neutral-colors,\
+    \ 800)};\n  --color-surface-variant: #{map-get($neutral-colors, 700)};\n\n  --color-text-primary:\
+    \ #{map-get($neutral-colors, 50)};\n  --color-text-secondary: #{map-get($neutral-colors,\
+    \ 300)};\n  --color-text-disabled: #{map-get($neutral-colors, 600)};\n\n  --color-border:\
+    \ #{map-get($neutral-colors, 700)};\n  --color-border-light: #{map-get($neutral-colors,\
+    \ 800)};\n\n  --color-success: #{map-get($semantic-colors, success-light)};\n\
+    \  --color-warning: #{map-get($semantic-colors, warning-light)};\n  --color-error:\
+    \ #{map-get($semantic-colors, error-light)};\n  --color-info: #{map-get($semantic-colors,\
+    \ info-light)};\n}\n```\n\n#### Color Contrast **[REQUIRED]**\n```typescript\n\
+    // utils/color-contrast.ts\n// WCAG 2.1 contrast ratio calculations\n\ninterface\
+    \ ColorContrastResult {\n  ratio: number;\n  level: 'AAA' | 'AA' | 'FAIL';\n \
+    \ largeTextLevel: 'AAA' | 'AA' | 'FAIL';\n}\n\nexport function calculateContrast(\n\
+    \  foreground: string,\n  background: string\n): ColorContrastResult {\n  const\
+    \ l1 = getLuminance(foreground);\n  const l2 = getLuminance(background);\n\n \
+    \ const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);\n\n  //\
+    \ WCAG 2.1 Level AA: 4.5:1 for normal text, 3:1 for large text\n  // WCAG 2.1\
+    \ Level AAA: 7:1 for normal text, 4.5:1 for large text\n  const level = ratio\
+    \ >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'FAIL';\n  const largeTextLevel = ratio\
+    \ >= 4.5 ? 'AAA' : ratio >= 3 ? 'AA' : 'FAIL';\n\n  return { ratio, level, largeTextLevel\
+    \ };\n}\n\nfunction getLuminance(color: string): number {\n  const rgb = hexToRgb(color);\n\
+    \  const [r, g, b] = rgb.map(val => {\n    val = val / 255;\n    return val <=\
+    \ 0.03928\n      ? val / 12.92\n      : Math.pow((val + 0.055) / 1.055, 2.4);\n\
+    \  });\n\n  return 0.2126 * r + 0.7152 * g + 0.0722 * b;\n}\n\n// Color validation\
+    \ utilities\nexport const colorValidation = {\n  checkTextContrast(text: string,\
+    \ background: string): boolean {\n    const result = calculateContrast(text, background);\n\
+    \    return result.level !== 'FAIL';\n  },\n\n  checkLargeTextContrast(text: string,\
+    \ background: string): boolean {\n    const result = calculateContrast(text, background);\n\
+    \    return result.largeTextLevel !== 'FAIL';\n  },\n\n  suggestAccessibleColor(\n\
+    \    baseColor: string,\n    background: string,\n    targetRatio: number = 4.5\n\
+    \  ): string {\n    // Implementation to adjust color until target ratio is met\n\
+    \    // ...\n  }\n};\n```\n\n### 4.2 Theme Management\n\n#### Theme Provider **[REQUIRED]**\n\
+    ```typescript\n// theme/ThemeProvider.tsx\nimport React, { createContext, useContext,\
+    \ useState, useEffect } from 'react';\n\ninterface Theme {\n  name: 'light' |\
+    \ 'dark' | 'auto';\n  colors: ThemeColors;\n  typography: ThemeTypography;\n \
+    \ spacing: ThemeSpacing;\n  breakpoints: ThemeBreakpoints;\n}\n\ninterface ThemeContextValue\
+    \ {\n  theme: Theme;\n  setTheme: (theme: Theme['name']) => void;\n  toggleTheme:\
+    \ () => void;\n}\n\nconst ThemeContext = createContext<ThemeContextValue | undefined>(undefined);\n\
+    \nexport const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({\n \
+    \ children\n}) => {\n  const [theme, setThemeState] = useState<Theme['name']>('auto');\n\
+    \n  useEffect(() => {\n    const savedTheme = localStorage.getItem('theme') as\
+    \ Theme['name'];\n    if (savedTheme) {\n      setThemeState(savedTheme);\n  \
+    \  }\n\n    // Handle system theme changes\n    const mediaQuery = window.matchMedia('(prefers-color-scheme:\
+    \ dark)');\n    const handleChange = (e: MediaQueryListEvent) => {\n      if (theme\
+    \ === 'auto') {\n        document.documentElement.setAttribute(\n          'data-theme',\n\
+    \          e.matches ? 'dark' : 'light'\n        );\n      }\n    };\n\n    mediaQuery.addEventListener('change',\
+    \ handleChange);\n    return () => mediaQuery.removeEventListener('change', handleChange);\n\
+    \  }, [theme]);\n\n  const setTheme = (newTheme: Theme['name']) => {\n    setThemeState(newTheme);\n\
+    \    localStorage.setItem('theme', newTheme);\n\n    if (newTheme === 'auto')\
+    \ {\n      const prefersDark = window.matchMedia(\n        '(prefers-color-scheme:\
+    \ dark)'\n      ).matches;\n      document.documentElement.setAttribute(\n   \
+    \     'data-theme',\n        prefersDark ? 'dark' : 'light'\n      );\n    } else\
+    \ {\n      document.documentElement.setAttribute('data-theme', newTheme);\n  \
+    \  }\n  };\n\n  const toggleTheme = () => {\n    const nextTheme = theme === 'light'\
+    \ ? 'dark' : 'light';\n    setTheme(nextTheme);\n  };\n\n  return (\n    <ThemeContext.Provider\n\
+    \      value={{\n        theme: getThemeObject(theme),\n        setTheme,\n  \
+    \      toggleTheme,\n      }}\n    >\n      {children}\n    </ThemeContext.Provider>\n\
+    \  );\n};\n\nexport const useTheme = () => {\n  const context = useContext(ThemeContext);\n\
+    \  if (!context) {\n    throw new Error('useTheme must be used within a ThemeProvider');\n\
+    \  }\n  return context;\n};\n```\n\n---"
+  5. Component Design Systems: "### 5.1 Component Architecture\n\n#### Component Structure\
+    \ **[REQUIRED]**\n```typescript\n// components/Button/Button.tsx\nimport React,\
+    \ { forwardRef } from 'react';\nimport { clsx } from 'clsx';\nimport styles from\
+    \ './Button.module.scss';\n\nexport interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>\
+    \ {\n  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';\n  size?: 'small'\
+    \ | 'medium' | 'large';\n  fullWidth?: boolean;\n  loading?: boolean;\n  icon?:\
+    \ React.ReactNode;\n  iconPosition?: 'left' | 'right';\n}\n\nexport const Button\
+    \ = forwardRef<HTMLButtonElement, ButtonProps>(\n  (\n    {\n      variant = 'primary',\n\
+    \      size = 'medium',\n      fullWidth = false,\n      loading = false,\n  \
+    \    icon,\n      iconPosition = 'left',\n      children,\n      className,\n\
+    \      disabled,\n      ...props\n    },\n    ref\n  ) => {\n    return (\n  \
+    \    <button\n        ref={ref}\n        className={clsx(\n          styles.button,\n\
+    \          styles[`button--${variant}`],\n          styles[`button--${size}`],\n\
+    \          {\n            [styles['button--full-width']]: fullWidth,\n       \
+    \     [styles['button--loading']]: loading,\n            [styles['button--disabled']]:\
+    \ disabled || loading,\n            [styles['button--icon-only']]: icon && !children,\n\
+    \          },\n          className\n        )}\n        disabled={disabled ||\
+    \ loading}\n        {...props}\n      >\n        {loading && (\n          <span\
+    \ className={styles.button__spinner} aria-hidden=\"true\">\n            <Spinner\
+    \ size={size} />\n          </span>\n        )}\n        {icon && iconPosition\
+    \ === 'left' && (\n          <span className={styles.button__icon} aria-hidden=\"\
+    true\">\n            {icon}\n          </span>\n        )}\n        {children\
+    \ && <span className={styles.button__text}>{children}</span>}\n        {icon &&\
+    \ iconPosition === 'right' && (\n          <span className={styles.button__icon}\
+    \ aria-hidden=\"true\">\n            {icon}\n          </span>\n        )}\n \
+    \     </button>\n    );\n  }\n);\n\nButton.displayName = 'Button';\n```\n\n####\
+    \ Component Documentation **[REQUIRED]**\n```typescript\n// components/Button/Button.stories.tsx\n\
+    import type { Meta, StoryObj } from '@storybook/react';\nimport { Button } from\
+    \ './Button';\nimport { IconSave, IconDelete } from '../Icons';\n\nconst meta:\
+    \ Meta<typeof Button> = {\n  title: 'Components/Button',\n  component: Button,\n\
+    \  parameters: {\n    docs: {\n      description: {\n        component: `\nA button\
+    \ triggers an action or event when activated."
+  When to use: '- **Primary actions**: Use primary buttons for the main action on
+    a page
+
+    - **Secondary actions**: Use secondary buttons for less important actions
+
+    - **Dangerous actions**: Use danger buttons for destructive actions
+
+    - **Ghost buttons**: Use ghost buttons for tertiary actions'
+  Accessibility: "- All buttons must have accessible labels\n- Use aria-label for\
+    \ icon-only buttons\n- Ensure sufficient color contrast\n- Support keyboard navigation\n\
+    \        `,\n      },\n    },\n  },\n  argTypes: {\n    variant: {\n      control:\
+    \ 'select',\n      options: ['primary', 'secondary', 'ghost', 'danger'],\n   \
+    \   description: 'Visual style variant',\n    },\n    size: {\n      control:\
+    \ 'select',\n      options: ['small', 'medium', 'large'],\n      description:\
+    \ 'Button size',\n    },\n  },\n};\n\nexport default meta;\ntype Story = StoryObj<typeof\
+    \ Button>;\n\nexport const Primary: Story = {\n  args: {\n    children: 'Primary\
+    \ Button',\n    variant: 'primary',\n  },\n};\n\nexport const WithIcon: Story\
+    \ = {\n  args: {\n    children: 'Save',\n    icon: <IconSave />,\n    variant:\
+    \ 'primary',\n  },\n};\n\nexport const Loading: Story = {\n  args: {\n    children:\
+    \ 'Loading',\n    loading: true,\n    variant: 'primary',\n  },\n};\n\nexport\
+    \ const IconOnly: Story = {\n  args: {\n    icon: <IconDelete />,\n    variant:\
+    \ 'danger',\n    'aria-label': 'Delete item',\n  },\n};\n\nexport const ButtonGroup:\
+    \ Story = {\n  render: () => (\n    <div style={{ display: 'flex', gap: '8px'\
+    \ }}>\n      <Button variant=\"secondary\">Cancel</Button>\n      <Button variant=\"\
+    primary\">Save</Button>\n    </div>\n  ),\n};\n```\n\n### 5.2 Component Patterns\n\
+    \n#### Form Components **[REQUIRED]**\n```scss\n// components/forms.scss\n// Consistent\
+    \ form component styling\n\n.form-field {\n  margin-bottom: map-get($spacing,\
+    \ 5);\n\n  &__label {\n    display: block;\n    margin-bottom: map-get($spacing,\
+    \ 2);\n    @include text-style(sm, medium, normal);\n    color: var(--color-text-primary);\n\
+    \n    &--required::after {\n      content: \" *\";\n      color: var(--color-error);\n\
+    \    }\n  }\n\n  &__input {\n    width: 100%;\n    padding: map-get($spacing,\
+    \ 3) map-get($spacing, 4);\n    font-size: map-get($type-scale, base);\n    line-height:\
+    \ map-get($line-heights, normal);\n    color: var(--color-text-primary);\n   \
+    \ background-color: var(--color-surface);\n    border: 1px solid var(--color-border);\n\
+    \    border-radius: var(--radius-md);\n    transition: all 0.2s ease;\n\n    &:hover:not(:disabled)\
+    \ {\n      border-color: var(--color-border-hover);\n    }\n\n    &:focus {\n\
+    \      outline: none;\n      border-color: var(--color-primary);\n      box-shadow:\
+    \ 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);\n    }\n\n    &:disabled {\n\
+    \      background-color: var(--color-surface-disabled);\n      color: var(--color-text-disabled);\n\
+    \      cursor: not-allowed;\n    }\n\n    &--error {\n      border-color: var(--color-error);\n\
+    \n      &:focus {\n        box-shadow: 0 0 0 3px rgba(var(--color-error-rgb),\
+    \ 0.2);\n      }\n    }\n  }\n\n  &__help {\n    margin-top: map-get($spacing,\
+    \ 2);\n    @include text-style(sm, normal, normal);\n    color: var(--color-text-secondary);\n\
+    \  }\n\n  &__error {\n    margin-top: map-get($spacing, 2);\n    @include text-style(sm,\
+    \ normal, normal);\n    color: var(--color-error);\n  }\n}\n\n// Checkbox and\
+    \ Radio patterns\n.form-check {\n  display: flex;\n  align-items: flex-start;\n\
+    \  margin-bottom: map-get($spacing, 3);\n\n  &__input {\n    flex-shrink: 0;\n\
+    \    width: 20px;\n    height: 20px;\n    margin-top: 2px;\n    margin-right:\
+    \ map-get($spacing, 3);\n    cursor: pointer;\n\n    &:disabled {\n      cursor:\
+    \ not-allowed;\n    }\n  }\n\n  &__label {\n    @include text-style(base, normal,\
+    \ normal);\n    cursor: pointer;\n\n    .form-check__input:disabled + & {\n  \
+    \    color: var(--color-text-disabled);\n      cursor: not-allowed;\n    }\n \
+    \ }\n}\n```\n\n#### Navigation Components **[REQUIRED]**\n```typescript\n// components/Navigation/NavigationMenu.tsx\n\
+    interface NavigationItem {\n  id: string;\n  label: string;\n  href?: string;\n\
+    \  icon?: React.ReactNode;\n  children?: NavigationItem[];\n  badge?: string |\
+    \ number;\n}\n\ninterface NavigationMenuProps {\n  items: NavigationItem[];\n\
+    \  orientation?: 'horizontal' | 'vertical';\n  activeItem?: string;\n  onItemClick?:\
+    \ (item: NavigationItem) => void;\n}\n\nexport const NavigationMenu: React.FC<NavigationMenuProps>\
+    \ = ({\n  items,\n  orientation = 'horizontal',\n  activeItem,\n  onItemClick,\n\
+    }) => {\n  return (\n    <nav\n      className={clsx('nav-menu', `nav-menu--${orientation}`)}\n\
+    \      role=\"navigation\"\n    >\n      <ul className=\"nav-menu__list\" role=\"\
+    list\">\n        {items.map((item) => (\n          <NavigationMenuItem\n     \
+    \       key={item.id}\n            item={item}\n            isActive={activeItem\
+    \ === item.id}\n            orientation={orientation}\n            onItemClick={onItemClick}\n\
+    \          />\n        ))}\n      </ul>\n    </nav>\n  );\n};\n\nconst NavigationMenuItem:\
+    \ React.FC<{\n  item: NavigationItem;\n  isActive: boolean;\n  orientation: 'horizontal'\
+    \ | 'vertical';\n  onItemClick?: (item: NavigationItem) => void;\n}> = ({ item,\
+    \ isActive, orientation, onItemClick }) => {\n  const [isOpen, setIsOpen] = useState(false);\n\
+    \  const hasChildren = item.children && item.children.length > 0;\n\n  return\
+    \ (\n    <li className=\"nav-menu__item\" role=\"none\">\n      <a\n        href={item.href\
+    \ || '#'}\n        className={clsx('nav-menu__link', {\n          'nav-menu__link--active':\
+    \ isActive,\n          'nav-menu__link--has-children': hasChildren,\n        })}\n\
+    \        onClick={(e) => {\n          if (!item.href || hasChildren) {\n     \
+    \       e.preventDefault();\n            setIsOpen(!isOpen);\n          }\n  \
+    \        onItemClick?.(item);\n        }}\n        aria-current={isActive ? 'page'\
+    \ : undefined}\n        aria-expanded={hasChildren ? isOpen : undefined}\n   \
+    \   >\n        {item.icon && (\n          <span className=\"nav-menu__icon\" aria-hidden=\"\
+    true\">\n            {item.icon}\n          </span>\n        )}\n        <span\
+    \ className=\"nav-menu__label\">{item.label}</span>\n        {item.badge && (\n\
+    \          <span className=\"nav-menu__badge\" aria-label={`${item.badge} new`}>\n\
+    \            {item.badge}\n          </span>\n        )}\n        {hasChildren\
+    \ && (\n          <span className=\"nav-menu__chevron\" aria-hidden=\"true\">\n\
+    \            <ChevronIcon direction={isOpen ? 'up' : 'down'} />\n          </span>\n\
+    \        )}\n      </a>\n      {hasChildren && isOpen && (\n        <ul className=\"\
+    nav-menu__submenu\" role=\"list\">\n          {item.children.map((child) => (\n\
+    \            <NavigationMenuItem\n              key={child.id}\n             \
+    \ item={child}\n              isActive={activeItem === child.id}\n           \
+    \   orientation={orientation}\n              onItemClick={onItemClick}\n     \
+    \       />\n          ))}\n        </ul>\n      )}\n    </li>\n  );\n};\n```\n\
+    \n---"
+  6. Interaction and Animation: "### 6.1 Animation Principles\n\n#### Motion Design\
+    \ System **[REQUIRED]**\n```scss\n// styles/motion.scss\n// Consistent animation\
+    \ system based on Material Design\n\n// Duration scale\n$duration: (\n  instant:\
+    \ 0ms,\n  faster: 100ms,\n  fast: 200ms,\n  normal: 300ms,\n  slow: 400ms,\n \
+    \ slower: 600ms,\n  slowest: 800ms\n);\n\n// Easing functions\n$easing: (\n  //\
+    \ Accelerate (enter)\n  enter: cubic-bezier(0.0, 0.0, 0.2, 1),\n  // Decelerate\
+    \ (exit)\n  exit: cubic-bezier(0.4, 0.0, 1, 1),\n  // Standard (move)\n  standard:\
+    \ cubic-bezier(0.4, 0.0, 0.2, 1),\n  // Emphasized\n  emphasized: cubic-bezier(0.0,\
+    \ 0.0, 0.2, 1),\n  // Spring\n  spring: cubic-bezier(0.175, 0.885, 0.32, 1.275)\n\
+    );\n\n// Animation mixins\n@mixin transition($properties, $duration: normal, $easing:\
+    \ standard, $delay: 0ms) {\n  $duration-value: map-get($duration, $duration);\n\
+    \  $easing-value: map-get($easing, $easing);\n\n  transition-property: $properties;\n\
+    \  transition-duration: $duration-value;\n  transition-timing-function: $easing-value;\n\
+    \  transition-delay: $delay;\n}\n\n// Micro-interactions\n@mixin hover-lift()\
+    \ {\n  @include transition(transform box-shadow, fast);\n\n  &:hover {\n    transform:\
+    \ translateY(-2px);\n    box-shadow: map-get($shadows, 3);\n  }\n}\n\n@mixin press-scale()\
+    \ {\n  @include transition(transform, faster);\n\n  &:active {\n    transform:\
+    \ scale(0.96);\n  }\n}\n\n// Page transitions\n@keyframes fade-in {\n  from {\n\
+    \    opacity: 0;\n  }\n  to {\n    opacity: 1;\n  }\n}\n\n@keyframes slide-up\
+    \ {\n  from {\n    opacity: 0;\n    transform: translateY(20px);\n  }\n  to {\n\
+    \    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n@keyframes scale-in\
+    \ {\n  from {\n    opacity: 0;\n    transform: scale(0.9);\n  }\n  to {\n    opacity:\
+    \ 1;\n    transform: scale(1);\n  }\n}\n\n// Stagger animations\n@mixin stagger-children($delay:\
+    \ 50ms, $count: 10) {\n  @for $i from 1 through $count {\n    &:nth-child(#{$i})\
+    \ {\n      animation-delay: $delay * $i;\n    }\n  }\n}\n\n// Loading states\n\
+    @keyframes pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity:\
+    \ 0.5;\n  }\n}\n\n@keyframes skeleton {\n  0% {\n    background-position: -200%\
+    \ 0;\n  }\n  100% {\n    background-position: 200% 0;\n  }\n}\n\n.skeleton {\n\
+    \  background: linear-gradient(\n    90deg,\n    var(--color-skeleton-base) 25%,\n\
+    \    var(--color-skeleton-shine) 50%,\n    var(--color-skeleton-base) 75%\n  );\n\
+    \  background-size: 200% 100%;\n  animation: skeleton 1.5s ease-in-out infinite;\n\
+    }\n```\n\n#### Gesture Feedback **[REQUIRED]**\n```typescript\n// utils/gesture-feedback.ts\n\
+    interface RippleOptions {\n  color?: string;\n  duration?: number;\n  size?: number;\n\
+    }\n\nexport class RippleEffect {\n  private container: HTMLElement;\n  private\
+    \ options: Required<RippleOptions>;\n\n  constructor(element: HTMLElement, options:\
+    \ RippleOptions = {}) {\n    this.container = element;\n    this.options = {\n\
+    \      color: options.color || 'currentColor',\n      duration: options.duration\
+    \ || 600,\n      size: options.size || 0,\n    };\n\n    this.container.style.position\
+    \ = 'relative';\n    this.container.style.overflow = 'hidden';\n\n    this.bindEvents();\n\
+    \  }\n\n  private bindEvents() {\n    this.container.addEventListener('pointerdown',\
+    \ this.createRipple);\n  }\n\n  private createRipple = (event: PointerEvent) =>\
+    \ {\n    const ripple = document.createElement('span');\n    const rect = this.container.getBoundingClientRect();\n\
+    \n    const size = this.options.size || Math.max(rect.width, rect.height);\n \
+    \   const x = event.clientX - rect.left - size / 2;\n    const y = event.clientY\
+    \ - rect.top - size / 2;\n\n    ripple.style.cssText = `\n      position: absolute;\n\
+    \      border-radius: 50%;\n      pointer-events: none;\n      width: ${size}px;\n\
+    \      height: ${size}px;\n      left: ${x}px;\n      top: ${y}px;\n      background-color:\
+    \ ${this.options.color};\n      opacity: 0.3;\n      transform: scale(0);\n  \
+    \    animation: ripple-effect ${this.options.duration}ms ease-out;\n    `;\n\n\
+    \    this.container.appendChild(ripple);\n\n    ripple.addEventListener('animationend',\
+    \ () => {\n      ripple.remove();\n    });\n  };\n\n  destroy() {\n    this.container.removeEventListener('pointerdown',\
+    \ this.createRipple);\n  }\n}\n\n// Usage\nconst button = document.querySelector('.button');\n\
+    new RippleEffect(button, { color: 'rgba(255, 255, 255, 0.5)' });\n```\n\n### 6.2\
+    \ Interactive Patterns\n\n#### Drag and Drop **[RECOMMENDED]**\n```typescript\n\
+    // components/DragDrop/useDragDrop.ts\ninterface DragDropOptions {\n  onDragStart?:\
+    \ (item: any) => void;\n  onDragEnd?: (item: any) => void;\n  onDrop?: (item:\
+    \ any, target: any) => void;\n  canDrop?: (item: any, target: any) => boolean;\n\
+    }\n\nexport function useDragDrop(options: DragDropOptions) {\n  const [isDragging,\
+    \ setIsDragging] = useState(false);\n  const [draggedItem, setDraggedItem] = useState<any>(null);\n\
+    \n  const dragHandlers = {\n    draggable: true,\n    onDragStart: (e: React.DragEvent,\
+    \ item: any) => {\n      setIsDragging(true);\n      setDraggedItem(item);\n \
+    \     e.dataTransfer.effectAllowed = 'move';\n      e.dataTransfer.setData('text/plain',\
+    \ JSON.stringify(item));\n      options.onDragStart?.(item);\n    },\n    onDragEnd:\
+    \ (e: React.DragEvent) => {\n      setIsDragging(false);\n      setDraggedItem(null);\n\
+    \      options.onDragEnd?.(draggedItem);\n    },\n  };\n\n  const dropHandlers\
+    \ = {\n    onDragOver: (e: React.DragEvent) => {\n      e.preventDefault();\n\
+    \      if (options.canDrop?.(draggedItem, e.currentTarget) ?? true) {\n      \
+    \  e.dataTransfer.dropEffect = 'move';\n      } else {\n        e.dataTransfer.dropEffect\
+    \ = 'none';\n      }\n    },\n    onDrop: (e: React.DragEvent, target: any) =>\
+    \ {\n      e.preventDefault();\n      const item = JSON.parse(e.dataTransfer.getData('text/plain'));\n\
+    \      options.onDrop?.(item, target);\n    },\n  };\n\n  return {\n    isDragging,\n\
+    \    draggedItem,\n    dragHandlers,\n    dropHandlers,\n  };\n}\n\n// Visual\
+    \ feedback during drag\n.draggable {\n  cursor: move;\n  transition: opacity 0.2s\
+    \ ease;\n\n  &--dragging {\n    opacity: 0.5;\n    cursor: grabbing;\n  }\n}\n\
+    \n.drop-zone {\n  transition: all 0.2s ease;\n\n  &--active {\n    background-color:\
+    \ var(--color-drop-zone-active);\n    border: 2px dashed var(--color-primary);\n\
+    \  }\n\n  &--hover {\n    background-color: var(--color-drop-zone-hover);\n  \
+    \  transform: scale(1.02);\n  }\n}\n```\n\n#### Scroll Interactions **[RECOMMENDED]**\n\
+    ```typescript\n// hooks/useScrollProgress.ts\nexport function useScrollProgress()\
+    \ {\n  const [progress, setProgress] = useState(0);\n\n  useEffect(() => {\n \
+    \   const updateProgress = () => {\n      const scrollTop = window.scrollY;\n\
+    \      const docHeight = document.documentElement.scrollHeight;\n      const winHeight\
+    \ = window.innerHeight;\n      const scrollPercent = scrollTop / (docHeight -\
+    \ winHeight);\n\n      setProgress(Math.min(Math.max(scrollPercent, 0), 1));\n\
+    \    };\n\n    window.addEventListener('scroll', updateProgress, { passive: true\
+    \ });\n    updateProgress();\n\n    return () => window.removeEventListener('scroll',\
+    \ updateProgress);\n  }, []);\n\n  return progress;\n}\n\n// Parallax scrolling\n\
+    export function useParallax(speed: number = 0.5) {\n  const ref = useRef<HTMLElement>(null);\n\
+    \n  useEffect(() => {\n    const element = ref.current;\n    if (!element) return;\n\
+    \n    const handleScroll = () => {\n      const scrolled = window.scrollY;\n \
+    \     const yPos = -(scrolled * speed);\n      element.style.transform = `translateY(${yPos}px)`;\n\
+    \    };\n\n    window.addEventListener('scroll', handleScroll, { passive: true\
+    \ });\n    return () => window.removeEventListener('scroll', handleScroll);\n\
+    \  }, [speed]);\n\n  return ref;\n}\n```\n\n---"
+  7. Responsive and Adaptive Design: "### 7.1 Responsive Patterns\n\n#### Breakpoint\
+    \ System **[REQUIRED]**\n```scss\n// styles/responsive.scss\n// Mobile-first responsive\
+    \ design system\n\n// Breakpoint definitions (same as in section 2.1)\n$breakpoints:\
+    \ (\n  xs: 0,\n  sm: 576px,\n  md: 768px,\n  lg: 992px,\n  xl: 1200px,\n  xxl:\
+    \ 1400px\n);\n\n// Breakpoint mixins\n@mixin media-up($breakpoint) {\n  @if map-has-key($breakpoints,\
+    \ $breakpoint) {\n    @media (min-width: map-get($breakpoints, $breakpoint)) {\n\
+    \      @content;\n    }\n  } @else {\n    @warn \"Invalid breakpoint: #{$breakpoint}\"\
+    ;\n  }\n}\n\n@mixin media-down($breakpoint) {\n  @if map-has-key($breakpoints,\
+    \ $breakpoint) {\n    @media (max-width: map-get($breakpoints, $breakpoint) -\
+    \ 1px) {\n      @content;\n    }\n  } @else {\n    @warn \"Invalid breakpoint:\
+    \ #{$breakpoint}\";\n  }\n}\n\n@mixin media-between($lower, $upper) {\n  @if map-has-key($breakpoints,\
+    \ $lower) and map-has-key($breakpoints, $upper) {\n    @media (min-width: map-get($breakpoints,\
+    \ $lower)) and (max-width: map-get($breakpoints, $upper) - 1px) {\n      @content;\n\
+    \    }\n  } @else {\n    @warn \"Invalid breakpoints: #{$lower}, #{$upper}\";\n\
+    \  }\n}\n\n// Container system\n.container {\n  width: 100%;\n  margin-left: auto;\n\
+    \  margin-right: auto;\n  padding-left: map-get($spacing, 4);\n  padding-right:\
+    \ map-get($spacing, 4);\n\n  @each $breakpoint, $container-width in $container-max-widths\
+    \ {\n    @include media-up($breakpoint) {\n      max-width: $container-width;\n\
+    \    }\n  }\n\n  &--fluid {\n    max-width: none;\n  }\n}\n\n// Responsive utilities\n\
+    @each $breakpoint in map-keys($breakpoints) {\n  @include media-up($breakpoint)\
+    \ {\n    .hide-#{$breakpoint} { display: none !important; }\n    .show-#{$breakpoint}\
+    \ { display: block !important; }\n  }\n}\n```\n\n#### Responsive Components **[REQUIRED]**\n\
+    ```typescript\n// hooks/useMediaQuery.ts\nexport function useMediaQuery(query:\
+    \ string): boolean {\n  const [matches, setMatches] = useState(false);\n\n  useEffect(()\
+    \ => {\n    const media = window.matchMedia(query);\n\n    const updateMatch =\
+    \ () => setMatches(media.matches);\n    updateMatch();\n\n    media.addEventListener('change',\
+    \ updateMatch);\n    return () => media.removeEventListener('change', updateMatch);\n\
+    \  }, [query]);\n\n  return matches;\n}\n\n// Responsive component example\nexport\
+    \ const ResponsiveNavigation: React.FC = () => {\n  const isMobile = useMediaQuery('(max-width:\
+    \ 768px)');\n  const isTablet = useMediaQuery('(min-width: 769px) and (max-width:\
+    \ 1024px)');\n  const isDesktop = useMediaQuery('(min-width: 1025px)');\n\n  if\
+    \ (isMobile) {\n    return <MobileNavigation />;\n  }\n\n  if (isTablet) {\n \
+    \   return <TabletNavigation />;\n  }\n\n  return <DesktopNavigation />;\n};\n\
+    ```\n\n### 7.2 Adaptive Patterns\n\n#### Progressive Enhancement **[REQUIRED]**\n\
+    ```typescript\n// utils/feature-detection.ts\nexport const features = {\n  touch:\
+    \ 'ontouchstart' in window,\n  webp: supportsWebP(),\n  grid: CSS.supports('display',\
+    \ 'grid'),\n  sticky: CSS.supports('position', 'sticky'),\n  blur: CSS.supports('backdrop-filter',\
+    \ 'blur(10px)'),\n  customProperties: CSS.supports('--custom', 'property'),\n\
+    \  prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,\n\
+    \  prefersColorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches,\n\
+    };\n\n// Progressive image loading\nexport const ProgressiveImage: React.FC<{\n\
+    \  src: string;\n  alt: string;\n  placeholder?: string;\n}> = ({ src, alt, placeholder\
+    \ }) => {\n  const [imageSrc, setImageSrc] = useState(placeholder || '');\n  const\
+    \ [imageRef, setImageRef] = useState<HTMLImageElement | null>(null);\n\n  useEffect(()\
+    \ => {\n    const observer = new IntersectionObserver(\n      entries => {\n \
+    \       entries.forEach(entry => {\n          if (entry.isIntersecting) {\n  \
+    \          const img = new Image();\n            img.src = src;\n            img.onload\
+    \ = () => setImageSrc(src);\n            observer.unobserve(entry.target);\n \
+    \         }\n        });\n      },\n      { threshold: 0.1 }\n    );\n\n    if\
+    \ (imageRef) {\n      observer.observe(imageRef);\n    }\n\n    return () => observer.disconnect();\n\
+    \  }, [imageRef, src]);\n\n  return (\n    <img\n      ref={setImageRef}\n   \
+    \   src={imageSrc}\n      alt={alt}\n      loading=\"lazy\"\n      className={clsx('progressive-image',\
+    \ {\n        'progressive-image--loaded': imageSrc === src,\n      })}\n    />\n\
+    \  );\n};\n```\n\n#### Device Optimization **[RECOMMENDED]**\n```scss\n// styles/device-optimization.scss\n\
+    // Touch-optimized styles\n@media (hover: none) and (pointer: coarse) {\n  //\
+    \ Touch devices\n  .button {\n    min-height: 44px; // Apple HIG minimum\n   \
+    \ min-width: 44px;\n  }\n\n  .link {\n    padding: map-get($spacing, 2) map-get($spacing,\
+    \ 3);\n    margin: -#{map-get($spacing, 2)} -#{map-get($spacing, 3)};\n  }\n\n\
+    \  // Disable hover effects on touch\n  .card:hover {\n    transform: none;\n\
+    \    box-shadow: map-get($shadows, 1);\n  }\n}\n\n// High-DPI displays\n@media\
+    \ (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {\n  // Use higher\
+    \ resolution images\n  .logo {\n    background-image: url('/images/logo@2x.png');\n\
+    \  }\n\n  // Thinner borders\n  .divider {\n    border-width: 0.5px;\n  }\n}\n\
+    \n// Reduced motion\n@media (prefers-reduced-motion: reduce) {\n  *,\n  *::before,\n\
+    \  *::after {\n    animation-duration: 0.01ms !important;\n    animation-iteration-count:\
+    \ 1 !important;\n    transition-duration: 0.01ms !important;\n  }\n\n  .parallax\
+    \ {\n    transform: none !important;\n  }\n}\n\n// Print styles\n@media print\
+    \ {\n  .no-print {\n    display: none !important;\n  }\n\n  body {\n    font-size:\
+    \ 12pt;\n    line-height: 1.5;\n    color: #000;\n    background: #fff;\n  }\n\
+    \n  a {\n    text-decoration: underline;\n\n    &[href^=\"http\"]:after {\n  \
+    \    content: \" (\" attr(href) \")\";\n    }\n  }\n}\n```\n\n---"
+  8. User Experience Patterns: '### 8.1 Navigation Patterns
+
+
+    #### Information Architecture **[REQUIRED]**
+
+    ```yaml'
+  ux/information-architecture.yaml: "navigation_patterns:\n  primary_navigation:\n\
+    \    max_items: 7  # Miller's Law\n    patterns:\n      - horizontal_bar\n   \
+    \   - hamburger_menu\n      - tab_bar\n      - side_drawer\n\n  secondary_navigation:\n\
+    \    patterns:\n      - breadcrumbs\n      - section_tabs\n      - sidebar_menu\n\
+    \      - contextual_actions\n\n  mobile_navigation:\n    patterns:\n      - bottom_tab_bar\
+    \  # Max 5 items\n      - hamburger_drawer\n      - gesture_navigation\n     \
+    \ - floating_action_button\n\ninformation_hierarchy:\n  levels:\n    1: \"Global\
+    \ navigation\"\n    2: \"Section navigation\"\n    3: \"Page navigation\"\n  \
+    \  4: \"Content navigation\"\n\n  principles:\n    - Progressive disclosure\n\
+    \    - Consistent positioning\n    - Clear labeling\n    - Visual hierarchy\n\
+    ```\n\n#### Search Patterns **[REQUIRED]**\n```typescript\n// components/Search/SearchExperience.tsx\n\
+    interface SearchConfig {\n  placeholder?: string;\n  debounceMs?: number;\n  minChars?:\
+    \ number;\n  maxResults?: number;\n  showRecent?: boolean;\n  showSuggestions?:\
+    \ boolean;\n  categories?: string[];\n}\n\nexport const SearchExperience: React.FC<SearchConfig>\
+    \ = ({\n  placeholder = \"Search...\",\n  debounceMs = 300,\n  minChars = 2,\n\
+    \  maxResults = 10,\n  showRecent = true,\n  showSuggestions = true,\n  categories\
+    \ = [],\n}) => {\n  const [query, setQuery] = useState('');\n  const [results,\
+    \ setResults] = useState<SearchResult[]>([]);\n  const [isSearching, setIsSearching]\
+    \ = useState(false);\n  const [isFocused, setIsFocused] = useState(false);\n\n\
+    \  const debouncedSearch = useMemo(\n    () => debounce(async (searchQuery: string)\
+    \ => {\n      if (searchQuery.length < minChars) {\n        setResults([]);\n\
+    \        return;\n      }\n\n      setIsSearching(true);\n      try {\n      \
+    \  const searchResults = await performSearch(searchQuery, {\n          maxResults,\n\
+    \          categories,\n        });\n        setResults(searchResults);\n    \
+    \  } finally {\n        setIsSearching(false);\n      }\n    }, debounceMs),\n\
+    \    [debounceMs, minChars, maxResults, categories]\n  );\n\n  useEffect(() =>\
+    \ {\n    debouncedSearch(query);\n  }, [query, debouncedSearch]);\n\n  return\
+    \ (\n    <div className={clsx('search', { 'search--active': isFocused })}>\n \
+    \     <div className=\"search__input-wrapper\">\n        <SearchIcon className=\"\
+    search__icon\" />\n        <input\n          type=\"search\"\n          className=\"\
+    search__input\"\n          placeholder={placeholder}\n          value={query}\n\
+    \          onChange={(e) => setQuery(e.target.value)}\n          onFocus={() =>\
+    \ setIsFocused(true)}\n          onBlur={() => setTimeout(() => setIsFocused(false),\
+    \ 200)}\n          aria-label=\"Search\"\n          aria-autocomplete=\"list\"\
+    \n          aria-controls=\"search-results\"\n          aria-expanded={isFocused\
+    \ && (results.length > 0 || showRecent)}\n        />\n        {isSearching &&\
+    \ <Spinner className=\"search__spinner\" />}\n        {query && (\n          <button\n\
+    \            className=\"search__clear\"\n            onClick={() => setQuery('')}\n\
+    \            aria-label=\"Clear search\"\n          >\n            <ClearIcon\
+    \ />\n          </button>\n        )}\n      </div>\n\n      {isFocused && (\n\
+    \        <div\n          id=\"search-results\"\n          className=\"search__results\"\
+    \n          role=\"listbox\"\n        >\n          {query.length < minChars &&\
+    \ showRecent && (\n            <RecentSearches onSelect={setQuery} />\n      \
+    \    )}\n\n          {query.length >= minChars && (\n            <>\n        \
+    \      {showSuggestions && (\n                <SearchSuggestions\n           \
+    \       query={query}\n                  onSelect={setQuery}\n               \
+    \ />\n              )}\n\n              <SearchResults\n                results={results}\n\
+    \                query={query}\n                isSearching={isSearching}\n  \
+    \            />\n            </>\n          )}\n        </div>\n      )}\n   \
+    \ </div>\n  );\n};\n```\n\n### 8.2 Feedback Patterns\n\n#### Loading States **[REQUIRED]**\n\
+    ```typescript\n// components/Loading/LoadingPatterns.tsx\nexport const SkeletonLoader:\
+    \ React.FC<{\n  lines?: number;\n  showAvatar?: boolean;\n  showImage?: boolean;\n\
+    }> = ({ lines = 3, showAvatar = false, showImage = false }) => {\n  return (\n\
+    \    <div className=\"skeleton-loader\">\n      {showImage && (\n        <div\
+    \ className=\"skeleton skeleton--image\" />\n      )}\n      <div className=\"\
+    skeleton-loader__content\">\n        {showAvatar && (\n          <div className=\"\
+    skeleton skeleton--avatar\" />\n        )}\n        <div className=\"skeleton-loader__text\"\
+    >\n          <div className=\"skeleton skeleton--title\" />\n          {Array.from({\
+    \ length: lines }).map((_, i) => (\n            <div\n              key={i}\n\
+    \              className=\"skeleton skeleton--line\"\n              style={{ width:\
+    \ `${Math.random() * 40 + 60}%` }}\n            />\n          ))}\n        </div>\n\
+    \      </div>\n    </div>\n  );\n};\n\nexport const ProgressIndicator: React.FC<{\n\
+    \  value: number;\n  max?: number;\n  label?: string;\n  showPercentage?: boolean;\n\
+    }> = ({ value, max = 100, label, showPercentage = true }) => {\n  const percentage\
+    \ = Math.round((value / max) * 100);\n\n  return (\n    <div className=\"progress\"\
+    \ role=\"progressbar\" aria-valuenow={value} aria-valuemax={max}>\n      {label\
+    \ && <div className=\"progress__label\">{label}</div>}\n      <div className=\"\
+    progress__track\">\n        <div\n          className=\"progress__fill\"\n   \
+    \       style={{ width: `${percentage}%` }}\n        />\n      </div>\n      {showPercentage\
+    \ && (\n        <div className=\"progress__percentage\">{percentage}%</div>\n\
+    \      )}\n    </div>\n  );\n};\n```\n\n#### Error Handling **[REQUIRED]**\n```typescript\n\
+    // components/Error/ErrorBoundary.tsx\ninterface ErrorFallbackProps {\n  error:\
+    \ Error;\n  resetError: () => void;\n  level?: 'page' | 'section' | 'component';\n\
+    }\n\nexport const ErrorFallback: React.FC<ErrorFallbackProps> = ({\n  error,\n\
+    \  resetError,\n  level = 'component',\n}) => {\n  const errorId = useId();\n\n\
+    \  useEffect(() => {\n    console.error('Error boundary caught:', error);\n  \
+    \  // Log to error tracking service\n    trackError(error, { level, errorId });\n\
+    \  }, [error, level, errorId]);\n\n  if (level === 'page') {\n    return (\n \
+    \     <div className=\"error-page\">\n        <div className=\"error-page__content\"\
+    >\n          <h1>Something went wrong</h1>\n          <p>We're sorry, but something\
+    \ unexpected happened.</p>\n          <details className=\"error-page__details\"\
+    >\n            <summary>Error details</summary>\n            <pre>{error.message}</pre>\n\
+    \          </details>\n          <div className=\"error-page__actions\">\n   \
+    \         <Button onClick={resetError} variant=\"primary\">\n              Try\
+    \ again\n            </Button>\n            <Button onClick={() => window.location.href\
+    \ = '/'} variant=\"ghost\">\n              Go to homepage\n            </Button>\n\
+    \          </div>\n        </div>\n      </div>\n    );\n  }\n\n  return (\n \
+    \   <div className={clsx('error-fallback', `error-fallback--${level}`)}>\n   \
+    \   <div className=\"error-fallback__icon\">\n        <ErrorIcon />\n      </div>\n\
+    \      <div className=\"error-fallback__message\">\n        <p>Unable to load\
+    \ this {level}</p>\n        <button\n          className=\"error-fallback__retry\"\
+    \n          onClick={resetError}\n        >\n          Try again\n        </button>\n\
+    \      </div>\n    </div>\n  );\n};\n\n// Form validation feedback\nexport const\
+    \ FormFieldError: React.FC<{\n  error?: string;\n  touched?: boolean;\n}> = ({\
+    \ error, touched }) => {\n  if (!error || !touched) return null;\n\n  return (\n\
+    \    <div className=\"form-field__error\" role=\"alert\">\n      <ErrorIcon className=\"\
+    form-field__error-icon\" />\n      <span>{error}</span>\n    </div>\n  );\n};\n\
+    ```\n\n### 8.3 Accessibility Patterns\n\n#### Keyboard Navigation **[REQUIRED]**\n\
+    ```typescript\n// hooks/useKeyboardNavigation.ts\nexport function useKeyboardNavigation(\n\
+    \  items: any[],\n  options: {\n    orientation?: 'horizontal' | 'vertical';\n\
+    \    loop?: boolean;\n    onSelect?: (item: any, index: number) => void;\n  }\
+    \ = {}\n) {\n  const {\n    orientation = 'vertical',\n    loop = true,\n    onSelect,\n\
+    \  } = options;\n\n  const [focusedIndex, setFocusedIndex] = useState(-1);\n\n\
+    \  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {\n    const\
+    \ key = event.key;\n    const itemCount = items.length;\n\n    const navigationKeys\
+    \ = {\n      vertical: {\n        next: 'ArrowDown',\n        prev: 'ArrowUp',\n\
+    \      },\n      horizontal: {\n        next: 'ArrowRight',\n        prev: 'ArrowLeft',\n\
+    \      },\n    };\n\n    const { next, prev } = navigationKeys[orientation];\n\
+    \n    switch (key) {\n      case next:\n        event.preventDefault();\n    \
+    \    setFocusedIndex(current => {\n          const nextIndex = current + 1;\n\
+    \          if (nextIndex >= itemCount) {\n            return loop ? 0 : current;\n\
+    \          }\n          return nextIndex;\n        });\n        break;\n\n   \
+    \   case prev:\n        event.preventDefault();\n        setFocusedIndex(current\
+    \ => {\n          const prevIndex = current - 1;\n          if (prevIndex < 0)\
+    \ {\n            return loop ? itemCount - 1 : current;\n          }\n       \
+    \   return prevIndex;\n        });\n        break;\n\n      case 'Enter':\n  \
+    \    case ' ':\n        event.preventDefault();\n        if (focusedIndex >= 0\
+    \ && focusedIndex < itemCount) {\n          onSelect?.(items[focusedIndex], focusedIndex);\n\
+    \        }\n        break;\n\n      case 'Home':\n        event.preventDefault();\n\
+    \        setFocusedIndex(0);\n        break;\n\n      case 'End':\n        event.preventDefault();\n\
+    \        setFocusedIndex(itemCount - 1);\n        break;\n\n      case 'Escape':\n\
+    \        event.preventDefault();\n        setFocusedIndex(-1);\n        break;\n\
+    \    }\n  }, [items, orientation, loop, onSelect, focusedIndex]);\n\n  return\
+    \ {\n    focusedIndex,\n    setFocusedIndex,\n    handleKeyDown,\n    keyboardProps:\
+    \ {\n      onKeyDown: handleKeyDown,\n      tabIndex: 0,\n      role: 'list',\n\
+    \    },\n  };\n}\n```\n\n#### Screen Reader Support **[REQUIRED]**\n```typescript\n\
+    // components/Accessibility/LiveRegion.tsx\nexport const LiveRegion: React.FC<{\n\
+    \  message: string;\n  politeness?: 'polite' | 'assertive' | 'off';\n  atomic?:\
+    \ boolean;\n  relevant?: 'additions' | 'removals' | 'text' | 'all';\n}> = ({\n\
+    \  message,\n  politeness = 'polite',\n  atomic = true,\n  relevant = 'additions',\n\
+    }) => {\n  return (\n    <div\n      role=\"status\"\n      aria-live={politeness}\n\
+    \      aria-atomic={atomic}\n      aria-relevant={relevant}\n      className=\"\
+    sr-only\"\n    >\n      {message}\n    </div>\n  );\n};\n\n// Accessible tooltips\n\
+    export const Tooltip: React.FC<{\n  content: React.ReactNode;\n  children: React.ReactElement;\n\
+    }> = ({ content, children }) => {\n  const [isVisible, setIsVisible] = useState(false);\n\
+    \  const tooltipId = useId();\n\n  return (\n    <>\n      {React.cloneElement(children,\
+    \ {\n        'aria-describedby': isVisible ? tooltipId : undefined,\n        onMouseEnter:\
+    \ () => setIsVisible(true),\n        onMouseLeave: () => setIsVisible(false),\n\
+    \        onFocus: () => setIsVisible(true),\n        onBlur: () => setIsVisible(false),\n\
+    \      })}\n      {isVisible && (\n        <div\n          id={tooltipId}\n  \
+    \        role=\"tooltip\"\n          className=\"tooltip\"\n        >\n      \
+    \    {content}\n        </div>\n      )}\n    </>\n  );\n};\n```\n\n---"
+  Implementation Guidelines: '### Design System Adoption
+
+    1. **Audit Phase**: Review existing designs and identify patterns
+
+    2. **Foundation Phase**: Establish color, typography, and spacing systems
+
+    3. **Component Phase**: Build core component library
+
+    4. **Pattern Phase**: Document common UI patterns
+
+    5. **Optimization Phase**: Refine based on usage and feedback
+
+
+    ### Design Tools Integration
+
+    - **Figma**: Use shared libraries and design tokens
+
+    - **Sketch**: Maintain symbol libraries
+
+    - **Adobe XD**: Create component states and interactions
+
+    - **Storybook**: Document component variations
+
+    - **Design Tokens**: Sync between design and code
+
+
+    ### Quality Assurance
+
+    - **Visual Testing**: Screenshot comparison tests
+
+    - **Accessibility Testing**: Automated and manual audits
+
+    - **Performance Testing**: Lighthouse scores
+
+    - **Cross-browser Testing**: Ensure consistency
+
+    - **Device Testing**: Real device validation
+
+
+    ### Success Metrics
+
+    - **Consistency Score**: Design system adoption rate
+
+    - **Accessibility Score**: WCAG compliance level
+
+    - **Performance Score**: Core Web Vitals metrics
+
+    - **Efficiency Gain**: Time saved in design/development
+
+    - **User Satisfaction**: Usability testing results
+
+
+    ---
+
+
+    **End of Web Design and UX Standards**'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:53.757153'
+  source: williamzujkowski/standards/docs/standards/WEB_DESIGN_UX_STANDARDS.md
+  checksum: e779af22983a3dc31089b1446716ce5357b1b6e02f6bc115c4023ce041b142f9

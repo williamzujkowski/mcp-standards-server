@@ -1,0 +1,967 @@
+name: Docs/Standards/Modern Security Standards
+category: security
+filename: docs/standards/MODERN_SECURITY_STANDARDS.md
+nist_controls: []
+sections:
+  Modern Security Standards: '**Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** SEC
+
+
+    ---
+
+
+    **Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active'
+  Table of Contents: '1. [Zero Trust Architecture](#1-zero-trust-architecture)
+
+    2. [Supply Chain Security](#2-supply-chain-security)
+
+    3. [Container and Kubernetes Security](#3-container-and-kubernetes-security)
+
+    4. [API Security](#4-api-security)
+
+    5. [DevSecOps Integration](#5-devsecops-integration)
+
+    6. [Cloud Security](#6-cloud-security)
+
+    7. [Identity and Access Management](#7-identity-and-access-management)
+
+    8. [Incident Response and Forensics](#8-incident-response-and-forensics)
+
+
+    ---'
+  Overview: 'This standard provides comprehensive guidelines and best practices for
+    the subject area.
+
+    It aims to ensure consistency, quality, and maintainability across all related
+    implementations.'
+  NIST Compliance Integration: 'This standard is fully mapped to NIST 800-53r5 controls.
+    Look for `@nist` tags throughout.
+
+
+    For implementation guidance:
+
+    - **Quick Start**: [NIST_IMPLEMENTATION_GUIDE.md](./docs/nist/NIST_IMPLEMENTATION_GUIDE.md)
+
+    - **Detailed Standards**: [COMPLIANCE_STANDARDS.md](COMPLIANCE_STANDARDS.md)
+
+    - **Control Reference**: [Quick Reference](./docs/nist/NIST_IMPLEMENTATION_GUIDE.md#tagging-quick-reference)'
+  1. Zero Trust Architecture: '<!-- @nist-controls: [ac-2, ac-3, ac-6, ia-2, ia-5,
+    au-2, sc-8] -->
+
+
+    ### 1.1 Zero Trust Principles
+
+
+    #### Core Tenets **[REQUIRED]**
+
+    ```yaml'
+  Zero Trust Policy Configuration: "zero_trust_policy:\n  principles:\n    - \"Never\
+    \ trust, always verify\"\n    - \"Assume breach\"\n    - \"Verify explicitly\"\
+    \n    - \"Use least privilege access\"\n    - \"Monitor and log everything\"\n\
+    \n  implementation:\n    identity_verification:\n      - Multi-factor authentication\
+    \ required  # @nist ia-2 \"Multi-factor authentication\"\n      - Continuous authentication\
+    \  # @nist ia-2 \"Continuous verification\"\n      - Risk-based authentication\
+    \  # @nist ia-5 \"Risk-based authenticator management\"\n      - Device compliance\
+    \ verification  # @nist ia-2 \"Device authentication\"\n\n    network_segmentation:\n\
+    \      - Micro-segmentation  # @nist ac-3 \"Access enforcement through segmentation\"\
+    \n      - Software-defined perimeters  # @nist ac-3 \"Dynamic access control\"\
+    \n      - Encrypted communications  # @nist sc-8 \"Transmission confidentiality\"\
+    \n      - Network monitoring  # @nist au-2 \"Network audit events\"\n\n    data_protection:\n\
+    \      - Data classification  # @nist ac-3 \"Classification-based access\"\n \
+    \     - Encryption at rest and in transit  # @nist sc-13 \"Cryptographic protection\"\
+    \n      - Data loss prevention  # @nist ac-3 \"Data access enforcement\"\n   \
+    \   - Rights management  # @nist ac-6 \"Least privilege data access\"\n```\n\n\
+    #### Implementation Framework **[REQUIRED]**\n```python"
+  Zero Trust Access Control Framework: ''
+  '@nist ac-3 "Access enforcement implementation"': ''
+  '@nist ac-6 "Least privilege access control"': ''
+  '@nist au-2 "Audit access decisions"': "from abc import ABC, abstractmethod\nfrom\
+    \ dataclasses import dataclass\nfrom typing import List, Dict, Any, Optional\n\
+    from enum import Enum\nimport time\nimport jwt\nfrom cryptography.fernet import\
+    \ Fernet\n\nclass TrustLevel(Enum):\n    NONE = 0\n    LOW = 1\n    MEDIUM = 2\n\
+    \    HIGH = 3\n    FULL = 4\n\n@dataclass\nclass SecurityContext:\n    user_id:\
+    \ str\n    device_id: str\n    location: str\n    ip_address: str\n    user_agent:\
+    \ str\n    risk_score: float\n    trust_level: TrustLevel\n    authentication_time:\
+    \ float\n    session_id: str\n\n@dataclass\nclass AccessRequest:\n    resource:\
+    \ str\n    action: str\n    context: SecurityContext\n    requested_time: float\n\
+    \nclass PolicyEngine(ABC):\n    @abstractmethod\n    def evaluate(self, request:\
+    \ AccessRequest) -> bool:\n        pass\n\nclass ZeroTrustAccessControl:\n   \
+    \ # @nist ac-3 \"Zero trust access control implementation\"\n    def __init__(self):\n\
+    \        self.policies: List[PolicyEngine] = []\n        self.audit_logger = AuditLogger()\
+    \  # @nist au-2 \"Audit logger initialization\"\n        self.risk_engine = RiskEngine()\
+    \  # @nist ia-2 \"Risk-based authentication\"\n\n    def add_policy(self, policy:\
+    \ PolicyEngine):\n        \"\"\"Add a policy to the evaluation chain.\"\"\"\n\
+    \        self.policies.append(policy)\n\n    def evaluate_access(self, request:\
+    \ AccessRequest) -> Dict[str, Any]:\n        \"\"\"Evaluate access request against\
+    \ all policies.\n        @nist ac-3 \"Policy-based access enforcement\"\n    \
+    \    @nist au-3 \"Generate detailed audit records\"\n        \"\"\"\n        start_time\
+    \ = time.time()\n\n        # Update risk score\n        request.context.risk_score\
+    \ = self.risk_engine.calculate_risk(request.context)\n\n        # Evaluate all\
+    \ policies\n        decisions = []\n        for policy in self.policies:\n   \
+    \         try:\n                decision = policy.evaluate(request)\n        \
+    \        decisions.append({\n                    'policy': policy.__class__.__name__,\n\
+    \                    'decision': decision,\n                    'timestamp': time.time()\n\
+    \                })\n            except Exception as e:\n                decisions.append({\n\
+    \                    'policy': policy.__class__.__name__,\n                  \
+    \  'decision': False,\n                    'error': str(e),\n                \
+    \    'timestamp': time.time()\n                })\n\n        # Final decision\
+    \ - all policies must pass\n        final_decision = all(d['decision'] for d in\
+    \ decisions)\n\n        result = {\n            'access_granted': final_decision,\n\
+    \            'user_id': request.context.user_id,\n            'resource': request.resource,\n\
+    \            'action': request.action,\n            'risk_score': request.context.risk_score,\n\
+    \            'trust_level': request.context.trust_level.name,\n            'policies_evaluated':\
+    \ len(decisions),\n            'evaluation_time_ms': (time.time() - start_time)\
+    \ * 1000,\n            'policy_decisions': decisions\n        }\n\n        # Audit\
+    \ log\n        # @nist au-2 \"Log all access decisions\"\n        # @nist au-3\
+    \ \"Include all relevant details in audit log\"\n        self.audit_logger.log_access_decision(result)\n\
+    \n        return result\n\nclass IdentityVerificationPolicy(PolicyEngine):\n \
+    \   def __init__(self, mfa_required: bool = True, max_session_age: int = 3600):\n\
+    \        self.mfa_required = mfa_required\n        self.max_session_age = max_session_age\n\
+    \n    def evaluate(self, request: AccessRequest) -> bool:\n        context = request.context\n\
+    \n        # Check session age\n        session_age = time.time() - context.authentication_time\n\
+    \        if session_age > self.max_session_age:\n            return False\n\n\
+    \        # Check MFA requirement\n        if self.mfa_required and context.trust_level\
+    \ < TrustLevel.MEDIUM:\n            return False\n\n        return True\n\nclass\
+    \ LocationPolicy(PolicyEngine):\n    def __init__(self, allowed_countries: List[str],\
+    \ allowed_ip_ranges: List[str]):\n        self.allowed_countries = allowed_countries\n\
+    \        self.allowed_ip_ranges = allowed_ip_ranges\n\n    def evaluate(self,\
+    \ request: AccessRequest) -> bool:\n        context = request.context\n\n    \
+    \    # Check country restrictions\n        user_country = self._get_country_from_location(context.location)\n\
+    \        if user_country not in self.allowed_countries:\n            return False\n\
+    \n        # Check IP range restrictions\n        if not self._ip_in_allowed_ranges(context.ip_address):\n\
+    \            return False\n\n        return True\n\n    def _get_country_from_location(self,\
+    \ location: str) -> str:\n        # Implementation to extract country from location\n\
+    \        return location.split(',')[-1].strip()\n\n    def _ip_in_allowed_ranges(self,\
+    \ ip: str) -> bool:\n        # Implementation to check if IP is in allowed ranges\n\
+    \        return True  # Simplified for example\n\nclass DeviceCompliancePolicy(PolicyEngine):\n\
+    \    def __init__(self, device_registry):\n        self.device_registry = device_registry\n\
+    \n    def evaluate(self, request: AccessRequest) -> bool:\n        context = request.context\n\
+    \n        device = self.device_registry.get_device(context.device_id)\n      \
+    \  if not device:\n            return False\n\n        # Check device compliance\n\
+    \        return (\n            device.is_managed and\n            device.is_encrypted\
+    \ and\n            device.has_latest_patches and\n            not device.is_jailbroken\n\
+    \        )\n\nclass RiskBasedPolicy(PolicyEngine):\n    def __init__(self, max_risk_score:\
+    \ float = 0.7):\n        self.max_risk_score = max_risk_score\n\n    def evaluate(self,\
+    \ request: AccessRequest) -> bool:\n        return request.context.risk_score\
+    \ <= self.max_risk_score\n\nclass RiskEngine:\n    def calculate_risk(self, context:\
+    \ SecurityContext) -> float:\n        \"\"\"Calculate risk score based on various\
+    \ factors.\"\"\"\n        risk_factors = []\n\n        # Location risk\n     \
+    \   if self._is_high_risk_location(context.location):\n            risk_factors.append(0.3)\n\
+    \n        # Device risk\n        if not self._is_known_device(context.device_id):\n\
+    \            risk_factors.append(0.4)\n\n        # Time-based risk\n        if\
+    \ self._is_unusual_time(context.authentication_time):\n            risk_factors.append(0.2)\n\
+    \n        # Behavioral risk\n        behavioral_risk = self._calculate_behavioral_risk(context.user_id)\n\
+    \        risk_factors.append(behavioral_risk)\n\n        # Combine risk factors\n\
+    \        total_risk = min(sum(risk_factors), 1.0)\n        return total_risk\n\
+    \n    def _is_high_risk_location(self, location: str) -> bool:\n        # Implementation\
+    \ to check if location is high risk\n        return False\n\n    def _is_known_device(self,\
+    \ device_id: str) -> bool:\n        # Implementation to check if device is known\n\
+    \        return True\n\n    def _is_unusual_time(self, auth_time: float) -> bool:\n\
+    \        # Implementation to check if access time is unusual\n        return False\n\
+    \n    def _calculate_behavioral_risk(self, user_id: str) -> float:\n        #\
+    \ Implementation to calculate behavioral risk\n        return 0.1\n\nclass AuditLogger:\n\
+    \    def log_access_decision(self, decision: Dict[str, Any]):\n        \"\"\"\
+    Log access decision for audit purposes.\"\"\"\n        # Implementation to log\
+    \ to secure audit system\n        print(f\"AUDIT: {decision}\")"
+  Usage example: "def setup_zero_trust():\n    zt_controller = ZeroTrustAccessControl()\n\
+    \n    # Add policies\n    zt_controller.add_policy(IdentityVerificationPolicy(mfa_required=True))\n\
+    \    zt_controller.add_policy(LocationPolicy(\n        allowed_countries=['US',\
+    \ 'CA', 'UK'],\n        allowed_ip_ranges=['10.0.0.0/8', '192.168.0.0/16']\n \
+    \   ))\n    zt_controller.add_policy(DeviceCompliancePolicy(device_registry=None))\n\
+    \    zt_controller.add_policy(RiskBasedPolicy(max_risk_score=0.6))\n\n    return\
+    \ zt_controller\n```\n\n### 1.2 Network Micro-Segmentation\n\n#### Software-Defined\
+    \ Perimeters **[REQUIRED]**\n```yaml"
+  Kubernetes Network Policies for Micro-segmentation: "apiVersion: networking.k8s.io/v1\n\
+    kind: NetworkPolicy\nmetadata:\n  name: zero-trust-web-tier\n  namespace: production\n\
+    spec:\n  podSelector:\n    matchLabels:\n      tier: web\n  policyTypes:\n  -\
+    \ Ingress\n  - Egress\n  ingress:\n  - from:\n    - namespaceSelector:\n     \
+    \   matchLabels:\n          name: ingress-system\n    ports:\n    - protocol:\
+    \ TCP\n      port: 8080\n  egress:\n  - to:\n    - podSelector:\n        matchLabels:\n\
+    \          tier: api\n    ports:\n    - protocol: TCP\n      port: 3000\n  - to:\
+    \ []\n    ports:\n    - protocol: TCP\n      port: 53\n    - protocol: UDP\n \
+    \     port: 53\n\n---\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\n\
+    metadata:\n  name: zero-trust-api-tier\n  namespace: production\nspec:\n  podSelector:\n\
+    \    matchLabels:\n      tier: api\n  policyTypes:\n  - Ingress\n  - Egress\n\
+    \  ingress:\n  - from:\n    - podSelector:\n        matchLabels:\n          tier:\
+    \ web\n    ports:\n    - protocol: TCP\n      port: 3000\n  egress:\n  - to:\n\
+    \    - podSelector:\n        matchLabels:\n          tier: database\n    ports:\n\
+    \    - protocol: TCP\n      port: 5432\n```\n\n#### Service Mesh Security **[REQUIRED]**\n\
+    ```yaml"
+  Istio Authorization Policies: "apiVersion: security.istio.io/v1beta1\nkind: AuthorizationPolicy\n\
+    metadata:\n  name: zero-trust-api-access\n  namespace: production\nspec:\n  selector:\n\
+    \    matchLabels:\n      app: api-service\n  rules:\n  - from:\n    - source:\n\
+    \        principals: [\"cluster.local/ns/production/sa/web-service\"]\n    to:\n\
+    \    - operation:\n        methods: [\"GET\", \"POST\"]\n        paths: [\"/api/v1/*\"\
+    ]\n    when:\n    - key: request.headers[x-user-id]\n      values: [\"*\"]\n \
+    \   - key: request.headers[authorization]\n      values: [\"Bearer *\"]\n\n---\n\
+    apiVersion: security.istio.io/v1beta1\nkind: PeerAuthentication\nmetadata:\n \
+    \ name: zero-trust-mtls\n  namespace: production\nspec:\n  mtls:\n    mode: STRICT\n\
+    \n---\napiVersion: networking.istio.io/v1beta1\nkind: DestinationRule\nmetadata:\n\
+    \  name: zero-trust-circuit-breaker\nspec:\n  host: api-service\n  trafficPolicy:\n\
+    \    outlierDetection:\n      consecutive5xxErrors: 3\n      interval: 30s\n \
+    \     baseEjectionTime: 30s\n      maxEjectionPercent: 50\n    connectionPool:\n\
+    \      tcp:\n        maxConnections: 100\n      http:\n        http1MaxPendingRequests:\
+    \ 50\n        maxRequestsPerConnection: 10\n```\n\n---"
+  2. Supply Chain Security: '### 2.1 Software Bill of Materials (SBOM)
+
+
+    #### SBOM Generation **[REQUIRED]**
+
+    ```yaml'
+  GitHub Actions workflow for SBOM generation: "name: Generate SBOM\n\non:\n  push:\n\
+    \    branches: [ main ]\n  release:\n    types: [ published ]\n\njobs:\n  generate-sbom:\n\
+    \    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      security-events:\
+    \ write\n\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Generate\
+    \ SBOM with Syft\n        uses: anchore/sbom-action@v0\n        with:\n      \
+    \    artifact-name: sbom.spdx.json\n          format: spdx-json\n\n      - name:\
+    \ Generate SBOM with CycloneDX\n        run: |\n          npm install -g @cyclonedx/cdxgen\n\
+    \          cdxgen -o sbom-cyclonedx.json\n\n      - name: Scan SBOM for vulnerabilities\n\
+    \        uses: anchore/scan-action@v3\n        with:\n          sbom: sbom.spdx.json\n\
+    \          fail-build: true\n          severity-cutoff: critical\n\n      - name:\
+    \ Upload SBOM artifacts\n        uses: actions/upload-artifact@v3\n        with:\n\
+    \          name: sbom-files\n          path: |\n            sbom.spdx.json\n \
+    \           sbom-cyclonedx.json\n\n      - name: Publish SBOM to registry\n  \
+    \      run: |\n          # Upload to container registry as OCI artifact\n    \
+    \      oras push ghcr.io/${{ github.repository }}/sbom:${{ github.sha }} \\\n\
+    \            sbom.spdx.json:application/spdx+json\n```\n\n#### Dependency Verification\
+    \ **[REQUIRED]**\n```python"
+  Supply chain verification system: "import hashlib\nimport json\nimport requests\n\
+    from typing import Dict, List, Optional\nfrom dataclasses import dataclass\nfrom\
+    \ datetime import datetime\n\n@dataclass\nclass PackageMetadata:\n    name: str\n\
+    \    version: str\n    hash_sha256: str\n    source_url: str\n    maintainers:\
+    \ List[str]\n    signature: Optional[str]\n    published_date: datetime\n    vulnerability_count:\
+    \ int\n\nclass SupplyChainValidator:\n    def __init__(self, trusted_registries:\
+    \ List[str]):\n        self.trusted_registries = trusted_registries\n        self.vulnerability_db\
+    \ = VulnerabilityDatabase()\n        self.signature_validator = SignatureValidator()\n\
+    \n    def validate_package(self, package: PackageMetadata) -> Dict[str, any]:\n\
+    \        \"\"\"Validate a package against supply chain security policies.\"\"\"\
+    \n        results = {\n            'package': package.name,\n            'version':\
+    \ package.version,\n            'valid': True,\n            'issues': [],\n  \
+    \          'risk_score': 0.0\n        }\n\n        # Check if package is from\
+    \ trusted registry\n        if not self._is_from_trusted_registry(package.source_url):\n\
+    \            results['issues'].append('Package not from trusted registry')\n \
+    \           results['risk_score'] += 0.3\n\n        # Verify package signature\n\
+    \        if not self.signature_validator.verify(package):\n            results['issues'].append('Invalid\
+    \ or missing package signature')\n            results['risk_score'] += 0.4\n\n\
+    \        # Check for known vulnerabilities\n        vulnerabilities = self.vulnerability_db.get_vulnerabilities(\n\
+    \            package.name, package.version\n        )\n        if vulnerabilities:\n\
+    \            critical_vulns = [v for v in vulnerabilities if v.severity == 'critical']\n\
+    \            if critical_vulns:\n                results['issues'].append(f'Critical\
+    \ vulnerabilities found: {len(critical_vulns)}')\n                results['risk_score']\
+    \ += 0.5\n\n        # Check package age and maintenance\n        if self._is_unmaintained(package):\n\
+    \            results['issues'].append('Package appears unmaintained')\n      \
+    \      results['risk_score'] += 0.2\n\n        # Check for suspicious patterns\n\
+    \        if self._has_suspicious_patterns(package):\n            results['issues'].append('Suspicious\
+    \ patterns detected')\n            results['risk_score'] += 0.6\n\n        results['valid']\
+    \ = results['risk_score'] < 0.7\n        return results\n\n    def _is_from_trusted_registry(self,\
+    \ source_url: str) -> bool:\n        return any(registry in source_url for registry\
+    \ in self.trusted_registries)\n\n    def _is_unmaintained(self, package: PackageMetadata)\
+    \ -> bool:\n        # Check if package hasn't been updated in over a year\n  \
+    \      age_days = (datetime.now() - package.published_date).days\n        return\
+    \ age_days > 365\n\n    def _has_suspicious_patterns(self, package: PackageMetadata)\
+    \ -> bool:\n        suspicious_patterns = [\n            'eval',\n           \
+    \ 'exec',\n            'process.env',\n            'child_process',\n        \
+    \    'crypto-mining',\n            'bitcoin',\n            'monero'\n        ]\n\
+    \        # This is simplified - real implementation would analyze package contents\n\
+    \        return any(pattern in package.name.lower() for pattern in suspicious_patterns)\n\
+    \nclass VulnerabilityDatabase:\n    def get_vulnerabilities(self, package_name:\
+    \ str, version: str) -> List[Dict]:\n        \"\"\"Get known vulnerabilities for\
+    \ a package version.\"\"\"\n        # Integration with vulnerability databases\
+    \ like OSV, NVD, etc.\n        return []\n\nclass SignatureValidator:\n    def\
+    \ verify(self, package: PackageMetadata) -> bool:\n        \"\"\"Verify package\
+    \ signature.\"\"\"\n        if not package.signature:\n            return False\n\
+    \n        # Implement signature verification logic\n        return True"
+  Gradle configuration for dependency verification: "gradle_verification = \"\"\"\n\
+    // gradle/verification-metadata.xml\n<?xml version=\"1.0\" encoding=\"UTF-8\"\
+    ?>\n<verification-metadata>\n   <configuration>\n      <verify-metadata>true</verify-metadata>\n\
+    \      <verify-signatures>true</verify-signatures>\n      <trusted-artifacts>\n\
+    \         <trust group=\"org.springframework\" name=\"spring-core\"/>\n      \
+    \   <trust group=\"com.fasterxml.jackson.core\"/>\n      </trusted-artifacts>\n\
+    \      <ignored-keys>\n         <ignored-key id=\"some-ignored-key\"/>\n     \
+    \ </ignored-keys>\n   </configuration>\n   <components>\n      <component group=\"\
+    org.springframework\" name=\"spring-core\" version=\"5.3.21\">\n         <artifact\
+    \ name=\"spring-core-5.3.21.jar\">\n            <sha256 value=\"abcd1234...\"\
+    \ origin=\"gradle verification\"/>\n         </artifact>\n      </component>\n\
+    \   </components>\n</verification-metadata>\n\"\"\"\n```\n\n### 2.2 Container\
+    \ Image Security\n\n#### Image Scanning Pipeline **[REQUIRED]**\n```yaml"
+  Container security scanning workflow: "name: Container Security Scan\n\non:\n  push:\n\
+    \    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n\nenv:\n  REGISTRY:\
+    \ ghcr.io\n  IMAGE_NAME: ${{ github.repository }}\n\njobs:\n  security-scan:\n\
+    \    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      security-events:\
+    \ write\n      packages: write\n\n    steps:\n      - name: Checkout code\n  \
+    \      uses: actions/checkout@v4\n\n      - name: Build image\n        run: |\n\
+    \          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha\
+    \ }} .\n\n      - name: Run Trivy vulnerability scanner\n        uses: aquasecurity/trivy-action@master\n\
+    \        with:\n          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{\
+    \ github.sha }}\n          format: 'sarif'\n          output: 'trivy-results.sarif'\n\
+    \          severity: 'CRITICAL,HIGH'\n          exit-code: '1'\n\n      - name:\
+    \ Run Grype vulnerability scanner\n        uses: anchore/scan-action@v3\n    \
+    \    with:\n          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha\
+    \ }}\n          fail-build: true\n          severity-cutoff: critical\n      \
+    \    acs-report-enable: true\n\n      - name: Run Docker Scout\n        uses:\
+    \ docker/scout-action@v1\n        with:\n          command: cves\n          image:\
+    \ ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\n          exit-code:\
+    \ true\n          only-severities: critical,high\n\n      - name: Sign container\
+    \ image\n        uses: sigstore/cosign-installer@v3\n      - run: |\n        \
+    \  cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha\
+    \ }}\n        env:\n          COSIGN_EXPERIMENTAL: 1\n\n      - name: Generate\
+    \ SLSA provenance\n        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.7.0\n\
+    \        with:\n          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\n \
+    \         digest: ${{ steps.build.outputs.digest }}\n          registry-username:\
+    \ ${{ github.actor }}\n          registry-password: ${{ secrets.GITHUB_TOKEN }}\n\
+    \n      - name: Upload Trivy scan results\n        uses: github/codeql-action/upload-sarif@v2\n\
+    \        if: always()\n        with:\n          sarif_file: 'trivy-results.sarif'\n\
+    ```\n\n#### Secure Container Configuration **[REQUIRED]**\n```dockerfile"
+  Secure Dockerfile example: FROM node:18-alpine AS builder
+  Create non-root user: "RUN addgroup -g 1001 -S nodejs && \\\n    adduser -S nextjs\
+    \ -u 1001"
+  Set working directory: WORKDIR /app
+  Copy package files: COPY package*.json ./
+  Install dependencies: RUN npm ci --only=production && npm cache clean --force
+  Copy source code: COPY . .
+  Build application: RUN npm run build
+  Production stage: FROM node:18-alpine AS runner
+  Security updates: RUN apk update && apk upgrade
+  Copy built application: 'COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+
+    COPY --from=builder /app/node_modules ./node_modules
+
+    COPY --from=builder /app/package.json ./package.json'
+  Switch to non-root user: USER nextjs
+  Expose port: EXPOSE 3000
+  Health check: "HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3\
+    \ \\\n  CMD curl -f http://localhost:3000/health || exit 1"
+  Run application: 'CMD ["npm", "start"]
+
+    ```
+
+
+    ### 2.3 Code Signing and Attestation
+
+
+    #### Sigstore Integration **[REQUIRED]**
+
+    ```yaml'
+  Sigstore signing workflow: "name: Sign and Attest\n\non:\n  release:\n    types:\
+    \ [published]\n\npermissions:\n  contents: read\n  id-token: write\n  packages:\
+    \ write\n  attestations: write\n\njobs:\n  sign-attest:\n    runs-on: ubuntu-latest\n\
+    \    steps:\n      - uses: actions/checkout@v4\n\n      - name: Install Cosign\n\
+    \        uses: sigstore/cosign-installer@v3\n\n      - name: Install Rekor CLI\n\
+    \        run: |\n          wget https://github.com/sigstore/rekor/releases/latest/download/rekor-cli-linux-amd64\n\
+    \          chmod +x rekor-cli-linux-amd64\n          sudo mv rekor-cli-linux-amd64\
+    \ /usr/local/bin/rekor-cli\n\n      - name: Build artifact\n        run: |\n \
+    \         npm run build\n          tar -czf release.tar.gz dist/\n\n      - name:\
+    \ Sign artifact with Cosign\n        run: |\n          cosign sign-blob --yes\
+    \ release.tar.gz \\\n            --output-signature release.tar.gz.sig \\\n  \
+    \          --output-certificate release.tar.gz.crt\n        env:\n          COSIGN_EXPERIMENTAL:\
+    \ 1\n\n      - name: Create SLSA attestation\n        uses: actions/attest-build-provenance@v1\n\
+    \        with:\n          subject-path: release.tar.gz\n\n      - name: Verify\
+    \ signature\n        run: |\n          cosign verify-blob release.tar.gz \\\n\
+    \            --signature release.tar.gz.sig \\\n            --certificate release.tar.gz.crt\
+    \ \\\n            --certificate-identity-regexp '^https://github\\.com/${{ github.repository\
+    \ }}/' \\\n            --certificate-oidc-issuer https://token.actions.githubusercontent.com\n\
+    \        env:\n          COSIGN_EXPERIMENTAL: 1\n\n      - name: Upload signed\
+    \ artifacts\n        uses: actions/upload-release-asset@v1\n        with:\n  \
+    \        upload_url: ${{ github.event.release.upload_url }}\n          asset_path:\
+    \ release.tar.gz\n          asset_name: release.tar.gz\n          asset_content_type:\
+    \ application/gzip\n```\n\n---"
+  3. Container and Kubernetes Security: '### 3.1 Runtime Security
+
+
+    #### Falco Security Monitoring **[REQUIRED]**
+
+    ```yaml'
+  Falco rules for runtime security: "- rule: Unexpected Network Traffic\n  desc: Detect\
+    \ unexpected network connections from containers\n  condition: >\n    (inbound_outbound)\
+    \ and\n    container and\n    not proc.name in (allowed_network_processes) and\n\
+    \    not fd.typechar = 'f'\n  output: >\n    Unexpected network traffic detected\n\
+    \    (user=%user.name command=%proc.cmdline connection=%fd.name container=%container.info)\n\
+    \  priority: WARNING\n  tags: [network, container]\n\n- rule: Suspicious File\
+    \ Access\n  desc: Detect access to sensitive files\n  condition: >\n    open_read\
+    \ and\n    container and\n    (fd.name startswith /etc/passwd or\n     fd.name\
+    \ startswith /etc/shadow or\n     fd.name startswith /etc/sudoers or\n     fd.name\
+    \ startswith /root/.ssh)\n  output: >\n    Sensitive file accessed\n    (user=%user.name\
+    \ command=%proc.cmdline file=%fd.name container=%container.info)\n  priority:\
+    \ CRITICAL\n  tags: [filesystem, container]\n\n- rule: Container Privilege Escalation\n\
+    \  desc: Detect privilege escalation attempts\n  condition: >\n    spawned_process\
+    \ and\n    container and\n    proc.name in (su, sudo, setuid, setgid, chmod) and\n\
+    \    not user.name in (allowed_users)\n  output: >\n    Privilege escalation attempt\n\
+    \    (user=%user.name command=%proc.cmdline container=%container.info)\n  priority:\
+    \ CRITICAL\n  tags: [privilege_escalation, container]\n\n- rule: Cryptocurrency\
+    \ Mining\n  desc: Detect potential cryptocurrency mining\n  condition: >\n   \
+    \ spawned_process and\n    container and\n    (proc.name contains \"xmrig\" or\n\
+    \     proc.name contains \"minerd\" or\n     proc.name contains \"cpuminer\" or\n\
+    \     proc.cmdline contains \"stratum\" or\n     proc.cmdline contains \"pool.minergate.com\"\
+    )\n  output: >\n    Potential cryptocurrency mining detected\n    (user=%user.name\
+    \ command=%proc.cmdline container=%container.info)\n  priority: CRITICAL\n  tags:\
+    \ [malware, container]\n```\n\n#### Container Runtime Security **[REQUIRED]**\n\
+    ```yaml"
+  gVisor runsc configuration: "apiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata:\n\
+    \  name: gvisor\nhandler: runsc\n\n---"
+  Pod with gVisor runtime: "apiVersion: v1\nkind: Pod\nmetadata:\n  name: secure-app\n\
+    spec:\n  runtimeClassName: gvisor\n  securityContext:\n    runAsNonRoot: true\n\
+    \    runAsUser: 1001\n    runAsGroup: 1001\n    fsGroup: 1001\n    seccompProfile:\n\
+    \      type: RuntimeDefault\n    supplementalGroups: [1001]\n  containers:\n \
+    \ - name: app\n    image: secure-app:latest\n    securityContext:\n      allowPrivilegeEscalation:\
+    \ false\n      readOnlyRootFilesystem: true\n      capabilities:\n        drop:\n\
+    \        - ALL\n        add:\n        - NET_BIND_SERVICE\n    resources:\n   \
+    \   limits:\n        memory: \"256Mi\"\n        cpu: \"500m\"\n      requests:\n\
+    \        memory: \"128Mi\"\n        cpu: \"250m\"\n    volumeMounts:\n    - name:\
+    \ tmp\n      mountPath: /tmp\n    - name: cache\n      mountPath: /app/cache\n\
+    \  volumes:\n  - name: tmp\n    emptyDir: {}\n  - name: cache\n    emptyDir: {}\n\
+    ```\n\n### 3.2 Pod Security Standards\n\n#### Pod Security Policies **[REQUIRED]**\n\
+    ```yaml"
+  Pod Security Standards enforcement: "apiVersion: v1\nkind: Namespace\nmetadata:\n\
+    \  name: production\n  labels:\n    pod-security.kubernetes.io/enforce: restricted\n\
+    \    pod-security.kubernetes.io/audit: restricted\n    pod-security.kubernetes.io/warn:\
+    \ restricted\n\n---"
+  Security Context Constraints (OpenShift): "apiVersion: security.openshift.io/v1\n\
+    kind: SecurityContextConstraints\nmetadata:\n  name: restricted-scc\nallowHostDirVolumePlugin:\
+    \ false\nallowHostIPC: false\nallowHostNetwork: false\nallowHostPID: false\nallowHostPorts:\
+    \ false\nallowPrivilegeEscalation: false\nallowPrivilegedContainer: false\nallowedCapabilities:\
+    \ null\ndefaultAddCapabilities: null\nrequiredDropCapabilities:\n- KILL\n- MKNOD\n\
+    - SETUID\n- SETGID\nfsGroup:\n  type: MustRunAs\n  ranges:\n  - min: 1\n    max:\
+    \ 65535\nrunAsUser:\n  type: MustRunAsNonRoot\nseLinuxContext:\n  type: MustRunAs\n\
+    supplementalGroups:\n  type: MustRunAs\n  ranges:\n  - min: 1\n    max: 65535\n\
+    volumes:\n- configMap\n- downwardAPI\n- emptyDir\n- persistentVolumeClaim\n- projected\n\
+    - secret\n```\n\n#### Admission Controllers **[REQUIRED]**\n```yaml"
+  Open Policy Agent (OPA) Gatekeeper policies: "apiVersion: templates.gatekeeper.sh/v1beta1\n\
+    kind: ConstraintTemplate\nmetadata:\n  name: k8srequiredsecuritycontext\nspec:\n\
+    \  crd:\n    spec:\n      names:\n        kind: K8sRequiredSecurityContext\n \
+    \     validation:\n        properties:\n          runAsNonRoot:\n            type:\
+    \ boolean\n          readOnlyRootFilesystem:\n            type: boolean\n    \
+    \      allowPrivilegeEscalation:\n            type: boolean\n  targets:\n    -\
+    \ target: admission.k8s.gatekeeper.sh\n      rego: |\n        package k8srequiredsecuritycontext\n\
+    \n        violation[{\"msg\": msg}] {\n          container := input.review.object.spec.containers[_]\n\
+    \          not container.securityContext.runAsNonRoot\n          msg := \"Container\
+    \ must run as non-root user\"\n        }\n\n        violation[{\"msg\": msg}]\
+    \ {\n          container := input.review.object.spec.containers[_]\n         \
+    \ not container.securityContext.readOnlyRootFilesystem\n          msg := \"Container\
+    \ must have read-only root filesystem\"\n        }\n\n        violation[{\"msg\"\
+    : msg}] {\n          container := input.review.object.spec.containers[_]\n   \
+    \       container.securityContext.allowPrivilegeEscalation\n          msg := \"\
+    Container must not allow privilege escalation\"\n        }\n\n---\napiVersion:\
+    \ constraints.gatekeeper.sh/v1beta1\nkind: K8sRequiredSecurityContext\nmetadata:\n\
+    \  name: must-have-security-context\nspec:\n  match:\n    kinds:\n      - apiGroups:\
+    \ [\"\"]\n        kinds: [\"Pod\"]\n    namespaces: [\"production\", \"staging\"\
+    ]\n  parameters:\n    runAsNonRoot: true\n    readOnlyRootFilesystem: true\n \
+    \   allowPrivilegeEscalation: false\n```\n\n### 3.3 Network Security\n\n#### Network\
+    \ Policies **[REQUIRED]**\n```yaml"
+  Default deny-all network policy: "apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\n\
+    metadata:\n  name: default-deny-all\n  namespace: production\nspec:\n  podSelector:\
+    \ {}\n  policyTypes:\n  - Ingress\n  - Egress\n\n---"
+  Application-specific network policy: "apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\n\
+    metadata:\n  name: web-app-netpol\n  namespace: production\nspec:\n  podSelector:\n\
+    \    matchLabels:\n      app: web-app\n  policyTypes:\n  - Ingress\n  - Egress\n\
+    \  ingress:\n  - from:\n    - namespaceSelector:\n        matchLabels:\n     \
+    \     name: ingress-nginx\n    ports:\n    - protocol: TCP\n      port: 8080\n\
+    \  egress:\n  # Allow DNS\n  - to: []\n    ports:\n    - protocol: UDP\n     \
+    \ port: 53\n    - protocol: TCP\n      port: 53\n  # Allow API calls\n  - to:\n\
+    \    - podSelector:\n        matchLabels:\n          app: api-server\n    ports:\n\
+    \    - protocol: TCP\n      port: 3000\n  # Allow database access\n  - to:\n \
+    \   - podSelector:\n        matchLabels:\n          app: postgres\n    ports:\n\
+    \    - protocol: TCP\n      port: 5432\n```\n\n---"
+  4. API Security: '<!-- @nist-controls: [ac-3, ac-6, ia-2, ia-5, sc-8, sc-13, si-10,
+    au-2] -->
+
+
+    ### 4.1 API Gateway Security
+
+
+    #### Rate Limiting and Throttling **[REQUIRED]**
+
+    ```yaml'
+  Kong API Gateway rate limiting: "apiVersion: configuration.konghq.com/v1\nkind:\
+    \ KongPlugin\nmetadata:\n  name: rate-limit-plugin\nconfig:\n  minute: 100\n \
+    \ hour: 1000\n  policy: cluster\n  hide_client_headers: false\n  fault_tolerant:\
+    \ true\nplugin: rate-limiting\n\n---"
+  Apply rate limiting to API: "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n\
+    \  name: api-ingress\n  annotations:\n    konghq.com/plugins: rate-limit-plugin,auth-plugin\n\
+    spec:\n  rules:\n  - host: api.example.com\n    http:\n      paths:\n      - path:\
+    \ /\n        pathType: Prefix\n        backend:\n          service:\n        \
+    \    name: api-service\n            port:\n              number: 80\n```\n\n####\
+    \ API Authentication and Authorization **[REQUIRED]**\n```python"
+  FastAPI security implementation: ''
+  '@nist ia-2 "API authentication"': ''
+  '@nist ac-3 "API authorization"': ''
+  '@nist sc-8 "HTTPS enforcement"': "from fastapi import FastAPI, Depends, HTTPException,\
+    \ Security\nfrom fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n\
+    from fastapi.middleware.cors import CORSMiddleware\nfrom fastapi.middleware.trustedhost\
+    \ import TrustedHostMiddleware\nimport jwt\nfrom typing import List, Optional\n\
+    import time\nfrom pydantic import BaseModel\n\napp = FastAPI(\n    title=\"Secure\
+    \ API\",\n    docs_url=None,  # Disable docs in production\n    redoc_url=None,\n\
+    \    openapi_url=None\n)"
+  Security middleware: "app.add_middleware(\n    TrustedHostMiddleware,\n    allowed_hosts=[\"\
+    api.example.com\", \"*.example.com\"]\n)\n\napp.add_middleware(\n    CORSMiddleware,\n\
+    \    allow_origins=[\"https://app.example.com\"],\n    allow_credentials=True,\n\
+    \    allow_methods=[\"GET\", \"POST\", \"PUT\", \"DELETE\"],\n    allow_headers=[\"\
+    *\"],\n    expose_headers=[\"X-Request-ID\", \"X-Rate-Limit-Remaining\"]\n)\n\n\
+    security = HTTPBearer()\n\nclass TokenData(BaseModel):\n    user_id: str\n   \
+    \ scopes: List[str]\n    exp: int\n    iat: int\n\nclass SecurityConfig:\n   \
+    \ JWT_SECRET = \"your-secret-key\"\n    JWT_ALGORITHM = \"HS256\"\n    TOKEN_EXPIRE_SECONDS\
+    \ = 3600\n    RATE_LIMIT_PER_MINUTE = 60\n\nasync def verify_token(credentials:\
+    \ HTTPAuthorizationCredentials = Security(security)) -> TokenData:\n    \"\"\"\
+    Verify and decode JWT token.\n    @nist ia-5 \"Token verification\"\n    @nist\
+    \ ac-12 \"Session expiration check\"\n    \"\"\"\n    try:\n        payload =\
+    \ jwt.decode(\n            credentials.credentials,\n            SecurityConfig.JWT_SECRET,\n\
+    \            algorithms=[SecurityConfig.JWT_ALGORITHM]\n        )\n\n        #\
+    \ Check token expiration\n        # @nist ac-12 \"Enforce session termination\"\
+    \n        if payload.get(\"exp\", 0) < time.time():\n            raise HTTPException(status_code=401,\
+    \ detail=\"Token expired\")\n\n        return TokenData(**payload)\n\n    except\
+    \ jwt.InvalidTokenError:\n        raise HTTPException(status_code=401, detail=\"\
+    Invalid token\")\n\nasync def require_scope(required_scope: str):\n    \"\"\"\
+    Dependency for checking required scopes.\"\"\"\n    def scope_checker(token_data:\
+    \ TokenData = Depends(verify_token)):\n        if required_scope not in token_data.scopes:\n\
+    \            raise HTTPException(\n                status_code=403,\n        \
+    \        detail=f\"Insufficient permissions. Required: {required_scope}\"\n  \
+    \          )\n        return token_data\n    return scope_checker"
+  Rate limiting decorator: "from functools import wraps\nimport redis\nimport asyncio\n\
+    \nredis_client = redis.Redis(host='localhost', port=6379, db=0)\n\ndef rate_limit(max_requests:\
+    \ int = 60, window_seconds: int = 60):\n    def decorator(func):\n        @wraps(func)\n\
+    \        async def wrapper(*args, **kwargs):\n            # Get client IP or user\
+    \ ID\n            request = kwargs.get('request')\n            if request:\n \
+    \               client_id = request.client.host\n            else:\n         \
+    \       # Fallback to user ID from token\n                token_data = kwargs.get('token_data')\n\
+    \                client_id = token_data.user_id if token_data else 'anonymous'\n\
+    \n            # Check rate limit\n            key = f\"rate_limit:{client_id}\"\
+    \n            current_requests = redis_client.get(key)\n\n            if current_requests\
+    \ is None:\n                redis_client.setex(key, window_seconds, 1)\n     \
+    \       elif int(current_requests) >= max_requests:\n                raise HTTPException(\n\
+    \                    status_code=429,\n                    detail=\"Rate limit\
+    \ exceeded\",\n                    headers={\"Retry-After\": str(window_seconds)}\n\
+    \                )\n            else:\n                redis_client.incr(key)\n\
+    \n            return await func(*args, **kwargs)\n        return wrapper\n   \
+    \ return decorator"
+  API endpoints with security: "@app.get(\"/api/users/{user_id}\")\n@rate_limit(max_requests=100,\
+    \ window_seconds=60)\nasync def get_user(\n    user_id: str,\n    token_data:\
+    \ TokenData = Depends(require_scope(\"users:read\"))\n):\n    \"\"\"Get user information.\"\
+    \"\"\n    # Verify user can access this user ID\n    if token_data.user_id !=\
+    \ user_id and \"admin\" not in token_data.scopes:\n        raise HTTPException(status_code=403,\
+    \ detail=\"Access denied\")\n\n    # Implementation here\n    return {\"user_id\"\
+    : user_id, \"data\": \"user data\"}\n\n@app.post(\"/api/users\")\n@rate_limit(max_requests=10,\
+    \ window_seconds=60)\nasync def create_user(\n    user_data: dict,\n    token_data:\
+    \ TokenData = Depends(require_scope(\"users:write\"))\n):\n    \"\"\"Create a\
+    \ new user.\"\"\"\n    # Input validation\n    if not validate_user_input(user_data):\n\
+    \        raise HTTPException(status_code=400, detail=\"Invalid input\")\n\n  \
+    \  # Implementation here\n    return {\"message\": \"User created\"}\n\ndef validate_user_input(data:\
+    \ dict) -> bool:\n    \"\"\"Validate user input data.\"\"\"\n    required_fields\
+    \ = [\"email\", \"name\"]\n\n    # Check required fields\n    for field in required_fields:\n\
+    \        if field not in data:\n            return False\n\n    # Validate email\
+    \ format\n    import re\n    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\
+    .[a-zA-Z]{2,}$'\n    if not re.match(email_pattern, data.get(\"email\", \"\")):\n\
+    \        return False\n\n    # Additional validation rules\n    return True"
+  Security headers middleware: "@app.middleware(\"http\")\nasync def add_security_headers(request,\
+    \ call_next):\n    response = await call_next(request)\n\n    # Security headers\n\
+    \    response.headers[\"X-Content-Type-Options\"] = \"nosniff\"\n    response.headers[\"\
+    X-Frame-Options\"] = \"DENY\"\n    response.headers[\"X-XSS-Protection\"] = \"\
+    1; mode=block\"\n    response.headers[\"Strict-Transport-Security\"] = \"max-age=31536000;\
+    \ includeSubDomains\"\n    response.headers[\"Content-Security-Policy\"] = \"\
+    default-src 'self'\"\n    response.headers[\"Referrer-Policy\"] = \"strict-origin-when-cross-origin\"\
+    \n\n    return response\n```\n\n### 4.2 API Vulnerability Testing\n\n#### Automated\
+    \ Security Testing **[REQUIRED]**\n```python"
+  API security testing with OWASP ZAP: "import zapv2\nimport time\nimport json\nfrom\
+    \ typing import Dict, List\n\nclass APISecurityTester:\n    def __init__(self,\
+    \ zap_proxy_url: str = \"http://127.0.0.1:8080\"):\n        self.zap = zapv2.ZAPv2(proxies={'http':\
+    \ zap_proxy_url, 'https': zap_proxy_url})\n\n    def security_test_api(self, target_url:\
+    \ str, api_spec_path: str) -> Dict:\n        \"\"\"Perform comprehensive API security\
+    \ testing.\"\"\"\n        results = {\n            'target': target_url,\n   \
+    \         'timestamp': time.time(),\n            'tests': {},\n            'vulnerabilities':\
+    \ [],\n            'risk_score': 0.0\n        }\n\n        try:\n            #\
+    \ Import API specification\n            with open(api_spec_path, 'r') as f:\n\
+    \                api_spec = json.load(f)\n\n            # Spider the API\n   \
+    \         spider_id = self.zap.spider.scan(target_url)\n            self._wait_for_completion(spider_id,\
+    \ 'spider')\n\n            # Passive scan\n            self.zap.pscan.enable_all_scanners()\n\
+    \            while int(self.zap.pscan.records_to_scan) > 0:\n                time.sleep(2)\n\
+    \n            # Active scan\n            active_scan_id = self.zap.ascan.scan(target_url)\n\
+    \            self._wait_for_completion(active_scan_id, 'ascan')\n\n          \
+    \  # API-specific tests\n            results['tests']['injection_attacks'] = self._test_injection_attacks(target_url)\n\
+    \            results['tests']['authentication_bypass'] = self._test_auth_bypass(target_url)\n\
+    \            results['tests']['authorization_flaws'] = self._test_authorization(target_url)\n\
+    \            results['tests']['input_validation'] = self._test_input_validation(target_url,\
+    \ api_spec)\n            results['tests']['rate_limiting'] = self._test_rate_limiting(target_url)\n\
+    \n            # Get vulnerabilities\n            alerts = self.zap.core.alerts()\n\
+    \            for alert in alerts:\n                results['vulnerabilities'].append({\n\
+    \                    'name': alert['alert'],\n                    'risk': alert['risk'],\n\
+    \                    'confidence': alert['confidence'],\n                    'description':\
+    \ alert['description'],\n                    'solution': alert['solution'],\n\
+    \                    'url': alert['url']\n                })\n\n            #\
+    \ Calculate risk score\n            results['risk_score'] = self._calculate_risk_score(results['vulnerabilities'])\n\
+    \n        except Exception as e:\n            results['error'] = str(e)\n\n  \
+    \      return results\n\n    def _test_injection_attacks(self, target_url: str)\
+    \ -> Dict:\n        \"\"\"Test for injection vulnerabilities.\"\"\"\n        injection_payloads\
+    \ = [\n            \"' OR '1'='1\",\n            \"'; DROP TABLE users; --\",\n\
+    \            \"<script>alert('xss')</script>\",\n            \"{{7*7}}\",  # Template\
+    \ injection\n            \"../../../etc/passwd\",  # Path traversal\n        ]\n\
+    \n        vulnerabilities = []\n        for payload in injection_payloads:\n \
+    \           # Test each endpoint with payload\n            try:\n            \
+    \    response = self.zap.core.send_request(\n                    f\"{target_url}/api/test?param={payload}\"\
+    ,\n                    followRedirects=True\n                )\n\n           \
+    \     if self._detect_injection_response(response, payload):\n               \
+    \     vulnerabilities.append({\n                        'payload': payload,\n\
+    \                        'response_code': response.get('statusCode'),\n      \
+    \                  'evidence': response.get('responseBody', '')[:200]\n      \
+    \              })\n            except Exception:\n                pass\n\n   \
+    \     return {\n            'passed': len(vulnerabilities) == 0,\n           \
+    \ 'vulnerabilities_found': len(vulnerabilities),\n            'details': vulnerabilities\n\
+    \        }\n\n    def _test_auth_bypass(self, target_url: str) -> Dict:\n    \
+    \    \"\"\"Test for authentication bypass vulnerabilities.\"\"\"\n        bypass_tests\
+    \ = [\n            {'method': 'missing_token', 'headers': {}},\n            {'method':\
+    \ 'invalid_token', 'headers': {'Authorization': 'Bearer invalid_token'}},\n  \
+    \          {'method': 'expired_token', 'headers': {'Authorization': 'Bearer expired_token'}},\n\
+    \            {'method': 'malformed_token', 'headers': {'Authorization': 'malformed'}},\n\
+    \        ]\n\n        bypassed = []\n        for test in bypass_tests:\n     \
+    \       try:\n                response = self.zap.core.send_request(\n       \
+    \             f\"{target_url}/api/protected\",\n                    requestheader=test['headers']\n\
+    \                )\n\n                # Check if request succeeded when it shouldn't\n\
+    \                if response.get('statusCode') == 200:\n                    bypassed.append(test['method'])\n\
+    \            except Exception:\n                pass\n\n        return {\n   \
+    \         'passed': len(bypassed) == 0,\n            'bypassed_methods': bypassed\n\
+    \        }\n\n    def _test_rate_limiting(self, target_url: str) -> Dict:\n  \
+    \      \"\"\"Test rate limiting implementation.\"\"\"\n        request_count =\
+    \ 0\n        rate_limited = False\n\n        # Send rapid requests\n        for\
+    \ i in range(100):\n            try:\n                response = self.zap.core.send_request(f\"\
+    {target_url}/api/test\")\n                request_count += 1\n\n             \
+    \   if response.get('statusCode') == 429:  # Too Many Requests\n             \
+    \       rate_limited = True\n                    break\n\n            except Exception:\n\
+    \                break\n\n        return {\n            'passed': rate_limited,\n\
+    \            'requests_before_limit': request_count,\n            'rate_limiting_active':\
+    \ rate_limited\n        }\n\n    def _detect_injection_response(self, response:\
+    \ Dict, payload: str) -> bool:\n        \"\"\"Detect if response indicates successful\
+    \ injection.\"\"\"\n        response_body = response.get('responseBody', '').lower()\n\
+    \n        # SQL injection indicators\n        sql_errors = ['sql syntax', 'mysql_fetch',\
+    \ 'ora-', 'postgresql error']\n        if any(error in response_body for error\
+    \ in sql_errors):\n            return True\n\n        # XSS indicators\n     \
+    \   if payload.lower() in response_body:\n            return True\n\n        #\
+    \ Template injection indicators\n        if payload == \"{{7*7}}\" and \"49\"\
+    \ in response_body:\n            return True\n\n        return False\n\n    def\
+    \ _calculate_risk_score(self, vulnerabilities: List[Dict]) -> float:\n       \
+    \ \"\"\"Calculate overall risk score based on vulnerabilities.\"\"\"\n       \
+    \ risk_weights = {'High': 0.4, 'Medium': 0.2, 'Low': 0.1, 'Informational': 0.05}\n\
+    \        total_risk = 0.0\n\n        for vuln in vulnerabilities:\n          \
+    \  risk_level = vuln.get('risk', 'Low')\n            total_risk += risk_weights.get(risk_level,\
+    \ 0.1)\n\n        return min(total_risk, 1.0)  # Cap at 1.0\n\n    def _wait_for_completion(self,\
+    \ scan_id: str, scan_type: str):\n        \"\"\"Wait for scan to complete.\"\"\
+    \"\n        while True:\n            if scan_type == 'spider':\n             \
+    \   progress = int(self.zap.spider.status(scan_id))\n            elif scan_type\
+    \ == 'ascan':\n                progress = int(self.zap.ascan.status(scan_id))\n\
+    \n            if progress >= 100:\n                break\n\n            time.sleep(5)"
+  Usage: "if __name__ == \"__main__\":\n    tester = APISecurityTester()\n    results\
+    \ = tester.security_test_api(\n        target_url=\"https://api.example.com\"\
+    ,\n        api_spec_path=\"openapi.json\"\n    )\n\n    print(f\"Security test\
+    \ completed. Risk score: {results['risk_score']}\")\n    print(f\"Vulnerabilities\
+    \ found: {len(results['vulnerabilities'])}\")\n```\n\n---"
+  5. DevSecOps Integration: '### 5.1 Security in CI/CD Pipeline
+
+
+    #### Comprehensive Security Pipeline **[REQUIRED]**
+
+    ```yaml'
+  .github/workflows/devsecops.yml: "name: DevSecOps Pipeline\n\non:\n  push:\n   \
+    \ branches: [ main, develop ]\n  pull_request:\n    branches: [ main ]\n\nenv:\n\
+    \  DOCKER_REGISTRY: ghcr.io\n  IMAGE_NAME: ${{ github.repository }}\n\njobs:\n\
+    \  static-analysis:\n    name: Static Security Analysis\n    runs-on: ubuntu-latest\n\
+    \    permissions:\n      contents: read\n      security-events: write\n\n    steps:\n\
+    \      - uses: actions/checkout@v4\n        with:\n          fetch-depth: 0\n\n\
+    \      # Secret scanning\n      - name: Run GitLeaks\n        uses: gitleaks/gitleaks-action@v2\n\
+    \        env:\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n\n      #\
+    \ SAST scanning\n      - name: Run Semgrep\n        uses: returntocorp/semgrep-action@v1\n\
+    \        with:\n          config: >-\n            p/security-audit\n         \
+    \   p/secrets\n            p/owasp-top-ten\n\n      # CodeQL Analysis\n      -\
+    \ name: Initialize CodeQL\n        uses: github/codeql-action/init@v2\n      \
+    \  with:\n          languages: javascript, python\n          queries: security-and-quality\n\
+    \n      - name: Autobuild\n        uses: github/codeql-action/autobuild@v2\n\n\
+    \      - name: Perform CodeQL Analysis\n        uses: github/codeql-action/analyze@v2\n\
+    \n      # License scanning\n      - name: FOSSA Scan\n        uses: fossas/fossa-action@main\n\
+    \        with:\n          api-key: ${{ secrets.FOSSA_API_KEY }}\n          run-tests:\
+    \ true\n\n  dependency-security:\n    name: Dependency Security Scan\n    runs-on:\
+    \ ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      # npm\
+    \ audit\n      - name: npm audit\n        run: |\n          npm audit --audit-level\
+    \ high\n          npm audit --json > npm-audit.json\n\n      # Snyk vulnerability\
+    \ scan\n      - name: Run Snyk\n        uses: snyk/actions/node@master\n     \
+    \   env:\n          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        with:\n   \
+    \       args: --severity-threshold=high\n\n      # OSV Scanner\n      - name:\
+    \ Run OSV Scanner\n        uses: google/osv-scanner-action@v1\n        with:\n\
+    \          scan-args: |-\n            -r\n            --skip-git\n           \
+    \ ./\n\n      # Dependency Check\n      - name: Run OWASP Dependency Check\n \
+    \       uses: dependency-check/Dependency-Check_Action@main\n        with:\n \
+    \         project: 'test'\n          path: '.'\n          format: 'ALL'\n    \
+    \      args: >\n            --enableRetired\n            --enableExperimental\n\
+    \            --failOnCVSS 7\n\n  container-security:\n    name: Container Security\
+    \ Scan\n    runs-on: ubuntu-latest\n    needs: [static-analysis, dependency-security]\n\
+    \    steps:\n      - uses: actions/checkout@v4\n\n      - name: Build Docker image\n\
+    \        run: |\n          docker build -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME\
+    \ }}:${{ github.sha }} .\n\n      # Dockerfile security scan\n      - name: Run\
+    \ Hadolint\n        uses: hadolint/hadolint-action@v3.1.0\n        with:\n   \
+    \       dockerfile: Dockerfile\n          failure-threshold: error\n\n      #\
+    \ Multi-scanner approach\n      - name: Run Trivy Scanner\n        uses: aquasecurity/trivy-action@master\n\
+    \        with:\n          image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME\
+    \ }}:${{ github.sha }}\n          format: 'sarif'\n          output: 'trivy-results.sarif'\n\
+    \          severity: 'CRITICAL,HIGH'\n          exit-code: '1'\n\n      - name:\
+    \ Run Grype Scanner\n        uses: anchore/scan-action@v3\n        with:\n   \
+    \       image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha\
+    \ }}\n          fail-build: true\n          severity-cutoff: critical\n\n    \
+    \  - name: Run Clair Scanner\n        run: |\n          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock\
+    \ \\\n            quay.io/coreos/clair:latest \\\n            analyze ${{ env.DOCKER_REGISTRY\
+    \ }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\n\n      # Sign container if security\
+    \ checks pass\n      - name: Install Cosign\n        if: github.event_name !=\
+    \ 'pull_request'\n        uses: sigstore/cosign-installer@v3\n\n      - name:\
+    \ Sign container image\n        if: github.event_name != 'pull_request'\n    \
+    \    run: |\n          cosign sign --yes ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME\
+    \ }}:${{ github.sha }}\n        env:\n          COSIGN_EXPERIMENTAL: 1\n\n  infrastructure-security:\n\
+    \    name: Infrastructure Security Scan\n    runs-on: ubuntu-latest\n    steps:\n\
+    \      - uses: actions/checkout@v4\n\n      # Terraform security scanning\n  \
+    \    - name: Run Checkov\n        uses: bridgecrewio/checkov-action@master\n \
+    \       with:\n          directory: ./terraform\n          framework: terraform\n\
+    \          output_format: sarif\n          output_file_path: checkov-results.sarif\n\
+    \          quiet: true\n          soft_fail: false\n\n      # Kubernetes security\
+    \ scanning\n      - name: Run Kubesec\n        run: |\n          curl -sSL https://github.com/controlplaneio/kubesec/releases/latest/download/kubesec_linux_amd64.tar.gz\
+    \ | tar xz\n          ./kubesec scan k8s/*.yaml\n\n      # Cloud formation security\n\
+    \      - name: Run CFN-Nag\n        if: hashFiles('cloudformation/**/*.yml') !=\
+    \ ''\n        run: |\n          gem install cfn-nag\n          cfn_nag_scan --input-path\
+    \ cloudformation/\n\n  dynamic-security-testing:\n    name: Dynamic Security Testing\n\
+    \    runs-on: ubuntu-latest\n    needs: [container-security]\n    if: github.event_name\
+    \ != 'pull_request'\n    steps:\n      - uses: actions/checkout@v4\n\n      #\
+    \ Start application for testing\n      - name: Start application\n        run:\
+    \ |\n          docker-compose -f docker-compose.test.yml up -d\n          sleep\
+    \ 30\n\n      # OWASP ZAP Baseline scan\n      - name: ZAP Baseline Scan\n   \
+    \     uses: zaproxy/action-baseline@v0.7.0\n        with:\n          target: 'http://localhost:3000'\n\
+    \          rules_file_name: '.zap/rules.tsv'\n          cmd_options: '-a'\n\n\
+    \      # ZAP Full Scan\n      - name: ZAP Full Scan\n        uses: zaproxy/action-full-scan@v0.4.0\n\
+    \        with:\n          target: 'http://localhost:3000'\n          rules_file_name:\
+    \ '.zap/rules.tsv'\n          cmd_options: '-a'\n\n      # Custom API security\
+    \ tests\n      - name: API Security Tests\n        run: |\n          python tests/security/api_security_tests.py\n\
+    \n      - name: Cleanup\n        if: always()\n        run: |\n          docker-compose\
+    \ -f docker-compose.test.yml down\n\n  security-report:\n    name: Security Report\n\
+    \    runs-on: ubuntu-latest\n    needs: [static-analysis, dependency-security,\
+    \ container-security, infrastructure-security]\n    if: always()\n    steps:\n\
+    \      - name: Generate Security Report\n        run: |\n          echo \"# Security\
+    \ Scan Results\" > security-report.md\n          echo \"## Summary\" >> security-report.md\n\
+    \          echo \"- Static Analysis: ${{ needs.static-analysis.result }}\" >>\
+    \ security-report.md\n          echo \"- Dependency Scan: ${{ needs.dependency-security.result\
+    \ }}\" >> security-report.md\n          echo \"- Container Scan: ${{ needs.container-security.result\
+    \ }}\" >> security-report.md\n          echo \"- Infrastructure Scan: ${{ needs.infrastructure-security.result\
+    \ }}\" >> security-report.md\n\n      - name: Upload Security Report\n       \
+    \ uses: actions/upload-artifact@v3\n        with:\n          name: security-report\n\
+    \          path: security-report.md\n\n      # Notify security team if any failures\n\
+    \      - name: Notify Security Team\n        if: contains(needs.*.result, 'failure')\n\
+    \        uses: 8398a7/action-slack@v3\n        with:\n          status: failure\n\
+    \          text: 'Security scan failures detected in ${{ github.repository }}'\n\
+    \        env:\n          SLACK_WEBHOOK_URL: ${{ secrets.SECURITY_SLACK_WEBHOOK\
+    \ }}\n```\n\n### 5.2 Security Gates and Policies\n\n#### Policy as Code **[REQUIRED]**\n\
+    ```python"
+  Security policy engine: "from abc import ABC, abstractmethod\nfrom dataclasses import\
+    \ dataclass\nfrom typing import List, Dict, Any, Optional\nfrom enum import Enum\n\
+    import re\n\nclass SeverityLevel(Enum):\n    CRITICAL = \"critical\"\n    HIGH\
+    \ = \"high\"\n    MEDIUM = \"medium\"\n    LOW = \"low\"\n    INFO = \"info\"\n\
+    \n@dataclass\nclass SecurityFinding:\n    rule_id: str\n    title: str\n    description:\
+    \ str\n    severity: SeverityLevel\n    file_path: str\n    line_number: Optional[int]\n\
+    \    evidence: str\n    remediation: str\n\n@dataclass\nclass PolicyViolation:\n\
+    \    policy_name: str\n    description: str\n    severity: SeverityLevel\n   \
+    \ findings: List[SecurityFinding]\n\nclass SecurityPolicy(ABC):\n    @abstractmethod\n\
+    \    def evaluate(self, scan_results: Dict[str, Any]) -> List[PolicyViolation]:\n\
+    \        pass\n\nclass CriticalVulnerabilityPolicy(SecurityPolicy):\n    \"\"\"\
+    Policy: No critical vulnerabilities allowed in production.\"\"\"\n\n    def evaluate(self,\
+    \ scan_results: Dict[str, Any]) -> List[PolicyViolation]:\n        violations\
+    \ = []\n\n        # Check dependency vulnerabilities\n        dep_vulns = scan_results.get('dependency_scan',\
+    \ {}).get('vulnerabilities', [])\n        critical_deps = [v for v in dep_vulns\
+    \ if v.get('severity') == 'critical']\n\n        if critical_deps:\n         \
+    \   violations.append(PolicyViolation(\n                policy_name=\"no_critical_dependencies\"\
+    ,\n                description=\"Critical vulnerabilities found in dependencies\"\
+    ,\n                severity=SeverityLevel.CRITICAL,\n                findings=[\n\
+    \                    SecurityFinding(\n                        rule_id=\"CRIT_DEP\"\
+    ,\n                        title=f\"Critical vulnerability in {v['package']}\"\
+    ,\n                        description=v['description'],\n                   \
+    \     severity=SeverityLevel.CRITICAL,\n                        file_path=v.get('file_path',\
+    \ 'package.json'),\n                        line_number=None,\n              \
+    \          evidence=v['cve_id'],\n                        remediation=f\"Update\
+    \ {v['package']} to version {v.get('fixed_version', 'latest')}\"\n           \
+    \         ) for v in critical_deps\n                ]\n            ))\n\n    \
+    \    # Check container vulnerabilities\n        container_vulns = scan_results.get('container_scan',\
+    \ {}).get('vulnerabilities', [])\n        critical_container = [v for v in container_vulns\
+    \ if v.get('severity') == 'CRITICAL']\n\n        if critical_container:\n    \
+    \        violations.append(PolicyViolation(\n                policy_name=\"no_critical_container_vulns\"\
+    ,\n                description=\"Critical vulnerabilities found in container images\"\
+    ,\n                severity=SeverityLevel.CRITICAL,\n                findings=[\n\
+    \                    SecurityFinding(\n                        rule_id=\"CRIT_CONTAINER\"\
+    ,\n                        title=f\"Critical vulnerability in container\",\n \
+    \                       description=v['description'],\n                      \
+    \  severity=SeverityLevel.CRITICAL,\n                        file_path=\"Dockerfile\"\
+    ,\n                        line_number=None,\n                        evidence=v.get('vulnerability_id',\
+    \ ''),\n                        remediation=\"Update base image or affected packages\"\
+    \n                    ) for v in critical_container\n                ]\n     \
+    \       ))\n\n        return violations\n\nclass SecretsPolicy(SecurityPolicy):\n\
+    \    \"\"\"Policy: No secrets allowed in source code.\"\"\"\n\n    def __init__(self):\n\
+    \        self.secret_patterns = [\n            (r'api[_-]?key[_-]?=\\s*[\"\\']([a-zA-Z0-9]{20,})[\"\
+    \\']', 'API Key'),\n            (r'password[_-]?=\\s*[\"\\']([^\"\\']{8,})[\"\\\
+    ']', 'Password'),\n            (r'secret[_-]?=\\s*[\"\\']([a-zA-Z0-9]{20,})[\"\
+    \\']', 'Secret'),\n            (r'token[_-]?=\\s*[\"\\']([a-zA-Z0-9]{20,})[\"\\\
+    ']', 'Token'),\n            (r'-----BEGIN\\s+(?:RSA\\s+)?PRIVATE\\s+KEY-----',\
+    \ 'Private Key'),\n        ]\n\n    def evaluate(self, scan_results: Dict[str,\
+    \ Any]) -> List[PolicyViolation]:\n        violations = []\n        secret_findings\
+    \ = scan_results.get('secret_scan', {}).get('findings', [])\n\n        if secret_findings:\n\
+    \            violations.append(PolicyViolation(\n                policy_name=\"\
+    no_secrets_in_code\",\n                description=\"Secrets found in source code\"\
+    ,\n                severity=SeverityLevel.CRITICAL,\n                findings=[\n\
+    \                    SecurityFinding(\n                        rule_id=\"SECRET_EXPOSED\"\
+    ,\n                        title=f\"Secret found: {finding['type']}\",\n     \
+    \                   description=\"Hardcoded secret detected in source code\",\n\
+    \                        severity=SeverityLevel.CRITICAL,\n                  \
+    \      file_path=finding['file'],\n                        line_number=finding.get('line',\
+    \ None),\n                        evidence=finding['match'][:50] + \"...\",\n\
+    \                        remediation=\"Remove secret and use environment variables\
+    \ or secret management\"\n                    ) for finding in secret_findings\n\
+    \                ]\n            ))\n\n        return violations\n\nclass SecurityCompliancePolicy(SecurityPolicy):\n\
+    \    \"\"\"Policy: Enforce security compliance requirements.\"\"\"\n\n    def\
+    \ evaluate(self, scan_results: Dict[str, Any]) -> List[PolicyViolation]:\n   \
+    \     violations = []\n\n        # Check for security headers\n        security_headers\
+    \ = scan_results.get('dynamic_scan', {}).get('security_headers', {})\n       \
+    \ missing_headers = []\n\n        required_headers = [\n            'X-Content-Type-Options',\n\
+    \            'X-Frame-Options',\n            'X-XSS-Protection',\n           \
+    \ 'Strict-Transport-Security',\n            'Content-Security-Policy'\n      \
+    \  ]\n\n        for header in required_headers:\n            if not security_headers.get(header):\n\
+    \                missing_headers.append(header)\n\n        if missing_headers:\n\
+    \            violations.append(PolicyViolation(\n                policy_name=\"\
+    security_headers_required\",\n                description=\"Missing required security\
+    \ headers\",\n                severity=SeverityLevel.MEDIUM,\n               \
+    \ findings=[\n                    SecurityFinding(\n                        rule_id=\"\
+    MISSING_HEADER\",\n                        title=f\"Missing security header: {header}\"\
+    ,\n                        description=\"Required security header not found\"\
+    ,\n                        severity=SeverityLevel.MEDIUM,\n                  \
+    \      file_path=\"application configuration\",\n                        line_number=None,\n\
+    \                        evidence=f\"Header '{header}' not present\",\n      \
+    \                  remediation=f\"Add {header} header to application configuration\"\
+    \n                    ) for header in missing_headers\n                ]\n   \
+    \         ))\n\n        return violations\n\nclass SecurityPolicyEngine:\n   \
+    \ def __init__(self):\n        self.policies = [\n            CriticalVulnerabilityPolicy(),\n\
+    \            SecretsPolicy(),\n            SecurityCompliancePolicy(),\n     \
+    \   ]\n\n    def evaluate_all_policies(self, scan_results: Dict[str, Any]) ->\
+    \ Dict[str, Any]:\n        \"\"\"Evaluate all security policies against scan results.\"\
+    \"\"\n        all_violations = []\n\n        for policy in self.policies:\n  \
+    \          violations = policy.evaluate(scan_results)\n            all_violations.extend(violations)\n\
+    \n        # Categorize violations by severity\n        critical_violations = [v\
+    \ for v in all_violations if v.severity == SeverityLevel.CRITICAL]\n        high_violations\
+    \ = [v for v in all_violations if v.severity == SeverityLevel.HIGH]\n\n      \
+    \  # Determine if deployment should be blocked\n        block_deployment = len(critical_violations)\
+    \ > 0\n\n        return {\n            'policy_evaluation_passed': not block_deployment,\n\
+    \            'block_deployment': block_deployment,\n            'total_violations':\
+    \ len(all_violations),\n            'critical_violations': len(critical_violations),\n\
+    \            'high_violations': len(high_violations),\n            'violations':\
+    \ [\n                {\n                    'policy': v.policy_name,\n       \
+    \             'description': v.description,\n                    'severity': v.severity.value,\n\
+    \                    'findings_count': len(v.findings),\n                    'findings':\
+    \ [\n                        {\n                            'rule_id': f.rule_id,\n\
+    \                            'title': f.title,\n                            'file':\
+    \ f.file_path,\n                            'line': f.line_number,\n         \
+    \                   'evidence': f.evidence,\n                            'remediation':\
+    \ f.remediation\n                        } for f in v.findings\n             \
+    \       ]\n                } for v in all_violations\n            ]\n        }"
+  Usage in CI/CD: "def main():\n    # Load scan results from various security tools\n\
+    \    scan_results = {\n        'dependency_scan': load_dependency_scan_results(),\n\
+    \        'container_scan': load_container_scan_results(),\n        'secret_scan':\
+    \ load_secret_scan_results(),\n        'dynamic_scan': load_dynamic_scan_results(),\n\
+    \    }\n\n    # Evaluate policies\n    policy_engine = SecurityPolicyEngine()\n\
+    \    evaluation_result = policy_engine.evaluate_all_policies(scan_results)\n\n\
+    \    # Output results\n    print(f\"Policy evaluation: {'PASSED' if evaluation_result['policy_evaluation_passed']\
+    \ else 'FAILED'}\")\n    print(f\"Critical violations: {evaluation_result['critical_violations']}\"\
+    )\n    print(f\"High violations: {evaluation_result['high_violations']}\")\n\n\
+    \    # Exit with appropriate code for CI/CD\n    if evaluation_result['block_deployment']:\n\
+    \        print(\"\U0001F6AB Deployment blocked due to security policy violations\"\
+    )\n        exit(1)\n    else:\n        print(\"\u2705 Security policies passed,\
+    \ deployment allowed\")\n        exit(0)\n\nif __name__ == \"__main__\":\n   \
+    \ main()\n```\n\n---"
+  Implementation Checklist: '### Zero Trust Architecture
+
+    - [ ] Identity verification policies implemented
+
+    - [ ] Network micro-segmentation configured
+
+    - [ ] Risk-based access controls deployed
+
+    - [ ] Continuous monitoring active
+
+    - [ ] Policy engine operational
+
+
+    ### Supply Chain Security
+
+    - [ ] SBOM generation automated
+
+    - [ ] Dependency verification enabled
+
+    - [ ] Container signing implemented
+
+    - [ ] Vulnerability scanning integrated
+
+    - [ ] Attestation pipeline configured
+
+
+    ### Container Security
+
+    - [ ] Runtime security monitoring active
+
+    - [ ] Pod security standards enforced
+
+    - [ ] Network policies configured
+
+    - [ ] Admission controllers deployed
+
+    - [ ] Image scanning automated
+
+
+    ### API Security
+
+    - [ ] Authentication and authorization implemented
+
+    - [ ] Rate limiting configured
+
+    - [ ] Input validation comprehensive
+
+    - [ ] Security headers applied
+
+    - [ ] Vulnerability testing automated
+
+
+    ### DevSecOps Integration
+
+    - [ ] Security pipeline implemented
+
+    - [ ] Policy as code deployed
+
+    - [ ] Security gates configured
+
+    - [ ] Automated scanning enabled
+
+    - [ ] Compliance monitoring active
+
+
+    ### Incident Response
+
+    - [ ] Response procedures documented
+
+    - [ ] Forensics capabilities ready
+
+    - [ ] Communication plans established
+
+    - [ ] Recovery procedures tested
+
+    - [ ] Lessons learned process active
+
+
+    ---
+
+
+    **End of Modern Security Standards**'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:53.342279'
+  source: williamzujkowski/standards/docs/standards/MODERN_SECURITY_STANDARDS.md
+  checksum: 247eebbc136d4dc7be835e5b3428e009515202e6de411224a2014b04a66323bb

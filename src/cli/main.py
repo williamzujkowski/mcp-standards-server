@@ -12,8 +12,12 @@ import yaml
 from rich import print
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.syntax import Syntax
+from rich.table import Table
 
 from ..compliance.scanner import ComplianceScanner
+from ..core.compliance.oscal_handler import OSCALHandler
+from ..analyzers import PythonAnalyzer, JavaScriptAnalyzer, GoAnalyzer, JavaAnalyzer
 
 app = typer.Typer(
     name="mcp-standards",
@@ -27,7 +31,8 @@ console = Console()
 def init(
     project_path: Path = typer.Argument(Path.cwd(), help="Project path to initialize"),
     profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
-    language: str = typer.Option(None, help="Primary language (auto-detect if not specified)")
+    language: str = typer.Option(None, help="Primary language (auto-detect if not specified)"),
+    setup_hooks: bool = typer.Option(True, help="Setup Git hooks for compliance")
 ) -> None:
     """
     Initialize MCP standards for a project
@@ -35,18 +40,32 @@ def init(
     @evidence: Configuration management
     """
     console.print(f"[bold green]Initializing MCP Standards for {project_path}[/bold green]")
-    console.print("[yellow]Full CLI implementation coming in Phase 2[/yellow]")
 
+    # Create project directory if it doesn't exist
+    project_path.mkdir(parents=True, exist_ok=True)
+    
     # Create config directory
     config_dir = project_path / ".mcp-standards"
     config_dir.mkdir(exist_ok=True)
+    
+    # Create compliance directory
+    compliance_dir = project_path / "compliance"
+    compliance_dir.mkdir(exist_ok=True)
 
-    # Create basic config
+    # Create enhanced config
     config = {
         "version": "1.0.0",
         "profile": profile,
         "language": language or "python",
-        "initialized": True
+        "initialized": True,
+        "scanning": {
+            "include_patterns": ["*.py", "*.js", "*.ts", "*.go", "*.java"],
+            "exclude_patterns": ["node_modules/**", "venv/**", ".git/**", "dist/**"]
+        },
+        "compliance": {
+            "required_controls": ["AC-3", "AU-2", "IA-2", "SC-8", "SI-10"],
+            "nist_profile": profile
+        }
     }
 
     config_file = config_dir / "config.yaml"
@@ -54,6 +73,69 @@ def init(
         yaml.dump(config, f, default_flow_style=False)
 
     console.print(f"[bold green]✓[/bold green] Created configuration at {config_file}")
+    
+    # Create compliance documentation
+    compliance_readme = compliance_dir / "README.md"
+    if not compliance_readme.exists():
+        readme_content = f"""# Compliance Documentation
+
+This project follows NIST 800-53r5 {profile} profile.
+
+## Getting Started
+
+1. Run `mcp-standards scan` to analyze your code
+2. Generate SSP with `mcp-standards ssp`
+3. Review and update control implementations
+
+## Required Controls
+
+{chr(10).join(f"- {control}" for control in config["compliance"]["required_controls"])}
+
+"""
+        compliance_readme.write_text(readme_content)
+        console.print(f"[bold green]✓[/bold green] Created compliance documentation")
+    
+    # Setup Git hooks if requested
+    if setup_hooks and (project_path / ".git").exists():
+        _setup_git_hooks(project_path)
+        console.print(f"[bold green]✓[/bold green] Git hooks configured")
+    elif setup_hooks:
+        console.print("[yellow]Warning: Not a Git repository, skipping hooks setup[/yellow]")
+    
+    console.print(f"\n[bold green]Initialization complete![/bold green]")
+    console.print("Next steps:")
+    console.print("  1. Review configuration in .mcp-standards/config.yaml")
+    console.print("  2. Run 'mcp-standards scan' to analyze your code")
+    console.print("  3. Generate SSP with 'mcp-standards ssp'")
+
+
+def _setup_git_hooks(project_path: Path) -> None:
+    """
+    Setup Git hooks for compliance checking
+    @nist-controls: CM-3, SA-15
+    @evidence: Automated compliance verification
+    """
+    hooks_dir = project_path / ".git" / "hooks"
+    
+    # Pre-commit hook
+    pre_commit_hook = hooks_dir / "pre-commit"
+    hook_content = """#!/bin/bash
+# Pre-commit hook for NIST compliance checking
+echo "Running NIST compliance validation..."
+
+if command -v mcp-standards &> /dev/null; then
+    mcp-standards validate --output-format json > /tmp/compliance-check.json
+    if [ $? -ne 0 ]; then
+        echo "❌ Compliance validation failed!"
+        exit 1
+    fi
+    echo "✅ Compliance validation passed!"
+else
+    echo "Warning: mcp-standards not found"
+fi
+"""
+    pre_commit_hook.write_text(hook_content)
+    pre_commit_hook.chmod(0o755)
 
 
 @app.command()
@@ -144,6 +226,293 @@ def scan(
         
         if summary['critical_issues'] > 0:
             console.print(f"  • [red]Critical issues: {summary['critical_issues']}[/red]")
+
+
+@app.command()
+def ssp(
+    output: Path = typer.Option(Path("ssp.json"), help="Output file for SSP"),
+    format: str = typer.Option("oscal", help="Output format (oscal/json)"),
+    profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
+    path: Path = typer.Argument(Path.cwd(), help="Path to analyze")
+) -> None:
+    """
+    Generate System Security Plan (SSP) from code
+    @nist-controls: CA-2, PM-31
+    @evidence: Automated SSP generation
+    """
+    console.print("[bold]Generating System Security Plan...[/bold]")
+    
+    # Check if path exists
+    if not path.exists():
+        console.print(f"[red]Error: Path '{path}' does not exist[/red]")
+        raise typer.Exit(1)
+    
+    # Initialize components
+    oscal_handler = OSCALHandler()
+    
+    # Initialize analyzers
+    analyzers = {
+        '.py': PythonAnalyzer(),
+        '.js': JavaScriptAnalyzer(),
+        '.jsx': JavaScriptAnalyzer(),
+        '.ts': JavaScriptAnalyzer(),
+        '.tsx': JavaScriptAnalyzer(),
+        '.go': GoAnalyzer(),
+        '.java': JavaAnalyzer()
+    }
+    
+    # Analyze code
+    all_annotations = {}
+    components = []
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+        console=console
+    ) as progress:
+        task = progress.add_task("Analyzing codebase...", total=None)
+        
+        # Scan for files
+        for file_path in path.rglob('*'):
+            if file_path.is_file() and file_path.suffix in analyzers:
+                # Skip common directories
+                skip_dirs = {'node_modules', 'venv', '.git', 'dist', 'build', '__pycache__'}
+                if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
+                    continue
+                    
+                analyzer = analyzers[file_path.suffix]
+                annotations = analyzer.analyze_file(file_path)
+                
+                if annotations:
+                    all_annotations[str(file_path)] = annotations
+                    progress.update(task, description=f"Analyzed {file_path.name}")
+        
+        progress.update(task, description="Creating OSCAL components...")
+        
+        # Create OSCAL components from annotations
+        for file_path, annotations in all_annotations.items():
+            component_name = Path(file_path).stem
+            component = oscal_handler.create_component_from_annotations(
+                component_name,
+                annotations,
+                {
+                    "version": "1.0.0",
+                    "description": f"Component from {Path(file_path).name}",
+                    "component_type": "software"
+                }
+            )
+            components.append(component)
+        
+        progress.update(task, description="Generating SSP...")
+        
+        # Generate SSP
+        system_name = path.name or "System"
+        ssp_metadata = {
+            "version": "1.0.0",
+            "description": f"System Security Plan for {system_name}",
+            "sensitivity": profile,
+            "system_id": system_name.lower().replace(" ", "-"),
+            "status": "operational",
+            "confidentiality_impact": profile,
+            "integrity_impact": profile,
+            "availability_impact": profile
+        }
+        
+        ssp_content = oscal_handler.generate_ssp_content(
+            system_name,
+            components,
+            f"NIST_SP-800-53_rev5_{profile.upper()}",
+            ssp_metadata
+        )
+        
+        # Export
+        if format == "oscal":
+            output_path, checksum_path = oscal_handler.export_to_file(ssp_content, output, "json")
+            console.print(f"[green]✓[/green] SSP generated: {output_path}")
+            console.print(f"[green]✓[/green] Checksum: {checksum_path}")
+        else:
+            with open(output, 'w') as f:
+                json.dump(ssp_content, f, indent=2)
+            console.print(f"[green]✓[/green] SSP generated: {output}")
+        
+        progress.update(task, completed=True)
+    
+    # Show summary
+    console.print(f"\n[bold]SSP Generation Summary:[/bold]")
+    console.print(f"  • Files analyzed: {len(all_annotations)}")
+    console.print(f"  • Components created: {len(components)}")
+    console.print(f"  • Profile: {profile}")
+    
+    # Show control coverage
+    all_controls = set()
+    for annotations in all_annotations.values():
+        for ann in annotations:
+            all_controls.update(ann.control_ids)
+    
+    console.print(f"  • Unique controls found: {len(all_controls)}")
+    if all_controls:
+        console.print(f"  • Control families: {', '.join(sorted(set(c.split('-')[0] for c in all_controls)))}")
+
+
+@app.command()
+def generate(
+    template_type: str = typer.Argument(
+        ..., 
+        help="Type of template to generate (api, auth, logging, encryption, database)"
+    ),
+    language: str = typer.Option(
+        "python", 
+        help="Programming language",
+        show_choices=True
+    ),
+    output: Path = typer.Option(
+        None,
+        help="Output file path (defaults to stdout)"
+    ),
+    controls: str = typer.Option(
+        "",
+        help="Comma-separated NIST controls to implement"
+    )
+) -> None:
+    """
+    Generate NIST-compliant code templates
+    @nist-controls: SA-11, SA-15
+    @evidence: Secure code generation
+    """
+    from ..core.templates import TemplateGenerator
+    
+    console.print(f"[bold]Generating {template_type} template...[/bold]")
+    
+    # Parse controls
+    control_list = [c.strip() for c in controls.split(",") if c.strip()] if controls else []
+    
+    # Initialize generator
+    generator = TemplateGenerator()
+    
+    try:
+        # Generate template
+        template_content = generator.generate(
+            template_type=template_type,
+            language=language,
+            controls=control_list
+        )
+        
+        # Output
+        if output:
+            output.write_text(template_content)
+            console.print(f"[green]✓[/green] Template written to: {output}")
+        else:
+            console.print("\n[dim]--- Generated Template ---[/dim]\n")
+            console.print(Syntax(template_content, language, theme="monokai"))
+            
+        # Show implemented controls
+        if control_list:
+            console.print(f"\n[bold]Implemented controls:[/bold] {', '.join(control_list)}")
+            
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def validate(
+    path: Path = typer.Argument(Path.cwd(), help="File or directory to validate"),
+    profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
+    controls: str = typer.Option("", help="Specific controls to check (comma-separated)"),
+    output_format: str = typer.Option("table", help="Output format (table/json/yaml)")
+) -> None:
+    """
+    Validate code against NIST compliance requirements
+    @nist-controls: CA-2, CA-7
+    @evidence: Continuous monitoring and assessment
+    """
+    from ..compliance.scanner import ComplianceScanner
+    from ..analyzers import get_analyzer_for_file
+    
+    console.print(f"[bold]Validating {path} against {profile} profile...[/bold]\n")
+    
+    # Parse controls
+    control_list = [c.strip() for c in controls.split(",") if c.strip()] if controls else []
+    
+    scanner = ComplianceScanner()
+    results = {"files": {}, "summary": {"total_files": 0, "compliant_files": 0, "controls_found": set()}}
+    
+    # Scan files
+    files_to_scan = []
+    if path.is_file():
+        files_to_scan = [path]
+    else:
+        files_to_scan = list(path.rglob("*.py")) + list(path.rglob("*.js")) + list(path.rglob("*.go")) + list(path.rglob("*.java"))
+    
+    with Progress() as progress:
+        task = progress.add_task("Validating...", total=len(files_to_scan))
+        
+        for file_path in files_to_scan:
+            progress.update(task, description=f"Validating {file_path.name}")
+            
+            # Skip common directories
+            skip_dirs = {'node_modules', 'venv', '.git', 'dist', 'build', '__pycache__'}
+            if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
+                continue
+            
+            analyzer = get_analyzer_for_file(file_path)
+            if analyzer:
+                annotations = analyzer.analyze_file(file_path)
+                file_controls = set()
+                for ann in annotations:
+                    file_controls.update(ann.control_ids)
+                
+                results["files"][str(file_path)] = {
+                    "controls": list(file_controls),
+                    "annotations": len(annotations),
+                    "compliant": bool(file_controls)
+                }
+                results["summary"]["controls_found"].update(file_controls)
+                if file_controls:
+                    results["summary"]["compliant_files"] += 1
+                results["summary"]["total_files"] += 1
+            
+            progress.advance(task)
+    
+    # Convert set to list for JSON serialization
+    results["summary"]["controls_found"] = sorted(list(results["summary"]["controls_found"]))
+    
+    # Output results
+    if output_format == "json":
+        console.print_json(data=results)
+    elif output_format == "yaml":
+        import yaml
+        console.print(yaml.dump(results, default_flow_style=False))
+    else:
+        # Table format
+        table = Table(title="Validation Results")
+        table.add_column("File", style="cyan")
+        table.add_column("Controls", style="green")
+        table.add_column("Annotations", style="yellow")
+        table.add_column("Status", style="bold")
+        
+        for file_path, file_data in results["files"].items():
+            status = "[green]✓[/green]" if file_data["compliant"] else "[red]✗[/red]"
+            table.add_row(
+                Path(file_path).name,
+                ", ".join(file_data["controls"][:3]) + ("..." if len(file_data["controls"]) > 3 else ""),
+                str(file_data["annotations"]),
+                status
+            )
+        
+        console.print(table)
+        
+        # Summary
+        console.print(f"\n[bold]Summary:[/bold]")
+        console.print(f"  • Total files: {results['summary']['total_files']}")
+        console.print(f"  • Compliant files: {results['summary']['compliant_files']}")
+        console.print(f"  • Unique controls: {len(results['summary']['controls_found'])}")
+        
+        if control_list:
+            missing = set(control_list) - set(results['summary']['controls_found'])
+            if missing:
+                console.print(f"  • [red]Missing controls:[/red] {', '.join(sorted(missing))}")
 
 
 @app.command()

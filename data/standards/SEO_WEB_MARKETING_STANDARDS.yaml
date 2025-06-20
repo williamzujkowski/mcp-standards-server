@@ -1,0 +1,368 @@
+name: Docs/Standards/Seo Web Marketing Standards
+category: development
+filename: docs/standards/SEO_WEB_MARKETING_STANDARDS.md
+nist_controls: []
+sections:
+  SEO & Web Marketing Standards: '**Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** SEO
+
+
+    ---
+
+
+    **Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Focus:** Technical SEO, performance optimization, and marketing automation'
+  Table of Contents: '1. [Technical SEO Foundations](#1-technical-seo-foundations)
+
+    2. [On-Page Optimization](#2-on-page-optimization)
+
+    3. [Site Architecture and Navigation](#3-site-architecture-and-navigation)
+
+    4. [Performance and Core Web Vitals](#4-performance-and-core-web-vitals)
+
+    5. [Schema and Structured Data](#5-schema-and-structured-data)
+
+    6. [Content Marketing Technical Standards](#6-content-marketing-technical-standards)
+
+    7. [Analytics and Tracking](#7-analytics-and-tracking)
+
+    8. [Marketing Automation](#8-marketing-automation)
+
+    9. [Email Marketing Standards](#9-email-marketing-standards)
+
+    10. [Implementation Guidelines](#10-implementation-guidelines)
+
+
+    ---'
+  Overview: 'This standard provides comprehensive guidelines and best practices for
+    the subject area.
+
+    It aims to ensure consistency, quality, and maintainability across all related
+    implementations.'
+  1. Technical SEO Foundations: "### 1.1 Crawlability and Indexability **[REQUIRED]**\n\
+    \n```yaml\ncrawlability_standards:\n  robots_txt:\n    location: \"/robots.txt\"\
+    \n    requirements:\n      - Accessible at root domain\n      - Valid syntax\n\
+    \      - Sitemap reference\n      - Crawl-delay if needed\n\n    example: |\n\
+    \      User-agent: *\n      Allow: /\n      Disallow: /api/\n      Disallow: /admin/\n\
+    \      Sitemap: https://example.com/sitemap.xml\n\n  xml_sitemap:\n    requirements:\n\
+    \      - Maximum 50,000 URLs per file\n      - Under 50MB uncompressed\n     \
+    \ - UTF-8 encoding\n      - Update frequency accurate\n\n    structure:\n    \
+    \  main: \"/sitemap.xml\"\n      index: \"/sitemap-index.xml\"\n      types:\n\
+    \        - pages: \"/sitemap-pages.xml\"\n        - posts: \"/sitemap-posts.xml\"\
+    \n        - images: \"/sitemap-images.xml\"\n        - videos: \"/sitemap-videos.xml\"\
+    \n\n  crawl_optimization:\n    - Remove crawl traps\n    - Fix redirect chains\n\
+    \    - Eliminate duplicate content\n    - Implement pagination correctly\n```\n\
+    \n### 1.2 URL Structure **[REQUIRED]**\n\n```yaml\nurl_standards:\n  structure:\n\
+    \    format: \"https://domain.com/category/subcategory/page-name\"\n    rules:\n\
+    \      - Lowercase only\n      - Hyphens for word separation\n      - No special\
+    \ characters\n      - Maximum 60 characters\n      - Descriptive keywords\n\n\
+    \  implementation:\n    canonical_urls:\n      - Self-referencing canonicals\n\
+    \      - Cross-domain canonicals\n      - Parameter handling\n      - Protocol\
+    \ consistency\n\n    redirects:\n      types:\n        301: \"Permanent moves\"\
+    \n        302: \"Temporary redirects\"\n        308: \"Permanent (preserve method)\"\
+    \n\n      rules:\n        - Maximum 2 redirect hops\n        - Update internal\
+    \ links\n        - Monitor redirect chains\n        - Log all redirects\n\n  internationalization:\n\
+    \    hreflang:\n      implementation: \"Link tags in head\"\n      format: '<link\
+    \ rel=\"alternate\" hreflang=\"en-us\" href=\"...\">'\n      requirements:\n \
+    \       - Bidirectional references\n        - Include x-default\n        - Absolute\
+    \ URLs\n        - Valid language codes\n```\n\n### 1.3 HTTPS and Security **[REQUIRED]**\n\
+    \n```yaml\nsecurity_seo:\n  ssl_requirements:\n    certificate:\n      - Valid\
+    \ SSL certificate\n      - Minimum TLS 1.2\n      - HSTS enabled\n      - No mixed\
+    \ content\n\n    implementation:\n      server_config: |\n        # HSTS with\
+    \ preload\n        Strict-Transport-Security: max-age=31536000; includeSubDomains;\
+    \ preload\n\n        # Security headers\n        X-Content-Type-Options: nosniff\n\
+    \        X-Frame-Options: SAMEORIGIN\n        Referrer-Policy: strict-origin-when-cross-origin\n\
+    \n  csp_for_seo:\n    balance:\n      - Allow necessary third-party scripts\n\
+    \      - Permit analytics tools\n      - Enable social widgets\n      - Maintain\
+    \ security\n```\n\n---"
+  2. On-Page Optimization: "### 2.1 Meta Tags Optimization **[REQUIRED]**\n\n```yaml\n\
+    meta_tags:\n  title_tag:\n    requirements:\n      length: \"50-60 characters\"\
+    \n      structure: \"Primary Keyword - Secondary Keyword | Brand\"\n      uniqueness:\
+    \ \"Unique per page\"\n\n    implementation:\n      dynamic_generation: |\n  \
+    \      <title>{pageTitle} | {categoryName} | {siteName}</title>\n\n  meta_description:\n\
+    \    requirements:\n      length: \"150-160 characters\"\n      cta: \"Include\
+    \ call-to-action\"\n      keywords: \"Natural inclusion\"\n      uniqueness: \"\
+    Unique per page\"\n\n    template: |\n      <meta name=\"description\" content=\"\
+    {summary}. {benefit}. {cta}\">\n\n  open_graph:\n    required_tags:\n      - og:title\n\
+    \      - og:description\n      - og:image\n      - og:url\n      - og:type\n\n\
+    \    image_specs:\n      dimensions: \"1200x630px\"\n      format: \"JPG or PNG\"\
+    \n      size: \"< 5MB\"\n\n  twitter_cards:\n    types:\n      summary: \"Default\
+    \ card\"\n      summary_large_image: \"Featured content\"\n      player: \"Video\
+    \ content\"\n\n    required:\n      - twitter:card\n      - twitter:title\n  \
+    \    - twitter:description\n      - twitter:image\n```\n\n### 2.2 Header Tag Hierarchy\
+    \ **[REQUIRED]**\n\n```yaml\nheader_structure:\n  hierarchy:\n    h1:\n      count:\
+    \ \"One per page\"\n      placement: \"Above fold\"\n      keywords: \"Primary\
+    \ keyword included\"\n\n    h2_h6:\n      structure: \"Logical hierarchy\"\n \
+    \     keywords: \"LSI keywords\"\n      nesting: \"Proper parent-child\"\n\n \
+    \ implementation:\n    semantic_html:\n      - Use heading tags for structure\n\
+    \      - Don't skip levels\n      - Include keywords naturally\n      - Support\
+    \ outline algorithm\n\n    accessibility:\n      - Screen reader friendly\n  \
+    \    - Logical flow\n      - Descriptive headings\n```\n\n### 2.3 Content Optimization\
+    \ **[REQUIRED]**\n\n```yaml\ncontent_standards:\n  keyword_optimization:\n   \
+    \ density: \"1-2% for primary\"\n    placement:\n      - Title tag\n      - First\
+    \ paragraph\n      - H1 tag\n      - Alt text\n      - Meta description\n\n  \
+    \  lsi_keywords:\n      - Related terms\n      - Synonyms\n      - Entity mentions\n\
+    \      - Question variations\n\n  content_structure:\n    requirements:\n    \
+    \  - Minimum 300 words\n      - Original content\n      - E-A-T signals\n    \
+    \  - Regular updates\n\n    formatting:\n      - Short paragraphs (2-3 sentences)\n\
+    \      - Bullet points\n      - Numbered lists\n      - Bold key phrases\n\n \
+    \ internal_linking:\n    strategy:\n      - 3-5 internal links per page\n    \
+    \  - Descriptive anchor text\n      - Relevant context\n      - Deep linking\n\
+    \n    implementation:\n      - Automated related posts\n      - Contextual links\n\
+    \      - Navigation links\n      - Footer links\n```\n\n---"
+  3. Site Architecture and Navigation: "### 3.1 Information Architecture **[REQUIRED]**\n\
+    \n```yaml\nsite_architecture:\n  hierarchy:\n    depth: \"Maximum 3 clicks from\
+    \ homepage\"\n    structure:\n      - Homepage\n      - Category pages\n     \
+    \ - Subcategory pages\n      - Product/content pages\n\n  navigation:\n    main_menu:\n\
+    \      - 7\xB12 items maximum\n      - Descriptive labels\n      - Logical grouping\n\
+    \      - Mobile-friendly\n\n    breadcrumbs:\n      implementation: \"Schema.org\
+    \ BreadcrumbList\"\n      format: \"Home > Category > Subcategory > Page\"\n \
+    \     requirements:\n        - On all pages except home\n        - Clickable links\n\
+    \        - Current page not linked\n\n  url_architecture:\n    patterns:\n   \
+    \   blog: \"/blog/category/post-title\"\n      product: \"/products/category/product-name\"\
+    \n      service: \"/services/service-name\"\n      location: \"/locations/city/business-name\"\
+    \n```\n\n### 3.2 Pagination Standards **[REQUIRED]**\n\n```yaml\npagination:\n\
+    \  implementation:\n    rel_tags:\n      - rel=\"prev\" for previous page\n  \
+    \    - rel=\"next\" for next page\n      - Canonical to self on each page\n\n\
+    \    url_structure:\n      format: \"/category/page/2\"\n      avoid: \"?page=2\"\
+    \ when possible\n\n  infinite_scroll:\n    seo_friendly:\n      - Provide paginated\
+    \ alternative\n      - Implement history.pushState\n      - Load content progressively\n\
+    \      - Include \"View All\" option\n\n  optimization:\n    - Index first page\
+    \ only\n    - Consolidate thin pages\n    - Implement view-all wisely\n    - Monitor\
+    \ crawl budget\n```\n\n### 3.3 Mobile Optimization **[REQUIRED]**\n\n```yaml\n\
+    mobile_seo:\n  responsive_design:\n    requirements:\n      - Mobile-first CSS\n\
+    \      - Flexible images\n      - Viewport meta tag\n      - Touch-friendly elements\n\
+    \n    viewport_meta: |\n      <meta name=\"viewport\" content=\"width=device-width,\
+    \ initial-scale=1\">\n\n  mobile_usability:\n    standards:\n      - Tap targets:\
+    \ 48x48px minimum\n      - Font size: 16px minimum\n      - No horizontal scrolling\n\
+    \      - Fast loading (< 3s)\n\n  amp_implementation:\n    when_needed:\n    \
+    \  - News articles\n      - Blog posts\n      - Product pages\n\n    requirements:\n\
+    \      - Valid AMP HTML\n      - Canonical reference\n      - Structured data\n\
+    \      - Analytics tracking\n```\n\n---"
+  4. Performance and Core Web Vitals: "### 4.1 Core Web Vitals Optimization **[REQUIRED]**\n\
+    \n```yaml\ncore_web_vitals:\n  lcp_optimization:\n    target: \"< 2.5 seconds\"\
+    \n    techniques:\n      - Optimize server response time\n      - Preload critical\
+    \ resources\n      - Optimize images and videos\n      - Remove render-blocking\
+    \ resources\n\n    implementation:\n      preload_critical: |\n        <link rel=\"\
+    preload\" as=\"image\" href=\"hero-image.webp\">\n        <link rel=\"preload\"\
+    \ as=\"font\" href=\"main-font.woff2\" crossorigin>\n\n  fid_optimization:\n \
+    \   target: \"< 100 milliseconds\"\n    techniques:\n      - Break up long tasks\n\
+    \      - Use web workers\n      - Optimize JavaScript execution\n      - Implement\
+    \ progressive enhancement\n\n  cls_optimization:\n    target: \"< 0.1\"\n    techniques:\n\
+    \      - Size attributes on images/videos\n      - Reserve space for ads\n   \
+    \   - Avoid inserting content above\n      - Font loading optimization\n\n   \
+    \ implementation:\n      image_dimensions: |\n        <img src=\"...\" width=\"\
+    800\" height=\"600\" alt=\"...\">\n\n      font_loading: |\n        font-display:\
+    \ optional; /* or swap */\n```\n\n### 4.2 Page Speed Optimization **[REQUIRED]**\n\
+    \n```yaml\nperformance_standards:\n  resource_optimization:\n    images:\n   \
+    \   formats: [\"WebP\", \"AVIF\", \"JPEG\"]\n      lazy_loading: \"loading='lazy'\"\
+    \n      responsive: \"srcset and sizes\"\n      compression: \"85% quality\"\n\
+    \n    css:\n      - Critical CSS inline\n      - Non-critical deferred\n     \
+    \ - Minification\n      - Remove unused styles\n\n    javascript:\n      - Defer\
+    \ non-critical\n      - Async where possible\n      - Code splitting\n      -\
+    \ Tree shaking\n\n  caching_strategy:\n    static_assets:\n      images: \"1 year\"\
+    \n      css_js: \"1 year with versioning\"\n      fonts: \"1 year\"\n\n    html:\n\
+    \      cache_control: \"no-cache, must-revalidate\"\n      etag: \"Enabled\"\n\
+    \n  cdn_configuration:\n    requirements:\n      - Global edge locations\n   \
+    \   - HTTP/2 support\n      - Brotli compression\n      - Custom cache rules\n\
+    ```\n\n### 4.3 Technical Performance **[REQUIRED]**\n\n```yaml\ntechnical_optimization:\n\
+    \  server_configuration:\n    compression:\n      - Enable Gzip/Brotli\n     \
+    \ - Compress HTML, CSS, JS\n      - Minimum 1KB threshold\n\n    http2_http3:\n\
+    \      - Server push for critical resources\n      - Multiplexing enabled\n  \
+    \    - Header compression\n\n  resource_hints:\n    dns_prefetch: |\n      <link\
+    \ rel=\"dns-prefetch\" href=\"//cdn.example.com\">\n\n    preconnect: |\n    \
+    \  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n\n    prefetch:\
+    \ |\n      <link rel=\"prefetch\" href=\"/next-page.html\">\n\n  critical_rendering_path:\n\
+    \    optimization:\n      - Inline critical CSS\n      - Defer JavaScript\n  \
+    \    - Optimize web fonts\n      - Prioritize visible content\n```\n\n---"
+  5. Schema and Structured Data: "### 5.1 Schema.org Implementation **[REQUIRED]**\n\
+    \n```yaml\nstructured_data:\n  formats:\n    json_ld: \"Recommended\"\n    microdata:\
+    \ \"Legacy support\"\n    rdfa: \"Avoid\"\n\n  common_schemas:\n    organization:\n\
+    \      required:\n        - name\n        - url\n        - logo\n        - contactPoint\n\
+    \        - sameAs (social profiles)\n\n    local_business:\n      required:\n\
+    \        - name\n        - address\n        - telephone\n        - openingHours\n\
+    \        - geo coordinates\n\n    product:\n      required:\n        - name\n\
+    \        - image\n        - description\n        - offers (price, availability)\n\
+    \        - aggregateRating\n\n    article:\n      required:\n        - headline\n\
+    \        - datePublished\n        - author\n        - image\n        - publisher\n\
+    \n  validation:\n    tools:\n      - Google Rich Results Test\n      - Schema.org\
+    \ validator\n      - Structured Data Testing Tool\n\n    monitoring:\n      -\
+    \ Search Console reports\n      - Rich results status\n      - Error tracking\n\
+    ```\n\n### 5.2 Rich Snippets Optimization **[REQUIRED]**\n\n```yaml\nrich_snippets:\n\
+    \  types:\n    faq:\n      implementation: \"FAQPage schema\"\n      requirements:\n\
+    \        - Question-answer pairs\n        - Complete answers\n        - No promotional\
+    \ content\n\n    how_to:\n      implementation: \"HowTo schema\"\n      requirements:\n\
+    \        - Step-by-step instructions\n        - Time estimates\n        - Required\
+    \ tools/materials\n\n    reviews:\n      implementation: \"Review/AggregateRating\"\
+    \n      requirements:\n        - Genuine reviews\n        - Rating scale\n   \
+    \     - Review count\n\n    events:\n      implementation: \"Event schema\"\n\
+    \      requirements:\n        - Event name\n        - Start date/time\n      \
+    \  - Location\n        - Ticket information\n\n  best_practices:\n    - Test before\
+    \ deployment\n    - Monitor performance\n    - Update regularly\n    - Follow\
+    \ guidelines\n```\n\n---"
+  6. Content Marketing Technical Standards: "### 6.1 Content Management **[REQUIRED]**\n\
+    \n```yaml\ncontent_management:\n  content_types:\n    blog_posts:\n      url:\
+    \ \"/blog/{category}/{slug}\"\n      metadata: [title, description, author, date]\n\
+    \      features: [comments, sharing, related]\n\n    landing_pages:\n      url:\
+    \ \"/{campaign}/{offer}\"\n      elements: [hero, benefits, cta, form]\n     \
+    \ tracking: [source, medium, campaign]\n\n    resources:\n      url: \"/resources/{type}/{title}\"\
+    \n      types: [whitepapers, ebooks, guides]\n      gating: \"Progressive profiling\"\
+    \n\n  content_delivery:\n    formats:\n      - HTML pages\n      - PDF downloads\n\
+    \      - Video embeds\n      - Podcast feeds\n\n    optimization:\n      - CDN\
+    \ delivery\n      - Responsive images\n      - Lazy loading\n      - Progressive\
+    \ enhancement\n```\n\n### 6.2 Content Syndication **[RECOMMENDED]**\n\n```yaml\n\
+    syndication:\n  rss_feeds:\n    implementation:\n      main: \"/feed.xml\"\n \
+    \     category: \"/category/{name}/feed.xml\"\n\n    requirements:\n      - Valid\
+    \ XML\n      - Full content or summary\n      - Proper encoding\n      - Update\
+    \ frequency\n\n  social_sharing:\n    meta_tags:\n      - Open Graph\n      -\
+    \ Twitter Cards\n      - Pinterest Rich Pins\n\n    implementation:\n      - Share\
+    \ buttons\n      - Click tracking\n      - UTM parameters\n      - Social proof\n\
+    \n  cross_posting:\n    canonical_handling:\n      - Point to original\n     \
+    \ - Avoid duplicate content\n      - Track performance\n```\n\n---"
+  7. Analytics and Tracking: "### 7.1 Analytics Implementation **[REQUIRED]**\n\n\
+    ```yaml\nanalytics_setup:\n  google_analytics_4:\n    implementation:\n      gtag:\
+    \ |\n        <!-- Global site tag (gtag.js) -->\n        <script async src=\"\
+    https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID\"></script>\n  \
+    \      <script>\n          window.dataLayer = window.dataLayer || [];\n      \
+    \    function gtag(){dataLayer.push(arguments);}\n          gtag('js', new Date());\n\
+    \          gtag('config', 'GA_MEASUREMENT_ID');\n        </script>\n\n    enhanced_ecommerce:\n\
+    \      - Product impressions\n      - Product clicks\n      - Add to cart\n  \
+    \    - Checkout steps\n      - Purchase\n\n    custom_dimensions:\n      - Author\n\
+    \      - Category\n      - User type\n      - Content type\n\n  goal_tracking:\n\
+    \    macro_conversions:\n      - Form submissions\n      - Phone calls\n     \
+    \ - Purchases\n      - Sign-ups\n\n    micro_conversions:\n      - PDF downloads\n\
+    \      - Video views\n      - Tool usage\n      - Social shares\n```\n\n### 7.2\
+    \ Tag Management **[REQUIRED]**\n\n```yaml\ntag_management:\n  google_tag_manager:\n\
+    \    container_setup:\n      - Header container\n      - Body container\n    \
+    \  - DataLayer implementation\n      - Version control\n\n    common_tags:\n \
+    \     - Analytics tags\n      - Conversion pixels\n      - Remarketing tags\n\
+    \      - Heatmap tools\n\n    triggers:\n      - Page views\n      - Clicks\n\
+    \      - Form submissions\n      - Scroll depth\n      - Time on page\n\n  privacy_compliance:\n\
+    \    consent_management:\n      - Cookie consent banner\n      - Granular opt-in/out\n\
+    \      - Geographic detection\n      - Preference center\n\n    implementation:\n\
+    \      - Consent mode\n      - Server-side tagging\n      - Data retention\n \
+    \     - Anonymization\n```\n\n### 7.3 Conversion Tracking **[REQUIRED]**\n\n```yaml\n\
+    conversion_tracking:\n  implementation:\n    form_tracking:\n      methods:\n\
+    \        - Thank you page\n        - Event tracking\n        - Callback functions\n\
+    \        - DataLayer pushes\n\n    ecommerce_tracking:\n      enhanced_ecommerce:\n\
+    \        - Product views\n        - Cart actions\n        - Checkout funnel\n\
+    \        - Transaction details\n\n    phone_tracking:\n      - Dynamic number\
+    \ insertion\n      - Call tracking\n      - Duration tracking\n      - Source\
+    \ attribution\n\n  attribution_models:\n    types:\n      - Last click\n     \
+    \ - First click\n      - Linear\n      - Time decay\n      - Data-driven\n\n \
+    \   implementation:\n      - UTM parameters\n      - Channel definitions\n   \
+    \   - Campaign tagging\n      - Cross-device tracking\n```\n\n---"
+  8. Marketing Automation: "### 8.1 Marketing Automation Setup **[RECOMMENDED]**\n\
+    \n```yaml\nmarketing_automation:\n  lead_capture:\n    forms:\n      progressive_profiling:\n\
+    \        - Basic info first\n        - Additional fields over time\n        -\
+    \ Smart field logic\n        - Conditional questions\n\n      optimization:\n\
+    \        - A/B testing\n        - Field reduction\n        - Inline validation\n\
+    \        - Mobile optimization\n\n    landing_pages:\n      elements:\n      \
+    \  - Clear value proposition\n        - Social proof\n        - Trust signals\n\
+    \        - Minimal navigation\n\n  lead_scoring:\n    demographic:\n      - Job\
+    \ title\n      - Company size\n      - Industry\n      - Location\n\n    behavioral:\n\
+    \      - Page views\n      - Content downloads\n      - Email engagement\n   \
+    \   - Webinar attendance\n\n    implementation:\n      - Point assignment\n  \
+    \    - Threshold setting\n      - Score decay\n      - Alert triggers\n```\n\n\
+    ### 8.2 Workflow Automation **[RECOMMENDED]**\n\n```yaml\nautomation_workflows:\n\
+    \  nurture_campaigns:\n    welcome_series:\n      - Welcome email (immediate)\n\
+    \      - Education (day 3)\n      - Case study (day 7)\n      - Offer (day 14)\n\
+    \n    re_engagement:\n      triggers:\n        - 30 days inactive\n        - Cart\
+    \ abandonment\n        - Browse abandonment\n\n  personalization:\n    dynamic_content:\n\
+    \      - Industry-specific\n      - Role-based\n      - Stage-based\n      - Behavior-based\n\
+    \n    implementation:\n      - Merge tags\n      - Dynamic blocks\n      - Smart\
+    \ content\n      - AI recommendations\n```\n\n---"
+  9. Email Marketing Standards: "### 9.1 Email Technical Standards **[REQUIRED]**\n\
+    \n```yaml\nemail_technical:\n  deliverability:\n    authentication:\n      spf:\
+    \ \"v=spf1 include:_spf.provider.com ~all\"\n      dkim: \"2048-bit key minimum\"\
+    \n      dmarc: \"v=DMARC1; p=quarantine; rua=mailto:...\"\n\n    reputation:\n\
+    \      - Warm up new IPs\n      - Monitor blacklists\n      - Manage bounce rates\n\
+    \      - Track complaints\n\n  html_email:\n    standards:\n      - Tables for\
+    \ layout\n      - Inline CSS\n      - 600px max width\n      - Alt text for images\n\
+    \n    compatibility:\n      - Test across clients\n      - Fallback fonts\n  \
+    \    - Dark mode support\n      - Plain text version\n\n  tracking:\n    metrics:\n\
+    \      - Open rate\n      - Click rate\n      - Conversion rate\n      - List\
+    \ growth rate\n\n    implementation:\n      - UTM parameters\n      - Pixel tracking\n\
+    \      - Link wrapping\n      - Conversion attribution\n```\n\n### 9.2 Email Optimization\
+    \ **[REQUIRED]**\n\n```yaml\nemail_optimization:\n  subject_lines:\n    best_practices:\n\
+    \      - 30-50 characters\n      - Personalization\n      - A/B testing\n    \
+    \  - Emoji usage (sparingly)\n\n  preheader_text:\n    requirements:\n      -\
+    \ 40-100 characters\n      - Complement subject\n      - Call to action\n    \
+    \  - Hidden if needed\n\n  mobile_optimization:\n    requirements:\n      - Single\
+    \ column layout\n      - Large tap targets (44x44px)\n      - Readable fonts (14px+)\n\
+    \      - Compressed images\n\n  accessibility:\n    standards:\n      - Semantic\
+    \ HTML\n      - Alt text\n      - Color contrast\n      - Screen reader friendly\n\
+    ```\n\n---"
+  10. Implementation Guidelines: "### 10.1 SEO Audit Checklist **[REQUIRED]**\n\n\
+    ```yaml\nseo_audit:\n  technical:\n    - [ ] Crawlability check\n    - [ ] XML\
+    \ sitemap valid\n    - [ ] Robots.txt correct\n    - [ ] HTTPS implementation\n\
+    \    - [ ] Page speed optimal\n    - [ ] Mobile-friendly\n    - [ ] Core Web Vitals\
+    \ pass\n\n  on_page:\n    - [ ] Title tags optimized\n    - [ ] Meta descriptions\
+    \ unique\n    - [ ] Header hierarchy correct\n    - [ ] Internal linking strong\n\
+    \    - [ ] Image optimization\n    - [ ] Schema markup valid\n\n  content:\n \
+    \   - [ ] Keyword research done\n    - [ ] Content quality high\n    - [ ] E-A-T\
+    \ signals present\n    - [ ] Fresh content strategy\n    - [ ] User intent matched\n\
+    ```\n\n### 10.2 Marketing Stack Integration **[RECOMMENDED]**\n\n```yaml\nmarketing_stack:\n\
+    \  essential_tools:\n    analytics:\n      - Google Analytics 4\n      - Google\
+    \ Search Console\n      - Hotjar/Crazy Egg\n\n    seo:\n      - Screaming Frog\n\
+    \      - Ahrefs/SEMrush\n      - PageSpeed Insights\n\n    marketing:\n      -\
+    \ HubSpot/Marketo\n      - Mailchimp/SendGrid\n      - Hootsuite/Buffer\n\n  integration_points:\n\
+    \    - CRM sync\n    - Analytics data\n    - Lead scoring\n    - Attribution tracking\n\
+    ```\n\n### 10.3 Performance Monitoring **[REQUIRED]**\n\n```yaml\nmonitoring:\n\
+    \  kpis:\n    seo:\n      - Organic traffic\n      - Keyword rankings\n      -\
+    \ Click-through rate\n      - Conversion rate\n\n    performance:\n      - Page\
+    \ load time\n      - Core Web Vitals\n      - Server response time\n      - Error\
+    \ rates\n\n    marketing:\n      - Lead generation\n      - Cost per lead\n  \
+    \    - ROI/ROAS\n      - Customer lifetime value\n\n  reporting:\n    frequency:\n\
+    \      daily: \"Traffic and conversions\"\n      weekly: \"Rankings and performance\"\
+    \n      monthly: \"Comprehensive review\"\n      quarterly: \"Strategy adjustment\"\
+    \n```\n\n---"
+  Quick Reference: "### SEO Checklist\n```yaml\ncritical_seo_elements:\n  - [ ] Unique\
+    \ title tags (50-60 chars)\n  - [ ] Meta descriptions (150-160 chars)\n  - [ ]\
+    \ One H1 per page\n  - [ ] XML sitemap submitted\n  - [ ] Schema markup implemented\n\
+    \  - [ ] Mobile-friendly design\n  - [ ] HTTPS enabled\n  - [ ] Page speed < 3\
+    \ seconds\n```\n\n### Marketing Automation Quick Start\n```yaml\nautomation_basics:\n\
+    \  - [ ] Lead capture forms\n  - [ ] Thank you pages\n  - [ ] Welcome email series\n\
+    \  - [ ] Lead scoring model\n  - [ ] Nurture campaigns\n  - [ ] Analytics tracking\n\
+    \  - [ ] A/B testing plan\n```\n\n---\n\n**Remember:** SEO and marketing standards\
+    \ evolve rapidly. Regularly review search engine guidelines, algorithm updates,\
+    \ and industry best practices to maintain optimal performance."
+  Implementation: '### Getting Started
+
+
+    1. Review the relevant sections of this standard for your use case
+
+    2. Identify which guidelines apply to your project
+
+    3. Implement the required practices and patterns
+
+    4. Validate compliance using the provided checklists
+
+
+    ### Implementation Checklist
+
+
+    - [ ] Review and understand applicable standards
+
+    - [ ] Implement required practices
+
+    - [ ] Follow recommended patterns
+
+    - [ ] Validate implementation against guidelines
+
+    - [ ] Document any deviations with justification'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:54.594050'
+  source: williamzujkowski/standards/docs/standards/SEO_WEB_MARKETING_STANDARDS.md
+  checksum: 082e151eafb45afefb4b7272565ee45b02763d4fd5ef4c9966d665e31520dc78

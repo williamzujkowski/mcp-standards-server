@@ -1,0 +1,151 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-06-20T05:11:54.684543",
+  "standards": {
+    "project_management_standards": {
+      "name": "Docs/Standards/Project Management Standards",
+      "category": "general",
+      "file": "PROJECT_MANAGEMENT_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "observability_standards": {
+      "name": "Docs/Standards/Observability Standards",
+      "category": "general",
+      "file": "OBSERVABILITY_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "compliance_standards": {
+      "name": "Docs/Standards/Compliance Standards",
+      "category": "general",
+      "file": "COMPLIANCE_STANDARDS.yaml",
+      "nist_controls": [
+        "AC-2"
+      ]
+    },
+    "testing_standards": {
+      "name": "Docs/Standards/Testing Standards",
+      "category": "development",
+      "file": "TESTING_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "seo_web_marketing_standards": {
+      "name": "Docs/Standards/Seo Web Marketing Standards",
+      "category": "development",
+      "file": "SEO_WEB_MARKETING_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "unified_standards": {
+      "name": "Docs/Standards/Unified Standards",
+      "category": "core",
+      "file": "UNIFIED_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "cost_optimization_standards": {
+      "name": "Docs/Standards/Cost Optimization Standards",
+      "category": "general",
+      "file": "COST_OPTIMIZATION_STANDARDS.yaml",
+      "nist_controls": [
+        "CC-9999"
+      ]
+    },
+    "web_design_ux_standards": {
+      "name": "Docs/Standards/Web Design Ux Standards",
+      "category": "development",
+      "file": "WEB_DESIGN_UX_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "coding_standards": {
+      "name": "Docs/Standards/Coding Standards",
+      "category": "development",
+      "file": "CODING_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "knowledge_management_standards": {
+      "name": "Docs/Standards/Knowledge Management Standards",
+      "category": "general",
+      "file": "KNOWLEDGE_MANAGEMENT_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "event_driven_standards": {
+      "name": "Docs/Standards/Event Driven Standards",
+      "category": "general",
+      "file": "EVENT_DRIVEN_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "frontend_mobile_standards": {
+      "name": "Docs/Standards/Frontend Mobile Standards",
+      "category": "general",
+      "file": "FRONTEND_MOBILE_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "devops_platform_standards": {
+      "name": "Docs/Standards/Devops Platform Standards",
+      "category": "general",
+      "file": "DEVOPS_PLATFORM_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "cloud_native_standards": {
+      "name": "Docs/Standards/Cloud Native Standards",
+      "category": "cloud",
+      "file": "CLOUD_NATIVE_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "legal_compliance_standards": {
+      "name": "Docs/Standards/Legal Compliance Standards",
+      "category": "general",
+      "file": "LEGAL_COMPLIANCE_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "data_engineering_standards": {
+      "name": "Docs/Standards/Data Engineering Standards",
+      "category": "data",
+      "file": "DATA_ENGINEERING_STANDARDS.yaml",
+      "nist_controls": []
+    },
+    "modern_security_standards": {
+      "name": "Docs/Standards/Modern Security Standards",
+      "category": "security",
+      "file": "MODERN_SECURITY_STANDARDS.yaml",
+      "nist_controls": []
+    }
+  },
+  "categories": {
+    "general": [
+      "project_management_standards",
+      "observability_standards",
+      "compliance_standards",
+      "cost_optimization_standards",
+      "knowledge_management_standards",
+      "event_driven_standards",
+      "frontend_mobile_standards",
+      "devops_platform_standards",
+      "legal_compliance_standards"
+    ],
+    "development": [
+      "testing_standards",
+      "seo_web_marketing_standards",
+      "web_design_ux_standards",
+      "coding_standards"
+    ],
+    "core": [
+      "unified_standards"
+    ],
+    "cloud": [
+      "cloud_native_standards"
+    ],
+    "data": [
+      "data_engineering_standards"
+    ],
+    "security": [
+      "modern_security_standards"
+    ]
+  },
+  "nist_controls": {
+    "AC-2": [
+      "compliance_standards"
+    ],
+    "CC-9999": [
+      "cost_optimization_standards"
+    ]
+  }
+}

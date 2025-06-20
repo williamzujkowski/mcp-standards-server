@@ -1,0 +1,313 @@
+name: Docs/Standards/Project Management Standards
+category: general
+filename: docs/standards/PROJECT_MANAGEMENT_STANDARDS.md
+nist_controls: []
+sections:
+  Project Management Standards: '**Version:** 2.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** PM
+
+
+    ---
+
+
+    **Version:** 2.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Focus:** Agile project management with enterprise adaptability'
+  Table of Contents: '1. [Core Principles](#1-core-principles)
+
+    2. [Methodology Framework](#2-methodology-framework)
+
+    3. [Project Lifecycle](#3-project-lifecycle)
+
+    4. [Agile Implementation](#4-agile-implementation)
+
+    5. [Planning and Execution](#5-planning-and-execution)
+
+    6. [Risk and Issue Management](#6-risk-and-issue-management)
+
+    7. [Stakeholder Engagement](#7-stakeholder-engagement)
+
+    8. [Team Excellence](#8-team-excellence)
+
+    9. [Metrics and Reporting](#9-metrics-and-reporting)
+
+    10. [Implementation Guidelines](#10-implementation-guidelines)
+
+
+    ---'
+  Overview: 'This standard provides comprehensive guidelines and best practices for
+    the subject area.
+
+    It aims to ensure consistency, quality, and maintainability across all related
+    implementations.'
+  1. Core Principles: "### 1.1 Foundation Standards **[REQUIRED]**\n\n```yaml\ncore_principles:\n\
+    \  customer_focus:\n    - Deliver value early and continuously\n    - Validate\
+    \ assumptions with users\n    - Prioritize based on business impact\n\n  team_empowerment:\n\
+    \    - Self-organizing teams\n    - Psychological safety\n    - Continuous learning\
+    \ culture\n\n  adaptive_planning:\n    - Embrace change as competitive advantage\n\
+    \    - Short feedback loops\n    - Data-driven decisions\n\n  quality_first:\n\
+    \    - Built-in quality, not inspected in\n    - Definition of Done enforcement\n\
+    \    - Technical excellence\n```\n\n### 1.2 Success Criteria **[REQUIRED]**\n\n\
+    ```yaml\nproject_success:\n  dimensions:\n    delivery: \"On time, on budget,\
+    \ on scope\"\n    quality: \"Meets acceptance criteria\"\n    value: \"Achieves\
+    \ business objectives\"\n    team: \"Sustainable pace, high morale\"\n    stakeholder:\
+    \ \"Satisfaction > 4/5\"\n```\n\n---"
+  2. Methodology Framework: "### 2.1 Methodology Selection **[REQUIRED]**\n\n```yaml\n\
+    methodology_guide:\n  agile_scrum:\n    use_when:\n      - Evolving requirements\n\
+    \      - Need frequent delivery\n      - High collaboration possible\n    team_size:\
+    \ \"3-9 members\"\n    sprint_length: \"1-4 weeks\"\n\n  kanban:\n    use_when:\n\
+    \      - Continuous flow needed\n      - Varying task sizes\n      - Support/maintenance\
+    \ work\n    wip_limits: \"Required\"\n\n  waterfall:\n    use_when:\n      - Fixed\
+    \ requirements\n      - Regulatory compliance\n      - Hardware dependencies\n\
+    \    phases: [Requirements, Design, Build, Test, Deploy]\n\n  hybrid:\n    use_when:\n\
+    \      - Mixed requirement stability\n      - Phased rollouts needed\n      -\
+    \ Enterprise constraints\n    approach: \"Waterfall phases with Agile execution\"\
+    \n```\n\n### 2.2 Framework Components **[REQUIRED]**\n\n```yaml\nframework_elements:\n\
+    \  roles:\n    product_owner:\n      - Owns product vision\n      - Manages backlog\n\
+    \      - Stakeholder liaison\n\n    scrum_master:\n      - Facilitates process\n\
+    \      - Removes impediments\n      - Coaches team\n\n    development_team:\n\
+    \      - Self-organizing\n      - Cross-functional\n      - Delivers increment\n\
+    \n  artifacts:\n    product_backlog: \"Prioritized feature list\"\n    sprint_backlog:\
+    \ \"Committed work for sprint\"\n    increment: \"Potentially shippable product\"\
+    \n\n  events:\n    sprint_planning: \"Define sprint work\"\n    daily_standup:\
+    \ \"Sync and impediments\"\n    sprint_review: \"Demo and feedback\"\n    retrospective:\
+    \ \"Continuous improvement\"\n```\n\n---"
+  3. Project Lifecycle: "### 3.1 Project Phases **[REQUIRED]**\n\n```yaml\nlifecycle_phases:\n\
+    \  initiation:\n    activities:\n      - Define business case\n      - Identify\
+    \ stakeholders\n      - Create project charter\n      - Secure funding\n    deliverables:\n\
+    \      - Project charter\n      - Stakeholder register\n      - Initial budget\n\
+    \n  planning:\n    activities:\n      - Develop roadmap\n      - Create WBS\n\
+    \      - Define team structure\n      - Risk assessment\n    deliverables:\n \
+    \     - Project plan\n      - Resource plan\n      - Risk register\n\n  execution:\n\
+    \    activities:\n      - Sprint execution\n      - Progress monitoring\n    \
+    \  - Stakeholder communication\n      - Quality assurance\n    deliverables:\n\
+    \      - Working increments\n      - Status reports\n      - Updated documentation\n\
+    \n  closure:\n    activities:\n      - Final delivery\n      - Knowledge transfer\n\
+    \      - Retrospective\n      - Team transition\n    deliverables:\n      - Final\
+    \ product\n      - Lessons learned\n      - Project archive\n```\n\n### 3.2 Phase\
+    \ Gates **[RECOMMENDED]**\n\n```yaml\nphase_gates:\n  go_no_go_criteria:\n   \
+    \ initiation_to_planning:\n      - Approved business case\n      - Committed sponsor\n\
+    \      - Available funding\n\n    planning_to_execution:\n      - Approved plan\n\
+    \      - Team assembled\n      - Environment ready\n\n    execution_to_closure:\n\
+    \      - Acceptance criteria met\n      - Documentation complete\n      - Support\
+    \ plan ready\n```\n\n---"
+  4. Agile Implementation: "### 4.1 Sprint Management **[REQUIRED]**\n\n```yaml\n\
+    sprint_standards:\n  planning:\n    duration: \"4 hours for 2-week sprint\"\n\
+    \    inputs:\n      - Refined backlog\n      - Team capacity\n      - Sprint goal\n\
+    \    outputs:\n      - Sprint backlog\n      - Commitment\n      - Plan\n\n  execution:\n\
+    \    daily_standup:\n      duration: \"15 minutes\"\n      questions:\n      \
+    \  - What did I complete?\n        - What will I do today?\n        - Any impediments?\n\
+    \n    practices:\n      - Update board daily\n      - Raise blockers immediately\n\
+    \      - Collaborate actively\n\n  review:\n    duration: \"2 hours for 2-week\
+    \ sprint\"\n    activities:\n      - Demo working software\n      - Gather feedback\n\
+    \      - Update backlog\n\n  retrospective:\n    duration: \"1.5 hours for 2-week\
+    \ sprint\"\n    format:\n      - What went well?\n      - What could improve?\n\
+    \      - Action items\n```\n\n### 4.2 Backlog Management **[REQUIRED]**\n\n```yaml\n\
+    backlog_standards:\n  user_stories:\n    format: \"As a [user], I want [feature]\
+    \ so that [benefit]\"\n\n    INVEST_criteria:\n      Independent: \"Minimal dependencies\"\
+    \n      Negotiable: \"Not a contract\"\n      Valuable: \"Delivers user value\"\
+    \n      Estimable: \"Can size it\"\n      Small: \"Fits in sprint\"\n      Testable:\
+    \ \"Clear acceptance criteria\"\n\n  prioritization:\n    methods:\n      - MoSCoW\
+    \ (Must/Should/Could/Won't)\n      - Value vs Effort matrix\n      - WSJF (Weighted\
+    \ Shortest Job First)\n\n  refinement:\n    frequency: \"Weekly, 10% of capacity\"\
+    \n    activities:\n      - Split large stories\n      - Add acceptance criteria\n\
+    \      - Estimate effort\n      - Identify dependencies\n```\n\n### 4.3 Definition\
+    \ of Done **[REQUIRED]**\n\n```yaml\ndefinition_of_done:\n  code_complete:\n \
+    \   - Feature implemented\n    - Unit tests passing\n    - Code reviewed\n   \
+    \ - Documentation updated\n\n  quality_assured:\n    - Integration tests passing\n\
+    \    - Acceptance criteria met\n    - No critical bugs\n    - Performance validated\n\
+    \n  ready_to_ship:\n    - Deployed to staging\n    - Product owner approved\n\
+    \    - Release notes written\n    - Monitoring configured\n```\n\n---"
+  5. Planning and Execution: "### 5.1 Project Charter **[REQUIRED]**\n\n```yaml\n\
+    project_charter:\n  components:\n    vision: \"Why this project exists\"\n   \
+    \ objectives: \"Measurable goals\"\n    scope: \"In/out boundaries\"\n    stakeholders:\
+    \ \"Key players and roles\"\n    success_criteria: \"How we measure success\"\n\
+    \    constraints: \"Time, budget, resources\"\n    assumptions: \"What we believe\
+    \ true\"\n    risks: \"Major concerns\"\n\n  approval:\n    sponsor: \"Required\"\
+    \n    stakeholders: \"Key ones\"\n    team: \"Commitment\"\n```\n\n### 5.2 Work\
+    \ Breakdown Structure **[REQUIRED]**\n\n```yaml\nwbs_standards:\n  principles:\n\
+    \    - 100% rule (all work included)\n    - Mutually exclusive elements\n    -\
+    \ Outcome-oriented\n    - 8-80 hour work packages\n\n  structure:\n    level_1:\
+    \ \"Project\"\n    level_2: \"Major deliverables\"\n    level_3: \"Components\"\
+    \n    level_4: \"Work packages\"\n\n  work_package:\n    attributes:\n      -\
+    \ Clear deliverable\n      - Single owner\n      - Effort estimate\n      - Dependencies\n\
+    \      - Acceptance criteria\n```\n\n### 5.3 Estimation Standards **[REQUIRED]**\n\
+    \n```yaml\nestimation:\n  techniques:\n    planning_poker:\n      scale: \"Fibonacci\
+    \ (1,2,3,5,8,13)\"\n      process: \"Reveal simultaneously\"\n\n    t_shirt_sizing:\n\
+    \      scale: [XS, S, M, L, XL]\n      use: \"Initial estimates\"\n\n    three_point:\n\
+    \      formula: \"(Optimistic + 4*Likely + Pessimistic) / 6\"\n      use: \"Detailed\
+    \ planning\"\n\n  best_practices:\n    - Estimate as team\n    - Include buffer\
+    \ (15-20%)\n    - Track actuals\n    - Refine over time\n```\n\n### 5.4 Schedule\
+    \ Management **[REQUIRED]**\n\n```yaml\nscheduling:\n  critical_path:\n    identify:\
+    \ \"Longest duration path\"\n    monitor: \"Weekly updates\"\n    optimize: \"\
+    Fast-track or crash\"\n\n  milestones:\n    types:\n      - Phase completion\n\
+    \      - Major deliveries\n      - External dependencies\n      - Go/no-go decisions\n\
+    \n  tracking:\n    burndown: \"Daily sprint progress\"\n    burnup: \"Release\
+    \ progress\"\n    velocity: \"Team capacity\"\n    gantt: \"Dependencies view\"\
+    \n```\n\n---"
+  6. Risk and Issue Management: "### 6.1 Risk Management **[REQUIRED]**\n\n```yaml\n\
+    risk_management:\n  identification:\n    techniques:\n      - Brainstorming\n\
+    \      - SWOT analysis\n      - Expert interviews\n      - Historical data\n \
+    \     - Security/compliance review (see [NIST_IMPLEMENTATION_GUIDE.md](./docs/nist/NIST_IMPLEMENTATION_GUIDE.md))\n\
+    \n  assessment:\n    probability: [Low, Medium, High]\n    impact: [Low, Medium,\
+    \ High]\n    score: \"Probability \xD7 Impact\"\n\n  response_strategies:\n  \
+    \  avoid: \"Eliminate risk\"\n    mitigate: \"Reduce probability/impact\"\n  \
+    \  transfer: \"Insurance/outsource\"\n    accept: \"Contingency plan\"\n\n  monitoring:\n\
+    \    frequency: \"Weekly review\"\n    triggers: \"Define thresholds\"\n    escalation:\
+    \ \"Clear paths\"\n```\n\n### 6.2 Issue Management **[REQUIRED]**\n\n```yaml\n\
+    issue_management:\n  classification:\n    severity:\n      critical: \"Blocks\
+    \ progress\"\n      high: \"Major impact\"\n      medium: \"Workaround exists\"\
+    \n      low: \"Minor inconvenience\"\n\n  process:\n    capture:\n      - Description\n\
+    \      - Impact\n      - Reporter\n      - Date\n\n    triage:\n      - Assign\
+    \ owner\n      - Set priority\n      - Define timeline\n\n    resolution:\n  \
+    \    - Root cause\n      - Action taken\n      - Verification\n      - Lessons\
+    \ learned\n\n  escalation:\n    level_1: \"Team lead (1 day)\"\n    level_2: \"\
+    PM (2 days)\"\n    level_3: \"Sponsor (3 days)\"\n```\n\n---"
+  7. Stakeholder Engagement: "### 7.1 Stakeholder Analysis **[REQUIRED]**\n\n```yaml\n\
+    stakeholder_analysis:\n  mapping:\n    dimensions:\n      interest: [Low, Medium,\
+    \ High]\n      influence: [Low, Medium, High]\n\n    strategies:\n      high_high:\
+    \ \"Manage closely\"\n      high_low: \"Keep informed\"\n      low_high: \"Keep\
+    \ satisfied\"\n      low_low: \"Monitor\"\n\n  engagement:\n    plan:\n      -\
+    \ Communication frequency\n      - Preferred channels\n      - Level of detail\n\
+    \      - Key messages\n\n  raci_matrix:\n    responsible: \"Does the work\"\n\
+    \    accountable: \"Owns outcome\"\n    consulted: \"Provides input\"\n    informed:\
+    \ \"Kept updated\"\n```\n\n### 7.2 Communication Plan **[REQUIRED]**\n\n```yaml\n\
+    communication:\n  channels:\n    synchronous:\n      - Daily standups\n      -\
+    \ Sprint reviews\n      - Steering committees\n      - War rooms\n\n    asynchronous:\n\
+    \      - Email updates\n      - Dashboards\n      - Wiki/docs\n      - Chat channels\n\
+    \n  cadence:\n    daily: \"Team sync\"\n    weekly: \"Status report\"\n    bi_weekly:\
+    \ \"Stakeholder update\"\n    monthly: \"Steering committee\"\n\n  templates:\n\
+    \    status_report:\n      - Progress summary\n      - Key metrics\n      - Risks/issues\n\
+    \      - Next steps\n\n    executive_summary:\n      - Business value\n      -\
+    \ Timeline status\n      - Budget status\n      - Key decisions needed\n```\n\n\
+    ---"
+  8. Team Excellence: "### 8.1 Team Development **[REQUIRED]**\n\n```yaml\nteam_development:\n\
+    \  stages:\n    forming:\n      - Set clear expectations\n      - Define working\
+    \ agreements\n      - Establish communication norms\n\n    storming:\n      -\
+    \ Address conflicts openly\n      - Facilitate discussions\n      - Build trust\n\
+    \n    norming:\n      - Reinforce positive behaviors\n      - Celebrate successes\n\
+    \      - Continuous improvement\n\n    performing:\n      - Empower decision-making\n\
+    \      - Foster innovation\n      - Scale practices\n\n  practices:\n    psychological_safety:\n\
+    \      - Encourage questions\n      - Learn from failures\n      - Value diverse\
+    \ opinions\n\n    continuous_learning:\n      - Regular training\n      - Knowledge\
+    \ sharing\n      - Experimentation time\n```\n\n### 8.2 Performance Management\
+    \ **[REQUIRED]**\n\n```yaml\nperformance:\n  team_metrics:\n    velocity: \"Story\
+    \ points per sprint\"\n    quality: \"Defect escape rate\"\n    satisfaction:\
+    \ \"Team health surveys\"\n    predictability: \"Commitment accuracy\"\n\n  individual_support:\n\
+    \    one_on_ones:\n      frequency: \"Bi-weekly\"\n      topics:\n        - Progress\
+    \ and blockers\n        - Career development\n        - Feedback exchange\n\n\
+    \    growth_plans:\n      - Skill assessment\n      - Learning objectives\n  \
+    \    - Stretch assignments\n      - Mentoring\n```\n\n### 8.3 Remote Team Standards\
+    \ **[RECOMMENDED]**\n\n```yaml\nremote_teams:\n  communication:\n    - Video-on\
+    \ for meetings\n    - Overlap hours defined\n    - Response time SLAs\n    - Documentation\
+    \ first\n\n  collaboration:\n    tools:\n      - Video conferencing\n      - Virtual\
+    \ whiteboards\n      - Async updates\n      - Shared workspaces\n\n    practices:\n\
+    \      - Virtual coffee chats\n      - Online team building\n      - Clear working\
+    \ hours\n      - Results over hours\n```\n\n---"
+  9. Metrics and Reporting: "### 9.1 Key Metrics **[REQUIRED]**\n\n```yaml\nproject_metrics:\n\
+    \  delivery:\n    schedule_variance: \"Actual vs planned\"\n    budget_variance:\
+    \ \"Actual vs budget\"\n    scope_creep: \"Added vs original\"\n\n  quality:\n\
+    \    defect_density: \"Bugs per feature\"\n    test_coverage: \"> 80%\"\n    technical_debt:\
+    \ \"Track and plan\"\n    nist_compliance: \"% of security features tagged\"\n\
+    \n  team:\n    velocity_trend: \"Improving\"\n    happiness_index: \"> 7/10\"\n\
+    \    retention_rate: \"> 90%\"\n\n  business:\n    roi: \"Value delivered / cost\"\
+    \n    time_to_market: \"Idea to production\"\n    customer_satisfaction: \"> 4/5\"\
+    \n```\n\n### 9.2 Reporting Standards **[REQUIRED]**\n\n```yaml\nreporting:\n \
+    \ dashboards:\n    real_time:\n      - Sprint burndown\n      - Build status\n\
+    \      - Current blockers\n\n    weekly:\n      - Progress summary\n      - Risk\
+    \ heat map\n      - Budget burn\n\n    monthly:\n      - Trend analysis\n    \
+    \  - Milestone status\n      - Team metrics\n\n  formats:\n    executive:\n  \
+    \    - One-page summary\n      - Traffic light status\n      - Key decisions needed\n\
+    \n    detailed:\n      - Full metrics\n      - Root cause analysis\n      - Action\
+    \ plans\n```\n\n### 9.3 Continuous Improvement **[REQUIRED]**\n\n```yaml\nimprovement:\n\
+    \  retrospectives:\n    frequency: \"Every sprint\"\n    participation: \"Whole\
+    \ team\"\n    output: \"2-3 action items\"\n    follow_up: \"Track completion\"\
+    \n\n  metrics_review:\n    frequency: \"Monthly\"\n    analyze:\n      - Trends\n\
+    \      - Anomalies\n      - Correlations\n\n  process_optimization:\n    - Remove\
+    \ waste\n    - Automate repeatable\n    - Simplify complex\n\n  compliance_tracking:\n\
+    \    - Monitor NIST control coverage\n    - Review security feature tagging\n\
+    \    - Update compliance documentation\n    - See [NIST Implementation Guide](./docs/nist/NIST_IMPLEMENTATION_GUIDE.md)\n\
+    \    - Measure impact\n```\n\n---"
+  10. Implementation Guidelines: "### 10.1 Adoption Strategy **[REQUIRED]**\n\n```yaml\n\
+    adoption:\n  phases:\n    pilot:\n      duration: \"1-2 months\"\n      scope:\
+    \ \"Single team\"\n      focus: \"Core practices\"\n\n    rollout:\n      duration:\
+    \ \"3-6 months\"\n      scope: \"Department\"\n      focus: \"Standardization\"\
+    \n\n    scale:\n      duration: \"6-12 months\"\n      scope: \"Organization\"\
+    \n      focus: \"Optimization\"\n\n  success_factors:\n    - Executive sponsorship\n\
+    \    - Team buy-in\n    - Training investment\n    - Tool support\n    - Regular\
+    \ coaching\n```\n\n### 10.2 Maturity Model **[RECOMMENDED]**\n\n```yaml\nmaturity_levels:\n\
+    \  level_1_initial:\n    - Ad hoc processes\n    - Hero culture\n    - Reactive\
+    \ mode\n\n  level_2_managed:\n    - Basic standards\n    - Regular planning\n\
+    \    - Some metrics\n\n  level_3_defined:\n    - Documented processes\n    - Consistent\
+    \ practices\n    - Proactive management\n\n  level_4_quantified:\n    - Data-driven\
+    \ decisions\n    - Predictable delivery\n    - Continuous improvement\n\n  level_5_optimizing:\n\
+    \    - Innovation culture\n    - Self-organizing\n    - Industry leader\n```\n\
+    \n### 10.3 Common Pitfalls **[REQUIRED]**\n\n```yaml\navoid:\n  process_over_people:\n\
+    \    - Rigid adherence to process\n    - Ignoring team feedback\n    - Documentation\
+    \ overload\n\n  planning_paralysis:\n    - Over-planning upfront\n    - Resisting\
+    \ change\n    - Perfect vs good enough\n\n  metrics_madness:\n    - Measuring\
+    \ everything\n    - Gaming the system\n    - Quantity over quality\n\n  communication_breakdown:\n\
+    \    - Information silos\n    - Assuming understanding\n    - Delayed escalation\n\
+    \nremedies:\n  - Start simple, evolve\n  - Focus on outcomes\n  - Empower teams\n\
+    \  - Fail fast, learn faster\n```\n\n### 10.4 Tools and Automation **[RECOMMENDED]**\n\
+    \n```yaml\ntool_categories:\n  project_management:\n    examples: [Jira, Azure\
+    \ DevOps, Asana]\n    capabilities:\n      - Backlog management\n      - Sprint\
+    \ planning\n      - Progress tracking\n\n  collaboration:\n    examples: [Slack,\
+    \ Teams, Miro]\n    capabilities:\n      - Real-time chat\n      - Video conferencing\n\
+    \      - Virtual whiteboarding\n\n  reporting:\n    examples: [PowerBI, Tableau,\
+    \ Grafana]\n    capabilities:\n      - Real-time dashboards\n      - Trend analysis\n\
+    \      - Custom reports\n\n  automation:\n    focus:\n      - Status updates\n\
+    \      - Metric collection\n      - Report generation\n      - Notifications\n\
+    ```\n\n---"
+  Quick Reference: "### Sprint Checklist\n```yaml\nsprint_checklist:\n  before:\n\
+    \    - [ ] Backlog refined\n    - [ ] Capacity confirmed\n    - [ ] Dependencies\
+    \ identified\n\n  during:\n    - [ ] Daily standups held\n    - [ ] Board updated\n\
+    \    - [ ] Blockers addressed\n\n  after:\n    - [ ] Demo completed\n    - [ ]\
+    \ Retrospective held\n    - [ ] Metrics updated\n```\n\n### RACI Template\n```yaml\n\
+    raci_template:\n  decisions:\n    technical: \"R: Tech Lead, A: Architect, C:\
+    \ Team, I: PM\"\n    business: \"R: PM, A: Product Owner, C: Sponsor, I: Team\"\
+    \n    budget: \"R: PM, A: Sponsor, C: Finance, I: Team\"\n```\n\n### Risk Register\
+    \ Template\n```yaml\nrisk_template:\n  fields:\n    - ID: \"RISK-001\"\n    -\
+    \ Description: \"Key developer may leave\"\n    - Probability: \"Medium\"\n  \
+    \  - Impact: \"High\"\n    - Response: \"Document knowledge, pair programming\"\
+    \n    - Owner: \"Tech Lead\"\n    - Status: \"Monitoring\"\n```\n\n---\n\n**Remember:**\
+    \ These standards are guidelines. Adapt them to your context while maintaining\
+    \ the core principles of transparency, collaboration, and continuous improvement."
+  Implementation: '### Getting Started
+
+
+    1. Review the relevant sections of this standard for your use case
+
+    2. Identify which guidelines apply to your project
+
+    3. Implement the required practices and patterns
+
+    4. Validate compliance using the provided checklists
+
+
+    ### Implementation Checklist
+
+
+    - [ ] Review and understand applicable standards
+
+    - [ ] Implement required practices
+
+    - [ ] Follow recommended patterns
+
+    - [ ] Validate implementation against guidelines
+
+    - [ ] Document any deviations with justification'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:54.302185'
+  source: williamzujkowski/standards/docs/standards/PROJECT_MANAGEMENT_STANDARDS.md
+  checksum: f43adb64def0b656ab75e2ce020afaf7985210f8e6cf80fab0dc63e2ba74eaa0

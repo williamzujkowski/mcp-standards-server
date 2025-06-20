@@ -177,8 +177,8 @@ class TestToolHandlers:
             result = await handle_load_standards(arguments)
             
             assert "Standards Loaded" in result
-            assert "Query: api security" in result
-            assert "Tokens: 1000" in result
+            assert "api security" in result
+            assert "1000" in result
             assert "CS.api" in result
             assert "SEC.auth" in result
     

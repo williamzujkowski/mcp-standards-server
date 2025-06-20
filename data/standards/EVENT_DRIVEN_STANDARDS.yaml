@@ -1,0 +1,377 @@
+name: Docs/Standards/Event Driven Standards
+category: general
+filename: docs/standards/EVENT_DRIVEN_STANDARDS.md
+nist_controls: []
+sections:
+  Event-Driven Architecture Standards: '**Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** EVT
+
+
+    ---
+
+
+    **Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active'
+  Table of Contents: '1. [Event-Driven Design Principles](#1-event-driven-design-principles)
+
+    2. [Event Schema and Contracts](#2-event-schema-and-contracts)
+
+    3. [Message Brokers and Queues](#3-message-brokers-and-queues)
+
+    4. [Event Sourcing Patterns](#4-event-sourcing-patterns)
+
+    5. [CQRS Implementation](#5-cqrs-implementation)
+
+    6. [Saga Patterns](#6-saga-patterns)
+
+    7. [Event Processing and Analytics](#7-event-processing-and-analytics)
+
+
+    ---'
+  Overview: 'This standard provides comprehensive guidelines and best practices for
+    the subject area.
+
+    It aims to ensure consistency, quality, and maintainability across all related
+    implementations.'
+  1. Event-Driven Design Principles: "### 1.1 Core Principles **[REQUIRED]**\n\n```yaml\n\
+    event_driven_principles:\n  - \"Events as first-class citizens\"\n  - \"Loose\
+    \ coupling between services\"\n  - \"Eventual consistency\"\n  - \"Idempotent\
+    \ event processing\"\n  - \"Event ordering guarantees\"\n  - \"Schema evolution\
+    \ support\"\n```\n\n### 1.2 Event Types and Classification\n```json\n{\n  \"event_types\"\
+    : {\n    \"domain_events\": {\n      \"description\": \"Business events that occur\
+    \ in the domain\",\n      \"examples\": [\"OrderCreated\", \"PaymentProcessed\"\
+    , \"CustomerRegistered\"],\n      \"characteristics\": [\"Immutable\", \"Past\
+    \ tense\", \"Business meaningful\"]\n    },\n    \"integration_events\": {\n \
+    \     \"description\": \"Events for cross-service communication\",\n      \"examples\"\
+    : [\"UserUpdated\", \"InventoryChanged\", \"NotificationSent\"],\n      \"characteristics\"\
+    : [\"Service boundaries\", \"Contract-based\", \"Versioned\"]\n    },\n    \"\
+    system_events\": {\n      \"description\": \"Technical events for system monitoring\"\
+    ,\n      \"examples\": [\"ServiceStarted\", \"HealthCheckFailed\", \"MemoryUsageHigh\"\
+    ],\n      \"characteristics\": [\"Technical\", \"Monitoring\", \"Operational\"\
+    ]\n    }\n  }\n}\n```\n\n---"
+  2. Event Schema and Contracts: "### 2.1 Event Schema Standards **[REQUIRED]**\n\n\
+    ```json\n{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"\
+    title\": \"CloudEvent Schema\",\n  \"type\": \"object\",\n  \"required\": [\"\
+    specversion\", \"type\", \"source\", \"id\", \"time\", \"data\"],\n  \"properties\"\
+    : {\n    \"specversion\": {\n      \"type\": \"string\",\n      \"enum\": [\"\
+    1.0\"]\n    },\n    \"type\": {\n      \"type\": \"string\",\n      \"pattern\"\
+    : \"^[a-z0-9]+(?:\\\\.[a-z0-9]+)*\\\\.[A-Z][a-zA-Z0-9]*$\",\n      \"description\"\
+    : \"Event type in format: domain.aggregate.Event\"\n    },\n    \"source\": {\n\
+    \      \"type\": \"string\",\n      \"format\": \"uri\",\n      \"description\"\
+    : \"Source system identifier\"\n    },\n    \"id\": {\n      \"type\": \"string\"\
+    ,\n      \"description\": \"Unique event identifier\"\n    },\n    \"time\": {\n\
+    \      \"type\": \"string\",\n      \"format\": \"date-time\",\n      \"description\"\
+    : \"Event timestamp in RFC3339 format\"\n    },\n    \"subject\": {\n      \"\
+    type\": \"string\",\n      \"description\": \"Subject of the event\"\n    },\n\
+    \    \"datacontenttype\": {\n      \"type\": \"string\",\n      \"default\": \"\
+    application/json\"\n    },\n    \"data\": {\n      \"type\": \"object\",\n   \
+    \   \"description\": \"Event payload\"\n    },\n    \"metadata\": {\n      \"\
+    type\": \"object\",\n      \"properties\": {\n        \"correlationId\": {\"type\"\
+    : \"string\"},\n        \"causationId\": {\"type\": \"string\"},\n        \"version\"\
+    : {\"type\": \"string\"},\n        \"traceId\": {\"type\": \"string\"}\n     \
+    \ }\n    }\n  }\n}\n```\n\n### 2.2 Schema Evolution **[REQUIRED]**\n```typescript\n\
+    // Event versioning strategy\ninterface EventVersioning {\n  backwards_compatible_changes:\
+    \ [\n    \"Adding optional fields\",\n    \"Adding new event types\",\n    \"\
+    Expanding enum values\"\n  ];\n\n  breaking_changes: [\n    \"Removing required\
+    \ fields\",\n    \"Changing field types\",\n    \"Removing event types\",\n  \
+    \  \"Changing event semantics\"\n  ];\n\n  evolution_strategy: {\n    semantic_versioning:\
+    \ \"Major.Minor.Patch\";\n    schema_registry: \"Confluent Schema Registry or\
+    \ equivalent\";\n    compatibility_levels: [\"BACKWARD\", \"FORWARD\", \"FULL\"\
+    ];\n  };\n}\n\n// Example versioned event\ninterface OrderCreatedV1 {\n  orderId:\
+    \ string;\n  customerId: string;\n  amount: number;\n  items: OrderItem[];\n}\n\
+    \ninterface OrderCreatedV2 {\n  orderId: string;\n  customerId: string;\n  amount:\
+    \ number;\n  currency: string; // New field\n  items: OrderItem[];\n  discounts?:\
+    \ Discount[]; // Optional field\n}\n```\n\n---"
+  3. Message Brokers and Queues: '### 3.1 Apache Kafka Configuration **[REQUIRED]**
+
+    ```yaml'
+  Kafka topic configuration: "topics:\n  order-events:\n    partitions: 12\n    replication_factor:\
+    \ 3\n    config:\n      retention.ms: 2592000000  # 30 days\n      cleanup.policy:\
+    \ delete\n      compression.type: snappy\n      min.insync.replicas: 2\n     \
+    \ segment.ms: 604800000     # 7 days\n\n  customer-events:\n    partitions: 6\n\
+    \    replication_factor: 3\n    config:\n      retention.ms: 7776000000  # 90\
+    \ days\n      cleanup.policy: delete\n      compression.type: lz4"
+  Producer configuration: "producer:\n  acks: all\n  retries: 2147483647\n  max.in.flight.requests.per.connection:\
+    \ 5\n  enable.idempotence: true\n  compression.type: snappy\n  batch.size: 16384\n\
+    \  linger.ms: 5"
+  Consumer configuration: "consumer:\n  enable.auto.commit: false\n  auto.offset.reset:\
+    \ earliest\n  isolation.level: read_committed\n  max.poll.records: 500\n  session.timeout.ms:\
+    \ 30000\n```\n\n### 3.2 RabbitMQ Configuration **[REQUIRED]**\n```yaml"
+  RabbitMQ exchange and queue setup: "exchanges:\n  - name: \"order.events\"\n   \
+    \ type: \"topic\"\n    durable: true\n    properties:\n      alternate-exchange:\
+    \ \"order.dead-letter\"\n\n  - name: \"customer.events\"\n    type: \"fanout\"\
+    \n    durable: true\n\nqueues:\n  - name: \"order.processing\"\n    durable: true\n\
+    \    properties:\n      x-message-ttl: 3600000\n      x-max-retries: 3\n     \
+    \ x-dead-letter-exchange: \"order.dead-letter\"\n      x-dead-letter-routing-key:\
+    \ \"failed\"\n\n  - name: \"order.dead-letter\"\n    durable: true\n    properties:\n\
+    \      x-message-ttl: 2592000000  # 30 days\n\nbindings:\n  - exchange: \"order.events\"\
+    \n    queue: \"order.processing\"\n    routing_key: \"order.created\"\n```\n\n\
+    ---"
+  4. Event Sourcing Patterns: "### 4.1 Event Store Implementation **[REQUIRED]**\n\
+    ```typescript\n// Event store interface\ninterface EventStore {\n  saveEvents(streamId:\
+    \ string, events: DomainEvent[], expectedVersion: number): Promise<void>;\n  getEvents(streamId:\
+    \ string, fromVersion?: number): Promise<DomainEvent[]>;\n  getAllEvents(fromPosition?:\
+    \ number): Promise<DomainEvent[]>;\n  createSnapshot(streamId: string, snapshot:\
+    \ Snapshot): Promise<void>;\n  getSnapshot(streamId: string): Promise<Snapshot\
+    \ | null>;\n}\n\n// Domain event base class\nabstract class DomainEvent {\n  constructor(\n\
+    \    public readonly id: string,\n    public readonly aggregateId: string,\n \
+    \   public readonly version: number,\n    public readonly timestamp: Date,\n \
+    \   public readonly correlationId?: string,\n    public readonly causationId?:\
+    \ string\n  ) {}\n\n  abstract getEventType(): string;\n}\n\n// Example aggregate\
+    \ with event sourcing\nclass Order {\n  private events: DomainEvent[] = [];\n\n\
+    \  constructor(\n    public readonly id: string,\n    private version: number\
+    \ = 0\n  ) {}\n\n  static fromHistory(events: DomainEvent[]): Order {\n    const\
+    \ order = new Order(events[0].aggregateId);\n    events.forEach(event => order.apply(event,\
+    \ false));\n    return order;\n  }\n\n  createOrder(customerId: string, items:\
+    \ OrderItem[]): void {\n    const event = new OrderCreatedEvent(\n      crypto.randomUUID(),\n\
+    \      this.id,\n      this.version + 1,\n      new Date(),\n      customerId,\n\
+    \      items\n    );\n    this.apply(event, true);\n  }\n\n  private apply(event:\
+    \ DomainEvent, isNew: boolean): void {\n    // Apply event to aggregate state\n\
+    \    switch (event.getEventType()) {\n      case 'OrderCreated':\n        this.applyOrderCreated(event\
+    \ as OrderCreatedEvent);\n        break;\n      // ... other event handlers\n\
+    \    }\n\n    if (isNew) {\n      this.events.push(event);\n    }\n    this.version\
+    \ = event.version;\n  }\n\n  getUncommittedEvents(): DomainEvent[] {\n    return\
+    \ [...this.events];\n  }\n\n  markEventsAsCommitted(): void {\n    this.events\
+    \ = [];\n  }\n}\n\n// Event store repository\nclass EventSourcedRepository<T>\
+    \ {\n  constructor(\n    private eventStore: EventStore,\n    private aggregateFactory:\
+    \ (id: string) => T,\n    private snapshotFrequency: number = 10\n  ) {}\n\n \
+    \ async save(aggregate: any): Promise<void> {\n    const events = aggregate.getUncommittedEvents();\n\
+    \    if (events.length === 0) return;\n\n    await this.eventStore.saveEvents(\n\
+    \      aggregate.id,\n      events,\n      aggregate.version - events.length\n\
+    \    );\n\n    aggregate.markEventsAsCommitted();\n\n    // Create snapshot if\
+    \ needed\n    if (aggregate.version % this.snapshotFrequency === 0) {\n      const\
+    \ snapshot = this.createSnapshot(aggregate);\n      await this.eventStore.createSnapshot(aggregate.id,\
+    \ snapshot);\n    }\n  }\n\n  async getById(id: string): Promise<T | null> {\n\
+    \    // Try to load from snapshot first\n    const snapshot = await this.eventStore.getSnapshot(id);\n\
+    \    let fromVersion = 0;\n    let aggregate: T;\n\n    if (snapshot) {\n    \
+    \  aggregate = this.rehydrateFromSnapshot(snapshot);\n      fromVersion = snapshot.version\
+    \ + 1;\n    } else {\n      aggregate = this.aggregateFactory(id);\n    }\n\n\
+    \    // Load events since snapshot\n    const events = await this.eventStore.getEvents(id,\
+    \ fromVersion);\n    if (events.length === 0 && !snapshot) return null;\n\n  \
+    \  // Apply events to reconstruct current state\n    events.forEach(event => (aggregate\
+    \ as any).apply(event, false));\n\n    return aggregate;\n  }\n}\n```\n\n---"
+  5. CQRS Implementation: "### 5.1 Command and Query Separation **[REQUIRED]**\n```typescript\n\
+    // Command side\ninterface Command {\n  readonly id: string;\n  readonly timestamp:\
+    \ Date;\n  readonly correlationId?: string;\n}\n\ninterface CommandHandler<T extends\
+    \ Command> {\n  handle(command: T): Promise<void>;\n}\n\nclass CreateOrderCommand\
+    \ implements Command {\n  constructor(\n    public readonly id: string,\n    public\
+    \ readonly timestamp: Date,\n    public readonly customerId: string,\n    public\
+    \ readonly items: OrderItem[],\n    public readonly correlationId?: string\n \
+    \ ) {}\n}\n\nclass CreateOrderCommandHandler implements CommandHandler<CreateOrderCommand>\
+    \ {\n  constructor(\n    private orderRepository: EventSourcedRepository<Order>,\n\
+    \    private eventBus: EventBus\n  ) {}\n\n  async handle(command: CreateOrderCommand):\
+    \ Promise<void> {\n    // Validate command\n    await this.validateCommand(command);\n\
+    \n    // Create aggregate\n    const order = new Order(command.id);\n    order.createOrder(command.customerId,\
+    \ command.items);\n\n    // Save to event store\n    await this.orderRepository.save(order);\n\
+    \n    // Publish domain events\n    const events = order.getUncommittedEvents();\n\
+    \    for (const event of events) {\n      await this.eventBus.publish(event);\n\
+    \    }\n  }\n\n  private async validateCommand(command: CreateOrderCommand): Promise<void>\
+    \ {\n    if (!command.customerId) {\n      throw new ValidationError(\"Customer\
+    \ ID is required\");\n    }\n    if (!command.items || command.items.length ===\
+    \ 0) {\n      throw new ValidationError(\"Order must have at least one item\"\
+    );\n    }\n  }\n}\n\n// Query side\ninterface Query {\n  readonly id: string;\n\
+    }\n\ninterface QueryHandler<TQuery extends Query, TResult> {\n  handle(query:\
+    \ TQuery): Promise<TResult>;\n}\n\nclass GetOrderQuery implements Query {\n  constructor(\n\
+    \    public readonly id: string,\n    public readonly orderId: string\n  ) {}\n\
+    }\n\ninterface OrderReadModel {\n  id: string;\n  customerId: string;\n  status:\
+    \ string;\n  totalAmount: number;\n  items: OrderItemReadModel[];\n  createdAt:\
+    \ Date;\n  updatedAt: Date;\n}\n\nclass GetOrderQueryHandler implements QueryHandler<GetOrderQuery,\
+    \ OrderReadModel | null> {\n  constructor(private readModelRepository: ReadModelRepository)\
+    \ {}\n\n  async handle(query: GetOrderQuery): Promise<OrderReadModel | null> {\n\
+    \    return await this.readModelRepository.findById(query.orderId);\n  }\n}\n\n\
+    // Read model projections\nclass OrderProjection {\n  constructor(private repository:\
+    \ ReadModelRepository) {}\n\n  async on(event: OrderCreatedEvent): Promise<void>\
+    \ {\n    const readModel: OrderReadModel = {\n      id: event.aggregateId,\n \
+    \     customerId: event.customerId,\n      status: 'Created',\n      totalAmount:\
+    \ this.calculateTotal(event.items),\n      items: event.items.map(item => ({\n\
+    \        productId: item.productId,\n        quantity: item.quantity,\n      \
+    \  price: item.price\n      })),\n      createdAt: event.timestamp,\n      updatedAt:\
+    \ event.timestamp\n    };\n\n    await this.repository.save(readModel);\n  }\n\
+    \n  async on(event: OrderStatusChangedEvent): Promise<void> {\n    const readModel\
+    \ = await this.repository.findById(event.aggregateId);\n    if (readModel) {\n\
+    \      readModel.status = event.newStatus;\n      readModel.updatedAt = event.timestamp;\n\
+    \      await this.repository.save(readModel);\n    }\n  }\n}\n```\n\n---"
+  6. Saga Patterns: "### 6.1 Orchestration Saga **[REQUIRED]**\n```typescript\n//\
+    \ Saga orchestrator\nabstract class Saga {\n  protected state: SagaState = SagaState.NotStarted;\n\
+    \  protected currentStep: number = 0;\n\n  abstract getSteps(): SagaStep[];\n\
+    \  abstract getCompensationSteps(): SagaStep[];\n\n  async execute(): Promise<SagaResult>\
+    \ {\n    this.state = SagaState.Running;\n    const steps = this.getSteps();\n\
+    \n    try {\n      for (let i = 0; i < steps.length; i++) {\n        this.currentStep\
+    \ = i;\n        await steps[i].execute();\n      }\n\n      this.state = SagaState.Completed;\n\
+    \      return SagaResult.Success;\n\n    } catch (error) {\n      this.state =\
+    \ SagaState.Failed;\n      await this.compensate();\n      return SagaResult.Failed;\n\
+    \    }\n  }\n\n  private async compensate(): Promise<void> {\n    const compensationSteps\
+    \ = this.getCompensationSteps();\n\n    // Execute compensation steps in reverse\
+    \ order\n    for (let i = this.currentStep; i >= 0; i--) {\n      try {\n    \
+    \    await compensationSteps[i].execute();\n      } catch (error) {\n        //\
+    \ Log compensation failure but continue\n        console.error(`Compensation step\
+    \ ${i} failed:`, error);\n      }\n    }\n  }\n}\n\n// Order processing saga\n\
+    class OrderProcessingSaga extends Saga {\n  constructor(\n    private orderId:\
+    \ string,\n    private paymentService: PaymentService,\n    private inventoryService:\
+    \ InventoryService,\n    private shippingService: ShippingService\n  ) {\n   \
+    \ super();\n  }\n\n  getSteps(): SagaStep[] {\n    return [\n      new ReserveInventoryStep(this.orderId,\
+    \ this.inventoryService),\n      new ProcessPaymentStep(this.orderId, this.paymentService),\n\
+    \      new CreateShipmentStep(this.orderId, this.shippingService)\n    ];\n  }\n\
+    \n  getCompensationSteps(): SagaStep[] {\n    return [\n      new CancelShipmentStep(this.orderId,\
+    \ this.shippingService),\n      new RefundPaymentStep(this.orderId, this.paymentService),\n\
+    \      new ReleaseInventoryStep(this.orderId, this.inventoryService)\n    ];\n\
+    \  }\n}\n\ninterface SagaStep {\n  execute(): Promise<void>;\n}\n\nclass ReserveInventoryStep\
+    \ implements SagaStep {\n  constructor(\n    private orderId: string,\n    private\
+    \ inventoryService: InventoryService\n  ) {}\n\n  async execute(): Promise<void>\
+    \ {\n    await this.inventoryService.reserve(this.orderId);\n  }\n}\n\n// Saga\
+    \ manager\nclass SagaManager {\n  private sagas = new Map<string, Saga>();\n\n\
+    \  async startSaga(sagaId: string, saga: Saga): Promise<void> {\n    this.sagas.set(sagaId,\
+    \ saga);\n\n    try {\n      const result = await saga.execute();\n\n      if\
+    \ (result === SagaResult.Success) {\n        await this.onSagaCompleted(sagaId);\n\
+    \      } else {\n        await this.onSagaFailed(sagaId);\n      }\n    } finally\
+    \ {\n      this.sagas.delete(sagaId);\n    }\n  }\n\n  private async onSagaCompleted(sagaId:\
+    \ string): Promise<void> {\n    // Emit saga completed event\n    console.log(`Saga\
+    \ ${sagaId} completed successfully`);\n  }\n\n  private async onSagaFailed(sagaId:\
+    \ string): Promise<void> {\n    // Emit saga failed event\n    console.log(`Saga\
+    \ ${sagaId} failed and compensated`);\n  }\n}\n```\n\n### 6.2 Choreography Saga\
+    \ **[REQUIRED]**\n```typescript\n// Event-driven saga using choreography\nclass\
+    \ OrderCreatedHandler {\n  constructor(private inventoryService: InventoryService)\
+    \ {}\n\n  async handle(event: OrderCreatedEvent): Promise<void> {\n    try {\n\
+    \      await this.inventoryService.reserve(event.aggregateId, event.items);\n\n\
+    \      // Publish success event\n      const inventoryReservedEvent = new InventoryReservedEvent(\n\
+    \        crypto.randomUUID(),\n        event.aggregateId,\n        1,\n      \
+    \  new Date(),\n        event.items,\n        event.id // causation ID\n     \
+    \ );\n\n      await this.eventBus.publish(inventoryReservedEvent);\n\n    } catch\
+    \ (error) {\n      // Publish failure event\n      const inventoryReservationFailedEvent\
+    \ = new InventoryReservationFailedEvent(\n        crypto.randomUUID(),\n     \
+    \   event.aggregateId,\n        1,\n        new Date(),\n        error.message,\n\
+    \        event.id\n      );\n\n      await this.eventBus.publish(inventoryReservationFailedEvent);\n\
+    \    }\n  }\n}\n\nclass InventoryReservedHandler {\n  constructor(private paymentService:\
+    \ PaymentService) {}\n\n  async handle(event: InventoryReservedEvent): Promise<void>\
+    \ {\n    try {\n      await this.paymentService.charge(event.aggregateId);\n\n\
+    \      const paymentProcessedEvent = new PaymentProcessedEvent(\n        crypto.randomUUID(),\n\
+    \        event.aggregateId,\n        1,\n        new Date(),\n        event.id\n\
+    \      );\n\n      await this.eventBus.publish(paymentProcessedEvent);\n\n   \
+    \ } catch (error) {\n      // Compensate by releasing inventory\n      const paymentFailedEvent\
+    \ = new PaymentFailedEvent(\n        crypto.randomUUID(),\n        event.aggregateId,\n\
+    \        1,\n        new Date(),\n        error.message,\n        event.id\n \
+    \     );\n\n      await this.eventBus.publish(paymentFailedEvent);\n    }\n  }\n\
+    }\n```\n\n---"
+  7. Event Processing and Analytics: "### 7.1 Stream Processing **[REQUIRED]**\n```typescript\n\
+    // Real-time event processing with Kafka Streams\nimport { KafkaStreams } from\
+    \ 'kafka-streams';\n\nclass EventAnalyticsProcessor {\n  private stream: KafkaStreams;\n\
+    \n  constructor() {\n    this.stream = new KafkaStreams({\n      kafkaHost: 'localhost:9092',\n\
+    \      groupId: 'event-analytics',\n      clientName: 'analytics-processor'\n\
+    \    });\n  }\n\n  async start(): Promise<void> {\n    const orderEventsStream\
+    \ = this.stream.getKStream('order-events');\n    const customerEventsStream =\
+    \ this.stream.getKStream('customer-events');\n\n    // Real-time order metrics\n\
+    \    const orderMetrics = orderEventsStream\n      .filter(event => event.type\
+    \ === 'OrderCreated')\n      .window(60 * 1000) // 1-minute windows\n      .groupBy(event\
+    \ => event.data.customerId)\n      .aggregate(\n        () => ({ count: 0, totalAmount:\
+    \ 0 }),\n        (oldVal, event) => ({\n          count: oldVal.count + 1,\n \
+    \         totalAmount: oldVal.totalAmount + event.data.amount\n        })\n  \
+    \    );\n\n    orderMetrics.to('order-metrics-topic');\n\n    // Customer behavior\
+    \ analysis\n    const customerJourney = customerEventsStream\n      .join(orderEventsStream,\
+    \ 'customerId', 'inner', 5 * 60 * 1000) // 5-minute window\n      .map(([customerEvent,\
+    \ orderEvent]) => ({\n        customerId: customerEvent.data.customerId,\n   \
+    \     journey: {\n          customerAction: customerEvent.type,\n          orderAction:\
+    \ orderEvent.type,\n          timestamp: orderEvent.timestamp\n        }\n   \
+    \   }));\n\n    customerJourney.to('customer-journey-topic');\n\n    await this.stream.start();\n\
+    \  }\n}\n\n// Complex Event Processing (CEP)\nclass ComplexEventProcessor {\n\
+    \  private patterns: EventPattern[] = [];\n\n  addPattern(pattern: EventPattern):\
+    \ void {\n    this.patterns.push(pattern);\n  }\n\n  async processEvent(event:\
+    \ DomainEvent): Promise<void> {\n    for (const pattern of this.patterns) {\n\
+    \      if (await pattern.matches(event)) {\n        await pattern.execute(event);\n\
+    \      }\n    }\n  }\n}\n\ninterface EventPattern {\n  matches(event: DomainEvent):\
+    \ Promise<boolean>;\n  execute(event: DomainEvent): Promise<void>;\n}\n\n// Fraud\
+    \ detection pattern\nclass FraudDetectionPattern implements EventPattern {\n \
+    \ private suspiciousActivities = new Map<string, number>();\n\n  async matches(event:\
+    \ DomainEvent): Promise<boolean> {\n    return event.getEventType() === 'PaymentProcessed';\n\
+    \  }\n\n  async execute(event: DomainEvent): Promise<void> {\n    const paymentEvent\
+    \ = event as PaymentProcessedEvent;\n    const customerId = paymentEvent.customerId;\n\
+    \n    // Track payment frequency\n    const currentCount = this.suspiciousActivities.get(customerId)\
+    \ || 0;\n    this.suspiciousActivities.set(customerId, currentCount + 1);\n\n\
+    \    // Check for suspicious pattern (e.g., >5 payments in 1 hour)\n    if (currentCount\
+    \ > 5) {\n      const fraudAlertEvent = new FraudAlertEvent(\n        crypto.randomUUID(),\n\
+    \        customerId,\n        1,\n        new Date(),\n        'High frequency\
+    \ payments detected',\n        event.id\n      );\n\n      await this.eventBus.publish(fraudAlertEvent);\n\
+    \    }\n\n    // Clean up old entries (simplified)\n    setTimeout(() => {\n \
+    \     this.suspiciousActivities.delete(customerId);\n    }, 3600000); // 1 hour\n\
+    \  }\n}\n```\n\n---"
+  Implementation Checklist: '### Event-Driven Architecture
+
+    - [ ] Event schema standards defined
+
+    - [ ] Message broker configured
+
+    - [ ] Event versioning strategy implemented
+
+    - [ ] Dead letter queues configured
+
+    - [ ] Event replay capability implemented
+
+
+    ### Event Sourcing
+
+    - [ ] Event store implemented
+
+    - [ ] Aggregate design patterns applied
+
+    - [ ] Snapshot mechanism configured
+
+    - [ ] Event replay functionality tested
+
+    - [ ] Projection rebuild capability ready
+
+
+    ### CQRS Implementation
+
+    - [ ] Command and query separation clear
+
+    - [ ] Read model projections implemented
+
+    - [ ] Eventually consistent reads handled
+
+    - [ ] Query optimization applied
+
+    - [ ] Command validation comprehensive
+
+
+    ### Saga Patterns
+
+    - [ ] Orchestration sagas implemented
+
+    - [ ] Choreography patterns defined
+
+    - [ ] Compensation logic tested
+
+    - [ ] Saga state persistence configured
+
+    - [ ] Timeout and retry mechanisms ready
+
+
+    ### Event Processing
+
+    - [ ] Stream processing configured
+
+    - [ ] Complex event patterns defined
+
+    - [ ] Real-time analytics implemented
+
+    - [ ] Event correlation working
+
+    - [ ] Performance monitoring active
+
+
+    ---
+
+
+    **End of Event-Driven Architecture Standards**'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:54.231269'
+  source: williamzujkowski/standards/docs/standards/EVENT_DRIVEN_STANDARDS.md
+  checksum: 81d4e4a43555d5b01c0ec0c0fb5f2357f8e475eba613495e6f1999bb02bdcfba

@@ -1,0 +1,866 @@
+name: Docs/Standards/Data Engineering Standards
+category: data
+filename: docs/standards/DATA_ENGINEERING_STANDARDS.md
+nist_controls: []
+sections:
+  Data Engineering Standards: '**Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** DE
+
+
+    ---
+
+
+    **Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active'
+  Table of Contents: '1. [Data Pipeline Standards](#1-data-pipeline-standards)
+
+    2. [Data Quality and Governance](#2-data-quality-and-governance)
+
+    3. [Data Storage and Modeling](#3-data-storage-and-modeling)
+
+    4. [Streaming Data Processing](#4-streaming-data-processing)
+
+    5. [Analytics Engineering](#5-analytics-engineering)
+
+    6. [Data Security and Privacy](#6-data-security-and-privacy)
+
+    7. [MLOps and Data Science](#7-mlops-and-data-science)
+
+    8. [Data Operations](#8-data-operations)
+
+
+    ---'
+  Overview: 'This standard provides comprehensive guidelines and best practices for
+    the subject area.
+
+    It aims to ensure consistency, quality, and maintainability across all related
+    implementations.'
+  1. Data Pipeline Standards: '### 1.1 ETL/ELT Design Principles
+
+
+    #### Pipeline Architecture **[REQUIRED]**
+
+    ```python'
+  Data pipeline structure: "class DataPipeline:\n    \"\"\"Base class for all data\
+    \ pipelines.\"\"\"\n\n    def __init__(self, config: PipelineConfig):\n      \
+    \  self.config = config\n        self.logger = get_logger(self.__class__.__name__)\n\
+    \        self.metrics = MetricsCollector()\n\n    def extract(self) -> DataSet:\n\
+    \        \"\"\"Extract data from source systems.\"\"\"\n        with self.metrics.timer('extract_duration'):\n\
+    \            try:\n                data = self._extract_implementation()\n   \
+    \             self.logger.info(f\"Extracted {len(data)} records\")\n         \
+    \       return data\n            except Exception as e:\n                self.logger.error(f\"\
+    Extract failed: {e}\")\n                self.metrics.increment('extract_failures')\n\
+    \                raise\n\n    def transform(self, data: DataSet) -> DataSet:\n\
+    \        \"\"\"Transform extracted data.\"\"\"\n        with self.metrics.timer('transform_duration'):\n\
+    \            # Data quality checks\n            self._validate_input_data(data)\n\
+    \n            # Apply transformations\n            transformed = self._transform_implementation(data)\n\
+    \n            # Validate output\n            self._validate_output_data(transformed)\n\
+    \n            return transformed\n\n    def load(self, data: DataSet) -> LoadResult:\n\
+    \        \"\"\"Load transformed data to destination.\"\"\"\n        with self.metrics.timer('load_duration'):\n\
+    \            return self._load_implementation(data)\n\n    def run(self) -> PipelineResult:\n\
+    \        \"\"\"Execute the complete pipeline.\"\"\"\n        pipeline_id = generate_pipeline_id()\n\
+    \        start_time = datetime.utcnow()\n\n        try:\n            self.logger.info(f\"\
+    Starting pipeline {pipeline_id}\")\n\n            # Execute ETL steps\n      \
+    \      raw_data = self.extract()\n            clean_data = self.transform(raw_data)\n\
+    \            result = self.load(clean_data)\n\n            # Record success metrics\n\
+    \            duration = (datetime.utcnow() - start_time).total_seconds()\n   \
+    \         self.metrics.histogram('pipeline_duration', duration)\n            self.metrics.increment('pipeline_success')\n\
+    \n            return PipelineResult(\n                pipeline_id=pipeline_id,\n\
+    \                status='success',\n                records_processed=len(clean_data),\n\
+    \                duration=duration\n            )\n\n        except Exception\
+    \ as e:\n            self.logger.error(f\"Pipeline {pipeline_id} failed: {e}\"\
+    )\n            self.metrics.increment('pipeline_failures')\n            raise\n\
+    ```\n\n#### Configuration Management **[REQUIRED]**\n```yaml"
+  pipeline-config.yml: "pipeline:\n  name: \"customer_data_etl\"\n  version: \"1.2.0\"\
+    \n  schedule: \"0 2 * * *\"  # Daily at 2 AM\n  timeout_minutes: 60\n  retry_policy:\n\
+    \    max_retries: 3\n    retry_delay_seconds: 300\n    backoff_multiplier: 2\n\
+    \nsources:\n  - name: \"customer_db\"\n    type: \"postgresql\"\n    connection:\
+    \ \"${CUSTOMER_DB_CONNECTION}\"\n    query_file: \"sql/customer_extract.sql\"\n\
+    \    incremental_column: \"updated_at\"\n\n  - name: \"orders_api\"\n    type:\
+    \ \"rest_api\"\n    base_url: \"${ORDERS_API_URL}\"\n    auth_type: \"bearer_token\"\
+    \n    rate_limit: 100  # requests per minute\n\ndestinations:\n  - name: \"data_warehouse\"\
+    \n    type: \"snowflake\"\n    connection: \"${SNOWFLAKE_CONNECTION}\"\n    schema:\
+    \ \"analytics\"\n    table: \"dim_customers\"\n    write_mode: \"upsert\"\n  \
+    \  partition_by: [\"created_date\"]\n\ndata_quality:\n  rules:\n    - column:\
+    \ \"customer_id\"\n      type: \"not_null\"\n      severity: \"error\"\n    -\
+    \ column: \"email\"\n      type: \"unique\"\n      severity: \"warning\"\n   \
+    \ - column: \"created_at\"\n      type: \"range\"\n      min_value: \"2020-01-01\"\
+    \n      max_value: \"{{ today }}\"\n\nmonitoring:\n  alerts:\n    - metric: \"\
+    pipeline_failure_rate\"\n      threshold: 0.1\n      window: \"1h\"\n    - metric:\
+    \ \"data_freshness\"\n      threshold: \"2h\"\n```\n\n### 1.2 Data Orchestration\n\
+    \n#### Airflow DAG Standards **[REQUIRED]**\n```python\nfrom airflow import DAG\n\
+    from airflow.operators.python import PythonOperator\nfrom airflow.operators.bash\
+    \ import BashOperator\nfrom airflow.sensors.filesystem import FileSensor\nfrom\
+    \ datetime import datetime, timedelta"
+  Default arguments for all tasks: "default_args = {\n    'owner': 'data-team',\n\
+    \    'depends_on_past': False,\n    'start_date': datetime(2025, 1, 1),\n    'email_on_failure':\
+    \ True,\n    'email_on_retry': False,\n    'retries': 2,\n    'retry_delay': timedelta(minutes=5),\n\
+    \    'retry_exponential_backoff': True,\n    'max_retry_delay': timedelta(minutes=30),\n\
+    }"
+  DAG definition: "dag = DAG(\n    'customer_data_pipeline',\n    default_args=default_args,\n\
+    \    description='Customer data ETL pipeline',\n    schedule_interval='@daily',\n\
+    \    catchup=False,  # Don't run for historical dates\n    max_active_runs=1,\
+    \  # Prevent overlapping runs\n    tags=['etl', 'customer', 'daily'],\n    doc_md=__doc__,\n\
+    )"
+  Task definitions: "def extract_customer_data(**context):\n    \"\"\"Extract customer\
+    \ data from source systems.\"\"\"\n    execution_date = context['execution_date']\n\
+    \n    # Use Airflow's XCom to pass data between tasks\n    extracted_records =\
+    \ extract_customers_since(execution_date)\n    return len(extracted_records)\n\
+    \ndef validate_data_quality(**context):\n    \"\"\"Validate data quality before\
+    \ processing.\"\"\"\n    # Get record count from previous task\n    record_count\
+    \ = context['task_instance'].xcom_pull(\n        task_ids='extract_customer_data'\n\
+    \    )\n\n    if record_count == 0:\n        raise ValueError(\"No records extracted\
+    \ - check source system\")\n\n    # Additional quality checks\n    run_data_quality_tests()"
+  Define tasks: "extract_task = PythonOperator(\n    task_id='extract_customer_data',\n\
+    \    python_callable=extract_customer_data,\n    dag=dag,\n)\n\nquality_check\
+    \ = PythonOperator(\n    task_id='validate_data_quality',\n    python_callable=validate_data_quality,\n\
+    \    dag=dag,\n)\n\ntransform_task = BashOperator(\n    task_id='transform_data',\n\
+    \    bash_command='dbt run --models customer_models',\n    dag=dag,\n)\n\nload_task\
+    \ = PythonOperator(\n    task_id='load_to_warehouse',\n    python_callable=load_customer_data,\n\
+    \    dag=dag,\n)"
+  Define dependencies: 'extract_task >> quality_check >> transform_task >> load_task
+
+    ```
+
+
+    #### dbt Configuration **[REQUIRED]**
+
+    ```yaml'
+  dbt_project.yml: "name: 'analytics'\nversion: '1.0.0'\nconfig-version: 2\n\nmodel-paths:\
+    \ [\"models\"]\nanalysis-paths: [\"analysis\"]\ntest-paths: [\"tests\"]\nseed-paths:\
+    \ [\"data\"]\nmacro-paths: [\"macros\"]\nsnapshot-paths: [\"snapshots\"]\n\ntarget-path:\
+    \ \"target\"\nclean-targets:\n  - \"target\"\n  - \"dbt_packages\"\n\nmodels:\n\
+    \  analytics:\n    # Staging models\n    staging:\n      +materialized: view\n\
+    \      +docs:\n        node_color: \"lightblue\"\n\n    # Intermediate models\n\
+    \    intermediate:\n      +materialized: ephemeral\n      +docs:\n        node_color:\
+    \ \"orange\"\n\n    # Mart models\n    marts:\n      +materialized: table\n  \
+    \    +docs:\n        node_color: \"green\"\n      core:\n        +materialized:\
+    \ table\n        +post-hook: \"{{ grant_select('analytics_users') }}\"\n\nvars:\n\
+    \  # Date range for incremental models\n  start_date: '2020-01-01'\n\n  # Feature\
+    \ flags\n  enable_experimental_features: false\n\non-run-start:\n  - \"{{ create_audit_log_entry()\
+    \ }}\"\n\non-run-end:\n  - \"{{ update_data_freshness() }}\"\n```\n\n### 1.3 Error\
+    \ Handling and Recovery\n\n#### Retry Logic **[REQUIRED]**\n```python\nimport\
+    \ backoff\nfrom typing import Any, Callable\nimport logging\n\nlogger = logging.getLogger(__name__)\n\
+    \n@backoff.on_exception(\n    backoff.expo,\n    (ConnectionError, TimeoutError),\n\
+    \    max_tries=5,\n    max_time=300,  # 5 minutes\n    on_backoff=lambda details:\
+    \ logger.warning(\n        f\"Retry {details['tries']}/{details['max_tries']}\
+    \ \"\n        f\"after {details['wait']:.1f}s: {details['exception']}\"\n    )\n\
+    )\ndef robust_data_operation(operation: Callable, *args, **kwargs) -> Any:\n \
+    \   \"\"\"Execute data operation with retry logic.\"\"\"\n    try:\n        return\
+    \ operation(*args, **kwargs)\n    except Exception as e:\n        logger.error(f\"\
+    Operation failed: {e}\")\n        raise"
+  Circuit breaker pattern: "class CircuitBreaker:\n    def __init__(self, failure_threshold:\
+    \ int = 5, recovery_timeout: int = 60):\n        self.failure_threshold = failure_threshold\n\
+    \        self.recovery_timeout = recovery_timeout\n        self.failure_count\
+    \ = 0\n        self.last_failure_time = None\n        self.state = 'CLOSED'  #\
+    \ CLOSED, OPEN, HALF_OPEN\n\n    def call(self, func: Callable, *args, **kwargs)\
+    \ -> Any:\n        if self.state == 'OPEN':\n            if time.time() - self.last_failure_time\
+    \ > self.recovery_timeout:\n                self.state = 'HALF_OPEN'\n       \
+    \     else:\n                raise Exception(\"Circuit breaker is OPEN\")\n\n\
+    \        try:\n            result = func(*args, **kwargs)\n            self.reset()\n\
+    \            return result\n        except Exception as e:\n            self.record_failure()\n\
+    \            raise\n\n    def record_failure(self):\n        self.failure_count\
+    \ += 1\n        self.last_failure_time = time.time()\n        if self.failure_count\
+    \ >= self.failure_threshold:\n            self.state = 'OPEN'\n\n    def reset(self):\n\
+    \        self.failure_count = 0\n        self.state = 'CLOSED'\n```\n\n---"
+  2. Data Quality and Governance: "### 2.1 Data Quality Framework\n\n#### Quality\
+    \ Rules Engine **[REQUIRED]**\n```python\nfrom abc import ABC, abstractmethod\n\
+    from dataclasses import dataclass\nfrom typing import List, Dict, Any\nimport\
+    \ pandas as pd\n\n@dataclass\nclass DataQualityResult:\n    rule_name: str\n \
+    \   passed: bool\n    failed_records: int\n    total_records: int\n    error_message:\
+    \ str = None\n    severity: str = \"error\"  # error, warning, info\n\nclass DataQualityRule(ABC):\n\
+    \    \"\"\"Base class for data quality rules.\"\"\"\n\n    def __init__(self,\
+    \ name: str, severity: str = \"error\"):\n        self.name = name\n        self.severity\
+    \ = severity\n\n    @abstractmethod\n    def validate(self, data: pd.DataFrame)\
+    \ -> DataQualityResult:\n        pass\n\nclass NotNullRule(DataQualityRule):\n\
+    \    def __init__(self, column: str, **kwargs):\n        super().__init__(f\"\
+    not_null_{column}\", **kwargs)\n        self.column = column\n\n    def validate(self,\
+    \ data: pd.DataFrame) -> DataQualityResult:\n        null_count = data[self.column].isnull().sum()\n\
+    \        passed = null_count == 0\n\n        return DataQualityResult(\n     \
+    \       rule_name=self.name,\n            passed=passed,\n            failed_records=null_count,\n\
+    \            total_records=len(data),\n            error_message=f\"Found {null_count}\
+    \ null values in {self.column}\" if not passed else None,\n            severity=self.severity\n\
+    \        )\n\nclass UniqueRule(DataQualityRule):\n    def __init__(self, column:\
+    \ str, **kwargs):\n        super().__init__(f\"unique_{column}\", **kwargs)\n\
+    \        self.column = column\n\n    def validate(self, data: pd.DataFrame) ->\
+    \ DataQualityResult:\n        duplicate_count = data[self.column].duplicated().sum()\n\
+    \        passed = duplicate_count == 0\n\n        return DataQualityResult(\n\
+    \            rule_name=self.name,\n            passed=passed,\n            failed_records=duplicate_count,\n\
+    \            total_records=len(data),\n            error_message=f\"Found {duplicate_count}\
+    \ duplicate values in {self.column}\" if not passed else None,\n            severity=self.severity\n\
+    \        )\n\nclass DataQualityValidator:\n    def __init__(self, rules: List[DataQualityRule]):\n\
+    \        self.rules = rules\n        self.results = []\n\n    def validate(self,\
+    \ data: pd.DataFrame) -> List[DataQualityResult]:\n        self.results = []\n\
+    \n        for rule in self.rules:\n            try:\n                result =\
+    \ rule.validate(data)\n                self.results.append(result)\n\n       \
+    \         # Log results\n                if not result.passed:\n             \
+    \       if result.severity == \"error\":\n                        logger.error(f\"\
+    Data quality check failed: {result.error_message}\")\n                    else:\n\
+    \                        logger.warning(f\"Data quality warning: {result.error_message}\"\
+    )\n\n            except Exception as e:\n                logger.error(f\"Data\
+    \ quality rule {rule.name} failed to execute: {e}\")\n                self.results.append(DataQualityResult(\n\
+    \                    rule_name=rule.name,\n                    passed=False,\n\
+    \                    failed_records=0,\n                    total_records=len(data),\n\
+    \                    error_message=str(e),\n                    severity=\"error\"\
+    \n                ))\n\n        return self.results\n\n    def has_errors(self)\
+    \ -> bool:\n        return any(not r.passed and r.severity == \"error\" for r\
+    \ in self.results)\n\n    def generate_report(self) -> Dict[str, Any]:\n     \
+    \   return {\n            \"total_rules\": len(self.rules),\n            \"passed_rules\"\
+    : sum(1 for r in self.results if r.passed),\n            \"failed_rules\": sum(1\
+    \ for r in self.results if not r.passed),\n            \"error_count\": sum(1\
+    \ for r in self.results if not r.passed and r.severity == \"error\"),\n      \
+    \      \"warning_count\": sum(1 for r in self.results if not r.passed and r.severity\
+    \ == \"warning\"),\n            \"results\": [\n                {\n          \
+    \          \"rule\": r.rule_name,\n                    \"status\": \"passed\"\
+    \ if r.passed else \"failed\",\n                    \"severity\": r.severity,\n\
+    \                    \"failed_records\": r.failed_records,\n                 \
+    \   \"failure_rate\": r.failed_records / r.total_records if r.total_records >\
+    \ 0 else 0,\n                    \"message\": r.error_message\n              \
+    \  }\n                for r in self.results\n            ]\n        }\n```\n\n\
+    #### Great Expectations Integration **[RECOMMENDED]**\n```python"
+  great_expectations/expectations/custom_dataset.py: "import great_expectations as\
+    \ ge\nfrom great_expectations.core.expectation_configuration import ExpectationConfiguration\n\
+    \ndef create_data_quality_suite(df_name: str) -> ge.core.ExpectationSuite:\n \
+    \   \"\"\"Create a comprehensive data quality suite.\"\"\"\n\n    suite = ge.core.ExpectationSuite(expectation_suite_name=f\"\
+    {df_name}_quality_suite\")\n\n    # Basic data integrity expectations\n    suite.add_expectation(\n\
+    \        ExpectationConfiguration(\n            expectation_type=\"expect_table_row_count_to_be_between\"\
+    ,\n            kwargs={\"min_value\": 1, \"max_value\": 10000000}\n        )\n\
+    \    )\n\n    # Column-specific expectations\n    suite.add_expectation(\n   \
+    \     ExpectationConfiguration(\n            expectation_type=\"expect_column_values_to_not_be_null\"\
+    ,\n            kwargs={\"column\": \"id\"}\n        )\n    )\n\n    suite.add_expectation(\n\
+    \        ExpectationConfiguration(\n            expectation_type=\"expect_column_values_to_be_unique\"\
+    ,\n            kwargs={\"column\": \"id\"}\n        )\n    )\n\n    suite.add_expectation(\n\
+    \        ExpectationConfiguration(\n            expectation_type=\"expect_column_values_to_match_regex\"\
+    ,\n            kwargs={\n                \"column\": \"email\",\n            \
+    \    \"regex\": r\"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$\"\n     \
+    \       }\n        )\n    )\n\n    # Custom business rule expectations\n    suite.add_expectation(\n\
+    \        ExpectationConfiguration(\n            expectation_type=\"expect_column_values_to_be_between\"\
+    ,\n            kwargs={\n                \"column\": \"age\",\n              \
+    \  \"min_value\": 0,\n                \"max_value\": 150\n            }\n    \
+    \    )\n    )\n\n    return suite"
+  Usage in pipeline: "def validate_with_great_expectations(df: pd.DataFrame, suite_name:\
+    \ str) -> bool:\n    \"\"\"Validate DataFrame using Great Expectations.\"\"\"\n\
+    \n    # Convert to Great Expectations DataFrame\n    ge_df = ge.from_pandas(df)\n\
+    \n    # Load or create expectation suite\n    suite = create_data_quality_suite(suite_name)\n\
+    \n    # Validate\n    validation_result = ge_df.validate(expectation_suite=suite)\n\
+    \n    # Process results\n    if not validation_result.success:\n        failed_expectations\
+    \ = [\n            exp for exp in validation_result.results\n            if not\
+    \ exp.success\n        ]\n\n        for failure in failed_expectations:\n    \
+    \        logger.error(f\"Expectation failed: {failure.expectation_config.expectation_type}\"\
+    )\n\n    return validation_result.success\n```\n\n### 2.2 Data Lineage and Catalog\n\
+    \n#### Data Lineage Tracking **[REQUIRED]**\n```python\nfrom dataclasses import\
+    \ dataclass\nfrom typing import List, Dict, Optional\nfrom datetime import datetime\n\
+    import json\n\n@dataclass\nclass DataAsset:\n    name: str\n    type: str  # table,\
+    \ view, file, api\n    location: str\n    schema: Dict[str, str]\n    owner: str\n\
+    \    description: str\n    created_at: datetime\n    updated_at: datetime\n\n\
+    @dataclass\nclass DataLineage:\n    asset_id: str\n    parent_assets: List[str]\n\
+    \    transformation: str\n    transformation_code: Optional[str]\n    created_by:\
+    \ str\n    created_at: datetime\n\nclass DataCatalog:\n    def __init__(self,\
+    \ backend_type: str = \"postgres\"):\n        self.backend = self._init_backend(backend_type)\n\
+    \n    def register_asset(self, asset: DataAsset) -> str:\n        \"\"\"Register\
+    \ a new data asset in the catalog.\"\"\"\n        asset_id = self._generate_asset_id(asset)\n\
+    \n        self.backend.execute(\"\"\"\n            INSERT INTO data_assets (\n\
+    \                id, name, type, location, schema, owner,\n                description,\
+    \ created_at, updated_at\n            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s,\
+    \ %s)\n            ON CONFLICT (id) DO UPDATE SET\n                updated_at\
+    \ = EXCLUDED.updated_at,\n                schema = EXCLUDED.schema\n        \"\
+    \"\", (\n            asset_id, asset.name, asset.type, asset.location,\n     \
+    \       json.dumps(asset.schema), asset.owner, asset.description,\n          \
+    \  asset.created_at, asset.updated_at\n        ))\n\n        return asset_id\n\
+    \n    def record_lineage(self, lineage: DataLineage):\n        \"\"\"Record data\
+    \ lineage information.\"\"\"\n        self.backend.execute(\"\"\"\n          \
+    \  INSERT INTO data_lineage (\n                asset_id, parent_assets, transformation,\n\
+    \                transformation_code, created_by, created_at\n            ) VALUES\
+    \ (%s, %s, %s, %s, %s, %s)\n        \"\"\", (\n            lineage.asset_id, json.dumps(lineage.parent_assets),\n\
+    \            lineage.transformation, lineage.transformation_code,\n          \
+    \  lineage.created_by, lineage.created_at\n        ))\n\n    def get_lineage(self,\
+    \ asset_id: str, depth: int = 3) -> Dict:\n        \"\"\"Get lineage graph for\
+    \ an asset.\"\"\"\n        # Recursive query to build lineage graph\n        query\
+    \ = \"\"\"\n        WITH RECURSIVE lineage_tree AS (\n            SELECT asset_id,\
+    \ parent_assets, transformation, 0 as level\n            FROM data_lineage\n \
+    \           WHERE asset_id = %s\n\n            UNION ALL\n\n            SELECT\
+    \ l.asset_id, l.parent_assets, l.transformation, lt.level + 1\n            FROM\
+    \ data_lineage l\n            JOIN lineage_tree lt ON l.asset_id = ANY(\n    \
+    \            SELECT json_array_elements_text(lt.parent_assets::json)\n       \
+    \     )\n            WHERE lt.level < %s\n        )\n        SELECT * FROM lineage_tree\n\
+    \        \"\"\"\n\n        results = self.backend.fetch_all(query, (asset_id,\
+    \ depth))\n        return self._build_lineage_graph(results)"
+  Usage in dbt models: "def track_dbt_lineage():\n    \"\"\"Track lineage for dbt\
+    \ models.\"\"\"\n    # This would be called in dbt post-hooks\n    catalog = DataCatalog()\n\
+    \n    # Register the current model\n    asset = DataAsset(\n        name=\"{{\
+    \ this.name }}\",\n        type=\"table\",\n        location=\"{{ this }}\",\n\
+    \        schema=\"{{ get_column_schema() }}\",\n        owner=\"{{ var('owner')\
+    \ }}\",\n        description=\"{{ model.description }}\",\n        created_at=datetime.utcnow(),\n\
+    \        updated_at=datetime.utcnow()\n    )\n\n    asset_id = catalog.register_asset(asset)\n\
+    \n    # Record lineage to parent models\n    lineage = DataLineage(\n        asset_id=asset_id,\n\
+    \        parent_assets=\"{{ get_parent_models() }}\",\n        transformation=\"\
+    dbt_model\",\n        transformation_code=\"{{ get_compiled_sql() }}\",\n    \
+    \    created_by=\"dbt\",\n        created_at=datetime.utcnow()\n    )\n\n    catalog.record_lineage(lineage)\n\
+    ```\n\n### 2.3 Data Governance Framework\n\n#### Data Classification **[REQUIRED]**\n\
+    ```python\nfrom enum import Enum\nfrom typing import List, Dict\n\nclass DataClassification(Enum):\n\
+    \    PUBLIC = \"public\"\n    INTERNAL = \"internal\"\n    CONFIDENTIAL = \"confidential\"\
+    \n    RESTRICTED = \"restricted\"\n    PII = \"pii\"\n    PHI = \"phi\"  # Protected\
+    \ Health Information\n\nclass DataGovernancePolicy:\n    def __init__(self):\n\
+    \        self.policies = {\n            DataClassification.PII: {\n          \
+    \      \"encryption_required\": True,\n                \"access_log_required\"\
+    : True,\n                \"retention_days\": 2555,  # 7 years\n              \
+    \  \"allowed_regions\": [\"us-east-1\", \"us-west-2\"],\n                \"approval_required\"\
+    : True,\n                \"anonymization_required\": True\n            },\n  \
+    \          DataClassification.PHI: {\n                \"encryption_required\"\
+    : True,\n                \"access_log_required\": True,\n                \"retention_days\"\
+    : 2555,\n                \"allowed_regions\": [\"us-east-1\"],\n             \
+    \   \"approval_required\": True,\n                \"anonymization_required\":\
+    \ True,\n                \"audit_required\": True\n            },\n          \
+    \  DataClassification.CONFIDENTIAL: {\n                \"encryption_required\"\
+    : True,\n                \"access_log_required\": True,\n                \"retention_days\"\
+    : 1825,  # 5 years\n                \"approval_required\": False,\n          \
+    \      \"anonymization_required\": False\n            }\n        }\n\n    def\
+    \ validate_compliance(self, asset: DataAsset, classification: DataClassification)\
+    \ -> List[str]:\n        \"\"\"Validate that an asset complies with governance\
+    \ policies.\"\"\"\n        violations = []\n        policy = self.policies.get(classification,\
+    \ {})\n\n        # Check encryption requirement\n        if policy.get(\"encryption_required\"\
+    ) and not asset.is_encrypted:\n            violations.append(\"Encryption required\
+    \ but not enabled\")\n\n        # Check access logging\n        if policy.get(\"\
+    access_log_required\") and not asset.has_access_logging:\n            violations.append(\"\
+    Access logging required but not enabled\")\n\n        # Check region restrictions\n\
+    \        allowed_regions = policy.get(\"allowed_regions\", [])\n        if allowed_regions\
+    \ and asset.region not in allowed_regions:\n            violations.append(f\"\
+    Asset in {asset.region} but only {allowed_regions} allowed\")\n\n        return\
+    \ violations"
+  Data masking utilities: "class DataMasking:\n    @staticmethod\n    def mask_email(email:\
+    \ str) -> str:\n        \"\"\"Mask email address for privacy.\"\"\"\n        local,\
+    \ domain = email.split('@')\n        masked_local = local[0] + '*' * (len(local)\
+    \ - 2) + local[-1] if len(local) > 2 else '*' * len(local)\n        return f\"\
+    {masked_local}@{domain}\"\n\n    @staticmethod\n    def mask_phone(phone: str)\
+    \ -> str:\n        \"\"\"Mask phone number.\"\"\"\n        if len(phone) >= 4:\n\
+    \            return '*' * (len(phone) - 4) + phone[-4:]\n        return '*' *\
+    \ len(phone)\n\n    @staticmethod\n    def mask_ssn(ssn: str) -> str:\n      \
+    \  \"\"\"Mask Social Security Number.\"\"\"\n        return \"XXX-XX-\" + ssn[-4:]\
+    \ if len(ssn) >= 4 else \"XXX-XX-XXXX\"\n```\n\n---"
+  3. Data Storage and Modeling: "### 3.1 Data Warehouse Design\n\n#### Dimensional\
+    \ Modeling **[REQUIRED]**\n```sql\n-- Dimension table example\nCREATE TABLE dim_customers\
+    \ (\n    customer_key BIGINT IDENTITY(1,1) PRIMARY KEY,\n    customer_id VARCHAR(50)\
+    \ NOT NULL,\n    customer_name VARCHAR(200) NOT NULL,\n    email VARCHAR(255),\n\
+    \    phone VARCHAR(50),\n    address_line_1 VARCHAR(255),\n    address_line_2\
+    \ VARCHAR(255),\n    city VARCHAR(100),\n    state VARCHAR(50),\n    postal_code\
+    \ VARCHAR(20),\n    country VARCHAR(50),\n    customer_segment VARCHAR(50),\n\
+    \    customer_status VARCHAR(20),\n\n    -- SCD Type 2 fields\n    effective_date\
+    \ DATE NOT NULL,\n    expiration_date DATE,\n    is_current BOOLEAN DEFAULT TRUE,\n\
+    \n    -- Audit fields\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n \
+    \   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    created_by VARCHAR(100),\n\
+    \    updated_by VARCHAR(100),\n\n    -- Data quality fields\n    data_source VARCHAR(100),\n\
+    \    data_quality_score DECIMAL(3,2),\n\n    UNIQUE(customer_id, effective_date)\n\
+    );\n\n-- Fact table example\nCREATE TABLE fact_orders (\n    order_key BIGINT\
+    \ IDENTITY(1,1) PRIMARY KEY,\n    order_id VARCHAR(50) NOT NULL,\n\n    -- Foreign\
+    \ keys to dimensions\n    customer_key BIGINT NOT NULL,\n    product_key BIGINT\
+    \ NOT NULL,\n    date_key INTEGER NOT NULL,\n    store_key BIGINT,\n\n    -- Degenerate\
+    \ dimensions\n    order_number VARCHAR(50),\n    line_item_number INTEGER,\n\n\
+    \    -- Measures\n    quantity INTEGER NOT NULL,\n    unit_price DECIMAL(10,2)\
+    \ NOT NULL,\n    discount_amount DECIMAL(10,2) DEFAULT 0,\n    tax_amount DECIMAL(10,2)\
+    \ DEFAULT 0,\n    total_amount DECIMAL(10,2) NOT NULL,\n    cost_amount DECIMAL(10,2),\n\
+    \    profit_amount DECIMAL(10,2),\n\n    -- Audit fields\n    created_at TIMESTAMP\
+    \ DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n\
+    \n    FOREIGN KEY (customer_key) REFERENCES dim_customers(customer_key),\n   \
+    \ FOREIGN KEY (product_key) REFERENCES dim_products(product_key),\n    FOREIGN\
+    \ KEY (date_key) REFERENCES dim_date(date_key),\n    FOREIGN KEY (store_key) REFERENCES\
+    \ dim_stores(store_key)\n);\n\n-- Indexes for performance\nCREATE INDEX idx_fact_orders_customer\
+    \ ON fact_orders(customer_key);\nCREATE INDEX idx_fact_orders_product ON fact_orders(product_key);\n\
+    CREATE INDEX idx_fact_orders_date ON fact_orders(date_key);\nCREATE INDEX idx_fact_orders_composite\
+    \ ON fact_orders(date_key, customer_key, product_key);\n```\n\n#### Data Vault\
+    \ Modeling **[RECOMMENDED]**\n```sql\n-- Hub: Business keys\nCREATE TABLE hub_customer\
+    \ (\n    customer_hash_key CHAR(32) PRIMARY KEY,\n    customer_id VARCHAR(50)\
+    \ NOT NULL UNIQUE,\n    load_date TIMESTAMP NOT NULL,\n    record_source VARCHAR(100)\
+    \ NOT NULL\n);\n\n-- Satellite: Descriptive attributes\nCREATE TABLE sat_customer_details\
+    \ (\n    customer_hash_key CHAR(32) NOT NULL,\n    load_date TIMESTAMP NOT NULL,\n\
+    \    load_end_date TIMESTAMP,\n    customer_name VARCHAR(200),\n    email VARCHAR(255),\n\
+    \    phone VARCHAR(50),\n    address TEXT,\n    customer_segment VARCHAR(50),\n\
+    \    record_source VARCHAR(100) NOT NULL,\n    hash_diff CHAR(32) NOT NULL,\n\n\
+    \    PRIMARY KEY (customer_hash_key, load_date),\n    FOREIGN KEY (customer_hash_key)\
+    \ REFERENCES hub_customer(customer_hash_key)\n);\n\n-- Link: Relationships between\
+    \ business entities\nCREATE TABLE link_customer_order (\n    customer_order_hash_key\
+    \ CHAR(32) PRIMARY KEY,\n    customer_hash_key CHAR(32) NOT NULL,\n    order_hash_key\
+    \ CHAR(32) NOT NULL,\n    load_date TIMESTAMP NOT NULL,\n    record_source VARCHAR(100)\
+    \ NOT NULL,\n\n    FOREIGN KEY (customer_hash_key) REFERENCES hub_customer(customer_hash_key),\n\
+    \    FOREIGN KEY (order_hash_key) REFERENCES hub_order(order_hash_key)\n);\n```\n\
+    \n### 3.2 Data Lake Architecture\n\n#### Data Lake Organization **[REQUIRED]**\n\
+    ```\ndata-lake/\n\u251C\u2500\u2500 raw/                          # Raw, unprocessed\
+    \ data\n\u2502   \u251C\u2500\u2500 year=2025/\n\u2502   \u2502   \u251C\u2500\
+    \u2500 month=01/\n\u2502   \u2502   \u2502   \u251C\u2500\u2500 day=15/\n\u2502\
+    \   \u2502   \u2502   \u2502   \u251C\u2500\u2500 hour=14/\n\u2502   \u2502  \
+    \ \u2502   \u2502   \u2502   \u2514\u2500\u2500 source_system_data.parquet\n\u251C\
+    \u2500\u2500 bronze/                       # Cleaned, validated data\n\u2502 \
+    \  \u251C\u2500\u2500 source_system/\n\u2502   \u2502   \u251C\u2500\u2500 table_name/\n\
+    \u2502   \u2502   \u2502   \u2514\u2500\u2500 year=2025/month=01/day=15/\n\u251C\
+    \u2500\u2500 silver/                       # Enriched, conformed data\n\u2502\
+    \   \u251C\u2500\u2500 domain_area/\n\u2502   \u2502   \u251C\u2500\u2500 entity_name/\n\
+    \u2502   \u2502   \u2502   \u2514\u2500\u2500 year=2025/month=01/day=15/\n\u2514\
+    \u2500\u2500 gold/                        # Analytics-ready data\n    \u251C\u2500\
+    \u2500 business_area/\n    \u2502   \u251C\u2500\u2500 aggregated_metrics/\n \
+    \   \u2502   \u2514\u2500\u2500 dimensional_models/\n```\n\n#### Data Lake Processing\
+    \ **[REQUIRED]**\n```python\nimport boto3\nimport pandas as pd\nfrom pyspark.sql\
+    \ import SparkSession\nfrom pyspark.sql.functions import *\nfrom pyspark.sql.types\
+    \ import *\n\nclass DataLakeProcessor:\n    def __init__(self, spark_config: Dict[str,\
+    \ str]):\n        self.spark = SparkSession.builder \\\n            .appName(\"\
+    DataLakeProcessor\") \\\n            .config(\"spark.sql.adaptive.enabled\", \"\
+    true\") \\\n            .config(\"spark.sql.adaptive.coalescePartitions.enabled\"\
+    , \"true\") \\\n            .getOrCreate()\n\n        # Configure for optimal\
+    \ performance\n        self.spark.conf.set(\"spark.sql.adaptive.advisoryPartitionSizeInBytes\"\
+    , \"256MB\")\n        self.spark.conf.set(\"spark.sql.adaptive.coalescePartitions.minPartitionNum\"\
+    , \"1\")\n\n    def process_raw_to_bronze(self, source_path: str, target_path:\
+    \ str, schema: StructType):\n        \"\"\"Process raw data to bronze layer with\
+    \ basic cleaning.\"\"\"\n\n        # Read raw data\n        df = self.spark.read.schema(schema).parquet(source_path)\n\
+    \n        # Basic data cleaning\n        df_clean = df \\\n            .dropDuplicates()\
+    \ \\\n            .withColumn(\"processed_at\", current_timestamp()) \\\n    \
+    \        .withColumn(\"data_source\", lit(\"source_system\")) \\\n           \
+    \ .filter(col(\"id\").isNotNull())  # Remove records without key\n\n        #\
+    \ Data quality checks\n        total_records = df.count()\n        clean_records\
+    \ = df_clean.count()\n        quality_score = clean_records / total_records if\
+    \ total_records > 0 else 0\n\n        if quality_score < 0.95:  # Less than 95%\
+    \ clean data\n            logger.warning(f\"Data quality below threshold: {quality_score:.2%}\"\
+    )\n\n        # Write to bronze layer with partitioning\n        df_clean.write\
+    \ \\\n            .mode(\"overwrite\") \\\n            .partitionBy(\"year\",\
+    \ \"month\", \"day\") \\\n            .parquet(target_path)\n\n        return\
+    \ {\n            \"total_records\": total_records,\n            \"clean_records\"\
+    : clean_records,\n            \"quality_score\": quality_score\n        }\n\n\
+    \    def process_bronze_to_silver(self, bronze_path: str, silver_path: str):\n\
+    \        \"\"\"Process bronze data to silver layer with enrichment.\"\"\"\n\n\
+    \        # Read bronze data\n        df = self.spark.read.parquet(bronze_path)\n\
+    \n        # Apply business rules and enrichment\n        df_enriched = df \\\n\
+    \            .withColumn(\"customer_segment\",\n                when(col(\"total_spent\"\
+    ) > 1000, \"premium\")\n                .when(col(\"total_spent\") > 500, \"standard\"\
+    )\n                .otherwise(\"basic\")) \\\n            .withColumn(\"customer_lifetime_months\"\
+    ,\n                months_between(current_date(), col(\"first_purchase_date\"\
+    ))) \\\n            .withColumn(\"is_active\",\n                col(\"last_purchase_date\"\
+    ) > date_sub(current_date(), 90))\n\n        # Write to silver layer\n       \
+    \ df_enriched.write \\\n            .mode(\"overwrite\") \\\n            .option(\"\
+    mergeSchema\", \"true\") \\\n            .partitionBy(\"customer_segment\", \"\
+    year\", \"month\") \\\n            .parquet(silver_path)\n\n    def create_gold_aggregations(self,\
+    \ silver_path: str, gold_path: str):\n        \"\"\"Create analytics-ready aggregations\
+    \ in gold layer.\"\"\"\n\n        df = self.spark.read.parquet(silver_path)\n\n\
+    \        # Customer metrics aggregation\n        customer_metrics = df.groupBy(\"\
+    customer_id\", \"customer_segment\") \\\n            .agg(\n                sum(\"\
+    order_amount\").alias(\"total_spent\"),\n                count(\"order_id\").alias(\"\
+    order_count\"),\n                avg(\"order_amount\").alias(\"avg_order_value\"\
+    ),\n                max(\"order_date\").alias(\"last_order_date\"),\n        \
+    \        min(\"order_date\").alias(\"first_order_date\")\n            ) \\\n \
+    \           .withColumn(\"calculated_at\", current_timestamp())\n\n        # Write\
+    \ aggregated metrics\n        customer_metrics.write \\\n            .mode(\"\
+    overwrite\") \\\n            .partitionBy(\"customer_segment\") \\\n         \
+    \   .parquet(f\"{gold_path}/customer_metrics\")\n```\n\n### 3.3 NoSQL Data Modeling\n\
+    \n#### Document Store Design **[REQUIRED]**\n```json\n// MongoDB customer document\n\
+    {\n  \"_id\": ObjectId(\"...\"),\n  \"customer_id\": \"CUST-12345\",\n  \"personal_info\"\
+    : {\n    \"name\": {\n      \"first\": \"John\",\n      \"last\": \"Doe\",\n \
+    \     \"full\": \"John Doe\"\n    },\n    \"email\": \"john.doe@example.com\"\
+    ,\n    \"phone\": \"+1-555-123-4567\",\n    \"date_of_birth\": ISODate(\"1985-03-15\"\
+    ),\n    \"address\": {\n      \"street\": \"123 Main St\",\n      \"city\": \"\
+    New York\",\n      \"state\": \"NY\",\n      \"postal_code\": \"10001\",\n   \
+    \   \"country\": \"US\"\n    }\n  },\n  \"account_info\": {\n    \"status\": \"\
+    active\",\n    \"segment\": \"premium\",\n    \"created_at\": ISODate(\"2020-01-15\"\
+    ),\n    \"last_login\": ISODate(\"2025-01-15T10:30:00Z\"),\n    \"preferences\"\
+    : {\n      \"marketing_emails\": true,\n      \"sms_notifications\": false,\n\
+    \      \"currency\": \"USD\",\n      \"language\": \"en\"\n    }\n  },\n  \"order_summary\"\
+    : {\n    \"total_orders\": 15,\n    \"total_spent\": 2450.50,\n    \"avg_order_value\"\
+    : 163.37,\n    \"first_order_date\": ISODate(\"2020-02-01\"),\n    \"last_order_date\"\
+    : ISODate(\"2025-01-10\")\n  },\n  \"tags\": [\"premium\", \"loyal\", \"electronics\"\
+    ],\n  \"metadata\": {\n    \"created_at\": ISODate(\"2020-01-15\"),\n    \"updated_at\"\
+    : ISODate(\"2025-01-15\"),\n    \"version\": 3,\n    \"data_source\": \"customer_service\"\
+    \n  }\n}\n```\n\n#### Key-Value Store Design **[REQUIRED]**\n```python"
+  Redis data modeling for caching and real-time features: "import redis\nimport json\n\
+    from typing import Dict, Any\nfrom datetime import timedelta\n\nclass CustomerCacheManager:\n\
+    \    def __init__(self, redis_client: redis.Redis):\n        self.redis = redis_client\n\
+    \        self.default_ttl = timedelta(hours=24)\n\n    def cache_customer_profile(self,\
+    \ customer_id: str, profile: Dict[str, Any]):\n        \"\"\"Cache customer profile\
+    \ with structured keys.\"\"\"\n        key = f\"customer:profile:{customer_id}\"\
+    \n\n        # Store as hash for efficient field access\n        pipeline = self.redis.pipeline()\n\
+    \        pipeline.hset(key, mapping={\n            \"name\": profile[\"name\"\
+    ],\n            \"email\": profile[\"email\"],\n            \"segment\": profile[\"\
+    segment\"],\n            \"last_login\": profile[\"last_login\"].isoformat()\n\
+    \        })\n        pipeline.expire(key, self.default_ttl)\n        pipeline.execute()\n\
+    \n    def cache_customer_preferences(self, customer_id: str, preferences: Dict[str,\
+    \ Any]):\n        \"\"\"Cache customer preferences.\"\"\"\n        key = f\"customer:preferences:{customer_id}\"\
+    \n\n        self.redis.setex(\n            key,\n            self.default_ttl,\n\
+    \            json.dumps(preferences)\n        )\n\n    def increment_page_views(self,\
+    \ customer_id: str, page: str):\n        \"\"\"Track customer page views.\"\"\"\
+    \n        key = f\"customer:pageviews:{customer_id}:{page}\"\n\n        pipeline\
+    \ = self.redis.pipeline()\n        pipeline.incr(key)\n        pipeline.expire(key,\
+    \ timedelta(days=30))\n        pipeline.execute()\n\n    def get_recent_activity(self,\
+    \ customer_id: str, limit: int = 10) -> List[Dict]:\n        \"\"\"Get recent\
+    \ customer activity from sorted set.\"\"\"\n        key = f\"customer:activity:{customer_id}\"\
+    \n\n        # Get recent activities (stored with timestamp scores)\n        activities\
+    \ = self.redis.zrevrange(key, 0, limit-1, withscores=True)\n\n        return [\n\
+    \            {\n                \"activity\": activity.decode(),\n           \
+    \     \"timestamp\": score\n            }\n            for activity, score in\
+    \ activities\n        ]\n```\n\n---"
+  4. Streaming Data Processing: '### 4.1 Apache Kafka Standards
+
+
+    #### Topic Design **[REQUIRED]**
+
+    ```yaml'
+  kafka-topics.yml: "topics:\n  - name: \"customer.events.v1\"\n    partitions: 12\n\
+    \    replication_factor: 3\n    config:\n      retention.ms: 2592000000  # 30\
+    \ days\n      cleanup.policy: \"delete\"\n      compression.type: \"snappy\"\n\
+    \      min.insync.replicas: 2\n\n  - name: \"order.events.v1\"\n    partitions:\
+    \ 24\n    replication_factor: 3\n    config:\n      retention.ms: 7776000000 \
+    \ # 90 days\n      cleanup.policy: \"delete\"\n      compression.type: \"lz4\"\
+    \n      min.insync.replicas: 2\n\n  - name: \"customer.snapshots.v1\"\n    partitions:\
+    \ 6\n    replication_factor: 3\n    config:\n      cleanup.policy: \"compact\"\
+    \n      compression.type: \"snappy\"\n      min.insync.replicas: 2\n```\n\n####\
+    \ Schema Registry Configuration **[REQUIRED]**\n```json\n// Customer event schema\
+    \ (Avro)\n{\n  \"type\": \"record\",\n  \"name\": \"CustomerEvent\",\n  \"namespace\"\
+    : \"com.company.events\",\n  \"fields\": [\n    {\n      \"name\": \"event_id\"\
+    ,\n      \"type\": \"string\",\n      \"doc\": \"Unique identifier for the event\"\
+    \n    },\n    {\n      \"name\": \"customer_id\",\n      \"type\": \"string\"\
+    ,\n      \"doc\": \"Customer identifier\"\n    },\n    {\n      \"name\": \"event_type\"\
+    ,\n      \"type\": {\n        \"type\": \"enum\",\n        \"name\": \"EventType\"\
+    ,\n        \"symbols\": [\"CREATED\", \"UPDATED\", \"DELETED\", \"LOGIN\", \"\
+    LOGOUT\", \"PURCHASE\"]\n      }\n    },\n    {\n      \"name\": \"event_time\"\
+    ,\n      \"type\": {\n        \"type\": \"long\",\n        \"logicalType\": \"\
+    timestamp-millis\"\n      }\n    },\n    {\n      \"name\": \"event_data\",\n\
+    \      \"type\": [\n        \"null\",\n        {\n          \"type\": \"map\"\
+    ,\n          \"values\": \"string\"\n        }\n      ],\n      \"default\": null\n\
+    \    },\n    {\n      \"name\": \"metadata\",\n      \"type\": {\n        \"type\"\
+    : \"record\",\n        \"name\": \"EventMetadata\",\n        \"fields\": [\n \
+    \         {\"name\": \"source\", \"type\": \"string\"},\n          {\"name\":\
+    \ \"version\", \"type\": \"string\"},\n          {\"name\": \"correlation_id\"\
+    , \"type\": [\"null\", \"string\"], \"default\": null}\n        ]\n      }\n \
+    \   }\n  ]\n}\n```\n\n#### Kafka Streams Processing **[REQUIRED]**\n```java\n\
+    import org.apache.kafka.streams.KafkaStreams;\nimport org.apache.kafka.streams.StreamsBuilder;\n\
+    import org.apache.kafka.streams.kstream.*;\nimport org.apache.kafka.streams.state.Stores;\n\
+    import java.time.Duration;\n\npublic class CustomerEventProcessor {\n\n    public\
+    \ static void main(String[] args) {\n        StreamsBuilder builder = new StreamsBuilder();\n\
+    \n        // Input stream\n        KStream<String, CustomerEvent> customerEvents\
+    \ = builder\n            .stream(\"customer.events.v1\");\n\n        // Filter\
+    \ and transform events\n        KStream<String, CustomerEvent> validEvents = customerEvents\n\
+    \            .filter((key, event) -> event.getCustomerId() != null)\n        \
+    \    .filter((key, event) -> isValidEvent(event));\n\n        // Aggregate customer\
+    \ activity\n        KTable<String, CustomerActivity> customerActivity = validEvents\n\
+    \            .groupByKey()\n            .aggregate(\n                CustomerActivity::new,\n\
+    \                (key, event, activity) -> activity.addEvent(event),\n       \
+    \         Materialized.<String, CustomerActivity>as(\n                    Stores.persistentKeyValueStore(\"\
+    customer-activity-store\"))\n                    .withValueSerde(customerActivitySerde())\n\
+    \            );\n\n        // Create windowed aggregations for real-time metrics\n\
+    \        KTable<Windowed<String>, Long> eventCounts = validEvents\n          \
+    \  .groupByKey()\n            .windowedBy(TimeWindows.of(Duration.ofMinutes(5)))\n\
+    \            .count(Materialized.as(\"event-counts-store\"));\n\n        // Detect\
+    \ anomalies (high activity)\n        KStream<String, Alert> anomalies = eventCounts\n\
+    \            .toStream()\n            .filter((window, count) -> count > 100)\
+    \  // More than 100 events in 5 minutes\n            .map((window, count) -> KeyValue.pair(\n\
+    \                window.key(),\n                new Alert(\"HIGH_ACTIVITY\", window.key(),\
+    \ count, window.window().start())\n            ));\n\n        // Output streams\n\
+    \        customerActivity.toStream().to(\"customer.activity.v1\");\n        anomalies.to(\"\
+    customer.alerts.v1\");\n\n        // Start the application\n        KafkaStreams\
+    \ streams = new KafkaStreams(builder.build(), getStreamsConfig());\n        streams.start();\n\
+    \n        // Graceful shutdown\n        Runtime.getRuntime().addShutdownHook(new\
+    \ Thread(streams::close));\n    }\n\n    private static boolean isValidEvent(CustomerEvent\
+    \ event) {\n        // Validate event structure and business rules\n        return\
+    \ event.getEventTime() != null &&\n               event.getEventType() != null\
+    \ &&\n               event.getEventTime() > System.currentTimeMillis() - Duration.ofDays(1).toMillis();\n\
+    \    }\n}\n```\n\n### 4.2 Real-time Analytics\n\n#### Apache Flink Processing\
+    \ **[RECOMMENDED]**\n```scala\nimport org.apache.flink.streaming.api.scala._\n\
+    import org.apache.flink.streaming.api.windowing.time.Time\nimport org.apache.flink.streaming.api.windowing.windows.TimeWindow\n\
+    import org.apache.flink.connector.kafka.source.KafkaSource\nimport org.apache.flink.api.common.serialization.SimpleStringSchema\n\
+    \nobject CustomerEventAnalytics {\n  def main(args: Array[String]): Unit = {\n\
+    \    val env = StreamExecutionEnvironment.getExecutionEnvironment\n\n    // Configure\
+    \ Kafka source\n    val kafkaSource = KafkaSource.builder[String]()\n      .setBootstrapServers(\"\
+    localhost:9092\")\n      .setTopics(\"customer.events.v1\")\n      .setGroupId(\"\
+    customer-analytics\")\n      .setValueOnlyDeserializer(new SimpleStringSchema())\n\
+    \      .build()\n\n    // Create data stream\n    val customerEvents = env\n \
+    \     .fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), \"Customer Events\"\
+    )\n      .map(parseCustomerEvent)\n      .assignTimestampsAndWatermarks(\n   \
+    \     WatermarkStrategy\n          .forBoundedOutOfOrderness[CustomerEvent](Duration.ofSeconds(10))\n\
+    \          .withTimestampAssigner((event, _) => event.eventTime)\n      )\n\n\
+    \    // Real-time aggregations\n    val customerMetrics = customerEvents\n   \
+    \   .keyBy(_.customerId)\n      .window(TumblingEventTimeWindows.of(Time.minutes(5)))\n\
+    \      .aggregate(new CustomerMetricsAggregator)\n\n    // Anomaly detection\n\
+    \    val anomalies = customerEvents\n      .keyBy(_.customerId)\n      .window(SlidingEventTimeWindows.of(Time.minutes(10),\
+    \ Time.minutes(1)))\n      .process(new AnomalyDetector)\n\n    // Output to various\
+    \ sinks\n    customerMetrics.addSink(createElasticsearchSink())\n    anomalies.addSink(createAlertSink())\n\
+    \n    env.execute(\"Customer Event Analytics\")\n  }\n}\n\nclass CustomerMetricsAggregator\
+    \ extends AggregateFunction[CustomerEvent, CustomerMetrics, CustomerMetrics] {\n\
+    \  override def createAccumulator(): CustomerMetrics = new CustomerMetrics()\n\
+    \n  override def add(event: CustomerEvent, acc: CustomerMetrics): CustomerMetrics\
+    \ = {\n    acc.eventCount += 1\n    acc.lastEventTime = event.eventTime\n    event.eventType\
+    \ match {\n      case \"PURCHASE\" => acc.purchaseCount += 1\n      case \"LOGIN\"\
+    \ => acc.loginCount += 1\n      case _ =>\n    }\n    acc\n  }\n\n  override def\
+    \ getResult(acc: CustomerMetrics): CustomerMetrics = acc\n\n  override def merge(acc1:\
+    \ CustomerMetrics, acc2: CustomerMetrics): CustomerMetrics = {\n    acc1.eventCount\
+    \ += acc2.eventCount\n    acc1.purchaseCount += acc2.purchaseCount\n    acc1.loginCount\
+    \ += acc2.loginCount\n    acc1.lastEventTime = Math.max(acc1.lastEventTime, acc2.lastEventTime)\n\
+    \    acc1\n  }\n}\n```\n\n---"
+  5. Analytics Engineering: "### 5.1 dbt Best Practices\n\n#### Project Structure\
+    \ **[REQUIRED]**\n```\nanalytics/\n\u251C\u2500\u2500 dbt_project.yml\n\u251C\u2500\
+    \u2500 packages.yml\n\u251C\u2500\u2500 models/\n\u2502   \u251C\u2500\u2500 staging/\n\
+    \u2502   \u2502   \u251C\u2500\u2500 _staging.yml\n\u2502   \u2502   \u251C\u2500\
+    \u2500 _sources.yml\n\u2502   \u2502   \u2514\u2500\u2500 stg_customers.sql\n\u2502\
+    \   \u251C\u2500\u2500 intermediate/\n\u2502   \u2502   \u251C\u2500\u2500 _intermediate.yml\n\
+    \u2502   \u2502   \u2514\u2500\u2500 int_customer_orders.sql\n\u2502   \u251C\u2500\
+    \u2500 marts/\n\u2502   \u2502   \u251C\u2500\u2500 core/\n\u2502   \u2502   \u2502\
+    \   \u251C\u2500\u2500 _core.yml\n\u2502   \u2502   \u2502   \u251C\u2500\u2500\
+    \ dim_customers.sql\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 fct_orders.sql\n\
+    \u2502   \u2502   \u2514\u2500\u2500 finance/\n\u2502   \u2502       \u251C\u2500\
+    \u2500 _finance.yml\n\u2502   \u2502       \u2514\u2500\u2500 revenue_metrics.sql\n\
+    \u251C\u2500\u2500 macros/\n\u2502   \u251C\u2500\u2500 generate_schema_name.sql\n\
+    \u2502   \u2514\u2500\u2500 test_helpers.sql\n\u251C\u2500\u2500 tests/\n\u2502\
+    \   \u251C\u2500\u2500 generic/\n\u2502   \u2514\u2500\u2500 singular/\n\u251C\
+    \u2500\u2500 analysis/\n\u251C\u2500\u2500 seeds/\n\u2514\u2500\u2500 snapshots/\n\
+    ```\n\n#### Model Development Standards **[REQUIRED]**\n```sql\n-- models/staging/stg_customers.sql\n\
+    {{ config(\n    materialized='view',\n    tags=['staging', 'customer']\n) }}\n\
+    \nwith source as (\n    select * from {{ source('raw_data', 'customers') }}\n\
+    ),\n\nrenamed as (\n    select\n        customer_id,\n        customer_name,\n\
+    \        email_address as email,\n        phone_number as phone,\n        registration_date,\n\
+    \        customer_status,\n\n        -- Standardize dates\n        registration_date::date\
+    \ as registration_date_clean,\n\n        -- Clean and validate email\n       \
+    \ case\n            when email_address ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\
+    .[A-Za-z]{2,}$'\n            then lower(email_address)\n            else null\n\
+    \        end as email_clean,\n\n        -- Audit fields\n        _loaded_at,\n\
+    \        _source_file\n\n    from source\n\n    -- Filter out test data\n    where\
+    \ customer_id is not null\n      and customer_name not ilike '%test%'\n      and\
+    \ registration_date >= '2020-01-01'\n)\n\nselect * from renamed\n\n-- Add tests\
+    \ in schema.yml\n```\n\n```yaml"
+  models/staging/_staging.yml: "version: 2\n\nsources:\n  - name: raw_data\n    description:\
+    \ Raw data from operational systems\n    tables:\n      - name: customers\n  \
+    \      description: Customer master data\n        columns:\n          - name:\
+    \ customer_id\n            description: Unique identifier for customer\n     \
+    \       tests:\n              - not_null\n              - unique\n          -\
+    \ name: email_address\n            description: Customer email address\n     \
+    \       tests:\n              - not_null\n          - name: registration_date\n\
+    \            description: Date customer registered\n            tests:\n     \
+    \         - not_null\n\nmodels:\n  - name: stg_customers\n    description: Staging\
+    \ model for customer data\n    columns:\n      - name: customer_id\n        description:\
+    \ Unique identifier for customer\n        tests:\n          - not_null\n     \
+    \     - unique\n      - name: email_clean\n        description: Cleaned and validated\
+    \ email address\n        tests:\n          - not_null\n          - unique\n  \
+    \    - name: registration_date_clean\n        description: Cleaned registration\
+    \ date\n        tests:\n          - not_null\n          - dbt_utils.accepted_range:\n\
+    \              min_value: '2020-01-01'\n              max_value: \"{{ var('max_date')\
+    \ }}\"\n```\n\n#### Macro Development **[REQUIRED]**\n```sql\n-- macros/generate_surrogate_key.sql\n\
+    {% macro generate_surrogate_key(columns) %}\n    {{ dbt_utils.surrogate_key(columns)\
+    \ }}\n{% endmacro %}\n\n-- macros/test_data_freshness.sql\n{% macro test_data_freshness(model,\
+    \ timestamp_column, threshold_hours=24) %}\n    select count(*)\n    from {{ model\
+    \ }}\n    where {{ timestamp_column }} < current_timestamp - interval '{{ threshold_hours\
+    \ }} hours'\n{% endmacro %}\n\n-- macros/safe_divide.sql\n{% macro safe_divide(numerator,\
+    \ denominator) %}\n    case\n        when {{ denominator }} = 0 then null\n  \
+    \      else {{ numerator }} / {{ denominator }}\n    end\n{% endmacro %}\n\n--\
+    \ macros/pivot_table.sql\n{% macro pivot_table(table_name, group_by_column, pivot_column,\
+    \ value_column, agg_func='sum') %}\n    select\n        {{ group_by_column }},\n\
+    \        {% for value in dbt_utils.get_column_values(table=table_name, column=pivot_column)\
+    \ %}\n        {{ agg_func }}(case when {{ pivot_column }} = '{{ value }}' then\
+    \ {{ value_column }} end) as {{ value }}\n        {%- if not loop.last -%},{%-\
+    \ endif -%}\n        {% endfor %}\n    from {{ table_name }}\n    group by {{\
+    \ group_by_column }}\n{% endmacro %}\n```\n\n### 5.2 Metrics and KPIs Framework\n\
+    \n#### Metrics Definition **[REQUIRED]**\n```yaml"
+  metrics/customer_metrics.yml: "version: 2\n\nmetrics:\n  - name: monthly_active_customers\n\
+    \    label: Monthly Active Customers\n    model: ref('fct_customer_activity')\n\
+    \    description: Number of unique customers active in the last 30 days\n    type:\
+    \ count_distinct\n    sql: customer_id\n    timestamp: activity_date\n    time_grains:\
+    \ [day, week, month]\n    filters:\n      - field: activity_date\n        operator:\
+    \ '>='\n        value: \"current_date - 30\"\n    dimensions:\n      - customer_segment\n\
+    \      - acquisition_channel\n      - geographic_region\n\n  - name: customer_lifetime_value\n\
+    \    label: Customer Lifetime Value\n    model: ref('fct_orders')\n    description:\
+    \ Average revenue per customer over their lifetime\n    type: average\n    sql:\
+    \ total_order_value\n    timestamp: order_date\n    time_grains: [month, quarter,\
+    \ year]\n    dimensions:\n      - customer_segment\n      - acquisition_channel\n\
+    \n  - name: customer_churn_rate\n    label: Customer Churn Rate\n    model: ref('customer_cohorts')\n\
+    \    description: Percentage of customers who stop purchasing\n    type: ratio\n\
+    \    numerator: churned_customers\n    denominator: total_customers\n    timestamp:\
+    \ cohort_month\n    time_grains: [month, quarter]\n```\n\n#### Business Logic\
+    \ Layer **[REQUIRED]**\n```sql\n-- models/marts/core/customer_metrics.sql\n{{\
+    \ config(\n    materialized='table',\n    indexes=[\n        {'columns': ['metric_date'],\
+    \ 'type': 'btree'},\n        {'columns': ['customer_segment', 'metric_date'],\
+    \ 'type': 'btree'}\n    ]\n) }}\n\nwith daily_metrics as (\n    select\n     \
+    \   date_trunc('day', activity_date) as metric_date,\n        customer_segment,\n\
+    \n        -- Activity metrics\n        count(distinct customer_id) as active_customers,\n\
+    \        count(*) as total_activities,\n\n        -- Engagement metrics\n    \
+    \    avg(session_duration_minutes) as avg_session_duration,\n        sum(page_views)\
+    \ as total_page_views,\n\n        -- Revenue metrics\n        sum(order_value)\
+    \ as total_revenue,\n        count(distinct case when order_value > 0 then customer_id\
+    \ end) as purchasing_customers,\n\n        -- Calculated metrics\n        {{ safe_divide('sum(order_value)',\
+    \ 'count(distinct customer_id)') }} as revenue_per_customer,\n        {{ safe_divide(\n\
+    \            'count(distinct case when order_value > 0 then customer_id end)',\n\
+    \            'count(distinct customer_id)'\n        ) }} as conversion_rate\n\n\
+    \    from {{ ref('fct_customer_activity') }}\n    where activity_date >= current_date\
+    \ - 90  -- Last 90 days\n    group by 1, 2\n),\n\nweekly_metrics as (\n    select\n\
+    \        date_trunc('week', metric_date) as metric_week,\n        customer_segment,\n\
+    \n        avg(active_customers) as avg_daily_active_customers,\n        sum(total_revenue)\
+    \ as weekly_revenue,\n        avg(conversion_rate) as avg_conversion_rate\n\n\
+    \    from daily_metrics\n    group by 1, 2\n),\n\nfinal as (\n    select\n   \
+    \     metric_date,\n        'daily' as metric_grain,\n        customer_segment,\n\
+    \        active_customers as metric_value,\n        'active_customers' as metric_name,\n\
+    \        current_timestamp as calculated_at\n    from daily_metrics\n\n    union\
+    \ all\n\n    select\n        metric_week as metric_date,\n        'weekly' as\
+    \ metric_grain,\n        customer_segment,\n        avg_daily_active_customers\
+    \ as metric_value,\n        'avg_daily_active_customers' as metric_name,\n   \
+    \     current_timestamp as calculated_at\n    from weekly_metrics\n)\n\nselect\
+    \ * from final\n```\n\n### 5.3 Data Contracts\n\n#### Schema Contracts **[REQUIRED]**\n\
+    ```yaml"
+  contracts/customer_data_contract.yml: "version: 1.0.0\ncontract_name: customer_master_data\n\
+    description: Customer master data contract between systems\n\nprovider:\n  system:\
+    \ customer_service\n  team: customer_experience\n  contact: customer-team@company.com\n\
+    \nconsumer:\n  system: analytics_warehouse\n  team: data_platform\n  contact:\
+    \ data-team@company.com\n\ndata_schema:\n  table_name: customers\n  fields:\n\
+    \    - name: customer_id\n      type: string\n      required: true\n      unique:\
+    \ true\n      description: Unique identifier for customer\n\n    - name: email\n\
+    \      type: string\n      required: true\n      unique: true\n      format: email\n\
+    \      description: Customer email address\n\n    - name: created_at\n      type:\
+    \ timestamp\n      required: true\n      description: Customer creation timestamp\n\
+    \n    - name: status\n      type: string\n      required: true\n      enum: [active,\
+    \ inactive, suspended]\n      description: Customer account status\n\nquality_requirements:\n\
+    \  completeness: 99.5%\n  uniqueness: 100%\n  validity: 99%\n  freshness: 1 hour\n\
+    \nsla:\n  availability: 99.9%\n  max_downtime: 4 hours\n  response_time: < 100ms\n\
+    \nchange_management:\n  notification_period: 30 days\n  breaking_changes: major\
+    \ version bump\n  backward_compatibility: 2 versions\n```\n\n#### Contract Testing\
+    \ **[REQUIRED]**\n```python\nimport pandas as pd\nfrom typing import Dict, List\n\
+    import jsonschema\nfrom dataclasses import dataclass\n\n@dataclass\nclass ContractViolation:\n\
+    \    field: str\n    violation_type: str\n    description: str\n    severity:\
+    \ str\n\nclass DataContractValidator:\n    def __init__(self, contract_config:\
+    \ Dict):\n        self.contract = contract_config\n        self.violations = []\n\
+    \n    def validate_schema(self, df: pd.DataFrame) -> List[ContractViolation]:\n\
+    \        \"\"\"Validate DataFrame against contract schema.\"\"\"\n        violations\
+    \ = []\n\n        # Check required fields\n        required_fields = [\n     \
+    \       field['name'] for field in self.contract['data_schema']['fields']\n  \
+    \          if field.get('required', False)\n        ]\n\n        missing_fields\
+    \ = set(required_fields) - set(df.columns)\n        for field in missing_fields:\n\
+    \            violations.append(ContractViolation(\n                field=field,\n\
+    \                violation_type=\"missing_required_field\",\n                description=f\"\
+    Required field {field} is missing\",\n                severity=\"error\"\n   \
+    \         ))\n\n        # Check data types\n        for field_config in self.contract['data_schema']['fields']:\n\
+    \            field_name = field_config['name']\n            if field_name not\
+    \ in df.columns:\n                continue\n\n            expected_type = field_config['type']\n\
+    \            if not self._validate_field_type(df[field_name], expected_type):\n\
+    \                violations.append(ContractViolation(\n                    field=field_name,\n\
+    \                    violation_type=\"invalid_type\",\n                    description=f\"\
+    Field {field_name} has invalid type, expected {expected_type}\",\n           \
+    \         severity=\"error\"\n                ))\n\n        return violations\n\
+    \n    def validate_quality_requirements(self, df: pd.DataFrame) -> List[ContractViolation]:\n\
+    \        \"\"\"Validate data quality requirements.\"\"\"\n        violations =\
+    \ []\n        quality_reqs = self.contract.get('quality_requirements', {})\n\n\
+    \        # Check completeness\n        if 'completeness' in quality_reqs:\n  \
+    \          required_completeness = quality_reqs['completeness'] / 100\n      \
+    \      actual_completeness = (len(df) - df.isnull().sum().sum()) / (len(df) *\
+    \ len(df.columns))\n\n            if actual_completeness < required_completeness:\n\
+    \                violations.append(ContractViolation(\n                    field=\"\
+    overall\",\n                    violation_type=\"completeness_violation\",\n \
+    \                   description=f\"Completeness {actual_completeness:.2%} below\
+    \ required {required_completeness:.2%}\",\n                    severity=\"warning\"\
+    \n                ))\n\n        # Check uniqueness for unique fields\n       \
+    \ for field_config in self.contract['data_schema']['fields']:\n            if\
+    \ field_config.get('unique', False):\n                field_name = field_config['name']\n\
+    \                if field_name in df.columns:\n                    duplicate_count\
+    \ = df[field_name].duplicated().sum()\n                    if duplicate_count\
+    \ > 0:\n                        violations.append(ContractViolation(\n       \
+    \                     field=field_name,\n                            violation_type=\"\
+    uniqueness_violation\",\n                            description=f\"Found {duplicate_count}\
+    \ duplicate values in unique field {field_name}\",\n                         \
+    \   severity=\"error\"\n                        ))\n\n        return violations\n\
+    \n    def generate_contract_report(self, df: pd.DataFrame) -> Dict:\n        \"\
+    \"\"Generate comprehensive contract validation report.\"\"\"\n        schema_violations\
+    \ = self.validate_schema(df)\n        quality_violations = self.validate_quality_requirements(df)\n\
+    \n        all_violations = schema_violations + quality_violations\n\n        return\
+    \ {\n            \"contract_name\": self.contract['contract_name'],\n        \
+    \    \"validation_timestamp\": pd.Timestamp.now().isoformat(),\n            \"\
+    total_records\": len(df),\n            \"schema_valid\": len(schema_violations)\
+    \ == 0,\n            \"quality_valid\": len(quality_violations) == 0,\n      \
+    \      \"violations\": [\n                {\n                    \"field\": v.field,\n\
+    \                    \"type\": v.violation_type,\n                    \"description\"\
+    : v.description,\n                    \"severity\": v.severity\n             \
+    \   }\n                for v in all_violations\n            ],\n            \"\
+    summary\": {\n                \"total_violations\": len(all_violations),\n   \
+    \             \"error_count\": len([v for v in all_violations if v.severity ==\
+    \ \"error\"]),\n                \"warning_count\": len([v for v in all_violations\
+    \ if v.severity == \"warning\"])\n            }\n        }\n```\n\n---"
+  Implementation Checklist: '### Pipeline Development
+
+    - [ ] ETL/ELT pipelines follow standard structure
+
+    - [ ] Error handling and retry logic implemented
+
+    - [ ] Data quality checks integrated
+
+    - [ ] Monitoring and alerting configured
+
+    - [ ] Configuration externalized
+
+
+    ### Data Quality
+
+    - [ ] Quality rules defined and automated
+
+    - [ ] Data profiling implemented
+
+    - [ ] Anomaly detection configured
+
+    - [ ] Quality metrics tracked
+
+    - [ ] Remediation processes defined
+
+
+    ### Data Governance
+
+    - [ ] Data catalog implemented
+
+    - [ ] Lineage tracking automated
+
+    - [ ] Classification system defined
+
+    - [ ] Access controls implemented
+
+    - [ ] Compliance monitoring active
+
+
+    ### Streaming Processing
+
+    - [ ] Event schemas defined
+
+    - [ ] Stream processing topology designed
+
+    - [ ] State management configured
+
+    - [ ] Error handling implemented
+
+    - [ ] Monitoring and alerting setup
+
+
+    ### Analytics Engineering
+
+    - [ ] dbt project structured properly
+
+    - [ ] Models follow layered approach
+
+    - [ ] Tests comprehensive
+
+    - [ ] Documentation complete
+
+    - [ ] CI/CD pipeline configured
+
+
+    ### Data Contracts
+
+    - [ ] Contracts defined for critical datasets
+
+    - [ ] Validation automated
+
+    - [ ] Change management process established
+
+    - [ ] Monitoring implemented
+
+    - [ ] Violation handling defined
+
+
+    ---
+
+
+    **End of Data Engineering Standards**'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:53.443655'
+  source: williamzujkowski/standards/docs/standards/DATA_ENGINEERING_STANDARDS.md
+  checksum: 5e665d912dd46c43acdda5a3d9ea7d18a6e259aea5bd43e2028ef15fea3b45d6

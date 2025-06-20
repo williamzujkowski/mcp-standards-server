@@ -1,0 +1,473 @@
+name: Docs/Standards/Knowledge Management Standards
+category: general
+filename: docs/standards/KNOWLEDGE_MANAGEMENT_STANDARDS.md
+nist_controls: []
+sections:
+  Knowledge Management Standards: '**Version:** 1.0.0
+
+    **Last Updated:** January 2025
+
+    **Status:** Active
+
+    **Standard Code:** KM
+
+
+    ---'
+  "\U0001F4CB Table of Contents": '1. [Overview](#overview)
+
+    2. [Core Principles](#core-principles)
+
+    3. [Knowledge Architecture](#knowledge-architecture)
+
+    4. [Documentation Standards](#documentation-standards)
+
+    5. [AI/LLM Integration](#aillm-integration)
+
+    6. [Progressive Disclosure System](#progressive-disclosure-system)
+
+    7. [Cross-Reference Architecture](#cross-reference-architecture)
+
+    8. [Version Management](#version-management)
+
+    9. [Search & Discovery](#search--discovery)
+
+    10. [Implementation Checklist](#implementation-checklist)
+
+
+    ---'
+  Overview: '[Purpose, scope, and audience]'
+  Core Principles: '### 1. Progressive Disclosure
+
+
+    Knowledge should be accessible at multiple levels of detail, allowing users to
+    start simple and dive deeper as needed.
+
+
+    **Implementation:**
+
+    ```yaml'
+  MANIFEST.yaml example: "standard:\n  sections:\n    overview:\n      tokens: 500\n\
+    \      priority: critical\n      description: \"High-level introduction\"\n  \
+    \  details:\n      tokens: 2000\n      priority: high\n      description: \"Comprehensive\
+    \ implementation\"\n    advanced:\n      tokens: 1500\n      priority: medium\n\
+    \      description: \"Edge cases and optimizations\"\n```\n\n### 2. AI-First Design\n\
+    \nDocumentation should be optimized for both human readers and AI assistants.\n\
+    \n**Example Structure:**\n```markdown"
+  Section Name: "**Summary:** One-line description for quick reference\n**Tokens:**\
+    \ ~500 (helps AI plan context usage)\n**Priority:** critical/high/medium/low\n\
+    \n### Details\n[Full content here]\n```\n\n### 3. Modular Architecture\n\nKnowledge\
+    \ should be organized in self-contained, reusable modules.\n\n```\nstandards/\n\
+    \u251C\u2500\u2500 core/\n\u2502   \u251C\u2500\u2500 CODING_STANDARDS.md\n\u2502\
+    \   \u2514\u2500\u2500 TESTING_STANDARDS.md\n\u251C\u2500\u2500 specialized/\n\
+    \u2502   \u251C\u2500\u2500 CLOUD_NATIVE_STANDARDS.md\n\u2502   \u2514\u2500\u2500\
+    \ DATA_ENGINEERING_STANDARDS.md\n\u2514\u2500\u2500 meta/\n    \u251C\u2500\u2500\
+    \ KNOWLEDGE_MANAGEMENT_STANDARDS.md\n    \u2514\u2500\u2500 CREATING_STANDARDS_GUIDE.md\n\
+    ```\n\n### 4. Semantic Relationships\n\nDocuments should explicitly define their\
+    \ relationships to other documents.\n\n```yaml"
+  In document metadata: "dependencies:\n  requires: [\"CODING_STANDARDS\", \"TESTING_STANDARDS\"\
+    ]\n  recommends: [\"SECURITY_STANDARDS\"]\n  conflicts: [\"LEGACY_PATTERNS\"]\n\
+    ```\n\n### 5. Living Documentation\n\nAll documentation should be versioned, dated,\
+    \ and actively maintained.\n\n```markdown\n**Version:** 1.2.3\n**Last Updated:**\
+    \ January 2025\n**Status:** Active/Draft/Deprecated\n**Next Review:** March 2025\n\
+    ```\n\n---"
+  Knowledge Architecture: "### [REQUIRED] Repository Structure\n\n```\nproject-root/\n\
+    \u251C\u2500\u2500 README.md                    # Entry point with quick start\n\
+    \u251C\u2500\u2500 CLAUDE.md                   # AI interface and routing\n\u251C\
+    \u2500\u2500 MANIFEST.yaml               # Machine-readable metadata\n\u251C\u2500\
+    \u2500 standards/                  # Core knowledge base\n\u2502   \u251C\u2500\
+    \u2500 *.md                   # Individual standard documents\n\u2502   \u2514\
+    \u2500\u2500 meta/                  # Meta-standards\n\u251C\u2500\u2500 examples/\
+    \                   # Practical implementations\n\u2502   \u251C\u2500\u2500 project-templates/\
+    \     # Ready-to-use templates\n\u2502   \u2514\u2500\u2500 code-examples/   \
+    \      # Annotated examples\n\u251C\u2500\u2500 tools/                     # Supporting\
+    \ tooling\n\u2502   \u251C\u2500\u2500 validation/           # Quality checks\n\
+    \u2502   \u2514\u2500\u2500 generation/           # Auto-generation scripts\n\u2514\
+    \u2500\u2500 .github/                  # Automation\n    \u2514\u2500\u2500 workflows/\
+    \            # CI/CD for standards\n```\n\n### [REQUIRED] Document Hierarchy\n\
+    \n1. **Entry Documents** (README.md)\n   - Quick start guides\n   - Navigation\
+    \ aids\n   - Purpose statements\n\n2. **Router Documents** (CLAUDE.md)\n   - AI\
+    \ optimization layers\n   - Dynamic loading patterns\n   - Context management\n\
+    \n3. **Core Standards** (*.md)\n   - Comprehensive guidelines\n   - Implementation\
+    \ details\n   - Code examples\n\n4. **Meta Documents** (meta/*.md)\n   - How to\
+    \ use the system\n   - How to contribute\n   - Architecture documentation\n\n\
+    ### [RECOMMENDED] Metadata Layer\n\n```yaml"
+  standards-metadata.yaml: "standards:\n  - id: \"CS\"\n    name: \"Coding Standards\"\
+    \n    file: \"CODING_STANDARDS.md\"\n    category: \"core\"\n    tokens: 15000\n\
+    \    sections: 12\n    last_updated: \"2025-01-15\"\n    dependencies: []\n  \
+    \  tags: [\"development\", \"quality\", \"required\"]\n```\n\n---"
+  Documentation Standards: '### [REQUIRED] Document Structure
+
+
+    Every knowledge document must follow this structure:
+
+
+    ```markdown'
+  Document Title: '**Version:** X.Y.Z
+
+    **Last Updated:** YYYY-MM-DD
+
+    **Status:** Active/Draft/Deprecated
+
+    **Standard Code:** XX (2-4 letters)'
+  Table of Contents: '[Auto-generated or manual]'
+  Core Content: '[Main knowledge sections]'
+  Implementation: '[Practical examples and patterns]'
+  References: '- [CREATING_STANDARDS_GUIDE.md](./docs/guides/CREATING_STANDARDS_GUIDE.md)
+    - How to create new standards
+
+    - [STANDARD_TEMPLATE.md](./docs/guides/STANDARD_TEMPLATE.md) - Template for new
+    documents
+
+    - [CLAUDE.md](./docs/core/CLAUDE.md) - Example AI router implementation
+
+    - [MANIFEST.yaml](./config/MANIFEST.yaml) - Metadata structure example
+
+
+    ---'
+  'Good: Complete, runnable example': "from typing import Optional\nimport logging\n\
+    \nclass DocumentManager:\n    \"\"\"Manages document lifecycle with versioning.\"\
+    \"\"\n\n    def __init__(self, storage_backend: StorageBackend):\n        self.storage\
+    \ = storage_backend\n        self.logger = logging.getLogger(__name__)\n\n   \
+    \ def save_document(\n        self,\n        doc_id: str,\n        content: str,\n\
+    \        metadata: Optional[dict] = None\n    ) -> str:\n        \"\"\"Save document\
+    \ with automatic versioning.\"\"\"\n        try:\n            version = self.storage.get_next_version(doc_id)\n\
+    \            self.storage.save(doc_id, content, version, metadata)\n         \
+    \   self.logger.info(f\"Saved {doc_id} v{version}\")\n            return version\n\
+    \        except StorageError as e:\n            self.logger.error(f\"Failed to\
+    \ save {doc_id}: {e}\")\n            raise\n```\n\n### [RECOMMENDED] Visual Aids\n\
+    \nInclude diagrams for complex relationships:\n\n```mermaid\ngraph TD\n    A[User\
+    \ Query] --> B{CLAUDE.md Router}\n    B --> C[Load Core Standards]\n    B -->\
+    \ D[Load Specific Sections]\n    B --> E[Generate Response]\n    C --> F[MANIFEST.yaml]\n\
+    \    D --> F\n    F --> G[Progressive Loading]\n```\n\n---"
+  AI/LLM Integration: '### [REQUIRED] Token Optimization
+
+
+    Design documents for efficient AI consumption:
+
+
+    1. **Summary Sections**: 100-200 tokens for quick overview
+
+    2. **Progressive Detail**: Structured for selective loading
+
+    3. **Semantic Chunking**: Logical breaks every 500-1000 tokens
+
+    4. **Inline Metadata**: Token counts and priorities
+
+
+    ### [REQUIRED] Router Document (CLAUDE.md Pattern)
+
+
+    Every knowledge base needs an AI router:
+
+
+    ```markdown'
+  AI Knowledge Router: ''
+  Quick Patterns: '@load [topic:section] - Load specific section
+
+    @summary [topic] - Get executive summary
+
+    @find "natural query" - Semantic search'
+  Natural Language Mappings: "| User Says | System Loads | Context |\n|-----------|--------------|---------|\n\
+    | \"How do I test?\" | TS:* + CS:testing | Testing practices |\n| \"Security help\"\
+    \ | SEC:* + CS:security | Security standards |\n```\n\n### [RECOMMENDED] Context\
+    \ Windows\n\nStructure for different AI context limits:\n\n```yaml\nloading_strategies:\n\
+    \  small_context:  # < 4K tokens\n    - load: [\"overview\", \"quick_reference\"\
+    ]\n    - exclude: [\"examples\", \"appendices\"]\n\n  medium_context:  # 4K-32K\
+    \ tokens\n    - load: [\"overview\", \"core_sections\", \"examples\"]\n    - lazy_load:\
+    \ [\"advanced\", \"edge_cases\"]\n\n  large_context:  # > 32K tokens\n    - load:\
+    \ [\"*\"]\n    - optimize: [\"remove_duplicates\", \"compress_examples\"]\n```\n\
+    \n### [REQUIRED] Machine-Readable Formats\n\nProvide structured data formats:\n\
+    \n```json\n{\n  \"standards\": {\n    \"coding\": {\n      \"file\": \"CODING_STANDARDS.md\"\
+    ,\n      \"sections\": {\n        \"overview\": { \"tokens\": 500, \"priority\"\
+    : \"critical\" },\n        \"style\": { \"tokens\": 1500, \"priority\": \"high\"\
+    \ },\n        \"patterns\": { \"tokens\": 2000, \"priority\": \"medium\" }\n \
+    \     }\n    }\n  }\n}\n```\n\n---"
+  Progressive Disclosure System: "### [REQUIRED] Information Layers\n\nImplement multiple\
+    \ detail levels:\n\n1. **Quick Reference** (< 100 tokens)\n   ```markdown\n  \
+    \ **Python Naming:** snake_case for functions, PascalCase for classes\n   ```\n\
+    \n2. **Summary** (100-500 tokens)\n   ```markdown\n   ### Python Naming Conventions\n\
+    \   - Functions: snake_case (get_user_name)\n   - Classes: PascalCase (UserAccount)\n\
+    \   - Constants: UPPER_SNAKE (MAX_RETRIES)\n   - Private: Leading underscore (_internal_method)\n\
+    \   ```\n\n3. **Detailed** (500-2000 tokens)\n   - Full examples\n   - Edge cases\n\
+    \   - Anti-patterns\n   - Migration guides\n\n4. **Comprehensive** (2000+ tokens)\n\
+    \   - Academic background\n   - Historical context\n   - Alternative approaches\n\
+    \   - Research references\n\n### [RECOMMENDED] Dynamic Loading\n\nImplement smart\
+    \ loading based on context:\n\n```typescript\ninterface LoadingStrategy {\n  assess(query:\
+    \ string): DetailLevel;\n  load(level: DetailLevel): Documentation;\n  expand(currentDocs:\
+    \ Documentation): Documentation;\n}\n\nclass ProgressiveLoader implements LoadingStrategy\
+    \ {\n  assess(query: string): DetailLevel {\n    if (query.includes('quick') ||\
+    \ query.includes('summary')) {\n      return DetailLevel.Summary;\n    }\n   \
+    \ if (query.includes('example') || query.includes('how to')) {\n      return DetailLevel.Detailed;\n\
+    \    }\n    return DetailLevel.Comprehensive;\n  }\n}\n```\n\n---"
+  Cross-Reference Architecture: '### [REQUIRED] Explicit Relationships
+
+
+    Define clear relationships between documents:
+
+
+    ```yaml'
+  In STANDARDS_GRAPH.md or metadata: "relationships:\n  CODING_STANDARDS:\n    depends_on:\
+    \ []\n    required_by: [\"TESTING_STANDARDS\", \"SECURITY_STANDARDS\"]\n    related_to:\
+    \ [\"STYLE_GUIDE\", \"REVIEW_CHECKLIST\"]\n    conflicts_with: [\"LEGACY_PATTERNS\"\
+    ]\n```\n\n### [REQUIRED] Bidirectional Links\n\nAlways create links in both directions:\n\
+    \n```markdown"
+  In CODING_STANDARDS.md: For testing these patterns, see [TESTING_STANDARDS.md](TESTING_STANDARDS.md#unit-testing)
+  In TESTING_STANDARDS.md: 'For code patterns to test, see [CODING_STANDARDS.md](CODING_STANDARDS.md#patterns)
+
+    ```
+
+
+    ### [RECOMMENDED] Dependency Management
+
+
+    Track and validate dependencies:
+
+
+    ```python'
+  dependency_validator.py: "class DependencyValidator:\n    def validate_dependencies(self,\
+    \ doc: Document) -> List[Issue]:\n        issues = []\n        for dep in doc.metadata.get('dependencies',\
+    \ {}).get('requires', []):\n            if not self.exists(dep):\n           \
+    \     issues.append(f\"Missing required dependency: {dep}\")\n            elif\
+    \ self.is_deprecated(dep):\n                issues.append(f\"Depends on deprecated\
+    \ standard: {dep}\")\n        return issues\n```\n\n---"
+  Version Management: '### [REQUIRED] Semantic Versioning
+
+
+    All documents must use semantic versioning:
+
+
+    - **Major (X.0.0)**: Breaking changes, restructuring
+
+    - **Minor (x.Y.0)**: New sections, significant updates
+
+    - **Patch (x.y.Z)**: Corrections, clarifications
+
+
+    ### [REQUIRED] Change Tracking
+
+
+    Maintain change history:
+
+
+    ```markdown'
+  Changelog: '### [1.2.0] - 2025-01-15
+
+    #### Added
+
+    - New section on async patterns
+
+    - Examples for error handling
+
+
+    #### Changed
+
+    - Updated testing requirements to 85%
+
+    - Clarified naming conventions
+
+
+    #### Deprecated
+
+    - Legacy callback patterns (use async/await)
+
+    ```
+
+
+    ### [RECOMMENDED] Migration Guides
+
+
+    For major version changes:
+
+
+    ```markdown'
+  Migrating from v1.x to v2.0: "### Breaking Changes\n1. **Removed**: Global state\
+    \ patterns\n   - **Old**: `global_config = Config()`\n   - **New**: Dependency\
+    \ injection required\n\n### Migration Steps\n1. Update all global references\n\
+    2. Implement DI container\n3. Run migration validator\n```\n\n---"
+  Search & Discovery: '### [REQUIRED] Search Optimization
+
+
+    Structure content for searchability:
+
+
+    1. **Keywords in Headings**: Use descriptive, searchable headers
+
+    2. **Tag System**: Add metadata tags for categorization
+
+    3. **Synonyms**: Include alternative terms
+
+    4. **Examples**: Real-world, searchable scenarios
+
+
+    ### [RECOMMENDED] Discovery Features
+
+
+    Implement discovery aids:
+
+
+    ```markdown'
+  Related Topics: '- See also: [TESTING_STANDARDS.md] for testing approaches
+
+    - Related: [SECURITY_STANDARDS.md] for security patterns
+
+    - Next: [DEPLOYMENT_STANDARDS.md] for deployment'
+  Common Questions: "- **Q**: How do I handle errors?\n  **A**: See [Error Handling](#error-handling)\
+    \ section"
+  Quick Links: '- [Most Important Section](#critical-section)
+
+    - [Common Patterns](#patterns)
+
+    - [Troubleshooting](#troubleshooting)
+
+    ```
+
+
+    ### [RECOMMENDED] Smart Suggestions
+
+
+    Provide contextual recommendations:
+
+
+    ```yaml'
+  suggestions.yaml: "context_suggestions:\n  - trigger: \"reading CODING_STANDARDS\"\
+    \n    suggest: [\"TESTING_STANDARDS\", \"CODE_REVIEW_CHECKLIST\"]\n\n  - trigger:\
+    \ \"searching error handling\"\n    suggest: [\"LOGGING_STANDARDS\", \"MONITORING_STANDARDS\"\
+    ]\n```\n\n---"
+  Implementation Checklist: '### Phase 1: Foundation (Week 1)
+
+    - [ ] Create repository structure
+
+    - [ ] Set up README.md with clear navigation
+
+    - [ ] Create CLAUDE.md or equivalent AI router
+
+    - [ ] Implement MANIFEST.yaml for metadata
+
+    - [ ] Set up version control patterns
+
+
+    ### Phase 2: Core Documentation (Week 2-3)
+
+    - [ ] Migrate/create core documentation
+
+    - [ ] Add semantic versioning to all docs
+
+    - [ ] Implement [REQUIRED]/[RECOMMENDED] tagging
+
+    - [ ] Create cross-references between docs
+
+    - [ ] Add code examples to all concepts
+
+
+    ### Phase 3: AI Optimization (Week 4)
+
+    - [ ] Add token counts to sections
+
+    - [ ] Implement progressive loading patterns
+
+    - [ ] Create natural language mappings
+
+    - [ ] Set up machine-readable formats
+
+    - [ ] Test with various AI assistants
+
+
+    ### Phase 4: Discovery & Search (Week 5)
+
+    - [ ] Implement search optimization
+
+    - [ ] Create discovery aids
+
+    - [ ] Add smart suggestions
+
+    - [ ] Build dependency graph
+
+    - [ ] Create quick reference guides
+
+
+    ### Phase 5: Automation (Week 6+)
+
+    - [ ] Set up validation workflows
+
+    - [ ] Implement auto-generation scripts
+
+    - [ ] Create update notifications
+
+    - [ ] Build compliance checking
+
+    - [ ] Add metrics tracking
+
+
+    ### Validation Checklist
+
+    - [ ] All documents follow standard structure
+
+    - [ ] Version numbers are consistent
+
+    - [ ] Cross-references are bidirectional
+
+    - [ ] AI router handles common queries
+
+    - [ ] Search returns relevant results
+
+    - [ ] Progressive loading works correctly
+
+    - [ ] Dependencies are properly tracked
+
+
+    ---'
+  'Appendix: Quick Reference': '### Essential Files for Knowledge Management
+
+    ```
+
+    README.md         # Entry point and navigation
+
+    CLAUDE.md        # AI optimization layer
+
+    MANIFEST.yaml    # Machine-readable metadata
+
+    *_STANDARDS.md   # Individual knowledge documents
+
+    CHANGELOG.md     # Version history
+
+    ```
+
+
+    ### Key Commands for Validation
+
+    ```bash'
+  Validate structure: find . -name "*.md" -exec grep -L "Version:" {} \;
+  Check cross-references: grep -r "\[.*\](\./" --include="*.md" | sort | uniq
+  Token count estimation: 'wc -w *.md | awk ''{print $1/3 " tokens (est) - " $2}''
+
+    ```
+
+
+    ### AI Loading Patterns
+
+    ```
+
+    @load KM:*                    # Load all sections
+
+    @load KM:architecture         # Load specific section
+
+    @summary KM                   # Get overview only
+
+    @find "how to organize docs"  # Natural language search
+
+    ```
+
+
+    ---
+
+
+    **Note:** This standard represents best practices for knowledge management in
+    technical projects. Adapt these patterns to your specific needs while maintaining
+    the core principles of progressive disclosure, AI optimization, and semantic relationships.'
+  Related Standards: '- [CONTRIBUTING.md](./docs/core/CONTRIBUTING.md) - Contributing
+    guidelines'
+metadata:
+  version: 1.0.0
+  last_updated: '2025-06-20T05:11:53.544023'
+  source: williamzujkowski/standards/docs/standards/KNOWLEDGE_MANAGEMENT_STANDARDS.md
+  checksum: 0c1f5a0e3bfcf987528b90d9297d152ba1bc343a29d0a981bfa3ee7a8f770cb8

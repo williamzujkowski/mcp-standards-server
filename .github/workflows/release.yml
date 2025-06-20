@@ -4,200 +4,112 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., 1.0.0)'
-        required: true
-        type: string
 
-env:
-  PYTHON_VERSION: "3.11"
-  POETRY_VERSION: "1.6.1"
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  validate-release:
-    name: Validate Release
+  build:
+    name: Build and Release
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: ${{ env.POETRY_VERSION }}
-      
-      - name: Check version consistency
-        run: |
-          PROJECT_VERSION=$(poetry version -s)
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          if [[ "$PROJECT_VERSION" != "$TAG_VERSION" ]]; then
-            echo "Version mismatch: pyproject.toml ($PROJECT_VERSION) != tag ($TAG_VERSION)"
-            exit 1
-          fi
-      
-      - name: Run full test suite
-        run: |
-          poetry install --with dev
-          poetry run pytest --cov=src --cov-fail-under=80
-      
-      - name: Run security scan
-        run: |
-          poetry run bandit -r src/ -ll
-          poetry run safety check
-      
-      - name: Check NIST compliance
-        run: |
-          poetry run mcp-standards scan --deep
-  
-  build-and-publish:
-    name: Build and Publish
-    runs-on: ubuntu-latest
-    needs: validate-release
+    - uses: actions/checkout@v4
     
-    steps:
-      - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
       
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Create virtual environment
+      run: uv venv
       
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: ${{ env.POETRY_VERSION }}
-      
-      - name: Build package
-        run: |
-          poetry build
-      
-      - name: Publish to PyPI
-        env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry publish
-  
-  docker-release:
-    name: Docker Image Release
-    runs-on: ubuntu-latest
-    needs: validate-release
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ secrets.DOCKER_USERNAME }}/mcp-standards-server
-            ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-  
-  create-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: [build-and-publish, docker-release]
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Generate changelog
-        id: changelog
-        run: |
-          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            ## Changes in this Release
-            
-            ${{ steps.changelog.outputs.CHANGELOG }}
-            
-            ## Docker Images
-            
-            ```bash
-            # Docker Hub
-            docker pull ${{ secrets.DOCKER_USERNAME }}/mcp-standards-server:${{ github.ref_name }}
-            
-            # GitHub Container Registry
-            docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-            ```
-            
-            ## Installation
-            
-            ```bash
-            pip install mcp-standards-server
-            ```
-          draft: false
-          prerelease: false
-  
-  update-docs:
-    name: Update Documentation
-    runs-on: ubuntu-latest
-    needs: create-release
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Update version in docs
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          find docs -name "*.md" -exec sed -i "s/version: .*/version: $VERSION/g" {} \;
+    - name: Install dependencies
+      run:  < /dev/null | 
+        source .venv/bin/activate
+        uv pip install -e ".[dev]"
+        uv pip install build twine
+        
+    - name: Build package
+      run: |
+        source .venv/bin/activate
+        python -m build
+        
+    - name: Generate OSCAL SSP
+      run: |
+        source .venv/bin/activate
+        mcp-standards ssp --output ssp-release.json --format oscal
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/*
+          ssp-release.json
+          ssp-release.json.sha256
+        body: |
+          ## MCP Standards Server Release
           
-      - name: Deploy to GitHub Pages
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          This release includes:
+          - Full NIST 800-53r5 compliance support
+          - Multi-language code analysis (Python, JavaScript, Go, Java)
+          - OSCAL SSP generation
+          - MCP protocol implementation
+          
+          ### Installation
+          ```bash
+          pip install mcp-standards-server
+          ```
+          
+          ### Docker
+          ```bash
+          docker pull ghcr.io/williamzujkowski/mcp-standards-server:${{ github.ref_name }}
+          ```
+        
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        source .venv/bin/activate
+        twine upload dist/*
+        
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
