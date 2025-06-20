@@ -9,6 +9,7 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 - 📊 **17 Standards Imported**: Complete standards library from official repository
 - 📝 **OSCAL 1.0.0 Support**: Generate System Security Plans (SSPs) automatically
 - 🔍 **Multi-Language Analysis**: Python, JavaScript/TypeScript, Go, Java with enhanced AST parsing
+- 🏗️ **Infrastructure as Code Analysis**: Terraform, Dockerfile, Kubernetes with security pattern detection
 
 ### MCP Integration
 - 🤖 **Native MCP Server**: Official SDK implementation with full protocol support
@@ -167,6 +168,10 @@ Analyze code for NIST control implementations:
 }
 ```
 Returns detected controls, evidence, suggestions, and compliance score.
+
+Supported languages:
+- **Programming**: Python, JavaScript/TypeScript, Go, Java
+- **Infrastructure**: Terraform (HCL), Dockerfile, Kubernetes (YAML)
 
 ### `suggest_controls`
 Get NIST control recommendations based on requirements:
@@ -363,6 +368,13 @@ mcp-standards-server/
 │   │   ├── standards/       # Standards engine, natural language mapping
 │   │   └── templates.py     # NIST-compliant code templates
 │   ├── analyzers/          # Multi-language code analyzers
+│   │   ├── python_analyzer.py      # Python with AST analysis
+│   │   ├── javascript_analyzer.py  # JS/TS with framework detection
+│   │   ├── go_analyzer.py          # Go with Gin/Fiber/gRPC support
+│   │   ├── java_analyzer.py        # Java with Spring/JPA patterns
+│   │   ├── terraform_analyzer.py   # Terraform/HCL security analysis
+│   │   ├── dockerfile_analyzer.py  # Dockerfile best practices
+│   │   └── k8s_analyzer.py         # Kubernetes manifest validation
 │   ├── compliance/         # Compliance scanning and reporting
 │   └── server.py           # Main MCP server implementation
 ├── data/
@@ -401,6 +413,11 @@ compliance:
 
 ### Comprehensive NIST 800-53r5 Coverage
 The server now detects **200+ controls** across all 20 NIST families:
+
+#### Infrastructure as Code Security
+- **Terraform**: AWS/Azure/GCP provider security, IAM policies, encryption settings
+- **Dockerfile**: Base image security, secret management, privilege escalation
+- **Kubernetes**: RBAC configuration, security contexts, network policies
 
 #### Key Control Families
 - **Access Control (AC)**: 25 controls including RBAC, least privilege, session management

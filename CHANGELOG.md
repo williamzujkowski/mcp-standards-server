@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Complete Standards Library**: Imported 17 standards documents from williamzujkowski/standards
 - **OSCAL 1.0.0 Handler**: Full SSP generation with integrity checking (SHA256)
 - **Multi-language Analyzers**: Python, JavaScript/TypeScript, Go, Java with deep AST analysis
+- **Infrastructure as Code Analyzers**: Terraform, Dockerfile, Kubernetes with comprehensive security validation
 - **Enhanced CLI**: Complete init, scan, ssp, server, version, generate, validate, coverage commands
 - **Code Templates**: NIST-compliant templates for API, auth, logging, encryption, database
 - **MCP Resources**: 20+ dynamic resource endpoints with real-time standards loading
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Audit Logging**: Structured logging with AU-2, AU-3 control compliance
 - **Configuration Management**: YAML-based project configuration with CM-2, CM-3 controls
 - **Language Analyzers**: Deep pattern detection with framework-specific analysis
+- **IaC Security Analysis**: Multi-provider Terraform support, Dockerfile best practices, K8s manifest validation
 - **Test Organization**: Restructured tests matching source hierarchy (unit/integration/e2e)
 - **CI/CD Pipelines**: Fixed all GitHub Actions workflows with security scanning
 

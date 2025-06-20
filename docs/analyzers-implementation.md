@@ -4,11 +4,18 @@ This document describes the enhanced language analyzer implementations in the MC
 
 ## Overview
 
-We have implemented comprehensive security analyzers for four major programming languages:
+We have implemented comprehensive security analyzers for:
+
+### Programming Languages
 - Python
 - JavaScript/TypeScript
 - Go
 - Java
+
+### Infrastructure as Code
+- Terraform (HCL)
+- Dockerfile
+- Kubernetes (YAML)
 
 Each analyzer provides deep pattern detection for NIST 800-53 rev5 security controls.
 
@@ -126,6 +133,29 @@ public void adminMethod() {
 - File-level caching reduces redundant processing
 - Project analysis skips common non-source directories
 
+## Infrastructure as Code Analyzers
+
+### Terraform Analyzer
+- HCL parsing with regex patterns
+- Multi-provider support (AWS, Azure, GCP)
+- State file detection
+- Module security analysis
+- Detects: open security groups, unencrypted storage, IAM misconfigurations
+
+### Dockerfile Analyzer
+- Instruction-by-instruction analysis
+- Base image security validation
+- Secret detection in ENV/ARG
+- Best practices enforcement
+- Detects: root user, latest tags, hardcoded secrets, missing HEALTHCHECK
+
+### Kubernetes Analyzer
+- YAML manifest validation
+- Pod security context analysis
+- RBAC configuration checks
+- Network policy validation
+- Detects: privileged containers, host access, overly permissive RBAC
+
 ## Future Enhancements
 
 1. **Full Tree-sitter Integration**: While current implementation works well, tree-sitter would provide:
@@ -135,9 +165,11 @@ public void adminMethod() {
 
 2. **Additional Languages**: Support for Ruby, PHP, C++, Rust, C#
 
-3. **Machine Learning**: Automatic pattern learning from annotated codebases
+3. **Additional IaC Tools**: CloudFormation, Helm, Ansible, Docker Compose
 
-4. **IDE Integration**: Real-time analysis in VS Code, IntelliJ
+4. **Machine Learning**: Automatic pattern learning from annotated codebases
+
+5. **IDE Integration**: Real-time analysis in VS Code, IntelliJ
 
 ## Testing
 

@@ -9,14 +9,15 @@ This document tracks the current state of all documentation in the MCP Standards
 - **CHANGELOG.md** - Comprehensive changelog with all recent enhancements
 - **CLAUDE.md** - Updated with completed features and current state
 - **IMPLEMENTATION_SUMMARY.md** - Updated with latest session accomplishments
-- **TODO_ANALYZERS.md** - Updated to reflect completed analyzer enhancements
+- **TODO_ANALYZERS.md** - Updated to reflect completed analyzer enhancements and IaC analyzers
 
 ### Project Documentation
 - **docs/README.md** - Central documentation hub with all links
 - **docs/nist/controls.md** - Comprehensive NIST control mappings
 - **docs/enhanced-control-detection.md** - Documents 200+ control patterns
 - **docs/standards-versioning.md** - Complete versioning system documentation
-- **docs/analyzers-implementation.md** - Enhanced analyzer documentation
+- **docs/analyzers-implementation.md** - Enhanced analyzer documentation including IaC analyzers
+- **docs/analyzers/iac-analyzer-specs.md** - Complete IaC analyzer specifications
 
 ### Test Documentation
 - **tests/README.md** - Test organization and structure guide
@@ -28,6 +29,7 @@ This document tracks the current state of all documentation in the MCP Standards
 2. **Standards Versioning**: Complete documentation of version management system
 3. **Control Coverage**: Added coverage command documentation and examples
 4. **Analyzer Enhancements**: Documented deep pattern detection and framework support
+5. **IaC Analyzers**: Added Terraform, Dockerfile, and Kubernetes analyzer documentation
 5. **Test Organization**: Updated test structure documentation
 
 ### Documentation Improvements
@@ -79,4 +81,4 @@ All documentation follows these standards:
 3. **Deployment Guide**: For production deployment scenarios
 4. **Troubleshooting Guide**: Common issues and solutions
 
-All documentation is current as of the latest feature implementations including enhanced analyzers, standards versioning, and comprehensive control detection.
+All documentation is current as of the latest feature implementations including enhanced analyzers, IaC analyzers (Terraform, Dockerfile, Kubernetes), standards versioning, and comprehensive control detection.

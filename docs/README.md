@@ -36,11 +36,13 @@ Welcome to the comprehensive documentation for the MCP Standards Server - a prod
 - [Enhanced Control Detection](./enhanced-control-detection.md)
 - [Standards Versioning](./standards-versioning.md)
 - [Analyzer Implementation](./analyzers-implementation.md)
+- [IaC Analyzer Specifications](./analyzers/iac-analyzer-specs.md)
 
 ## 🎯 Key Features
 
 ### 🔍 **Enhanced Multi-Language Analysis**
 - Complete AST-based analysis for Python, JavaScript/TypeScript, Go, and Java
+- **Infrastructure as Code analysis** for Terraform, Dockerfile, and Kubernetes
 - **200+ NIST control patterns** across all 20 families
 - Advanced security pattern detection with confidence scoring
 - Control relationship suggestions and gap analysis

@@ -14,6 +14,11 @@
 - **Go Analyzer**: Comprehensive Go patterns and import analysis
 - **Java Analyzer**: Spring and enterprise Java pattern detection
 
+### Infrastructure as Code Analyzers ✅
+- **Terraform Analyzer**: HCL parsing with AWS/Azure/GCP provider support
+- **Dockerfile Analyzer**: Security best practices and anti-pattern detection
+- **Kubernetes Analyzer**: YAML manifest validation with RBAC and security context analysis
+
 ### Standards Engine Enhancements ✅
 - Implemented YAML file loading for standards
 - Added Redis caching support with TTL
@@ -124,6 +129,7 @@
 ### Remaining Tasks (Low Priority)
 1. Implement REST API endpoints
 2. Add additional language support (Ruby, PHP, C++, Rust)
+3. Add additional IaC support (CloudFormation, Helm, Ansible, Docker Compose)
 
 ### Future Enhancements
 - Machine learning for control suggestions
