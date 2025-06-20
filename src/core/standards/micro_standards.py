@@ -8,7 +8,6 @@ Micro Standards Generator - Creates 500-token digestible chunks
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Tuple
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -587,7 +586,7 @@ class MicroStandardsGenerator:
 
         return list(set(controls))
 
-    def _extract_code_blocks(self, content: str) -> list[Tuple[str, str]]:
+    def _extract_code_blocks(self, content: str) -> list[tuple[str, str]]:
         """Extract code blocks with language"""
         import re
         code_blocks = []
@@ -733,7 +732,7 @@ class MicroStandardsGenerator:
             with open(index_file, 'w') as f:
                 json.dump(index.model_dump(), f, indent=2, default=str)
 
-    def load_chunks(self, standard_id: str, input_dir: Path) -> Tuple[list[MicroStandard], MicroStandardIndex]:
+    def load_chunks(self, standard_id: str, input_dir: Path) -> tuple[list[MicroStandard], MicroStandardIndex]:
         """Load chunks from disk"""
         input_dir = Path(input_dir)
 
@@ -761,7 +760,7 @@ class MicroStandardsGenerator:
 async def generate_micro_standards(
     standard: Standard,
     output_dir: Path | None = None
-) -> Tuple[list[MicroStandard], MicroStandardIndex]:
+) -> tuple[list[MicroStandard], MicroStandardIndex]:
     """Generate micro standards from a full standard"""
     generator = MicroStandardsGenerator()
     chunks = generator.generate_chunks(standard)
