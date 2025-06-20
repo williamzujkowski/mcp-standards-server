@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Complete Standards Library**: Imported 17 standards documents from williamzujkowski/standards
 - **OSCAL 1.0.0 Handler**: Full SSP generation with integrity checking (SHA256)
 - **Multi-language Analyzers**: Python, JavaScript/TypeScript, Go, Java with deep AST analysis
-- **Enhanced CLI**: Complete init, scan, ssp, server, version, generate, validate commands
+- **Enhanced CLI**: Complete init, scan, ssp, server, version, generate, validate, coverage commands
 - **Code Templates**: NIST-compliant templates for API, auth, logging, encryption, database
 - **MCP Resources**: 20+ dynamic resource endpoints with real-time standards loading
 - **MCP Prompts**: 5 specialized prompt templates for compliance scenarios
@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Actions**: CI/CD workflows with comprehensive security scanning
 - **Documentation**: Complete API docs, user guides, and implementation examples
 - **Test Coverage**: 91.56% coverage exceeding industry standards
+- **Enhanced NIST Patterns**: 200+ control detection patterns across all 20 families
+- **Standards Versioning**: Complete version management with rollback capabilities
+- **Control Coverage Reports**: Comprehensive gap analysis with multiple output formats
+- **AST Utilities**: Native AST parsing for Python with pattern fallback for other languages
+- **Tree-sitter Foundation**: Infrastructure for future tree-sitter integration
 
 ### Enhanced
 - **Standards Index**: JSON-based indexing for efficient searching and categorization
@@ -30,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Input Validation**: Enhanced validation with SI-10 control implementation
 - **Audit Logging**: Structured logging with AU-2, AU-3 control compliance
 - **Configuration Management**: YAML-based project configuration with CM-2, CM-3 controls
+- **Language Analyzers**: Deep pattern detection with framework-specific analysis
+- **Test Organization**: Restructured tests matching source hierarchy (unit/integration/e2e)
+- **CI/CD Pipelines**: Fixed all GitHub Actions workflows with security scanning
 
 ### Changed
 - **Package Manager**: Migrated from Poetry to uv for better performance
@@ -37,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Standards Loading**: Enhanced engine with real-time YAML parsing
 - **CLI Architecture**: Modular command structure with comprehensive help
 - **Resource Providers**: Dynamic resource generation from standards content
+- **Analyzer Implementation**: Enhanced all analyzers with 200+ security patterns
 
 ### Fixed
 - **Timestamp Validation**: Corrected MCPMessage timestamp handling
@@ -44,6 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **StandardType Enum**: Corrected enum value mappings for all categories
 - **Token Optimization**: Improved token counting and budget management
 - **Import Paths**: Resolved module import issues across the codebase
+- **GitHub Actions**: Updated deprecated actions and fixed all CI/CD workflows
+- **Type Annotations**: Modernized to use Python 3.11+ union syntax (X | None)
+- **MyPy Configuration**: Relaxed strictness for better compatibility
 
 ## [0.1.0] - 2024-01-20
 

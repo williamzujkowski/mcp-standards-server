@@ -32,6 +32,11 @@ Welcome to the comprehensive documentation for the MCP Standards Server - a prod
 - [Quick Start Tutorial](./guides/quickstart.md)
 - [Integration Examples](./guides/integration.md)
 
+### 🔧 [Advanced Features](./advanced/)
+- [Enhanced Control Detection](./enhanced-control-detection.md)
+- [Standards Versioning](./standards-versioning.md)
+- [Analyzer Implementation](./analyzers-implementation.md)
+
 ## 🎯 Key Features
 
 ### 🔍 **Enhanced Multi-Language Analysis**

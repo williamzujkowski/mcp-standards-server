@@ -22,6 +22,7 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 - 🔧 **Git Integration**: Automated hooks for pre-commit compliance checking
 - 🎯 **VS Code Support**: Integrated settings and workflow
 - 📈 **Coverage Analysis**: Comprehensive control coverage reports with gap analysis
+- 🔄 **Standards Versioning**: Version control and rollback for imported standards
 
 ## Quick Start
 

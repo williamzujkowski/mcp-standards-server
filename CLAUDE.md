@@ -11,8 +11,11 @@ This is a Model Context Protocol (MCP) server built with the official Python SDK
 ### ✅ Completed Features
 - **OSCAL Handler**: Full OSCAL 1.0.0 support with SSP generation and integrity checking
 - **Language Analyzers**: Python, JavaScript/TypeScript, Go, and Java with deep AST analysis
+- **Enhanced Pattern Detection**: 200+ NIST control patterns across all 20 families
 - **Standards Engine**: Complete YAML loading, Redis caching, natural language mapping
-- **CLI Commands**: init, scan, ssp, server, version, generate, validate (all functional)
+- **Standards Versioning**: Full version management with rollback capabilities
+- **CLI Commands**: init, scan, ssp, server, version, generate, validate, coverage (all functional)
+- **Control Coverage Reports**: Comprehensive gap analysis with multiple output formats
 - **Standards Import**: 17 standards documents imported from williamzujkowski/standards
 - **MCP Resources**: 20+ dynamic resource endpoints with real-time loading
 - **MCP Prompts**: 5 specialized prompt templates for compliance scenarios
@@ -24,7 +27,6 @@ This is a Model Context Protocol (MCP) server built with the official Python SDK
 - **GitHub Workflows**: CI/CD pipelines with security scanning
 
 ### 🚧 Remaining Tasks (Low Priority)
-- Standards versioning and automated updates
 - REST API endpoints for non-MCP access
 - Additional language support (Ruby, PHP, C++, Rust)
 
