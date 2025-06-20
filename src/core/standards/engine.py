@@ -23,6 +23,7 @@ from .models import (
     TokenBudget,
     TokenOptimizationStrategy,
 )
+from .versioning import StandardsVersionManager
 
 logger = get_logger(__name__)
 
@@ -150,6 +151,9 @@ class StandardsEngine:
         self.cache_ttl = cache_ttl
         self.nl_mapper = NaturalLanguageMapper()
         self.loaded_standards: dict[str, StandardSection] = {}
+        
+        # Initialize version manager
+        self.version_manager = StandardsVersionManager(standards_path)
 
         # Initialize schema if available
         self.schema = self._load_schema()
@@ -311,6 +315,10 @@ class StandardsEngine:
                 sections = []
                 for item in data:
                     # Reconstruct StandardSection
+                    last_updated = None
+                    if item.get("last_updated"):
+                        last_updated = datetime.fromisoformat(item["last_updated"])
+                    
                     section = StandardSection(
                         id=item["id"],
                         type=StandardType.from_string(item["type"]),
@@ -318,7 +326,7 @@ class StandardsEngine:
                         content=item["content"],
                         tokens=item["tokens"],
                         version=item["version"],
-                        last_updated=datetime.fromisoformat(item["last_updated"]),
+                        last_updated=last_updated,
                         dependencies=item.get("dependencies", []),
                         nist_controls=set(item.get("nist_controls", [])),
                         metadata=item.get("metadata", {})
@@ -424,8 +432,22 @@ class StandardsEngine:
     ) -> StandardSection | None:
         """Load a standard from YAML file"""
         try:
-            with open(yaml_file, encoding='utf-8') as f:
-                data = yaml.safe_load(f)
+            # Check if we should load a specific version
+            if version != "latest":
+                try:
+                    # Try to load from version manager
+                    versioned_content = await self.version_manager.get_version_content(
+                        f"{std_type}_{section}_standards", 
+                        version
+                    )
+                    data = versioned_content
+                except (ValueError, FileNotFoundError):
+                    # Fall back to current file
+                    with open(yaml_file, encoding='utf-8') as f:
+                        data = yaml.safe_load(f)
+            else:
+                with open(yaml_file, encoding='utf-8') as f:
+                    data = yaml.safe_load(f)
 
             # Get sections content
             sections_content = []
@@ -621,3 +643,42 @@ class StandardsEngine:
                     report["errors"].append(f"{yaml_file}: {str(e)}")
 
         return report
+    
+    async def get_available_versions(self, standard_id: str) -> list[str]:
+        """
+        Get available versions for a standard
+        @nist-controls: CM-2
+        @evidence: Version availability tracking
+        """
+        versions = self.version_manager.get_version_history(standard_id)
+        return [v.version for v in versions]
+    
+    async def create_standard_version(
+        self, 
+        standard_id: str,
+        author: str | None = None,
+        changelog: str | None = None
+    ) -> str:
+        """
+        Create a new version of a standard
+        @nist-controls: CM-2, CM-3
+        @evidence: Version creation with change tracking
+        """
+        # Find the standard file
+        std_files = list(self.standards_path.glob(f"*{standard_id}*.yaml"))
+        if not std_files:
+            raise FileNotFoundError(f"Standard {standard_id} not found")
+        
+        # Load current content
+        with open(std_files[0]) as f:
+            content = yaml.safe_load(f)
+        
+        # Create version
+        version = await self.version_manager.create_version(
+            standard_id,
+            content,
+            author=author,
+            changelog=changelog
+        )
+        
+        return version.version

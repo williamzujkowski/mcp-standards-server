@@ -18,6 +18,7 @@ from rich.table import Table
 from ..analyzers import GoAnalyzer, JavaAnalyzer, JavaScriptAnalyzer, PythonAnalyzer
 from ..compliance.scanner import ComplianceScanner
 from ..core.compliance.oscal_handler import OSCALHandler
+from .commands import standards as standards_cmd
 
 app = typer.Typer(
     name="mcp-standards",
@@ -25,6 +26,9 @@ app = typer.Typer(
     add_completion=False
 )
 console = Console()
+
+# Add standards sub-command
+app.add_typer(standards_cmd.app, name="standards", help="Standards version management")
 
 
 @app.command()

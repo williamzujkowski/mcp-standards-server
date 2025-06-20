@@ -60,7 +60,7 @@ class StandardSection:
     content: str
     tokens: int
     version: str
-    last_updated: datetime
+    last_updated: datetime | None
     dependencies: list[str] = field(default_factory=list)
     nist_controls: set[str] = field(default_factory=set)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -74,7 +74,7 @@ class StandardSection:
             "content": self.content,
             "tokens": self.tokens,
             "version": self.version,
-            "last_updated": self.last_updated.isoformat(),
+            "last_updated": self.last_updated.isoformat() if self.last_updated else None,
             "dependencies": self.dependencies,
             "nist_controls": list(self.nist_controls),
             "metadata": self.metadata
