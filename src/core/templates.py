@@ -3,9 +3,6 @@ Template Generator for NIST-compliant code
 @nist-controls: SA-11, SA-15, SA-17
 @evidence: Developer security and secure coding
 """
-from typing import Dict, List, Optional
-from pathlib import Path
-import json
 
 from ..core.logging import get_logger
 
@@ -18,15 +15,15 @@ class TemplateGenerator:
     @nist-controls: SA-11, SA-15
     @evidence: Secure development practices
     """
-    
+
     def __init__(self):
         self.templates = self._load_templates()
-    
+
     def generate(
         self,
         template_type: str,
         language: str,
-        controls: Optional[List[str]] = None
+        controls: list[str] | None = None
     ) -> str:
         """
         Generate a template based on type and language
@@ -36,30 +33,30 @@ class TemplateGenerator:
         # Validate inputs
         if template_type not in self.templates:
             raise ValueError(f"Unknown template type: {template_type}")
-        
+
         if language not in self.templates[template_type]:
             raise ValueError(f"Language {language} not supported for {template_type}")
-        
+
         # Get base template
         template = self.templates[template_type][language]
-        
+
         # Add control-specific implementations if requested
         if controls:
             template = self._add_control_implementations(template, controls, language)
-        
+
         return template
-    
-    def _load_templates(self) -> Dict[str, Dict[str, str]]:
+
+    def _load_templates(self) -> dict[str, dict[str, str]]:
         """Load template definitions"""
         templates = {}
-        
+
         # API templates
         templates["api"] = {}
         templates["auth"] = {}
         templates["logging"] = {}
         templates["encryption"] = {}
         templates["database"] = {}
-        
+
         # Python API template
         templates["api"]["python"] = '''"""
 API Endpoint Implementation
@@ -104,36 +101,36 @@ def require_auth(required_roles: Optional[List[str]] = None):
             if not auth_header or not auth_header.startswith('Bearer '):
                 log_security_event("AUTH_FAILED", reason="Missing token")
                 raise Unauthorized("Authentication required")
-            
+
             try:
                 token = auth_header.split(' ')[1]
                 payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-                
+
                 # Check roles if required
                 if required_roles:
                     user_roles = payload.get('roles', [])
                     if not any(role in user_roles for role in required_roles):
                         log_security_event("AUTHZ_FAILED", user_id=payload.get('sub'))
                         raise Forbidden("Insufficient permissions")
-                
+
                 # Add user context to request
                 request.current_user = payload
                 log_security_event("AUTH_SUCCESS", user_id=payload.get('sub'))
-                
+
             except jwt.ExpiredSignatureError:
                 log_security_event("AUTH_FAILED", reason="Expired token")
                 raise Unauthorized("Token expired")
             except jwt.InvalidTokenError:
                 log_security_event("AUTH_FAILED", reason="Invalid token")
                 raise Unauthorized("Invalid token")
-            
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
 # @nist-controls: SI-10
 # @evidence: Input validation for API requests
-def validate_request(schema: Dict[str, Any]):
+def validate_request(schema: dict[str, Any]):
     """Decorator for request validation"""
     def decorator(f):
         @wraps(f)
@@ -141,20 +138,20 @@ def validate_request(schema: Dict[str, Any]):
             data = request.get_json()
             if not data:
                 raise BadRequest("JSON payload required")
-            
+
             # Simple schema validation (use jsonschema in production)
             for field, rules in schema.items():
                 if rules.get('required') and field not in data:
                     raise BadRequest(f"Missing required field: {field}")
-                
+
                 if field in data:
                     value = data[field]
                     if 'type' in rules and not isinstance(value, rules['type']):
                         raise BadRequest(f"Invalid type for {field}")
-                    
+
                     if 'max_length' in rules and len(str(value)) > rules['max_length']:
                         raise BadRequest(f"{field} exceeds maximum length")
-            
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -173,12 +170,12 @@ def create_resource():
     """
     data = request.get_json()
     user_id = request.current_user['sub']
-    
+
     # Process the request
     # ... implementation ...
-    
+
     log_security_event("RESOURCE_CREATED", user_id=user_id, resource_name=data['name'])
-    
+
     return jsonify({
         'status': 'success',
         'id': 'generated-id',
@@ -194,7 +191,7 @@ def handle_error(error):
     """
     if isinstance(error, (BadRequest, Unauthorized, Forbidden)):
         return jsonify({'error': str(error)}), error.code
-    
+
     # Log internal errors but don't expose details
     logger.error(f"Internal error: {error}", exc_info=True)
     return jsonify({'error': 'Internal server error'}), 500
@@ -226,40 +223,40 @@ class AuthenticationService:
     @nist-controls: IA-2, IA-5
     @evidence: Strong authentication mechanisms
     """
-    
+
     def __init__(self, secret_key: str, token_expiry: int = 3600):
         self.secret_key = secret_key
         self.token_expiry = token_expiry
         self.failed_attempts = {}  # In production, use Redis
-        
+
     # @nist-controls: IA-5
     # @evidence: Secure password hashing
     def hash_password(self, password: str) -> str:
         """Hash password using bcrypt"""
         return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    
+
     def verify_password(self, password: str, hashed: str) -> bool:
         """Verify password against hash"""
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-    
+
     # @nist-controls: IA-2
     # @evidence: Multi-factor authentication support
     def generate_totp_secret(self) -> str:
         """Generate TOTP secret for 2FA"""
         return pyotp.random_base32()
-    
+
     def verify_totp(self, secret: str, token: str) -> bool:
         """Verify TOTP token"""
         totp = pyotp.TOTP(secret)
         return totp.verify(token, valid_window=1)
-    
+
     # @nist-controls: AC-7
     # @evidence: Account lockout after failed attempts
     def check_account_lockout(self, username: str) -> Tuple[bool, Optional[int]]:
         """Check if account is locked due to failed attempts"""
         if username not in self.failed_attempts:
             return False, None
-            
+
         attempts_data = self.failed_attempts[username]
         if attempts_data['count'] >= 5:
             lockout_time = 300  # 5 minutes
@@ -269,22 +266,22 @@ class AuthenticationService:
             else:
                 # Reset after lockout period
                 del self.failed_attempts[username]
-                
+
         return False, None
-    
+
     def record_failed_attempt(self, username: str):
         """Record failed login attempt"""
         if username not in self.failed_attempts:
             self.failed_attempts[username] = {'count': 0, 'last_attempt': 0}
-        
+
         self.failed_attempts[username]['count'] += 1
         self.failed_attempts[username]['last_attempt'] = time.time()
-    
+
     def reset_failed_attempts(self, username: str):
         """Reset failed attempts on successful login"""
         if username in self.failed_attempts:
             del self.failed_attempts[username]
-    
+
     # @nist-controls: IA-8
     # @evidence: Secure token generation
     def generate_auth_token(self, user_id: str, roles: list) -> str:
@@ -297,41 +294,41 @@ class AuthenticationService:
             'jti': secrets.token_urlsafe(16)  # Unique token ID
         }
         return jwt.encode(payload, self.secret_key, algorithm='HS256')
-    
+
     def generate_refresh_token(self) -> str:
         """Generate secure refresh token"""
         return secrets.token_urlsafe(32)
-    
+
     # @nist-controls: IA-5
     # @evidence: Password strength validation
     def validate_password_strength(self, password: str) -> Tuple[bool, Optional[str]]:
         """Validate password meets security requirements"""
         if len(password) < 12:
             return False, "Password must be at least 12 characters"
-        
+
         if not any(c.isupper() for c in password):
             return False, "Password must contain uppercase letters"
-            
+
         if not any(c.islower() for c in password):
             return False, "Password must contain lowercase letters"
-            
+
         if not any(c.isdigit() for c in password):
             return False, "Password must contain numbers"
-            
+
         if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
             return False, "Password must contain special characters"
-            
+
         # Check against common passwords (in production, use a comprehensive list)
         common_passwords = ['password123', 'admin123', 'letmein123']
         if password.lower() in [p.lower() for p in common_passwords]:
             return False, "Password is too common"
-            
+
         return True, None
 
 # Example usage
 if __name__ == "__main__":
     auth = AuthenticationService(secret_key="your-secret-key")
-    
+
     # Register new user
     password = "SecureP@ssw0rd123!"
     is_valid, error = auth.validate_password_strength(password)
@@ -380,12 +377,12 @@ class SecurityLogger:
     @nist-controls: AU-2, AU-3, AU-9
     @evidence: Audit log generation with integrity checking
     """
-    
+
     def __init__(self, log_dir: Path = Path("/var/log/app")):
         self.log_dir = log_dir
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.logger = structlog.get_logger()
-        
+
     # @nist-controls: AU-2
     # @evidence: Log security-relevant events
     def log_authentication(self, user_id: str, success: bool, method: str, **kwargs):
@@ -398,7 +395,7 @@ class SecurityLogger:
             event_type="AUTHENTICATION",
             **self._add_context(**kwargs)
         )
-    
+
     def log_authorization(self, user_id: str, resource: str, action: str, granted: bool, **kwargs):
         """Log authorization decisions"""
         self.logger.info(
@@ -410,7 +407,7 @@ class SecurityLogger:
             event_type="AUTHORIZATION",
             **self._add_context(**kwargs)
         )
-    
+
     def log_data_access(self, user_id: str, data_type: str, operation: str, **kwargs):
         """Log data access events"""
         self.logger.info(
@@ -421,7 +418,7 @@ class SecurityLogger:
             event_type="DATA_ACCESS",
             **self._add_context(**kwargs)
         )
-    
+
     def log_security_violation(self, violation_type: str, details: Dict[str, Any], **kwargs):
         """Log security violations"""
         self.logger.warning(
@@ -431,7 +428,7 @@ class SecurityLogger:
             event_type="SECURITY_VIOLATION",
             **self._add_context(**kwargs)
         )
-    
+
     # @nist-controls: AU-9
     # @evidence: Log integrity protection
     def _calculate_log_hash(self, log_entry: Dict[str, Any]) -> str:
@@ -439,7 +436,7 @@ class SecurityLogger:
         # Sort keys for consistent hashing
         sorted_entry = json.dumps(log_entry, sort_keys=True)
         return hashlib.sha256(sorted_entry.encode()).hexdigest()
-    
+
     def _add_context(self, **kwargs) -> Dict[str, Any]:
         """Add standard context to all log entries"""
         context = {
@@ -448,35 +445,35 @@ class SecurityLogger:
             "ip_address": kwargs.get("ip_address"),
             "user_agent": kwargs.get("user_agent"),
         }
-        
+
         # Add integrity hash
         context["integrity_hash"] = self._calculate_log_hash(context)
-        
+
         return context
-    
+
     # @nist-controls: AU-4
     # @evidence: Log rotation and retention
     def setup_log_rotation(self):
         """Configure log rotation (example using logging.handlers)"""
         from logging.handlers import RotatingFileHandler
-        
+
         handler = RotatingFileHandler(
             self.log_dir / "security.log",
             maxBytes=100 * 1024 * 1024,  # 100MB
             backupCount=30  # Keep 30 days
         )
-        
+
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
         handler.setFormatter(formatter)
-        
+
         return handler
 
 # Example usage
 if __name__ == "__main__":
     logger = SecurityLogger()
-    
+
     # Log authentication attempt
     logger.log_authentication(
         user_id="user123",
@@ -506,10 +503,10 @@ class EncryptionService:
     @nist-controls: SC-13
     @evidence: FIPS 140-2 validated cryptographic modules
     """
-    
+
     def __init__(self, master_key: bytes = None):
         self.master_key = master_key or Fernet.generate_key()
-        
+
     # @nist-controls: SC-28
     # @evidence: Encryption for data at rest
     def encrypt_data(self, data: bytes, associated_data: bytes = None) -> bytes:
@@ -518,7 +515,7 @@ class EncryptionService:
         aesgcm = AESGCM(self.master_key[:32])  # Use 256-bit key
         ciphertext = aesgcm.encrypt(nonce, data, associated_data)
         return nonce + ciphertext
-    
+
     def decrypt_data(self, encrypted: bytes, associated_data: bytes = None) -> bytes:
         """Decrypt data encrypted with AES-GCM"""
         nonce = encrypted[:12]
@@ -547,12 +544,12 @@ class SecureDatabase:
     @nist-controls: AC-3, SI-10
     @evidence: Access control and injection prevention
     """
-    
+
     def __init__(self, connection_string: str):
         # @nist-controls: SC-8
         # @evidence: Require SSL for database connections
         self.connection_string = connection_string + " sslmode=require"
-        
+
     @contextmanager
     def get_connection(self):
         """Get database connection with automatic cleanup"""
@@ -561,7 +558,7 @@ class SecureDatabase:
             yield conn
         finally:
             conn.close()
-    
+
     # @nist-controls: SI-10
     # @evidence: Parameterized queries prevent SQL injection
     def execute_query(self, query: str, params: tuple = None) -> List[Dict[str, Any]]:
@@ -570,7 +567,7 @@ class SecureDatabase:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(query, params)
                 return cursor.fetchall()
-    
+
     # @nist-controls: AU-2
     # @evidence: Audit database modifications
     def execute_write(self, query: str, params: tuple = None, user_id: str = None):
@@ -580,7 +577,7 @@ class SecureDatabase:
                 cursor.execute(query, params)
                 affected = cursor.rowcount
                 conn.commit()
-                
+
                 # Log the operation
                 logger.info(
                     "database_write",
@@ -631,11 +628,11 @@ app.use('/api/', limiter);
 // @evidence: JWT authentication middleware
 const authenticate = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  
+
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
@@ -649,11 +646,11 @@ const authenticate = (req, res, next) => {
 app.post('/api/resource', authenticate, (req, res) => {
   // Input validation
   const { name, value } = req.body;
-  
+
   if (!name || typeof name !== 'string' || name.length > 100) {
     return res.status(400).json({ error: 'Invalid name' });
   }
-  
+
   // Process request...
   res.json({ success: true, id: 'generated-id' });
 });
@@ -662,8 +659,8 @@ module.exports = app;
 '''
 
         return templates
-    
-    def _add_control_implementations(self, template: str, controls: List[str], language: str) -> str:
+
+    def _add_control_implementations(self, template: str, controls: list[str], language: str) -> str:  # noqa: ARG002
         """Add specific control implementations to template"""
         # This would add control-specific code snippets
         # For now, just add a comment

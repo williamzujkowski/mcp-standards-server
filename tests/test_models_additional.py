@@ -20,19 +20,19 @@ from src.core.standards.models import (
 
 class TestStandardModels:
     """Test standard models edge cases"""
-    
+
     def test_standard_type_from_string(self):
         """Test StandardType.from_string method"""
         # Valid conversions
         assert StandardType.from_string("CS") == StandardType.CS
         assert StandardType.from_string("cs") == StandardType.CS
         assert StandardType.from_string("SEC") == StandardType.SEC
-        
+
         # Invalid conversion
         with pytest.raises(ValueError) as exc_info:
             StandardType.from_string("INVALID")
         assert "Unknown standard type: INVALID" in str(exc_info.value)
-    
+
     def test_standard_section_to_dict(self):
         """Test StandardSection.to_dict method"""
         section = StandardSection(
@@ -47,9 +47,9 @@ class TestStandardModels:
             nist_controls={"AC-3", "AU-2"},
             metadata={"author": "test"}
         )
-        
+
         result = section.to_dict()
-        
+
         assert result["id"] == "CS.api.rest"
         assert result["type"] == "coding"
         assert result["content"] == "REST API standards"
@@ -57,30 +57,30 @@ class TestStandardModels:
         assert result["dependencies"] == ["CS.api"]
         assert set(result["nist_controls"]) == {"AC-3", "AU-2"}
         assert result["metadata"]["author"] == "test"
-    
+
     def test_standard_query_validation(self):
         """Test StandardQuery validation"""
         # Valid query
         query = StandardQuery(query="test query", token_limit=5000)
         assert query.query == "test query"
         assert query.token_limit == 5000
-        
+
         # Empty query
         with pytest.raises(ValueError):
             StandardQuery(query="   ")
-        
+
         # Query with invalid characters
         with pytest.raises(ValueError):
             StandardQuery(query="test<script>alert('xss')</script>")
-        
+
         # Token limit too low
         with pytest.raises(ValueError):
             StandardQuery(query="test", token_limit=50)
-        
+
         # Token limit too high
         with pytest.raises(ValueError):
             StandardQuery(query="test", token_limit=200000)
-    
+
     def test_standard_cache_expiry(self):
         """Test StandardCache expiry checking"""
         # Not expired
@@ -92,7 +92,7 @@ class TestStandardModels:
             access_count=0
         )
         assert not cache.is_expired()
-        
+
         # Expired
         expired_cache = StandardCache(
             key="test",
@@ -102,36 +102,36 @@ class TestStandardModels:
             access_count=0
         )
         assert expired_cache.is_expired()
-    
+
     def test_token_budget_operations(self):
         """Test TokenBudget operations"""
         budget = TokenBudget(total_limit=1000)
-        
+
         # Initial state
         assert budget.available == 1000
         assert budget.can_fit(500)
-        
+
         # Allocate tokens
         assert budget.allocate(300)
         assert budget.used == 300
         assert budget.available == 700
-        
+
         # Reserve tokens
         assert budget.reserve(200)
         assert budget.reserved == 200
         assert budget.available == 500
-        
+
         # Cannot fit
         assert not budget.can_fit(600)
         assert not budget.allocate(600)
-        
+
         # Cannot reserve beyond limit
         assert not budget.reserve(600)
 
 
 class TestMCPModels:
     """Test MCP model edge cases"""
-    
+
     def test_session_info_idle_timeout(self):
         """Test SessionInfo idle timeout checking"""
         session = SessionInfo(
@@ -144,6 +144,6 @@ class TestMCPModels:
             permissions=[],
             metadata={}
         )
-        
+
         # Should be idle (default timeout is 30 minutes)
         assert session.is_idle_timeout()

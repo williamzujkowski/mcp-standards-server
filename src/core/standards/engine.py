@@ -391,14 +391,14 @@ class StandardsEngine:
         if index_file.exists():
             with open(index_file) as f:
                 index = json.load(f)
-            
+
             # Find matching standard
             for std_id, std_info in index["standards"].items():
                 if std_info["category"] == std_type.lower() and section.lower() in std_id:
                     yaml_file = self.standards_path / std_info["file"]
                     if yaml_file.exists():
                         return await self._load_yaml_standard(yaml_file, std_type, section, version)
-        
+
         # Fallback to direct file lookup
         # Look for YAML file in flat structure
         yaml_patterns = [
@@ -406,15 +406,15 @@ class StandardsEngine:
             f"{section.lower()}_standards.yaml",
             f"{section}.yaml"
         ]
-        
+
         for pattern in yaml_patterns:
             yaml_file = self.standards_path / pattern
             if yaml_file.exists():
                 return await self._load_yaml_standard(yaml_file, std_type, section, version)
-        
+
         logger.warning(f"Section file not found: {std_type}/{section}")
         return None
-    
+
     async def _load_yaml_standard(
         self,
         yaml_file: Path,
@@ -424,27 +424,27 @@ class StandardsEngine:
     ) -> StandardSection | None:
         """Load a standard from YAML file"""
         try:
-            with open(yaml_file, 'r', encoding='utf-8') as f:
+            with open(yaml_file, encoding='utf-8') as f:
                 data = yaml.safe_load(f)
-                
+
             # Get sections content
             sections_content = []
             if 'sections' in data:
                 # Combine all sections into content
                 for section_name, section_text in data['sections'].items():
                     sections_content.append(f"## {section_name}\n\n{section_text}")
-            
+
             content = "\n\n".join(sections_content) if sections_content else data.get('content', '')
-            
+
             # Extract NIST controls
             nist_controls = set()
             if 'nist_controls' in data:
                 nist_controls = set(data['nist_controls'])
-            
+
             # Add controls from metadata
             if 'metadata' in data and 'nist_controls' in data['metadata']:
                 nist_controls.update(data['metadata']['nist_controls'])
-                    
+
             return StandardSection(
                 id=f"{std_type}:{section}",
                 type=StandardType.from_string(std_type),
@@ -457,7 +457,7 @@ class StandardsEngine:
                 nist_controls=nist_controls,
                 metadata=data.get('metadata', {})
             )
-        except (yaml.YAMLError, IOError, KeyError) as e:
+        except (OSError, yaml.YAMLError, KeyError) as e:
             logger.error(f"Error loading YAML file {yaml_file}: {e}")
             return None
 
@@ -468,13 +468,13 @@ class StandardsEngine:
     ) -> list[StandardSection]:
         """Load all sections for a standard type"""
         sections = []
-        
+
         # Load from standards index
         index_file = self.standards_path / "standards_index.json"
         if index_file.exists():
             with open(index_file) as f:
                 index = json.load(f)
-            
+
             # Find all standards for this category/type
             category = std_type.lower()
             if category in index["categories"]:
@@ -486,7 +486,7 @@ class StandardsEngine:
                         section_data = await self._load_yaml_standard(yaml_file, std_type, section_name, version)
                         if section_data:
                             sections.append(section_data)
-        
+
         # Sort sections by a predefined order if available
         section_order = {
             "unified": 0,
@@ -499,9 +499,9 @@ class StandardsEngine:
             "devops": 7,
             "observability": 8
         }
-        
+
         sections.sort(key=lambda s: (section_order.get(s.section, 99), s.section))
-        
+
         return sections
 
     async def _analyze_context(self, context: str) -> list[str]:
@@ -558,12 +558,12 @@ class StandardsEngine:
         """Estimate token count (simplified)"""
         # Rough estimate: ~1 token per 4 characters
         return len(text) // 4
-        
+
     def get_catalog(self) -> list[str]:
         """Get list of available standard types"""
         if not self.standards_path.exists():
             return []
-            
+
         catalog = []
         for item in self.standards_path.iterdir():
             if item.is_dir() and not item.name.startswith('.'):
@@ -571,9 +571,9 @@ class StandardsEngine:
                 yaml_files = list(item.glob("*.yaml")) + list(item.glob("*.yml"))
                 if yaml_files:
                     catalog.append(item.name)
-                    
+
         return sorted(catalog)
-        
+
     async def validate_standards(self) -> dict[str, Any]:
         """Validate all standards files and return report"""
         report = {
@@ -583,29 +583,29 @@ class StandardsEngine:
             "errors": [],
             "warnings": []
         }
-        
+
         for std_type in self.get_catalog():
             type_dir = self.standards_path / std_type
             yaml_files = list(type_dir.glob("*.yaml")) + list(type_dir.glob("*.yml"))
-            
+
             for yaml_file in yaml_files:
                 report["total"] += 1
-                
+
                 try:
-                    with open(yaml_file, 'r', encoding='utf-8') as f:
+                    with open(yaml_file, encoding='utf-8') as f:
                         data = yaml.safe_load(f)
-                        
+
                     # Validate structure
                     if not data:
                         report["invalid"] += 1
                         report["errors"].append(f"{yaml_file}: Empty file")
                         continue
-                        
+
                     if 'content' not in data:
                         report["invalid"] += 1
                         report["errors"].append(f"{yaml_file}: Missing 'content' field")
                         continue
-                        
+
                     # Warnings for recommended fields
                     if 'id' not in data:
                         report["warnings"].append(f"{yaml_file}: Missing 'id' field")
@@ -613,11 +613,11 @@ class StandardsEngine:
                         report["warnings"].append(f"{yaml_file}: Missing 'version' field")
                     if 'last_updated' not in data:
                         report["warnings"].append(f"{yaml_file}: Missing 'last_updated' field")
-                        
+
                     report["valid"] += 1
-                    
-                except (yaml.YAMLError, IOError) as e:
+
+                except (OSError, yaml.YAMLError) as e:
                     report["invalid"] += 1
                     report["errors"].append(f"{yaml_file}: {str(e)}")
-                    
+
         return report

@@ -4,11 +4,8 @@ Pytest Configuration and Shared Fixtures
 @evidence: Test infrastructure for compliance validation
 """
 
-import asyncio
 import time
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import jwt  # This is from the pyjwt package
@@ -24,7 +21,6 @@ from src.core.mcp.models import (
 )
 from src.core.standards.engine import StandardsEngine
 from src.core.standards.models import StandardLoadResult
-
 
 # Configure pytest-asyncio
 pytest_plugins = ["pytest_asyncio"]
@@ -124,7 +120,7 @@ def expired_jwt_token(test_config):
 def mock_standards_engine():
     """Mock standards engine for testing"""
     engine = MagicMock(spec=StandardsEngine)
-    
+
     # Default response
     engine.load_standards = AsyncMock(
         return_value=StandardLoadResult(
@@ -141,11 +137,11 @@ def mock_standards_engine():
             }
         )
     )
-    
+
     engine.get_catalog = MagicMock(
         return_value=["CS", "SEC", "TS", "FE", "DE", "CN", "OBS"]
     )
-    
+
     return engine
 
 
@@ -153,7 +149,7 @@ def mock_standards_engine():
 def mock_compliance_scanner():
     """Mock compliance scanner for testing"""
     scanner = MagicMock(spec=ComplianceScanner)
-    
+
     # Default scan result
     scanner.scan = AsyncMock(
         return_value={
@@ -177,7 +173,7 @@ def mock_compliance_scanner():
             }
         }
     )
-    
+
     return scanner
 
 
@@ -187,11 +183,11 @@ def test_data_dir(tmp_path):
     data_dir = tmp_path / "data"
     standards_dir = data_dir / "standards"
     standards_dir.mkdir(parents=True)
-    
+
     # Create sample standards files
     cs_dir = standards_dir / "CS"
     cs_dir.mkdir()
-    
+
     api_file = cs_dir / "api.yaml"
     api_file.write_text("""
 id: CS.api
@@ -203,7 +199,7 @@ tags:
   - rest
   - design
 """)
-    
+
     return data_dir
 
 
@@ -222,15 +218,15 @@ def authenticate_user(username: str, password: str) -> dict:
     if user and verify_password(password, user.password_hash):
         # Log successful authentication
         audit_log('auth.success', user_id=user.id)
-        
+
         # Generate MFA challenge
         if user.mfa_enabled:
             return {"status": "mfa_required", "challenge": generate_mfa_challenge(user)}
-        
+
         # Generate JWT token
         token = generate_jwt(user)
         return {"status": "success", "token": token}
-    
+
     # Log failed authentication
     audit_log('auth.failed', username=username)
     return {"status": "failed"}
@@ -245,10 +241,10 @@ router.post('/api/users', authenticate, authorize(['admin']), async (req, res) =
         if (error) {
             return res.status(400).json({ error: error.details[0].message });
         }
-        
+
         // Create user
         const user = await createUser(req.body);
-        
+
         // Audit log
         await auditLog({
             action: 'user.created',
@@ -256,7 +252,7 @@ router.post('/api/users', authenticate, authorize(['admin']), async (req, res) =
             targetUserId: user.id,
             ip: req.ip
         });
-        
+
         res.status(201).json(user);
     } catch (err) {
         logger.error('Failed to create user', err);
@@ -273,22 +269,22 @@ func EncryptData(plaintext []byte, key []byte) ([]byte, error) {
     if err != nil {
         return nil, fmt.Errorf("failed to create cipher: %w", err)
     }
-    
+
     gcm, err := cipher.NewGCM(block)
     if err != nil {
         return nil, fmt.Errorf("failed to create GCM: %w", err)
     }
-    
+
     nonce := make([]byte, gcm.NonceSize())
     if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
         return nil, fmt.Errorf("failed to generate nonce: %w", err)
     }
-    
+
     ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
-    
+
     // Log encryption operation
     log.Info("Data encrypted", "size", len(plaintext))
-    
+
     return ciphertext, nil
 }
 """

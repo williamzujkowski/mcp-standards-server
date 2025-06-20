@@ -15,9 +15,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.syntax import Syntax
 from rich.table import Table
 
+from ..analyzers import GoAnalyzer, JavaAnalyzer, JavaScriptAnalyzer, PythonAnalyzer
 from ..compliance.scanner import ComplianceScanner
 from ..core.compliance.oscal_handler import OSCALHandler
-from ..analyzers import PythonAnalyzer, JavaScriptAnalyzer, GoAnalyzer, JavaAnalyzer
 
 app = typer.Typer(
     name="mcp-standards",
@@ -43,11 +43,11 @@ def init(
 
     # Create project directory if it doesn't exist
     project_path.mkdir(parents=True, exist_ok=True)
-    
+
     # Create config directory
     config_dir = project_path / ".mcp-standards"
     config_dir.mkdir(exist_ok=True)
-    
+
     # Create compliance directory
     compliance_dir = project_path / "compliance"
     compliance_dir.mkdir(exist_ok=True)
@@ -73,7 +73,7 @@ def init(
         yaml.dump(config, f, default_flow_style=False)
 
     console.print(f"[bold green]✓[/bold green] Created configuration at {config_file}")
-    
+
     # Create compliance documentation
     compliance_readme = compliance_dir / "README.md"
     if not compliance_readme.exists():
@@ -93,16 +93,16 @@ This project follows NIST 800-53r5 {profile} profile.
 
 """
         compliance_readme.write_text(readme_content)
-        console.print(f"[bold green]✓[/bold green] Created compliance documentation")
-    
+        console.print("[bold green]✓[/bold green] Created compliance documentation")
+
     # Setup Git hooks if requested
     if setup_hooks and (project_path / ".git").exists():
         _setup_git_hooks(project_path)
-        console.print(f"[bold green]✓[/bold green] Git hooks configured")
+        console.print("[bold green]✓[/bold green] Git hooks configured")
     elif setup_hooks:
         console.print("[yellow]Warning: Not a Git repository, skipping hooks setup[/yellow]")
-    
-    console.print(f"\n[bold green]Initialization complete![/bold green]")
+
+    console.print("\n[bold green]Initialization complete![/bold green]")
     console.print("Next steps:")
     console.print("  1. Review configuration in .mcp-standards/config.yaml")
     console.print("  2. Run 'mcp-standards scan' to analyze your code")
@@ -116,7 +116,7 @@ def _setup_git_hooks(project_path: Path) -> None:
     @evidence: Automated compliance verification
     """
     hooks_dir = project_path / ".git" / "hooks"
-    
+
     # Pre-commit hook
     pre_commit_hook = hooks_dir / "pre-commit"
     hook_content = """#!/bin/bash
@@ -168,7 +168,7 @@ def scan(
     path: Path = typer.Argument(Path.cwd(), help="Path to scan"),
     output_format: str = typer.Option("table", help="Output format (table/json/yaml/oscal)"),
     output_file: Path | None = typer.Option(None, help="Output file"),
-    deep: bool = typer.Option(False, help="Perform deep analysis")
+    deep: bool = typer.Option(False, help="Perform deep analysis")  # noqa: ARG001
 ) -> None:
     """
     Scan codebase for NIST control implementations
@@ -179,10 +179,10 @@ def scan(
     if not path.exists():
         console.print(f"[red]Error: Path '{path}' does not exist[/red]")
         raise typer.Exit(1)
-    
+
     # Create scanner instance
     scanner = ComplianceScanner()
-    
+
     # Run the scan with progress indicator
     with Progress(
         SpinnerColumn(),
@@ -191,15 +191,15 @@ def scan(
         console=console
     ) as progress:
         task = progress.add_task(f"Scanning {path}...", total=None)
-        
+
         # Run async scan
         scan_results = asyncio.run(scanner.scan_directory(path))
-        
+
         progress.update(task, completed=True)
-    
+
     # Generate report
     report = scanner.generate_report(scan_results, output_format)
-    
+
     # Output results
     if output_format == "table":
         # Table format is handled by the formatter
@@ -207,23 +207,23 @@ def scan(
     else:
         # Format as requested
         formatted_output = scanner.format_output(report, output_format)
-        
+
         if output_file:
             with open(output_file, 'w') as f:
                 f.write(formatted_output)
             console.print(f"[green]✓[/green] Report saved to {output_file}")
         else:
             print(formatted_output)
-    
+
     # Show summary for non-table formats
     if output_format != "table":
         summary = report["summary"]
-        console.print(f"\n[bold]Scan Summary:[/bold]")
+        console.print("\n[bold]Scan Summary:[/bold]")
         console.print(f"  • Files scanned: {summary['total_files']}")
         console.print(f"  • Files with controls: {summary['files_with_controls']}")
         console.print(f"  • Coverage: {summary['coverage_percentage']}%")
         console.print(f"  • Issues found: {summary['total_issues']}")
-        
+
         if summary['critical_issues'] > 0:
             console.print(f"  • [red]Critical issues: {summary['critical_issues']}[/red]")
 
@@ -241,15 +241,15 @@ def ssp(
     @evidence: Automated SSP generation
     """
     console.print("[bold]Generating System Security Plan...[/bold]")
-    
+
     # Check if path exists
     if not path.exists():
         console.print(f"[red]Error: Path '{path}' does not exist[/red]")
         raise typer.Exit(1)
-    
+
     # Initialize components
     oscal_handler = OSCALHandler()
-    
+
     # Initialize analyzers
     analyzers = {
         '.py': PythonAnalyzer(),
@@ -260,11 +260,11 @@ def ssp(
         '.go': GoAnalyzer(),
         '.java': JavaAnalyzer()
     }
-    
+
     # Analyze code
     all_annotations = {}
     components = []
-    
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -272,7 +272,7 @@ def ssp(
         console=console
     ) as progress:
         task = progress.add_task("Analyzing codebase...", total=None)
-        
+
         # Scan for files
         for file_path in path.rglob('*'):
             if file_path.is_file() and file_path.suffix in analyzers:
@@ -280,16 +280,16 @@ def ssp(
                 skip_dirs = {'node_modules', 'venv', '.git', 'dist', 'build', '__pycache__'}
                 if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
                     continue
-                    
+
                 analyzer = analyzers[file_path.suffix]
                 annotations = analyzer.analyze_file(file_path)
-                
+
                 if annotations:
                     all_annotations[str(file_path)] = annotations
                     progress.update(task, description=f"Analyzed {file_path.name}")
-        
+
         progress.update(task, description="Creating OSCAL components...")
-        
+
         # Create OSCAL components from annotations
         for file_path, annotations in all_annotations.items():
             component_name = Path(file_path).stem
@@ -303,9 +303,9 @@ def ssp(
                 }
             )
             components.append(component)
-        
+
         progress.update(task, description="Generating SSP...")
-        
+
         # Generate SSP
         system_name = path.name or "System"
         ssp_metadata = {
@@ -318,14 +318,14 @@ def ssp(
             "integrity_impact": profile,
             "availability_impact": profile
         }
-        
+
         ssp_content = oscal_handler.generate_ssp_content(
             system_name,
             components,
             f"NIST_SP-800-53_rev5_{profile.upper()}",
             ssp_metadata
         )
-        
+
         # Export
         if format == "oscal":
             output_path, checksum_path = oscal_handler.export_to_file(ssp_content, output, "json")
@@ -335,34 +335,34 @@ def ssp(
             with open(output, 'w') as f:
                 json.dump(ssp_content, f, indent=2)
             console.print(f"[green]✓[/green] SSP generated: {output}")
-        
+
         progress.update(task, completed=True)
-    
+
     # Show summary
-    console.print(f"\n[bold]SSP Generation Summary:[/bold]")
+    console.print("\n[bold]SSP Generation Summary:[/bold]")
     console.print(f"  • Files analyzed: {len(all_annotations)}")
     console.print(f"  • Components created: {len(components)}")
     console.print(f"  • Profile: {profile}")
-    
+
     # Show control coverage
     all_controls = set()
     for annotations in all_annotations.values():
         for ann in annotations:
             all_controls.update(ann.control_ids)
-    
+
     console.print(f"  • Unique controls found: {len(all_controls)}")
     if all_controls:
-        console.print(f"  • Control families: {', '.join(sorted(set(c.split('-')[0] for c in all_controls)))}")
+        console.print(f"  • Control families: {', '.join(sorted({c.split('-')[0] for c in all_controls}))}")
 
 
 @app.command()
 def generate(
     template_type: str = typer.Argument(
-        ..., 
+        ...,
         help="Type of template to generate (api, auth, logging, encryption, database)"
     ),
     language: str = typer.Option(
-        "python", 
+        "python",
         help="Programming language",
         show_choices=True
     ),
@@ -381,15 +381,15 @@ def generate(
     @evidence: Secure code generation
     """
     from ..core.templates import TemplateGenerator
-    
+
     console.print(f"[bold]Generating {template_type} template...[/bold]")
-    
+
     # Parse controls
     control_list = [c.strip() for c in controls.split(",") if c.strip()] if controls else []
-    
+
     # Initialize generator
     generator = TemplateGenerator()
-    
+
     try:
         # Generate template
         template_content = generator.generate(
@@ -397,7 +397,7 @@ def generate(
             language=language,
             controls=control_list
         )
-        
+
         # Output
         if output:
             output.write_text(template_content)
@@ -405,14 +405,14 @@ def generate(
         else:
             console.print("\n[dim]--- Generated Template ---[/dim]\n")
             console.print(Syntax(template_content, language, theme="monokai"))
-            
+
         # Show implemented controls
         if control_list:
             console.print(f"\n[bold]Implemented controls:[/bold] {', '.join(control_list)}")
-            
+
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command()
@@ -427,42 +427,40 @@ def validate(
     @nist-controls: CA-2, CA-7
     @evidence: Continuous monitoring and assessment
     """
-    from ..compliance.scanner import ComplianceScanner
     from ..analyzers import get_analyzer_for_file
-    
+
     console.print(f"[bold]Validating {path} against {profile} profile...[/bold]\n")
-    
+
     # Parse controls
     control_list = [c.strip() for c in controls.split(",") if c.strip()] if controls else []
-    
-    scanner = ComplianceScanner()
+
     results = {"files": {}, "summary": {"total_files": 0, "compliant_files": 0, "controls_found": set()}}
-    
+
     # Scan files
     files_to_scan = []
     if path.is_file():
         files_to_scan = [path]
     else:
         files_to_scan = list(path.rglob("*.py")) + list(path.rglob("*.js")) + list(path.rglob("*.go")) + list(path.rglob("*.java"))
-    
+
     with Progress() as progress:
         task = progress.add_task("Validating...", total=len(files_to_scan))
-        
+
         for file_path in files_to_scan:
             progress.update(task, description=f"Validating {file_path.name}")
-            
+
             # Skip common directories
             skip_dirs = {'node_modules', 'venv', '.git', 'dist', 'build', '__pycache__'}
             if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
                 continue
-            
+
             analyzer = get_analyzer_for_file(file_path)
             if analyzer:
                 annotations = analyzer.analyze_file(file_path)
                 file_controls = set()
                 for ann in annotations:
                     file_controls.update(ann.control_ids)
-                
+
                 results["files"][str(file_path)] = {
                     "controls": list(file_controls),
                     "annotations": len(annotations),
@@ -472,12 +470,12 @@ def validate(
                 if file_controls:
                     results["summary"]["compliant_files"] += 1
                 results["summary"]["total_files"] += 1
-            
+
             progress.advance(task)
-    
+
     # Convert set to list for JSON serialization
-    results["summary"]["controls_found"] = sorted(list(results["summary"]["controls_found"]))
-    
+    results["summary"]["controls_found"] = sorted(results["summary"]["controls_found"])
+
     # Output results
     if output_format == "json":
         console.print_json(data=results)
@@ -491,7 +489,7 @@ def validate(
         table.add_column("Controls", style="green")
         table.add_column("Annotations", style="yellow")
         table.add_column("Status", style="bold")
-        
+
         for file_path, file_data in results["files"].items():
             status = "[green]✓[/green]" if file_data["compliant"] else "[red]✗[/red]"
             table.add_row(
@@ -500,15 +498,15 @@ def validate(
                 str(file_data["annotations"]),
                 status
             )
-        
+
         console.print(table)
-        
+
         # Summary
-        console.print(f"\n[bold]Summary:[/bold]")
+        console.print("\n[bold]Summary:[/bold]")
         console.print(f"  • Total files: {results['summary']['total_files']}")
         console.print(f"  • Compliant files: {results['summary']['compliant_files']}")
         console.print(f"  • Unique controls: {len(results['summary']['controls_found'])}")
-        
+
         if control_list:
             missing = set(control_list) - set(results['summary']['controls_found'])
             if missing:

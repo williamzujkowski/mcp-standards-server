@@ -7,10 +7,10 @@ MCP Standards Server - Main entry point
 import asyncio
 import json
 import logging
-import yaml
 from pathlib import Path
 from typing import Any
 
+import yaml
 from mcp.server import Server
 from mcp.types import (
     BlobResourceContents,
@@ -426,15 +426,15 @@ async def list_resources() -> list[dict[str, Any]]:
     @evidence: Controlled resource exposure
     """
     resources = []
-    
+
     # Load dynamic resources from standards
     standards_path = Path(__file__).parent.parent / "data" / "standards"
     index_file = standards_path / "standards_index.json"
-    
+
     if index_file.exists():
         with open(index_file) as f:
             index = json.load(f)
-        
+
         # Add category resources
         for category in index["categories"]:
             resources.append({
@@ -443,7 +443,7 @@ async def list_resources() -> list[dict[str, Any]]:
                 "description": f"All standards in the {category} category",
                 "mimeType": "application/json"
             })
-        
+
         # Add individual standard resources (limit to most important)
         for std_id, std_info in list(index["standards"].items())[:10]:
             resources.append({
@@ -452,7 +452,7 @@ async def list_resources() -> list[dict[str, Any]]:
                 "description": f"{std_info['category']} standard",
                 "mimeType": "application/json"
             })
-    
+
     # Add static resources
     resources.extend([
         {
@@ -474,7 +474,7 @@ async def list_resources() -> list[dict[str, Any]]:
             "mimeType": "text/plain"
         }
     ])
-    
+
     return resources
 
 
@@ -486,13 +486,13 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
     @evidence: Controlled resource access
     """
     uri_str = str(uri)
-    
+
     # Handle dynamic resources from standards
     if uri_str.startswith("standards://document/"):
         # Load specific standard document
         doc_id = uri_str.replace("standards://document/", "")
         standards_path = Path(__file__).parent.parent / "data" / "standards"
-        
+
         # Try to load the YAML file
         yaml_file = standards_path / f"{doc_id.upper()}.yaml"
         if yaml_file.exists():
@@ -503,23 +503,23 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                 mimeType="application/json",
                 text=json.dumps(data, indent=2)
             )
-    
+
     elif uri_str.startswith("standards://category/"):
         # Load all standards in a category
         category = uri_str.replace("standards://category/", "")
         standards_path = Path(__file__).parent.parent / "data" / "standards"
         index_file = standards_path / "standards_index.json"
-        
+
         if index_file.exists():
             with open(index_file) as f:
                 index = json.load(f)
-            
+
             if category in index["categories"]:
                 category_data = {
                     "category": category,
                     "standards": []
                 }
-                
+
                 for std_id in index["categories"][category]:
                     std_info = index["standards"][std_id]
                     category_data["standards"].append({
@@ -528,18 +528,18 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                         "file": std_info["file"],
                         "nist_controls": std_info["nist_controls"]
                     })
-                
+
                 return TextResourceContents(
                     uri=uri,
                     mimeType="application/json",
                     text=json.dumps(category_data, indent=2)
                 )
-    
+
     elif uri_str == "standards://catalog":
         # Return complete catalog
         standards_path = Path(__file__).parent.parent / "data" / "standards"
         index_file = standards_path / "standards_index.json"
-        
+
         if index_file.exists():
             with open(index_file) as f:
                 index = json.load(f)
@@ -554,7 +554,7 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                 mimeType="application/json",
                 text='{"standards": ["CS", "TS", "SEC", "FE", "DE", "CN", "OBS"]}'
             )
-            
+
     elif uri_str == "standards://nist-controls":
         # Return NIST controls (could be enhanced with full catalog)
         return TextResourceContents(
@@ -571,11 +571,11 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                 }
             }, indent=2)
         )
-    
+
     elif uri_str == "standards://templates":
         # Return available templates
         from .core.templates import TemplateGenerator
-        generator = TemplateGenerator()
+        TemplateGenerator()
         templates_info = {
             "templates": {
                 "api": {
@@ -610,7 +610,7 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
             mimeType="application/json",
             text=json.dumps(templates_info, indent=2)
         )
-    
+
     else:
         raise ValueError(f"Resource not found: {uri}")
 
@@ -731,7 +731,7 @@ async def get_prompt(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
-    
+
     elif name == "security-review":
         code_context = arguments.get("code_context", "application code")
         focus_areas = arguments.get("focus_areas", "authentication, authorization, data protection")
@@ -748,7 +748,7 @@ async def get_prompt(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
-    
+
     elif name == "control-implementation":
         control_id = arguments.get("control_id", "AC-3")
         technology = arguments.get("technology", "Python")
@@ -765,7 +765,7 @@ async def get_prompt(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
-    
+
     elif name == "standards-query":
         topic = arguments.get("topic", "security")
         domain = arguments.get("domain", "development")
@@ -782,7 +782,7 @@ async def get_prompt(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
-    
+
     else:
         raise ValueError(f"Unknown prompt: {name}")
 

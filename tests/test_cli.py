@@ -4,9 +4,8 @@ Tests for CLI commands
 @evidence: CLI functionality testing
 """
 import json
-from pathlib import Path
+
 from typer.testing import CliRunner
-import pytest
 
 from src.cli.main import app
 
@@ -27,7 +26,7 @@ class TestCLICommands:
         """Test init command"""
         result = runner.invoke(app, ["init", str(tmp_path)])
         assert result.exit_code == 0
-        
+
         # Check config was created
         config_file = tmp_path / ".mcp-standards" / "config.yaml"
         assert config_file.exists()
@@ -49,19 +48,19 @@ def authenticate_user(username, password):
         # Run scan with JSON output
         output_file = tmp_path / "report.json"
         result = runner.invoke(app, [
-            "scan", 
+            "scan",
             str(tmp_path),
             "--output-format", "json",
             "--output-file", str(output_file)
         ])
-        
+
         assert result.exit_code == 0
         assert output_file.exists()
-        
+
         # Check report content
         with open(output_file) as f:
             report = json.load(f)
-        
+
         assert report["summary"]["total_files"] >= 1
         assert report["summary"]["files_with_controls"] >= 1
         assert "AC-3" in report["control_statistics"]

@@ -6,12 +6,14 @@ OSCAL (Open Security Controls Assessment Language) Handler
 import hashlib
 import json
 import uuid
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
+
+from ...analyzers.base import CodeAnnotation
 
 
 @dataclass
@@ -21,8 +23,8 @@ class OSCALComponent:
     type: str
     title: str
     description: str
-    props: List[Dict[str, str]]
-    control_implementations: List[Dict[str, Any]]
+    props: list[dict[str, str]]
+    control_implementations: list[dict[str, Any]]
 
 
 @dataclass
@@ -31,17 +33,17 @@ class OSCALControlImplementation:
     uuid: str
     source: str
     description: str
-    implemented_requirements: List[Dict[str, Any]]
+    implemented_requirements: list[dict[str, Any]]
 
 
 class OSCALMetadata(BaseModel):
     """OSCAL document metadata"""
     title: str
-    last_modified: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_modified: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     version: str = "1.0.0"
     oscal_version: str = "1.0.0"
-    authors: List[Dict[str, str]] = Field(default_factory=list)
-    props: List[Dict[str, str]] = Field(default_factory=list)
+    authors: list[dict[str, str]] = Field(default_factory=list)
+    props: list[dict[str, str]] = Field(default_factory=list)
 
 
 class OSCALHandler:
@@ -50,16 +52,16 @@ class OSCALHandler:
     @nist-controls: CA-2, PM-31
     @evidence: Standardized security documentation
     """
-    
+
     def __init__(self):
-        self.components: Dict[str, OSCALComponent] = {}
+        self.components: dict[str, OSCALComponent] = {}
         self.nist_catalog_url = "https://csrc.nist.gov/extensions/oscal/catalog/nist_rev5_800-53_catalog.json"
-        
+
     def create_component_from_annotations(
         self,
         component_name: str,
-        annotations: List['CodeAnnotation'],
-        metadata: Dict[str, Any]
+        annotations: list['CodeAnnotation'],
+        metadata: dict[str, Any]
     ) -> OSCALComponent:
         """
         Create OSCAL component from code annotations
@@ -67,7 +69,7 @@ class OSCALHandler:
         @evidence: Automated component documentation
         """
         component_uuid = str(uuid.uuid4())
-        
+
         # Group annotations by control
         control_groups = {}
         for ann in annotations:
@@ -75,10 +77,10 @@ class OSCALHandler:
                 if control_id not in control_groups:
                     control_groups[control_id] = []
                 control_groups[control_id].append(ann)
-                
+
         # Create control implementations
         control_implementations = []
-        
+
         for control_id, annotations_list in control_groups.items():
             implementation = {
                 "uuid": str(uuid.uuid4()),
@@ -114,7 +116,7 @@ class OSCALHandler:
                 ]
             }
             control_implementations.append(implementation)
-            
+
         component = OSCALComponent(
             uuid=component_uuid,
             type="software",
@@ -122,23 +124,23 @@ class OSCALHandler:
             description=metadata.get("description", f"Component: {component_name}"),
             props=[
                 {"name": "version", "value": metadata.get("version", "1.0.0")},
-                {"name": "last-modified", "value": datetime.now(timezone.utc).isoformat()},
-                {"name": "compliance-scan-date", "value": datetime.now(timezone.utc).isoformat()},
+                {"name": "last-modified", "value": datetime.now(UTC).isoformat()},
+                {"name": "compliance-scan-date", "value": datetime.now(UTC).isoformat()},
                 {"name": "component-type", "value": metadata.get("component_type", "application")}
             ],
             control_implementations=control_implementations
         )
-        
+
         self.components[component_uuid] = component
         return component
-    
+
     def generate_ssp_content(
         self,
         system_name: str,
-        components: List[OSCALComponent],
+        components: list[OSCALComponent],
         profile: str = "NIST_SP-800-53_rev5_MODERATE",
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Generate SSP (System Security Plan) content
         @nist-controls: CA-2, PM-31
@@ -146,13 +148,13 @@ class OSCALHandler:
         """
         if metadata is None:
             metadata = {}
-            
+
         ssp = {
             "system-security-plan": {
                 "uuid": str(uuid.uuid4()),
                 "metadata": {
                     "title": f"System Security Plan for {system_name}",
-                    "last-modified": datetime.now(timezone.utc).isoformat(),
+                    "last-modified": datetime.now(UTC).isoformat(),
                     "version": metadata.get("version", "1.0.0"),
                     "oscal-version": "1.0.0",
                     "roles": [
@@ -233,7 +235,7 @@ class OSCALHandler:
                         "remarks": metadata.get("status_remarks", "System is actively maintained and monitored")
                     },
                     "authorization-boundary": {
-                        "description": metadata.get("auth_boundary", 
+                        "description": metadata.get("auth_boundary",
                             "The authorization boundary includes all components of the application, "
                             "including web servers, application servers, databases, and supporting infrastructure.")
                     },
@@ -282,23 +284,23 @@ class OSCALHandler:
                 }
             }
         }
-        
+
         return ssp
-    
+
     def _generate_implementation_description(
         self,
         control_id: str,
-        annotations: List['CodeAnnotation']
+        annotations: list['CodeAnnotation']
     ) -> str:
         """Generate implementation description from annotations"""
         descriptions = []
-        
+
         # Collect unique evidence statements
         evidence_statements = set()
         for ann in annotations:
             if ann.evidence:
                 evidence_statements.add(ann.evidence)
-                
+
         if evidence_statements:
             descriptions.append(
                 f"Control {control_id} is implemented through: " +
@@ -308,22 +310,22 @@ class OSCALHandler:
             descriptions.append(
                 f"Control {control_id} is implemented in the codebase as identified by automated scanning"
             )
-            
+
         # Add file references
-        files = sorted(set(ann.file_path for ann in annotations))
+        files = sorted({ann.file_path for ann in annotations})
         if files:
             descriptions.append(
                 f"Implementation found in: {', '.join(files[:5])}" +
                 (" and others" if len(files) > 5 else "")
             )
-            
+
         # Add confidence information
         avg_confidence = sum(ann.confidence for ann in annotations) / len(annotations)
         descriptions.append(f"Average confidence: {avg_confidence:.0%}")
-            
+
         return " ".join(descriptions)
-    
-    def _component_to_oscal_format(self, component: OSCALComponent) -> Dict[str, Any]:
+
+    def _component_to_oscal_format(self, component: OSCALComponent) -> dict[str, Any]:
         """Convert component to OSCAL format"""
         return {
             "uuid": component.uuid,
@@ -341,18 +343,18 @@ class OSCALHandler:
                 }
             ]
         }
-    
+
     def _merge_control_implementations(
         self,
-        components: List[OSCALComponent]
-    ) -> List[Dict[str, Any]]:
+        components: list[OSCALComponent]
+    ) -> list[dict[str, Any]]:
         """Merge control implementations from all components"""
         merged = {}
-        
+
         for component in components:
             for impl in component.control_implementations:
                 control_id = impl["control-id"]
-                
+
                 if control_id not in merged:
                     merged[control_id] = {
                         "uuid": str(uuid.uuid4()),
@@ -366,7 +368,7 @@ class OSCALHandler:
                         ],
                         "by-components": []
                     }
-                    
+
                 merged[control_id]["by-components"].append({
                     "component-uuid": component.uuid,
                     "uuid": impl["uuid"],
@@ -380,18 +382,18 @@ class OSCALHandler:
                     ],
                     "evidence": impl.get("evidence", [])
                 })
-                
+
         return list(merged.values())
-    
-    def _get_all_control_ids(self, components: List[OSCALComponent]) -> List[str]:
+
+    def _get_all_control_ids(self, components: list[OSCALComponent]) -> list[str]:
         """Get all unique control IDs from components"""
         control_ids = set()
         for component in components:
             for impl in component.control_implementations:
                 control_ids.add(impl["control-id"])
-        return sorted(list(control_ids))
-    
-    def _generate_inventory_items(self, components: List[OSCALComponent]) -> List[Dict[str, Any]]:
+        return sorted(control_ids)
+
+    def _generate_inventory_items(self, components: list[OSCALComponent]) -> list[dict[str, Any]]:
         """Generate inventory items from components"""
         items = []
         for component in components:
@@ -415,43 +417,43 @@ class OSCALHandler:
                 ]
             })
         return items
-    
-    def export_to_file(self, content: Dict[str, Any], output_path: Path, format: str = "json"):
+
+    def export_to_file(self, content: dict[str, Any], output_path: Path, format: str = "json"):
         """
         Export OSCAL content to file with integrity checking
         @nist-controls: AU-10, SI-7
         @evidence: Integrity-protected export
         """
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         if format == "json":
             with open(output_path, 'w') as f:
                 json.dump(content, f, indent=2)
         else:
             raise ValueError(f"Unsupported format: {format}")
-            
+
         # Generate checksum for integrity
         with open(output_path, 'rb') as f:
             file_content = f.read()
             checksum = hashlib.sha256(file_content).hexdigest()
-            
+
         checksum_path = output_path.with_suffix(f'.{format}.sha256')
         checksum_path.write_text(f"{checksum}  {output_path.name}\n")
-        
+
         return output_path, checksum_path
-    
-    def validate_oscal_document(self, document: Dict[str, Any]) -> List[str]:
+
+    def validate_oscal_document(self, document: dict[str, Any]) -> list[str]:
         """
         Validate OSCAL document structure
         @nist-controls: SI-10
         @evidence: Input validation for OSCAL documents
         """
         errors = []
-        
+
         # Check for required top-level keys
         if "system-security-plan" not in document and "component-definition" not in document:
             errors.append("Document must contain either 'system-security-plan' or 'component-definition'")
-            
+
         # Validate metadata
         if "system-security-plan" in document:
             ssp = document["system-security-plan"]
@@ -461,14 +463,14 @@ class OSCALHandler:
                 errors.append("SSP must contain 'system-characteristics'")
             if "control-implementation" not in ssp:
                 errors.append("SSP must contain 'control-implementation'")
-                
+
         return errors
-    
+
     def generate_component_definition(
         self,
-        components: List[OSCALComponent],
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        components: list[OSCALComponent],
+        metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Generate OSCAL component definition
         @nist-controls: CA-2, SA-4
@@ -476,13 +478,13 @@ class OSCALHandler:
         """
         if metadata is None:
             metadata = {}
-            
+
         comp_def = {
             "component-definition": {
                 "uuid": str(uuid.uuid4()),
                 "metadata": {
                     "title": metadata.get("title", "Component Definition"),
-                    "last-modified": datetime.now(timezone.utc).isoformat(),
+                    "last-modified": datetime.now(UTC).isoformat(),
                     "version": metadata.get("version", "1.0.0"),
                     "oscal-version": "1.0.0"
                 },
@@ -514,5 +516,5 @@ class OSCALHandler:
                 ]
             }
         }
-        
+
         return comp_def

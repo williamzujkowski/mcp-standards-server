@@ -4,7 +4,6 @@ Code analyzers for different programming languages
 @evidence: Multi-language security analysis support
 """
 from pathlib import Path
-from typing import Optional
 
 from .base import BaseAnalyzer, CodeAnnotation, SecurityPattern
 from .go_analyzer import GoAnalyzer
@@ -23,7 +22,7 @@ __all__ = [
     'get_analyzer_for_file'
 ]
 
-def get_analyzer_for_file(file_path: Path) -> Optional[BaseAnalyzer]:
+def get_analyzer_for_file(file_path: Path) -> BaseAnalyzer | None:
     """Get appropriate analyzer for file type"""
     analyzers = {
         '.py': PythonAnalyzer(),
@@ -35,3 +34,4 @@ def get_analyzer_for_file(file_path: Path) -> Optional[BaseAnalyzer]:
         '.java': JavaAnalyzer()
     }
     return analyzers.get(file_path.suffix)
+

@@ -4,7 +4,6 @@ Test MCP Server
 @evidence: Unit tests for MCP server implementation
 """
 
-import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -12,7 +11,6 @@ import pytest
 from mcp.types import TextContent
 
 from src.server import (
-    app,
     call_tool,
     get_prompt,
     handle_analyze_code,
@@ -25,7 +23,6 @@ from src.server import (
     list_resources,
     list_tools,
     main,
-    read_resource,
 )
 
 
@@ -33,7 +30,7 @@ from src.server import (
 def mock_standards_engine():
     """Mock standards engine"""
     from src.core.standards.models import StandardLoadResult
-    
+
     engine = MagicMock()
     engine.load_standards = AsyncMock(
         return_value=StandardLoadResult(
@@ -142,7 +139,6 @@ class TestMCPResources:
     @pytest.mark.asyncio
     async def test_list_resources(self):
         """Test resource listing"""
-        from src.server import list_resources
 
         resources = await list_resources()
 
@@ -163,7 +159,7 @@ class TestMCPResources:
 
 class TestToolHandlers:
     """Test individual tool handlers"""
-    
+
     @pytest.mark.asyncio
     async def test_handle_load_standards_success(self, mock_standards_engine):
         """Test successful standards loading"""
@@ -173,22 +169,22 @@ class TestToolHandlers:
                 "context": "Building REST API",
                 "token_limit": 5000
             }
-            
+
             result = await handle_load_standards(arguments)
-            
+
             assert "Standards Loaded" in result
             assert "api security" in result
             assert "1000" in result
             assert "CS.api" in result
             assert "SEC.auth" in result
-    
+
     @pytest.mark.asyncio
     async def test_handle_load_standards_no_engine(self):
         """Test loading standards without engine"""
         with patch('src.server.standards_engine', None):
             result = await handle_load_standards({"query": "test"})
             assert result == "Standards engine not initialized"
-    
+
     @pytest.mark.asyncio
     async def test_handle_validate_compliance(self):
         """Test validate compliance handler"""
@@ -196,40 +192,40 @@ class TestToolHandlers:
             "file_path": "/test/path",
             "profile": "high"
         }
-        
+
         result = await handle_validate_compliance(arguments)
-        
+
         assert "Compliance Validation Report" in result
         assert "/test/path" in result
         assert "HIGH" in result
         assert "Critical Findings" in result
         assert "Recommendations" in result
-    
+
     @pytest.mark.asyncio
     async def test_call_tool_success(self, mock_standards_engine):
         """Test successful tool call"""
         with patch('src.server.standards_engine', mock_standards_engine):
             result = await call_tool("load_standards", {"query": "test"})
-            
+
             assert len(result) == 1
             assert isinstance(result[0], TextContent)
             assert result[0].type == "text"
             assert "Standards Loaded" in result[0].text
-    
+
     @pytest.mark.asyncio
     async def test_call_tool_unknown(self):
         """Test calling unknown tool"""
         result = await call_tool("unknown_tool", {})
-        
+
         assert len(result) == 1
         assert result[0].text == "Unknown tool: unknown_tool"
-    
+
     @pytest.mark.asyncio
     async def test_call_tool_error_handling(self):
         """Test tool error handling"""
         with patch('src.server.handle_load_standards', side_effect=Exception("Test error")):
             result = await call_tool("load_standards", {})
-            
+
             assert len(result) == 1
             assert "Error: Test error" in result[0].text
 
@@ -240,7 +236,6 @@ class TestMCPPrompts:
     @pytest.mark.asyncio
     async def test_list_prompts(self):
         """Test prompt listing"""
-        from src.server import list_prompts
 
         prompts = await list_prompts()
 
@@ -271,7 +266,7 @@ class TestMCPPrompts:
         assert prompt['messages'][0]['role'] == 'user'
         assert 'REST' in prompt['messages'][0]['content']
         assert 'NIST' in prompt['messages'][0]['content']
-    
+
     @pytest.mark.asyncio
     async def test_get_prompt_compliance_checklist(self):
         """Test compliance checklist prompt"""
@@ -279,45 +274,45 @@ class TestMCPPrompts:
             "compliance-checklist",
             {"project_type": "mobile app", "profile": "high"}
         )
-        
+
         assert prompt['description'] == "Compliance checklist for mobile app"
         assert len(prompt['messages']) == 1
         assert "mobile app" in prompt['messages'][0]['content']
         assert "high" in prompt['messages'][0]['content']
-    
+
     @pytest.mark.asyncio
     async def test_get_prompt_unknown(self):
         """Test unknown prompt"""
         with pytest.raises(ValueError) as exc_info:
             await get_prompt("unknown-prompt", {})
-        
+
         assert "Unknown prompt: unknown-prompt" in str(exc_info.value)
 
 
 class TestServerInitialization:
     """Test server initialization and lifecycle"""
-    
+
     @pytest.mark.asyncio
     async def test_initialize_server(self):
         """Test server initialization"""
         with patch('src.server.Path') as mock_path:
             mock_path.return_value.parent.parent = Path("/fake/path")
-            
+
             await initialize_server()
-            
+
             # Verify globals were set
             from src.server import standards_engine
             assert standards_engine is not None
-    
+
     def test_main_function(self):
         """Test main entry point"""
-        with patch('asyncio.run') as mock_run:
-            with patch('builtins.print') as mock_print:
+        with patch('asyncio.run') as mock_run, \
+             patch('builtins.print') as mock_print:
                 main()
-                
+
                 # Verify initialize was called
                 mock_run.assert_called_once()
-                
+
                 # Verify instructions were printed
                 mock_print.assert_called_once()
                 assert "MCP Standards Server initialized" in mock_print.call_args[0][0]

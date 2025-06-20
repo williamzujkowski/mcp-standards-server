@@ -7,9 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
-
-from tree_sitter import Node
+from typing import Any
 
 
 @dataclass
@@ -19,8 +17,8 @@ class SecurityPattern:
     location: str
     line_number: int
     confidence: float
-    details: Dict[str, Any]
-    suggested_controls: List[str]
+    details: dict[str, Any]
+    suggested_controls: list[str]
 
 
 @dataclass
@@ -28,9 +26,9 @@ class CodeAnnotation:
     """Represents a NIST annotation in code"""
     file_path: str
     line_number: int
-    control_ids: List[str]
-    evidence: Optional[str]
-    component: Optional[str]
+    control_ids: list[str]
+    evidence: str | None
+    component: str | None
     confidence: float
 
 
@@ -40,29 +38,29 @@ class BaseAnalyzer(ABC):
     @nist-controls: PM-5, SA-11
     @evidence: Systematic security analysis across languages
     """
-    
+
     def __init__(self):
-        self.security_patterns: List[SecurityPattern] = []
-        
+        self.security_patterns: list[SecurityPattern] = []
+
     @abstractmethod
-    def analyze_file(self, file_path: Path) -> List[CodeAnnotation]:
+    def analyze_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze a single file for NIST controls"""
         pass
-        
+
     @abstractmethod
-    def analyze_project(self, project_path: Path) -> Dict[str, List[CodeAnnotation]]:
+    def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
         """Analyze entire project"""
         pass
-        
+
     @abstractmethod
-    def suggest_controls(self, code: str) -> List[str]:
+    def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls for given code"""
         pass
-        
-    def find_security_patterns(self, code: str, file_path: str) -> List[SecurityPattern]:
+
+    def find_security_patterns(self, code: str, file_path: str) -> list[SecurityPattern]:
         """Find common security patterns in code"""
         patterns = []
-        
+
         # Authentication patterns
         if self._has_authentication(code):
             patterns.append(SecurityPattern(
@@ -73,7 +71,7 @@ class BaseAnalyzer(ABC):
                 details={"type": "basic"},
                 suggested_controls=["IA-2", "IA-5", "AC-7"]
             ))
-            
+
         # Encryption patterns
         if self._has_encryption(code):
             patterns.append(SecurityPattern(
@@ -84,7 +82,7 @@ class BaseAnalyzer(ABC):
                 details={"algorithms": self._find_crypto_algorithms(code)},
                 suggested_controls=["SC-8", "SC-13", "SC-28"]
             ))
-            
+
         # Access control patterns
         if self._has_access_control(code):
             patterns.append(SecurityPattern(
@@ -95,7 +93,7 @@ class BaseAnalyzer(ABC):
                 details={"type": "rbac"},
                 suggested_controls=["AC-2", "AC-3", "AC-6"]
             ))
-            
+
         # Logging patterns
         if self._has_logging(code):
             patterns.append(SecurityPattern(
@@ -106,7 +104,7 @@ class BaseAnalyzer(ABC):
                 details={"type": "security"},
                 suggested_controls=["AU-2", "AU-3", "AU-12"]
             ))
-            
+
         # Input validation patterns
         if self._has_input_validation(code):
             patterns.append(SecurityPattern(
@@ -117,38 +115,38 @@ class BaseAnalyzer(ABC):
                 details={"type": "input_sanitization"},
                 suggested_controls=["SI-10", "SI-15"]
             ))
-            
+
         return patterns
-    
-    def extract_annotations(self, code: str, file_path: str) -> List[CodeAnnotation]:
+
+    def extract_annotations(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Extract @nist-controls annotations from code"""
         annotations = []
-        
+
         # Regex for @nist-controls annotations
         pattern = r'@nist-controls:\s*([A-Z]{2}-\d+(?:\(\d+\))?(?:\s*,\s*[A-Z]{2}-\d+(?:\(\d+\))?)*)'
         evidence_pattern = r'@evidence:\s*(.+?)(?=\n|$)'
         component_pattern = r'@oscal-component:\s*(.+?)(?=\n|$)'
-        
+
         lines = code.split('\n')
         for i, line in enumerate(lines):
             # Find control annotations
             control_match = re.search(pattern, line)
             if control_match:
                 controls = [c.strip() for c in control_match.group(1).split(',')]
-                
+
                 # Look for evidence in nearby lines
                 evidence = None
                 component = None
-                
+
                 for j in range(max(0, i-2), min(len(lines), i+3)):
                     evidence_match = re.search(evidence_pattern, lines[j])
                     if evidence_match:
                         evidence = evidence_match.group(1).strip()
-                        
+
                     component_match = re.search(component_pattern, lines[j])
                     if component_match:
                         component = component_match.group(1).strip()
-                
+
                 annotations.append(CodeAnnotation(
                     file_path=file_path,
                     line_number=i + 1,
@@ -157,9 +155,9 @@ class BaseAnalyzer(ABC):
                     component=component,
                     confidence=1.0  # Explicit annotations have full confidence
                 ))
-        
+
         return annotations
-    
+
     def _has_authentication(self, code: str) -> bool:
         """Check if code has authentication patterns"""
         auth_keywords = [
@@ -169,7 +167,7 @@ class BaseAnalyzer(ABC):
         ]
         code_lower = code.lower()
         return any(keyword in code_lower for keyword in auth_keywords)
-    
+
     def _has_encryption(self, code: str) -> bool:
         """Check if code has encryption patterns"""
         crypto_keywords = [
@@ -179,7 +177,7 @@ class BaseAnalyzer(ABC):
         ]
         code_lower = code.lower()
         return any(keyword in code_lower for keyword in crypto_keywords)
-    
+
     def _has_access_control(self, code: str) -> bool:
         """Check if code has access control patterns"""
         ac_keywords = [
@@ -189,7 +187,7 @@ class BaseAnalyzer(ABC):
         ]
         code_lower = code.lower()
         return any(keyword in code_lower for keyword in ac_keywords)
-    
+
     def _has_logging(self, code: str) -> bool:
         """Check if code has logging patterns"""
         log_keywords = [
@@ -198,7 +196,7 @@ class BaseAnalyzer(ABC):
         ]
         code_lower = code.lower()
         return any(keyword in code_lower for keyword in log_keywords)
-    
+
     def _has_input_validation(self, code: str) -> bool:
         """Check if code has input validation patterns"""
         validation_keywords = [
@@ -207,7 +205,7 @@ class BaseAnalyzer(ABC):
         ]
         code_lower = code.lower()
         return any(keyword in code_lower for keyword in validation_keywords)
-    
+
     def _find_pattern_line(self, code: str, pattern: str) -> int:
         """Find line number where pattern first appears"""
         lines = code.split('\n')
@@ -215,8 +213,8 @@ class BaseAnalyzer(ABC):
             if pattern.lower() in line.lower():
                 return i + 1
         return 1
-    
-    def _find_crypto_algorithms(self, code: str) -> List[str]:
+
+    def _find_crypto_algorithms(self, code: str) -> list[str]:
         """Find cryptographic algorithms mentioned in code"""
         algorithms = []
         crypto_patterns = {
@@ -229,10 +227,10 @@ class BaseAnalyzer(ABC):
             "Bcrypt": r"bcrypt",
             "Argon2": r"argon2"
         }
-        
+
         code_lower = code.lower()
         for name, pattern in crypto_patterns.items():
             if re.search(pattern, code_lower):
                 algorithms.append(name)
-                
+
         return algorithms
