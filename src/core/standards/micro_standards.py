@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from .models import Standard, StandardSection
 from .token_optimizer import TokenOptimizationEngine, OptimizationLevel
+from ..tokenizer import get_default_tokenizer, BaseTokenizer
 
 
 class MicroStandard(BaseModel):
@@ -114,8 +115,9 @@ class MicroStandardsGenerator:
     @evidence: Intelligent content chunking with navigation
     """
     
-    def __init__(self, token_optimizer: Optional[TokenOptimizationEngine] = None):
-        self.token_optimizer = token_optimizer or TokenOptimizationEngine()
+    def __init__(self, token_optimizer: Optional[TokenOptimizationEngine] = None, tokenizer: Optional[BaseTokenizer] = None):
+        self.tokenizer = tokenizer or get_default_tokenizer()
+        self.token_optimizer = token_optimizer or TokenOptimizationEngine(self.tokenizer)
         self.chunk_counter = 0
         
         # Patterns for extraction
@@ -164,7 +166,7 @@ class MicroStandardsGenerator:
     
     def _estimate_tokens(self, content: str) -> int:
         """Estimate token count for content"""
-        return self.token_optimizer.estimate_tokens(content)
+        return self.tokenizer.count_tokens(content)
     
     def _create_overview_chunk(self, standard: Standard, context: ChunkingContext) -> MicroStandard:
         """Create overview chunk with key information"""

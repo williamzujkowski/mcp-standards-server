@@ -555,31 +555,41 @@ class StandardsEngine:
         if section.tokens <= max_tokens:
             return section
 
-        if strategy == TokenOptimizationStrategy.TRUNCATE:
-            # Simple truncation
-            ratio = max_tokens / section.tokens
-            truncated_content = section.content[:int(len(section.content) * ratio)]
-
-            return StandardSection(
-                id=section.id,
-                type=section.type,
-                section=section.section,
-                content=truncated_content + "\n... [truncated]",
-                tokens=max_tokens,
-                version=section.version,
-                last_updated=section.last_updated,
-                dependencies=section.dependencies,
-                nist_controls=section.nist_controls,
-                metadata={**section.metadata, "optimized": True}
-            )
-
-        # Other strategies would be implemented here
-        return None
+        # Map strategy enum to optimizer strategy
+        strategy_map = {
+            TokenOptimizationStrategy.TRUNCATE: "essential",
+            TokenOptimizationStrategy.SUMMARIZE: "summarize",
+            TokenOptimizationStrategy.ESSENTIAL_ONLY: "essential",
+            TokenOptimizationStrategy.HIERARCHICAL: "hierarchical"
+        }
+        
+        optimizer_strategy = strategy_map.get(strategy, "summarize")
+        
+        # Use token optimizer
+        optimized_content, metrics = await self.token_optimizer.optimize(
+            section.content,
+            optimizer_strategy,
+            max_tokens
+        )
+        
+        logger.info(f"Optimized {section.id} from {metrics.original_tokens} to {metrics.optimized_tokens} tokens ({metrics.reduction_percentage:.1f}% reduction)")
+        
+        return StandardSection(
+            id=section.id,
+            type=section.type,
+            section=section.section,
+            content=optimized_content,
+            tokens=metrics.optimized_tokens,
+            version=section.version,
+            last_updated=section.last_updated,
+            dependencies=section.dependencies,
+            nist_controls=section.nist_controls,
+            metadata={**section.metadata, "optimized": True, "optimization_metrics": metrics.__dict__}
+        )
 
     def _count_tokens(self, text: str) -> int:
-        """Estimate token count (simplified)"""
-        # Rough estimate: ~1 token per 4 characters
-        return len(text) // 4
+        """Count tokens using real tokenizer"""
+        return self.tokenizer.count_tokens(text)
 
     def get_catalog(self) -> list[str]:
         """Get list of available standard types"""

@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from pydantic import BaseModel
 
+from ..tokenizer import get_default_tokenizer, BaseTokenizer
+
 
 class OptimizationLevel(str, Enum):
     """Optimization levels for content reduction"""
@@ -46,15 +48,17 @@ class ContentSection(BaseModel):
 class OptimizationStrategy(ABC):
     """Base class for optimization strategies"""
     
+    def __init__(self, tokenizer: Optional[BaseTokenizer] = None):
+        self.tokenizer = tokenizer or get_default_tokenizer()
+    
     @abstractmethod
     async def optimize(self, content: str, max_tokens: int, context: Dict[str, Any]) -> str:
         """Optimize content to fit within token limit"""
         pass
     
-    @abstractmethod
     def estimate_tokens(self, content: str) -> int:
         """Estimate token count for content"""
-        pass
+        return self.tokenizer.count_tokens(content)
 
 
 class SummarizationStrategy(OptimizationStrategy):
@@ -64,7 +68,8 @@ class SummarizationStrategy(OptimizationStrategy):
     @evidence: Content summarization with information preservation
     """
     
-    def __init__(self):
+    def __init__(self, tokenizer: Optional[BaseTokenizer] = None):
+        super().__init__(tokenizer)
         self.requirement_keywords = {
             "MUST", "SHALL", "REQUIRED", "MUST NOT", "SHALL NOT",
             "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", "OPTIONAL"
@@ -286,12 +291,9 @@ class SummarizationStrategy(OptimizationStrategy):
         """Create brief summary for low-importance sections"""
         return f"- **{section.title}**: {section.token_count} tokens, {len(section.requirements)} requirements"
     
-    def estimate_tokens(self, content: str) -> int:
-        """Estimate token count using approximation"""
-        # More accurate than character/4
-        # Approximation: ~1.3 tokens per word
-        words = len(content.split())
-        return int(words * 1.3)
+    def _truncate_to_fit(self, content: str, max_tokens: int) -> str:
+        """Truncate content to fit within token limit"""
+        return self.tokenizer.truncate_to_tokens(content, max_tokens)
 
 
 class EssentialOnlyStrategy(OptimizationStrategy):
@@ -301,7 +303,8 @@ class EssentialOnlyStrategy(OptimizationStrategy):
     @evidence: Configuration baseline extraction
     """
     
-    def __init__(self):
+    def __init__(self, tokenizer: Optional[BaseTokenizer] = None):
+        super().__init__(tokenizer)
         self.essential_patterns = [
             # Requirements
             r'(?:MUST|SHALL|REQUIRED)\s+[^.]+\.',
@@ -366,11 +369,6 @@ class EssentialOnlyStrategy(OptimizationStrategy):
             current_tokens += line_tokens
         
         return '\n'.join(result)
-    
-    def estimate_tokens(self, content: str) -> int:
-        """Estimate tokens with word-based calculation"""
-        words = len(content.split())
-        return int(words * 1.3)
 
 
 class HierarchicalStrategy(OptimizationStrategy):
@@ -380,7 +378,8 @@ class HierarchicalStrategy(OptimizationStrategy):
     @evidence: Information organization and presentation
     """
     
-    def __init__(self):
+    def __init__(self, tokenizer: Optional[BaseTokenizer] = None):
+        super().__init__(tokenizer)
         self.max_depth = 3
         self.tokens_per_level = {
             1: 0.4,  # 40% for top level
@@ -531,10 +530,6 @@ class HierarchicalStrategy(OptimizationStrategy):
         
         return "No critical details identified."
     
-    def estimate_tokens(self, content: str) -> int:
-        """Estimate tokens"""
-        words = len(content.split())
-        return int(words * 1.3)
 
 
 class TokenOptimizationEngine:
@@ -544,11 +539,12 @@ class TokenOptimizationEngine:
     @evidence: Comprehensive content optimization system
     """
     
-    def __init__(self):
+    def __init__(self, tokenizer: Optional[BaseTokenizer] = None):
+        self.tokenizer = tokenizer or get_default_tokenizer()
         self.strategies = {
-            "summarize": SummarizationStrategy(),
-            "essential": EssentialOnlyStrategy(),
-            "hierarchical": HierarchicalStrategy()
+            "summarize": SummarizationStrategy(self.tokenizer),
+            "essential": EssentialOnlyStrategy(self.tokenizer),
+            "hierarchical": HierarchicalStrategy(self.tokenizer)
         }
         self._metrics_history: List[OptimizationMetrics] = []
     
@@ -604,9 +600,7 @@ class TokenOptimizationEngine:
     
     def estimate_tokens(self, content: str) -> int:
         """Estimate token count"""
-        # Use the most accurate estimation available
-        words = len(content.split())
-        return int(words * 1.3)
+        return self.tokenizer.count_tokens(content)
     
     def _estimate_information_retention(self, original: str, optimized: str) -> float:
         """Estimate how much information was retained"""

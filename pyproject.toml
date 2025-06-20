@@ -59,6 +59,13 @@ dev = [
     "fastapi>=0.100.0",
 ]
 
+llm = [
+    "tiktoken>=0.5.0",
+    "transformers>=4.30.0",
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.4",
+]
+
 [project.scripts]
 mcp-standards-server = "src.server:main"
 mcp-standards = "src.cli.main:app"
