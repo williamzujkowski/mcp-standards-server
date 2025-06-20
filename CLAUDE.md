@@ -1,10 +1,33 @@
 # CLAUDE.md - MCP Standards Server
 
-This file provides LLM-specific instructions for working with the MCP Standards Server codebase.
+This file serves as the primary logic router for LLMs working with the MCP Standards Server codebase. It provides comprehensive instructions, decision trees, and optimization strategies to ensure efficient and effective development.
+
+## 🤖 LLM Quick Reference
+
+### Priority Actions
+1. **Token Optimization**: We need to achieve 90% token reduction (currently at 0%)
+2. **Micro Standards**: Implement 500-token chunks (not implemented)
+3. **Semantic Search**: Replace static query mappings with ML-based understanding
+4. **Test Coverage**: Add comprehensive tests for analyzers
+5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support
+
+### Key Metrics
+- **Current Test Coverage**: 91.56%
+- **Standards Imported**: 17/23 from williamzujkowski/standards
+- **Token Reduction**: 0% (Target: 90%)
+- **Languages Supported**: 4 (Python, JS/TS, Go, Java)
+- **NIST Controls Detected**: 200+ across 20 families
 
 ## Project Overview
 
 This is a Model Context Protocol (MCP) server built with the official Python SDK that provides NIST 800-53r5 compliance checking and standards enforcement. The server exposes tools, resources, and prompts for LLMs to analyze code for security control implementations and generate compliance documentation.
+
+### 🎯 Mission Critical Requirements
+1. **LLM Optimization**: All content must be optimized for LLM consumption
+2. **Token Efficiency**: Achieve 90% reduction in token usage
+3. **Standards Compliance**: Follow williamzujkowski/standards patterns
+4. **Developer Experience**: Make it easy for LLMs to understand and modify
+5. **Real-time Updates**: Support dynamic content loading and caching
 
 ## Current Implementation Status
 
@@ -186,3 +209,148 @@ Before committing:
 2. **Tool Schema Validation**: Must be valid JSON Schema
 3. **Async/Await**: All MCP handlers must be async
 4. **Return Types**: Tools must return TextContent/ImageContent list
+
+## 🧭 LLM Decision Trees
+
+### When Working on Token Optimization
+```
+Is the task about token reduction?
+├─ Yes → Check src/core/standards/engine.py
+│   ├─ Implementing new strategy? → Add to TokenOptimizationStrategy enum
+│   ├─ Testing optimization? → Use tests/unit/core/standards/test_engine.py
+│   └─ Measuring reduction? → Update metrics in StandardsEngine._calculate_tokens
+└─ No → Continue to next decision
+```
+
+### When Adding New Features
+```
+What type of feature?
+├─ MCP Tool → src/server.py (@app.list_tools and @app.call_tool)
+├─ CLI Command → src/cli/main.py (new command function)
+├─ Analyzer → src/analyzers/ (extend BaseAnalyzer)
+├─ Standard → data/standards/ (follow STANDARD_TEMPLATE.md)
+└─ Documentation → docs/ (update relevant section)
+```
+
+### When Debugging
+```
+What's the issue?
+├─ MCP Protocol → Enable debug logging in src/server.py
+├─ Standards Loading → Check Redis cache and YAML parsing
+├─ Token Counting → Verify tokenizer implementation
+├─ Test Failures → Run specific test with -v flag
+└─ Import Errors → Check pyproject.toml dependencies
+```
+
+## 📊 Current Gaps Analysis
+
+### Critical Missing Features (High Priority)
+1. **Token Reduction Engine** (0% → 90%)
+   - Location: `src/core/standards/engine.py`
+   - Required: Implement SUMMARIZE, ESSENTIAL_ONLY, HIERARCHICAL strategies
+   - Test: `tests/unit/core/standards/test_token_optimization.py`
+
+2. **Micro Standards Generator** (500-token chunks)
+   - Location: `src/core/standards/micro_standards.py` (to be created)
+   - Required: Chunking algorithm, index generation
+   - Test: `tests/unit/core/standards/test_micro_standards.py`
+
+3. **Semantic Query Engine**
+   - Location: `src/core/standards/semantic_search.py` (to be created)
+   - Required: Embedding model, similarity search
+   - Dependencies: sentence-transformers, faiss
+
+### Medium Priority Features
+1. **Additional Language Support** (Ruby, PHP, C++, Rust, C#)
+2. **Context-Aware Recommendations**
+3. **Progressive Content Loading**
+4. **Caching Layer for Optimized Content**
+
+## 🔧 LLM-Specific Workflows
+
+### Adding Token Optimization
+1. Check current implementation in `StandardsEngine._optimize_for_tokens`
+2. Add new strategy to `TokenOptimizationStrategy` enum
+3. Implement strategy logic in `_optimize_for_tokens`
+4. Add tests for new strategy
+5. Update metrics tracking
+6. Document in README.md
+
+### Creating Micro Standards
+1. Create `src/core/standards/micro_standards.py`
+2. Implement `MicroStandardsGenerator` class
+3. Add chunking algorithm (500 tokens max)
+4. Create index for quick lookup
+5. Integrate with MCP resources
+6. Add CLI command for generation
+
+### Implementing Semantic Search
+1. Create `src/core/standards/semantic_search.py`
+2. Add embedding model (sentence-transformers)
+3. Build vector database (FAISS/ChromaDB)
+4. Replace static mappings in NaturalLanguageMapper
+5. Add similarity threshold configuration
+6. Create evaluation metrics
+
+## 📁 File Navigation Guide
+
+### Core Components
+- `src/server.py` - MCP server entry point (tools, resources, prompts)
+- `src/core/standards/engine.py` - Standards loading and token management
+- `src/core/standards/mapper.py` - Natural language to notation mapping
+- `src/analyzers/` - Language-specific analyzers
+- `data/standards/` - Imported standards content
+
+### Testing
+- `tests/unit/` - Unit tests mirroring src structure
+- `tests/integration/` - Integration tests
+- `tests/e2e/` - End-to-end tests
+- `tests/fixtures/` - Test data and mocks
+
+### Documentation
+- `docs/` - User and developer documentation
+- `README.md` - Project overview and quick start
+- `CHANGELOG.md` - Version history
+- `TODO_ANALYZERS.md` - Analyzer implementation status
+
+## 🚀 Performance Optimization Tips
+
+1. **Token Counting**: Use proper tokenizer (tiktoken) instead of character estimation
+2. **Caching**: Leverage Redis for pre-optimized content
+3. **Lazy Loading**: Load standards on-demand, not all at startup
+4. **Batch Processing**: Process multiple files concurrently
+5. **Incremental Updates**: Only reprocess changed content
+
+## 🔐 Security Considerations
+
+Always include NIST annotations when adding security features:
+```python
+# @nist-controls: AC-3, AU-2
+# @evidence: Implementation description
+# @oscal-component: component-name
+```
+
+## 📈 Metrics to Track
+
+1. **Token Reduction Rate**: Current vs optimized token count
+2. **Query Response Time**: Natural language processing speed
+3. **Cache Hit Rate**: Redis cache effectiveness
+4. **Coverage Completeness**: NIST controls detected vs total
+5. **Test Coverage**: Maintain above 80%
+
+## 🤝 Integration Points
+
+### With williamzujkowski/standards
+- Import mechanism in `scripts/import_standards.py`
+- Validation against STANDARD_TEMPLATE.md
+- Version tracking for updates
+
+### With LLMs
+- MCP protocol for tool/resource access
+- Token-optimized responses
+- Context-aware content delivery
+
+### With CI/CD
+- GitHub Actions workflows
+- Automated compliance checking
+- Coverage reporting
