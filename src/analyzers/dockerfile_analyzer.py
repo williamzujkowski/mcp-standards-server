@@ -5,10 +5,10 @@ Dockerfile analyzer for container security
 @oscal-component: container-analyzer
 """
 
-import re
 import logging
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -19,15 +19,15 @@ class DockerfileAnalyzer(BaseAnalyzer):
     """
     Analyzes Dockerfiles for security issues and best practices
     """
-    
+
     def __init__(self):
         super().__init__()
         self.file_patterns = ['Dockerfile', 'Dockerfile.*', '*.dockerfile']
         self.instruction_patterns = self._initialize_instruction_patterns()
         self.base_image_patterns = self._initialize_base_image_patterns()
         self.secure_base_images = self._initialize_secure_base_images()
-        
-    def _initialize_instruction_patterns(self) -> List[Dict[str, Any]]:
+
+    def _initialize_instruction_patterns(self) -> list[dict[str, Any]]:
         """Initialize Dockerfile instruction security patterns"""
         return [
             {
@@ -101,8 +101,8 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 "severity": "medium"
             }
         ]
-    
-    def _initialize_base_image_patterns(self) -> List[Dict[str, Any]]:
+
+    def _initialize_base_image_patterns(self) -> list[dict[str, Any]]:
         """Initialize base image security patterns"""
         return [
             {
@@ -120,8 +120,8 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 "severity": "medium"
             }
         ]
-    
-    def _initialize_secure_base_images(self) -> Set[str]:
+
+    def _initialize_secure_base_images(self) -> set[str]:
         """Initialize list of known secure base images"""
         return {
             "gcr.io/distroless",
@@ -130,47 +130,47 @@ class DockerfileAnalyzer(BaseAnalyzer):
             "busybox",
             "cgr.dev/chainguard"
         }
-    
-    def analyze_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def analyze_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze a Dockerfile for security issues"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
-            
+
             annotations = []
             lines = content.split('\n')
-            
+
             # Track context
             has_user_instruction = False
             has_healthcheck = False
             base_image = None
             exposed_ports = []
-            
+
             for i, line in enumerate(lines, 1):
                 line = line.strip()
-                
+
                 # Skip comments and empty lines
                 if not line or line.startswith('#'):
                     continue
-                
+
                 # Check for USER instruction
                 if line.startswith('USER ') and not line.startswith('USER root'):
                     has_user_instruction = True
-                
+
                 # Check for HEALTHCHECK
                 if line.startswith('HEALTHCHECK'):
                     has_healthcheck = True
-                
+
                 # Extract base image
                 if line.startswith('FROM '):
                     base_image = self._extract_base_image(line)
                     annotations.extend(self._analyze_base_image(base_image, i, file_path))
-                
+
                 # Track exposed ports
                 if line.startswith('EXPOSE '):
                     ports = re.findall(r'\d+', line)
                     exposed_ports.extend(ports)
-                
+
                 # Check instruction patterns
                 for pattern_def in self.instruction_patterns:
                     if re.match(pattern_def["pattern"], line, re.IGNORECASE):
@@ -182,13 +182,13 @@ class DockerfileAnalyzer(BaseAnalyzer):
                             confidence=pattern_def["confidence"],
                             component="dockerfile-instruction"
                         ))
-                
+
                 # Check for apt/yum without cleanup
                 annotations.extend(self._check_package_manager(line, i, file_path))
-                
+
                 # Check for COPY/ADD with wrong ownership
                 annotations.extend(self._check_file_operations(line, i, file_path))
-            
+
             # Add context-based checks
             if not has_user_instruction:
                 annotations.append(CodeAnnotation(
@@ -199,7 +199,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.90,
                     component="dockerfile-context"
                 ))
-            
+
             if not has_healthcheck:
                 annotations.append(CodeAnnotation(
                     file_path=str(file_path),
@@ -209,28 +209,28 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.80,
                     component="dockerfile-context"
                 ))
-            
+
             # Check for security best practices
             annotations.extend(self._check_best_practices(content, file_path))
-            
+
             return annotations
-            
+
         except Exception as e:
             logger.error(f"Error analyzing {file_path}: {e}")
             return []
-    
+
     def _extract_base_image(self, from_line: str) -> str:
         """Extract base image from FROM instruction"""
         match = re.match(r'^FROM\s+(?:--platform=\S+\s+)?(\S+)', from_line)
         return match.group(1) if match else ""
-    
-    def _analyze_base_image(self, base_image: str, line_number: int, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_base_image(self, base_image: str, line_number: int, file_path: Path) -> list[CodeAnnotation]:
         """Analyze base image for security issues"""
         annotations = []
-        
+
         if not base_image:
             return annotations
-        
+
         # Check for missing tag
         if ':' not in base_image and '@' not in base_image:
             annotations.append(CodeAnnotation(
@@ -241,7 +241,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 confidence=0.85,
                 component="dockerfile-base-image"
             ))
-        
+
         # Check for outdated base images
         outdated_images = {
             "node:8": "Node.js 8 is end-of-life",
@@ -250,7 +250,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
             "ubuntu:16.04": "Ubuntu 16.04 is end-of-life",
             "debian:8": "Debian 8 is end-of-life"
         }
-        
+
         for old_image, reason in outdated_images.items():
             if base_image.startswith(old_image):
                 annotations.append(CodeAnnotation(
@@ -261,7 +261,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.95,
                     component="dockerfile-base-image"
                 ))
-        
+
         # Check base image patterns
         for pattern_def in self.base_image_patterns:
             if re.match(pattern_def["pattern"], f"FROM {base_image}", re.IGNORECASE):
@@ -273,13 +273,13 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=pattern_def["confidence"],
                     component="dockerfile-base-image"
                 ))
-        
+
         return annotations
-    
-    def _check_package_manager(self, line: str, line_number: int, file_path: Path) -> List[CodeAnnotation]:
+
+    def _check_package_manager(self, line: str, line_number: int, file_path: Path) -> list[CodeAnnotation]:
         """Check package manager usage for security issues"""
         annotations = []
-        
+
         # Check for missing cleanup after package installation
         if re.match(r'^RUN\s+(?:apt-get|yum|apk)\s+install', line, re.IGNORECASE):
             if not any(cleanup in line for cleanup in ['&& rm -rf', '&& apt-get clean', '&& yum clean']):
@@ -291,7 +291,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.80,
                     component="dockerfile-packages"
                 ))
-        
+
         # Check for missing package version pinning
         if re.match(r'^RUN\s+.*(?:apt-get|yum|apk)\s+install\s+(?!.*=)', line, re.IGNORECASE):
             if not re.search(r'[=@:][\d\.]', line):  # No version specification
@@ -303,13 +303,13 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.70,
                     component="dockerfile-packages"
                 ))
-        
+
         return annotations
-    
-    def _check_file_operations(self, line: str, line_number: int, file_path: Path) -> List[CodeAnnotation]:
+
+    def _check_file_operations(self, line: str, line_number: int, file_path: Path) -> list[CodeAnnotation]:
         """Check COPY/ADD operations for security issues"""
         annotations = []
-        
+
         # Check for COPY/ADD without --chown
         if re.match(r'^(?:COPY|ADD)\s+(?!--chown)', line):
             # Only flag if we're in a multi-stage build or have USER instruction
@@ -321,7 +321,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 confidence=0.60,
                 component="dockerfile-files"
             ))
-        
+
         # Check for copying sensitive files
         sensitive_patterns = [
             r'\.env',
@@ -332,7 +332,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
             r'credentials',
             r'\.aws'
         ]
-        
+
         for pattern in sensitive_patterns:
             if re.search(pattern, line, re.IGNORECASE):
                 annotations.append(CodeAnnotation(
@@ -343,13 +343,13 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.85,
                     component="dockerfile-files"
                 ))
-        
+
         return annotations
-    
-    def _check_best_practices(self, content: str, file_path: Path) -> List[CodeAnnotation]:
+
+    def _check_best_practices(self, content: str, file_path: Path) -> list[CodeAnnotation]:
         """Check for Docker security best practices"""
         annotations = []
-        
+
         # Check for multi-stage builds (good practice)
         if content.count('FROM ') == 1:
             annotations.append(CodeAnnotation(
@@ -360,7 +360,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 confidence=0.50,
                 component="dockerfile-practices"
             ))
-        
+
         # Check for LABEL maintainer
         if 'LABEL maintainer' not in content and 'MAINTAINER' not in content:
             annotations.append(CodeAnnotation(
@@ -371,7 +371,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 confidence=0.40,
                 component="dockerfile-metadata"
             ))
-        
+
         # Check for security scanning labels
         security_labels = ['security.scan', 'version', 'build-date']
         for label in security_labels:
@@ -384,7 +384,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     confidence=0.30,
                     component="dockerfile-metadata"
                 ))
-        
+
         # Check for WORKDIR
         if 'WORKDIR' not in content:
             annotations.append(CodeAnnotation(
@@ -395,62 +395,62 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 confidence=0.60,
                 component="dockerfile-practices"
             ))
-        
+
         return annotations
-    
-    def suggest_controls(self, code: str) -> Set[str]:
+
+    def suggest_controls(self, code: str) -> set[str]:
         """Suggest NIST controls based on Dockerfile content"""
         controls = set()
-        
+
         # Always relevant for containers
         controls.update(["CM-2", "CM-6", "AC-6"])
-        
+
         # Conditional controls
         if re.search(r'(?:COPY|ADD).*(?:ssl|tls|cert|key)', code, re.IGNORECASE):
             controls.update(["SC-8", "SC-12", "SC-13"])
-        
+
         if re.search(r'USER|chown|chmod', code, re.IGNORECASE):
             controls.update(["AC-3", "AC-6"])
-        
+
         if re.search(r'SECRET|PASSWORD|KEY|TOKEN', code, re.IGNORECASE):
             controls.update(["IA-5", "SC-28"])
-        
+
         if 'HEALTHCHECK' in code:
             controls.update(["AU-12", "SI-4"])
-        
+
         if re.search(r'apt-get\s+update|yum\s+update|apk\s+update', code):
             controls.update(["SI-2"])
-        
+
         return controls
-    
-    def _analyze_config_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_config_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze Docker-related configuration files"""
         annotations = []
-        
+
         # Check docker-compose.yml files
         if file_path.name == 'docker-compose.yml' or file_path.name.endswith('compose.yml'):
             annotations.extend(self._analyze_compose_file(file_path))
-        
+
         # Check .dockerignore
         elif file_path.name == '.dockerignore':
             annotations.extend(self._analyze_dockerignore(file_path))
-        
+
         return annotations
-    
-    def _analyze_compose_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_compose_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze docker-compose.yml for security issues"""
         # This would be implemented in a separate compose_analyzer.py
         # Placeholder for now
         return []
-    
-    def _analyze_dockerignore(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_dockerignore(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze .dockerignore for missing entries"""
         annotations = []
-        
+
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
-            
+
             # Important files that should be in .dockerignore
             should_ignore = [
                 '.git',
@@ -463,7 +463,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 '__pycache__',
                 '*.log'
             ]
-            
+
             for pattern in should_ignore:
                 if pattern not in content:
                     annotations.append(CodeAnnotation(
@@ -474,24 +474,24 @@ class DockerfileAnalyzer(BaseAnalyzer):
                         confidence=0.60,
                         component="dockerignore"
                     ))
-        
+
         except Exception as e:
             logger.error(f"Error analyzing {file_path}: {e}")
-        
+
         return annotations
-    
-    def analyze_project(self, project_path: Path) -> Dict[str, Any]:
+
+    def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Docker project"""
         from src.compliance.scanner import ComplianceScanner
-        
+
         # Use the compliance scanner for project-wide analysis
         scanner = ComplianceScanner()
         results = scanner.scan_directory(project_path)
-        
+
         # Convert to expected format
         docker_files = []
         total_controls = set()
-        
+
         for file_path, annotations in results.items():
             if any(pattern in str(file_path) for pattern in self.file_patterns):
                 docker_files.append({
@@ -508,7 +508,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 })
                 for ann in annotations:
                     total_controls.update(ann.control_ids)
-        
+
         return {
             'summary': {
                 'files_analyzed': len(docker_files),
@@ -518,17 +518,17 @@ class DockerfileAnalyzer(BaseAnalyzer):
             'files': docker_files,
             'controls': sorted(total_controls)
         }
-    
-    def _count_images(self, project_path: Path) -> Dict[str, int]:
+
+    def _count_images(self, project_path: Path) -> dict[str, int]:
         """Count Docker images in project"""
         image_counts = {}
-        
+
         for file_path in project_path.rglob('*'):
             if any(pattern in file_path.name for pattern in self.file_patterns):
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file_path) as f:
                         content = f.read()
-                    
+
                     # Count base images
                     from_pattern = r'^FROM\s+(?:--platform=\S+\s+)?(\S+)'
                     for match in re.finditer(from_pattern, content, re.MULTILINE):
@@ -537,5 +537,5 @@ class DockerfileAnalyzer(BaseAnalyzer):
                         image_counts[base_name] = image_counts.get(base_name, 0) + 1
                 except Exception:
                     continue
-        
+
         return image_counts

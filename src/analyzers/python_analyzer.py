@@ -5,15 +5,14 @@ Enhanced Python code analyzer with tree-sitter
 """
 import re
 from pathlib import Path
-from typing import Any
 
-from .base import BaseAnalyzer, CodeAnnotation
 from .ast_utils import (
+    get_python_classes,
+    get_python_decorators,
     get_python_functions,
     get_python_imports,
-    get_python_classes,
-    get_python_decorators
 )
+from .base import BaseAnalyzer, CodeAnnotation
 
 
 class PythonAnalyzer(BaseAnalyzer):
@@ -27,7 +26,7 @@ class PythonAnalyzer(BaseAnalyzer):
         super().__init__()
         self.file_extensions = ['.py']
         self.language = 'python'
-        
+
         # Security-relevant imports mapping
         self.security_imports = {
             # Authentication/Authorization
@@ -40,7 +39,7 @@ class PythonAnalyzer(BaseAnalyzer):
             'jwt': ['IA-2', 'SC-8'],
             'oauthlib': ['IA-2', 'IA-8'],
             'authlib': ['IA-2', 'IA-8'],
-            
+
             # Cryptography
             'cryptography': ['SC-13', 'SC-28'],
             'pycryptodome': ['SC-13', 'SC-28'],
@@ -48,7 +47,7 @@ class PythonAnalyzer(BaseAnalyzer):
             'hmac': ['SC-13', 'SI-7'],
             'secrets': ['SC-13'],
             'ssl': ['SC-8', 'SC-13'],
-            
+
             # Input Validation
             'bleach': ['SI-10'],
             'html': ['SI-10'],
@@ -56,24 +55,24 @@ class PythonAnalyzer(BaseAnalyzer):
             'marshmallow': ['SI-10'],
             'pydantic': ['SI-10'],
             'cerberus': ['SI-10'],
-            
+
             # Logging/Auditing
             'logging': ['AU-2', 'AU-3'],
             'structlog': ['AU-2', 'AU-3'],
             'loguru': ['AU-2', 'AU-3'],
             'sentry_sdk': ['AU-2', 'AU-14'],
-            
+
             # Session Management
             'flask.sessions': ['SC-23', 'AC-12'],
             'django.contrib.sessions': ['SC-23', 'AC-12'],
             'beaker': ['SC-23', 'AC-12'],
-            
+
             # Security Middleware
             'django.middleware.security': ['SC-8', 'SC-18'],
             'flask_talisman': ['SC-8', 'SC-18'],
             'secure': ['SC-8', 'SC-18'],
         }
-        
+
         # Security function patterns
         self.security_functions = {
             # Authentication
@@ -84,14 +83,14 @@ class PythonAnalyzer(BaseAnalyzer):
             'check_password': ['IA-2', 'IA-5'],
             'validate_token': ['IA-2', 'SC-8'],
             'verify_token': ['IA-2', 'SC-8'],
-            
+
             # Authorization
             'authorize': ['AC-3', 'AC-6'],
             'check_permission': ['AC-3', 'AC-6'],
             'has_permission': ['AC-3', 'AC-6'],
             'require_role': ['AC-3', 'AC-6'],
             'is_admin': ['AC-6'],
-            
+
             # Encryption
             'encrypt': ['SC-13', 'SC-28'],
             'decrypt': ['SC-13', 'SC-28'],
@@ -99,21 +98,21 @@ class PythonAnalyzer(BaseAnalyzer):
             'generate_key': ['SC-13'],
             'sign': ['SC-13', 'SI-7'],
             'verify_signature': ['SC-13', 'SI-7'],
-            
+
             # Input Validation
             'validate': ['SI-10'],
             'sanitize': ['SI-10'],
             'escape': ['SI-10'],
             'clean': ['SI-10'],
             'filter_input': ['SI-10'],
-            
+
             # Logging
             'audit_log': ['AU-2', 'AU-3'],
             'log_event': ['AU-2', 'AU-3'],
             'log_security': ['AU-2', 'AU-9'],
             'log_access': ['AU-2', 'AC-3'],
         }
-        
+
         # Security decorators
         self.security_decorators = {
             # Django
@@ -123,18 +122,18 @@ class PythonAnalyzer(BaseAnalyzer):
             'csrf_protect': ['SI-10', 'SC-8'],
             'require_http_methods': ['AC-4'],
             'cache_control': ['SC-28'],
-            
+
             # Flask
             'jwt_required': ['IA-2', 'SC-8'],
             'roles_required': ['AC-3', 'AC-6'],
             'auth_required': ['IA-2', 'AC-3'],
             'limiter.limit': ['SC-5'],
-            
+
             # FastAPI
             'Depends': ['AC-3'],
             'HTTPBearer': ['IA-2', 'SC-8'],
             'OAuth2PasswordBearer': ['IA-2', 'IA-8'],
-            
+
             # General
             'authenticated': ['IA-2'],
             'authorized': ['AC-3'],
@@ -164,7 +163,7 @@ class PythonAnalyzer(BaseAnalyzer):
 
         # Pattern-based analysis (fallback and additional patterns)
         annotations.extend(self._analyze_implicit_patterns(code, str(file_path)))
-        
+
         # Enhanced pattern detection
         annotations.extend(self.analyze_with_enhanced_patterns(code, str(file_path)))
 
@@ -182,7 +181,7 @@ class PythonAnalyzer(BaseAnalyzer):
     def _analyze_with_ast(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze code using AST parsing"""
         annotations = []
-        
+
         # Analyze imports
         imports = get_python_imports(code)
         for import_info in imports:
@@ -200,7 +199,7 @@ class PythonAnalyzer(BaseAnalyzer):
                             confidence=0.9
                         ))
                         break
-        
+
         # Analyze function definitions
         functions = get_python_functions(code)
         for func in functions:
@@ -218,7 +217,7 @@ class PythonAnalyzer(BaseAnalyzer):
                             confidence=0.85
                         ))
                         break
-        
+
         # Analyze decorators
         decorators = get_python_decorators(code)
         for decorator in decorators:
@@ -234,7 +233,7 @@ class PythonAnalyzer(BaseAnalyzer):
                         confidence=0.9
                     ))
                     break
-        
+
         # Analyze class definitions for security patterns
         classes = get_python_classes(code)
         for cls in classes:
@@ -250,7 +249,7 @@ class PythonAnalyzer(BaseAnalyzer):
                     controls = ['SC-13', 'SC-28']
                 elif 'validator' in class_name:
                     controls = ['SI-10']
-                
+
                 if controls:
                     annotations.append(CodeAnnotation(
                         file_path=file_path,
@@ -260,7 +259,7 @@ class PythonAnalyzer(BaseAnalyzer):
                         component="class",
                         confidence=0.8
                     ))
-        
+
         # Check for exception handling patterns
         try_except_pattern = r'except\s+\w*(?:Authentication|Permission|Unauthorized|Forbidden)'
         for i, line in enumerate(code.splitlines(), 1):
@@ -273,7 +272,7 @@ class PythonAnalyzer(BaseAnalyzer):
                     component="error-handling",
                     confidence=0.7
                 ))
-        
+
         return annotations
 
     def _analyze_implicit_patterns(self, code: str, file_path: str) -> list[CodeAnnotation]:
@@ -337,67 +336,67 @@ class PythonAnalyzer(BaseAnalyzer):
     def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls for Python code using AST analysis"""
         suggestions = set()
-        
+
         # Use AST to analyze the code
         imports = get_python_imports(code)
         functions = get_python_functions(code)
         classes = get_python_classes(code)
-        
+
         # Check imports
         for import_info in imports:
             module = import_info.get('module', '').lower()
-            
+
             # Web frameworks
             if any(fw in module for fw in ['django', 'flask', 'fastapi', 'pyramid']):
                 suggestions.update(['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'])
-            
+
             # Authentication libraries
             if any(auth in module for auth in ['auth', 'login', 'jwt', 'oauth']):
                 suggestions.update(['IA-2', 'IA-5', 'IA-8', 'AC-3'])
-            
+
             # Cryptography
             if any(crypto in module for crypto in ['crypto', 'hashlib', 'hmac', 'ssl']):
                 suggestions.update(['SC-13', 'SC-28', 'SC-8'])
-            
+
             # Database
             if any(db in module for db in ['sqlalchemy', 'psycopg', 'pymongo', 'redis']):
                 suggestions.update(['SC-28', 'SI-10', 'AU-2'])
-            
+
             # Cloud SDKs
             if any(cloud in module for cloud in ['boto3', 'azure', 'google.cloud']):
                 suggestions.update(['AC-2', 'AU-2', 'SC-28', 'SC-8'])
-        
+
         # Check functions
         for func in functions:
             func_name = func.get('name', '').lower()
-            
+
             if any(auth in func_name for auth in ['auth', 'login', 'verify']):
                 suggestions.update(['IA-2', 'AC-3', 'AC-7'])
-            
+
             if any(crypto in func_name for crypto in ['encrypt', 'decrypt', 'hash']):
                 suggestions.update(['SC-13', 'SC-28'])
-            
+
             if any(val in func_name for val in ['validate', 'sanitize', 'clean']):
                 suggestions.update(['SI-10'])
-            
+
             if any(log in func_name for log in ['log', 'audit', 'track']):
                 suggestions.update(['AU-2', 'AU-3'])
-        
+
         # Check classes
         for cls in classes:
             class_name = cls.get('name', '').lower()
-            
+
             if any(sec in class_name for sec in ['auth', 'user', 'permission']):
                 suggestions.update(['IA-2', 'AC-3', 'AC-6'])
-            
+
             if any(crypto in class_name for crypto in ['crypto', 'cipher', 'key']):
                 suggestions.update(['SC-13', 'SC-28'])
-        
+
         # Also run pattern-based suggestions
         patterns = self.find_security_patterns(code, "temp.py")
         for pattern in patterns:
             suggestions.update(pattern.suggested_controls)
-        
+
         return sorted(suggestions)
 
     def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
@@ -432,7 +431,7 @@ class PythonAnalyzer(BaseAnalyzer):
             'requirements.txt', 'setup.py', 'pyproject.toml',
             'Pipfile', 'poetry.lock', 'setup.cfg'
         ]
-        
+
         for config_file in config_files:
             config_path = project_path / config_file
             if config_path.exists():
@@ -445,7 +444,7 @@ class PythonAnalyzer(BaseAnalyzer):
     def _analyze_config_file(self, config_path: Path) -> list[CodeAnnotation]:
         """Analyze Python project configuration files"""
         annotations = []
-        
+
         security_packages = {
             # Authentication/Authorization
             'django-allauth': ['IA-2', 'IA-8'],
@@ -457,14 +456,14 @@ class PythonAnalyzer(BaseAnalyzer):
             'pyjwt': ['IA-2', 'SC-8'],
             'oauthlib': ['IA-2', 'IA-8'],
             'authlib': ['IA-2', 'IA-8'],
-            
+
             # Cryptography
             'cryptography': ['SC-13', 'SC-28'],
             'pycryptodome': ['SC-13', 'SC-28'],
             'bcrypt': ['IA-5', 'SC-13'],
             'passlib': ['IA-5', 'SC-13'],
             'argon2-cffi': ['IA-5', 'SC-13'],
-            
+
             # Input Validation
             'bleach': ['SI-10'],
             'python-html-sanitizer': ['SI-10'],
@@ -472,23 +471,23 @@ class PythonAnalyzer(BaseAnalyzer):
             'marshmallow': ['SI-10'],
             'pydantic': ['SI-10'],
             'cerberus': ['SI-10'],
-            
+
             # Security Tools
             'bandit': ['SA-11', 'SA-15'],
             'safety': ['SA-11', 'SI-2'],
             'python-dotenv': ['CM-7', 'SC-28'],
-            
+
             # Logging/Monitoring
             'python-json-logger': ['AU-2', 'AU-3'],
             'structlog': ['AU-2', 'AU-3'],
             'loguru': ['AU-2', 'AU-3'],
             'sentry-sdk': ['AU-2', 'AU-14'],
         }
-        
+
         try:
             with open(config_path, encoding='utf-8') as f:
                 content = f.read()
-                
+
             for i, line in enumerate(content.splitlines(), 1):
                 line_lower = line.lower().strip()
                 if line_lower and not line_lower.startswith('#'):
@@ -505,5 +504,5 @@ class PythonAnalyzer(BaseAnalyzer):
                             break
         except Exception:
             pass
-            
+
         return annotations

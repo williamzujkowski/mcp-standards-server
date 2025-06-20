@@ -4,21 +4,20 @@ Tests for JavaScript/TypeScript analyzer
 @evidence: Comprehensive JavaScript analyzer testing
 """
 
+
 import pytest
-from pathlib import Path
 
 from src.analyzers.javascript_analyzer import JavaScriptAnalyzer
-from src.analyzers.base import CodeAnnotation
 
 
 class TestJavaScriptAnalyzer:
     """Test JavaScript/TypeScript code analysis capabilities"""
-    
+
     @pytest.fixture
     def analyzer(self):
         """Create analyzer instance"""
         return JavaScriptAnalyzer()
-    
+
     def test_detect_authentication_controls(self, analyzer, tmp_path):
         """Test detection of authentication controls"""
         test_file = tmp_path / "auth.js"
@@ -33,29 +32,29 @@ const bcrypt = require('bcryptjs');
  */
 async function authenticateUser(username, password) {
     const user = await User.findOne({ username });
-    
+
     if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
         throw new AuthenticationError('Invalid credentials');
     }
-    
+
     // Generate JWT token
     const token = jwt.sign(
         { userId: user.id, roles: user.roles },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
     );
-    
+
     return { user, token };
 }
 
 // Express middleware for authentication
 function requireAuth(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
         return res.status(401).json({ error: 'No token provided' });
     }
-    
+
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
@@ -66,21 +65,21 @@ function requireAuth(req, res, next) {
 }
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect authentication controls
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "IA-2" in controls
         assert "IA-5" in controls
-        
+
         # Should have high confidence for explicit annotations
         ia2_results = [r for r in results if "IA-2" in r.control_ids]
         assert any(r.confidence >= 0.9 for r in ia2_results)
-    
+
     def test_detect_react_security_patterns(self, analyzer, tmp_path):
         """Test detection of React security patterns"""
         test_file = tmp_path / "UserForm.tsx"
@@ -96,37 +95,37 @@ interface UserFormProps {
 export const UserForm: React.FC<UserFormProps> = ({ onSubmit }) => {
     const { user, hasPermission } = useAuth();
     const [formData, setFormData] = useState<UserData>({});
-    
+
     // Input validation
     const validateEmail = (email: string): boolean => {
         const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
         return emailRegex.test(email);
     };
-    
+
     // Sanitize user input to prevent XSS
     const sanitizeInput = (input: string): string => {
         return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
     };
-    
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Check permissions
         if (!hasPermission('user.create')) {
             alert('Insufficient permissions');
             return;
         }
-        
+
         // Validate and sanitize data
         const sanitizedData = {
             ...formData,
             name: sanitizeInput(formData.name),
             email: validateEmail(formData.email) ? formData.email : ''
         };
-        
+
         onSubmit(sanitizedData);
     };
-    
+
     return (
         <form onSubmit={handleSubmit}>
             {/* Form fields */}
@@ -135,21 +134,21 @@ export const UserForm: React.FC<UserFormProps> = ({ onSubmit }) => {
 };
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect various security controls
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SI-10" in controls  # Input validation
         assert "AC-3" in controls or "AC-6" in controls  # Permission checking
-        
+
         # Should identify DOMPurify for XSS prevention
-        assert any("dompur" in ann.evidence.lower() or "xss" in ann.evidence.lower() 
+        assert any("dompur" in ann.evidence.lower() or "xss" in ann.evidence.lower()
                   for ann in results)
-    
+
     def test_detect_express_security(self, analyzer, tmp_path):
         """Test detection of Express.js security middleware"""
         test_file = tmp_path / "server.js"
@@ -198,7 +197,7 @@ app.use('/api/', limiter);
 app.use(morgan('combined', {
     stream: {
         write: (message) => {
-            logger.info(message.trim(), { 
+            logger.info(message.trim(), {
                 type: 'http',
                 timestamp: new Date().toISOString()
             });
@@ -207,23 +206,23 @@ app.use(morgan('combined', {
 }));
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect multiple security controls
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SC-8" in controls or "SC-13" in controls  # HTTPS/TLS (helmet HSTS)
         assert "SC-5" in controls  # DoS protection (rate limiting)
         assert "AU-2" in controls or "AU-3" in controls  # Audit logging (morgan)
-        
+
         # Should identify specific middleware
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("helmet" in ev for ev in evidence_texts)
         assert any("rate" in ev and "limit" in ev for ev in evidence_texts)
-    
+
     def test_detect_crypto_patterns(self, analyzer, tmp_path):
         """Test detection of cryptographic patterns"""
         test_file = tmp_path / "crypto.ts"
@@ -235,7 +234,7 @@ const scrypt = promisify(crypto.scrypt);
 
 export class CryptoService {
     private algorithm = 'aes-256-gcm';
-    
+
     /**
      * Encrypt sensitive data
      * @nist-controls: SC-28
@@ -245,15 +244,15 @@ export class CryptoService {
         const salt = crypto.randomBytes(32);
         const key = await scrypt(password, salt, 32) as Buffer;
         const iv = crypto.randomBytes(16);
-        
+
         const cipher = crypto.createCipheriv(this.algorithm, key, iv);
         const encrypted = Buffer.concat([
             cipher.update(text, 'utf8'),
             cipher.final()
         ]);
-        
+
         const tag = cipher.getAuthTag();
-        
+
         return {
             encrypted: encrypted.toString('base64'),
             salt: salt.toString('base64'),
@@ -261,12 +260,12 @@ export class CryptoService {
             tag: tag.toString('base64')
         };
     }
-    
+
     // Generate secure random tokens
     generateSecureToken(length: number = 32): string {
         return crypto.randomBytes(length).toString('hex');
     }
-    
+
     // Hash passwords with salt
     async hashPassword(password: string): Promise<string> {
         const salt = crypto.randomBytes(16).toString('hex');
@@ -276,21 +275,21 @@ export class CryptoService {
 }
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect encryption controls
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SC-13" in controls  # Cryptographic protection
         assert "SC-28" in controls  # Protection at rest
         assert "IA-5" in controls  # Password hashing
-        
+
         # Should identify strong algorithms
         assert any("aes-256" in ann.evidence.lower() for ann in results)
-    
+
     def test_detect_angular_security(self, analyzer, tmp_path):
         """Test detection of Angular security patterns"""
         test_file = tmp_path / "user.component.ts"
@@ -313,13 +312,13 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 export class UserComponent implements OnInit {
     userForm: FormGroup;
     sanitizedContent: SafeHtml;
-    
+
     constructor(
         private sanitizer: DomSanitizer,
         private auth: AuthService,
         private fb: FormBuilder
     ) {}
-    
+
     ngOnInit() {
         // Form validation
         this.userForm = this.fb.group({
@@ -327,22 +326,22 @@ export class UserComponent implements OnInit {
             password: ['', [Validators.required, Validators.minLength(8)]],
             username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/)]
         });
-        
+
         // Sanitize user content
         const userContent = this.getUserContent();
         this.sanitizedContent = this.sanitizer.sanitize(SecurityContext.HTML, userContent);
     }
-    
+
     get canEdit(): boolean {
         return this.auth.hasRole('editor') || this.auth.hasRole('admin');
     }
-    
+
     onSubmit() {
         if (!this.auth.isAuthenticated()) {
             this.router.navigate(['/login']);
             return;
         }
-        
+
         if (this.userForm.valid) {
             // Process form
         }
@@ -350,20 +349,20 @@ export class UserComponent implements OnInit {
 }
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect Angular security patterns
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SI-10" in controls  # Input validation
         assert "AC-3" in controls  # Access control (role checking)
-        
+
         # Should identify Angular sanitization
         assert any("sanitiz" in ann.evidence.lower() for ann in results)
-    
+
     def test_detect_vue_security(self, analyzer, tmp_path):
         """Test detection of Vue.js security patterns"""
         test_file = tmp_path / "UserProfile.vue"
@@ -372,13 +371,13 @@ export class UserComponent implements OnInit {
     <div>
         <!-- Automatic XSS protection with v-text -->
         <p v-text="userBio"></p>
-        
+
         <!-- Manual sanitization for v-html -->
         <div v-html="sanitizedContent"></div>
-        
+
         <form @submit.prevent="updateProfile">
-            <input 
-                v-model="form.email" 
+            <input
+                v-model="form.email"
                 type="email"
                 :pattern="emailPattern"
                 required
@@ -394,7 +393,7 @@ import { mapGetters } from 'vuex';
 
 export default {
     name: 'UserProfile',
-    
+
     data() {
         return {
             form: {
@@ -404,28 +403,28 @@ export default {
             emailPattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
         };
     },
-    
+
     computed: {
         ...mapGetters(['currentUser', 'hasPermission']),
-        
+
         canEdit() {
             return this.hasPermission('profile.edit') && this.isOwner;
         },
-        
+
         sanitizedContent() {
             return DOMPurify.sanitize(this.form.bio, {
                 ALLOWED_TAGS: ['p', 'br', 'strong', 'em']
             });
         }
     },
-    
+
     methods: {
         async updateProfile() {
             // CSRF token included automatically by axios interceptor
             if (!this.validateForm()) {
                 return;
             }
-            
+
             try {
                 await this.$http.put('/api/profile', this.form);
                 this.$notify.success('Profile updated');
@@ -433,7 +432,7 @@ export default {
                 this.$notify.error('Update failed');
             }
         },
-        
+
         validateForm() {
             // Additional validation
             const emailRegex = new RegExp(this.emailPattern);
@@ -444,20 +443,20 @@ export default {
 </script>
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect Vue security patterns
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SI-10" in controls  # Input validation
         assert "AC-3" in controls or "AC-6" in controls  # Permission checking
-        
+
         # Should identify Vue-specific patterns
         assert any("v-text" in ann.evidence or "v-html" in ann.evidence for ann in results)
-    
+
     def test_detect_websocket_security(self, analyzer, tmp_path):
         """Test detection of WebSocket security"""
         test_file = tmp_path / "websocket.js"
@@ -467,24 +466,24 @@ const jwt = require('jsonwebtoken');
 
 class SecureWebSocketServer {
     constructor(server) {
-        this.wss = new WebSocket.Server({ 
+        this.wss = new WebSocket.Server({
             server,
             verifyClient: this.verifyClient.bind(this)
         });
-        
+
         this.clients = new Map();
         this.setupHandlers();
     }
-    
+
     // Authenticate WebSocket connections
     verifyClient(info, cb) {
         const token = this.extractToken(info.req);
-        
+
         if (!token) {
             cb(false, 401, 'Unauthorized');
             return;
         }
-        
+
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             info.req.user = decoded;
@@ -493,31 +492,31 @@ class SecureWebSocketServer {
             cb(false, 401, 'Invalid token');
         }
     }
-    
+
     setupHandlers() {
         this.wss.on('connection', (ws, req) => {
             const userId = req.user.id;
-            
+
             // Rate limiting per client
             const limiter = {
                 messages: 0,
                 resetTime: Date.now() + 60000
             };
-            
+
             this.clients.set(userId, { ws, limiter });
-            
+
             ws.on('message', (data) => {
                 // Rate limit check
                 if (Date.now() > limiter.resetTime) {
                     limiter.messages = 0;
                     limiter.resetTime = Date.now() + 60000;
                 }
-                
+
                 if (limiter.messages++ > 100) {
                     ws.close(1008, 'Rate limit exceeded');
                     return;
                 }
-                
+
                 // Validate message format
                 try {
                     const message = JSON.parse(data);
@@ -531,18 +530,18 @@ class SecureWebSocketServer {
 }
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect WebSocket security controls
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "IA-2" in controls  # Authentication
         assert "SC-5" in controls  # DoS protection (rate limiting)
         assert "SI-10" in controls  # Input validation
-    
+
     def test_package_json_analysis(self, analyzer, tmp_path):
         """Test package.json security analysis"""
         pkg_file = tmp_path / "package.json"
@@ -572,19 +571,19 @@ class SecureWebSocketServer {
     }
 }'''
         pkg_file.write_text(pkg_content)
-        
+
         results = analyzer._analyze_config_file(pkg_file)
-        
+
         # Should detect security packages
         assert len(results) >= 7
-        
+
         # Check specific security packages
         packages = [ann.evidence for ann in results]
         assert any('helmet' in pkg for pkg in packages)
         assert any('bcrypt' in pkg for pkg in packages)
         assert any('jsonwebtoken' in pkg or 'jwt' in pkg for pkg in packages)
         assert any('snyk' in pkg for pkg in packages)
-    
+
     def test_typescript_interfaces(self, analyzer, tmp_path):
         """Test TypeScript interface analysis"""
         test_file = tmp_path / "types.ts"
@@ -624,17 +623,17 @@ export interface AuditLog {
 }
 '''
         test_file.write_text(code)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect security-related types
         assert len(results) >= 4
-        
+
         # Should identify security concepts in interfaces
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "IA-2" in controls or "IA-5" in controls  # Auth interfaces
         assert "AC-3" in controls or "AC-6" in controls  # Permission interface
         assert "AU-2" in controls or "AU-3" in controls  # Audit log interface

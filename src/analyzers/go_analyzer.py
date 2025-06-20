@@ -5,7 +5,6 @@ Enhanced Go code analyzer
 """
 import re
 from pathlib import Path
-from typing import Any
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -21,7 +20,7 @@ class GoAnalyzer(BaseAnalyzer):
         super().__init__()
         self.file_extensions = ['.go']
         self.language = 'go'
-        
+
         # Security-relevant imports
         self.security_imports = {
             # Cryptography
@@ -46,27 +45,27 @@ class GoAnalyzer(BaseAnalyzer):
             'golang.org/x/crypto/argon2': ['IA-5', 'SC-13'],
             'golang.org/x/crypto/scrypt': ['IA-5', 'SC-13'],
             'golang.org/x/crypto/pbkdf2': ['IA-5', 'SC-13'],
-            
+
             # Authentication/Authorization
             'github.com/dgrijalva/jwt-go': ['IA-2', 'SC-8'],
             'github.com/golang-jwt/jwt': ['IA-2', 'SC-8'],
             'github.com/gorilla/sessions': ['SC-23', 'AC-12'],
             'github.com/casbin/casbin': ['AC-3', 'AC-6'],
             'golang.org/x/oauth2': ['IA-2', 'IA-8'],
-            
+
             # Input Validation
             'github.com/go-playground/validator': ['SI-10'],
             'github.com/asaskevich/govalidator': ['SI-10'],
             'html/template': ['SI-10'],
             'text/template': ['SI-10'],
             'encoding/json': ['SI-10'],
-            
+
             # Security Tools
             'github.com/gorilla/csrf': ['SI-10', 'SC-8'],
             'github.com/gorilla/secure': ['SC-8', 'SC-18'],
             'github.com/unrolled/secure': ['SC-8', 'SC-18'],
             'golang.org/x/time/rate': ['SC-5'],
-            
+
             # Logging
             'log': ['AU-2', 'AU-3'],
             'log/syslog': ['AU-2', 'AU-9'],
@@ -74,7 +73,7 @@ class GoAnalyzer(BaseAnalyzer):
             'go.uber.org/zap': ['AU-2', 'AU-3'],
             'github.com/rs/zerolog': ['AU-2', 'AU-3'],
         }
-        
+
         # Security function patterns
         self.security_functions = {
             # Authentication
@@ -86,7 +85,7 @@ class GoAnalyzer(BaseAnalyzer):
             'ValidateToken': ['IA-2', 'SC-8'],
             'VerifyToken': ['IA-2', 'SC-8'],
             'GenerateToken': ['IA-2', 'SC-8'],
-            
+
             # Authorization
             'Authorize': ['AC-3', 'AC-6'],
             'CheckPermission': ['AC-3', 'AC-6'],
@@ -94,7 +93,7 @@ class GoAnalyzer(BaseAnalyzer):
             'RequireRole': ['AC-3', 'AC-6'],
             'IsAdmin': ['AC-6'],
             'CanAccess': ['AC-3', 'AC-6'],
-            
+
             # Encryption
             'Encrypt': ['SC-13', 'SC-28'],
             'Decrypt': ['SC-13', 'SC-28'],
@@ -102,21 +101,21 @@ class GoAnalyzer(BaseAnalyzer):
             'Sign': ['SC-13', 'SI-7'],
             'Verify': ['SC-13', 'SI-7'],
             'GenerateKey': ['SC-13'],
-            
+
             # Validation
             'Validate': ['SI-10'],
             'Sanitize': ['SI-10'],
             'Escape': ['SI-10'],
             'Clean': ['SI-10'],
             'ValidateInput': ['SI-10'],
-            
+
             # Logging
             'AuditLog': ['AU-2', 'AU-3'],
             'LogEvent': ['AU-2', 'AU-3'],
             'LogSecurity': ['AU-2', 'AU-9'],
             'LogAccess': ['AU-2', 'AC-3'],
         }
-        
+
         # Middleware/Handler patterns
         self.middleware_patterns = {
             'AuthMiddleware': ['IA-2', 'AC-3'],
@@ -154,7 +153,7 @@ class GoAnalyzer(BaseAnalyzer):
 
         # Find implicit patterns
         annotations.extend(self._analyze_implicit_patterns(code, str(file_path)))
-        
+
         # Enhanced pattern detection
         annotations.extend(self.analyze_with_enhanced_patterns(code, str(file_path)))
 
@@ -172,10 +171,10 @@ class GoAnalyzer(BaseAnalyzer):
     def _analyze_imports(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze import statements for security packages"""
         annotations = []
-        
+
         # Extract imports - Go uses import blocks or single imports
         import_pattern = r'import\s+(?:\(\s*((?:[^)]+))\s*\)|"([^"]+)")'
-        
+
         for match in re.finditer(import_pattern, code, re.MULTILINE | re.DOTALL):
             if match.group(1):  # Import block
                 imports_block = match.group(1)
@@ -191,16 +190,16 @@ class GoAnalyzer(BaseAnalyzer):
             else:  # Single import
                 pkg = match.group(2)
                 self._check_import(pkg, match.start(), file_path, annotations)
-        
+
         return annotations
-    
+
     def _check_import(self, pkg: str, position: int, file_path: str, annotations: list[CodeAnnotation]):
         """Check if import is security-relevant"""
         for sec_pkg, controls in self.security_imports.items():
             if pkg == sec_pkg or pkg.startswith(sec_pkg + '/'):
                 # Calculate line number
                 line_num = self._calculate_line_number(position, file_path)
-                
+
                 annotations.append(CodeAnnotation(
                     file_path=file_path,
                     line_number=line_num,
@@ -214,15 +213,15 @@ class GoAnalyzer(BaseAnalyzer):
     def _analyze_functions(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze function definitions for security patterns"""
         annotations = []
-        
+
         # Go function pattern: func (receiver) FunctionName(params) returnType
         func_pattern = r'^func\s+(?:\([^)]+\)\s+)?(\w+)\s*\('
-        
+
         for i, line in enumerate(code.splitlines(), 1):
             match = re.match(func_pattern, line.strip())
             if match:
                 func_name = match.group(1)
-                
+
                 # Check against security functions
                 for pattern, controls in self.security_functions.items():
                     if pattern.lower() in func_name.lower():
@@ -235,7 +234,7 @@ class GoAnalyzer(BaseAnalyzer):
                             confidence=0.85
                         ))
                         break
-                
+
                 # Check for middleware/handler patterns
                 for pattern, controls in self.middleware_patterns.items():
                     if pattern.lower() in func_name.lower():
@@ -248,7 +247,7 @@ class GoAnalyzer(BaseAnalyzer):
                             confidence=0.85
                         ))
                         break
-        
+
         return annotations
 
     def _analyze_implicit_patterns(self, code: str, file_path: str) -> list[CodeAnnotation]:
@@ -386,7 +385,7 @@ class GoAnalyzer(BaseAnalyzer):
 
     def _analyze_framework_patterns(self, code: str, file_path: str, annotations: list[CodeAnnotation]):
         """Analyze Go framework-specific patterns"""
-        
+
         # Gin framework
         if 'gin-gonic/gin' in code:
             gin_patterns = [
@@ -395,7 +394,7 @@ class GoAnalyzer(BaseAnalyzer):
                 (r'gin\.Recovery|gin\.Logger', ["AU-2", "AU-14"], "Gin middleware"),
                 (r'c\.SecureJSON|c\.SetCookie.*Secure', ["SC-8", "SC-23"], "Gin secure response"),
             ]
-            
+
             for pattern, controls, evidence in gin_patterns:
                 if re.search(pattern, code):
                     line_num = self._find_pattern_line(code, pattern.split('\\')[0])
@@ -416,7 +415,7 @@ class GoAnalyzer(BaseAnalyzer):
                 (r'middleware\.CSRF', ["SI-10", "SC-8"], "Echo CSRF protection"),
                 (r'middleware\.Secure', ["SC-8", "SC-18"], "Echo security headers"),
             ]
-            
+
             for pattern, controls, evidence in echo_patterns:
                 if re.search(pattern, code):
                     line_num = self._find_pattern_line(code, pattern.split('\\')[0])
@@ -441,40 +440,40 @@ class GoAnalyzer(BaseAnalyzer):
     def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls for Go code"""
         suggestions = set()
-        
+
         # Check imports
         import_pattern = r'import\s+(?:\(\s*((?:[^)]+))\s*\)|"([^"]+)")'
         for match in re.finditer(import_pattern, code, re.MULTILINE | re.DOTALL):
             imports_text = match.group(0).lower()
-            
+
             # Web frameworks
             if any(fw in imports_text for fw in ['gin', 'echo', 'fiber', 'gorilla']):
                 suggestions.update(['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'])
-            
+
             # Authentication/crypto
             if any(auth in imports_text for auth in ['jwt', 'oauth', 'crypto', 'bcrypt']):
                 suggestions.update(['IA-2', 'IA-5', 'SC-13', 'SC-28'])
-            
+
             # Database
             if any(db in imports_text for db in ['sql', 'gorm', 'mongo', 'redis']):
                 suggestions.update(['SC-28', 'SI-10', 'AU-2'])
-        
+
         # Check function names
         func_pattern = r'func\s+(?:\([^)]+\)\s+)?(\w+)\s*\('
         for match in re.finditer(func_pattern, code):
             func_name = match.group(1).lower()
-            
+
             if any(auth in func_name for auth in ['auth', 'login', 'verify']):
                 suggestions.update(['IA-2', 'AC-3', 'AC-7'])
-            
+
             if any(crypto in func_name for crypto in ['encrypt', 'decrypt', 'hash']):
                 suggestions.update(['SC-13', 'SC-28'])
-        
+
         # Pattern-based suggestions
         patterns = self.find_security_patterns(code, "temp.go")
         for pattern in patterns:
             suggestions.update(pattern.suggested_controls)
-        
+
         return sorted(suggestions)
 
     def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
@@ -514,15 +513,15 @@ class GoAnalyzer(BaseAnalyzer):
     def _analyze_go_mod(self, mod_path: Path) -> list[CodeAnnotation]:
         """Analyze go.mod for security-relevant dependencies"""
         annotations = []
-        
+
         try:
             with open(mod_path, encoding='utf-8') as f:
                 content = f.read()
-            
+
             # Extract require blocks
             require_pattern = r'require\s*\((.*?)\)'
             require_match = re.search(require_pattern, content, re.DOTALL)
-            
+
             if require_match:
                 requires = require_match.group(1)
                 for i, line in enumerate(requires.splitlines(), 1):
@@ -541,5 +540,5 @@ class GoAnalyzer(BaseAnalyzer):
                                 break
         except Exception:
             pass
-            
+
         return annotations

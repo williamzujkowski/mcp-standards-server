@@ -5,10 +5,10 @@ Terraform analyzer for Infrastructure as Code security
 @oscal-component: iac-analyzer
 """
 
-import re
 import logging
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -19,7 +19,7 @@ class TerraformAnalyzer(BaseAnalyzer):
     """
     Analyzes Terraform configurations for security issues
     """
-    
+
     def __init__(self):
         super().__init__()
         self.file_extensions = ['.tf', '.tfvars']
@@ -27,8 +27,8 @@ class TerraformAnalyzer(BaseAnalyzer):
         self.resource_patterns = self._initialize_resource_patterns()
         self.variable_pattern = re.compile(r'\$\{var\.(\w+)\}')
         self.local_pattern = re.compile(r'\$\{local\.(\w+)\}')
-        
-    def _initialize_provider_patterns(self) -> Dict[str, List[Dict[str, Any]]]:
+
+    def _initialize_provider_patterns(self) -> dict[str, list[dict[str, Any]]]:
         """Initialize provider-specific security patterns"""
         return {
             "aws": [
@@ -124,8 +124,8 @@ class TerraformAnalyzer(BaseAnalyzer):
                 }
             ]
         }
-    
-    def _initialize_resource_patterns(self) -> List[Dict[str, Any]]:
+
+    def _initialize_resource_patterns(self) -> list[dict[str, Any]]:
         """Initialize general resource patterns"""
         return [
             {
@@ -157,21 +157,21 @@ class TerraformAnalyzer(BaseAnalyzer):
                 "severity": "high"
             }
         ]
-    
-    def analyze_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def analyze_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze a Terraform file for security issues"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
-            
+
             annotations = []
-            
+
             # Check file type and analyze accordingly
             if file_path.suffix == '.tf':
                 annotations.extend(self._analyze_tf_file(content, file_path))
             elif file_path.suffix == '.tfvars':
                 annotations.extend(self._analyze_tfvars_file(content, file_path))
-            
+
             # Check for state file (should not be in repository)
             if file_path.name == 'terraform.tfstate':
                 annotations.append(CodeAnnotation(
@@ -182,53 +182,53 @@ class TerraformAnalyzer(BaseAnalyzer):
                     confidence=1.0,
                     component="terraform-state"
                 ))
-            
+
             return annotations
-            
+
         except Exception as e:
             logger.error(f"Error analyzing {file_path}: {e}")
             return []
-    
-    def _analyze_tf_file(self, content: str, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_tf_file(self, content: str, file_path: Path) -> list[CodeAnnotation]:
         """Analyze .tf file content"""
         annotations = []
-        
+
         # Detect provider
         provider = self._detect_provider(content)
         logger.debug(f"Detected provider: {provider}")
-        
+
         # Apply provider-specific patterns
         if provider and provider in self.provider_patterns:
             for pattern_def in self.provider_patterns[provider]:
                 annotations.extend(
                     self._check_pattern(content, pattern_def, file_path, f"{provider}-resource")
                 )
-        
+
         # Apply general resource patterns
         for pattern_def in self.resource_patterns:
             annotations.extend(
                 self._check_pattern(content, pattern_def, file_path, "resource")
             )
-        
+
         # Check for module security
         annotations.extend(self._analyze_modules(content, file_path))
-        
+
         # Check for data sources that might expose sensitive info
         annotations.extend(self._analyze_data_sources(content, file_path))
-        
+
         return annotations
-    
-    def _analyze_tfvars_file(self, content: str, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_tfvars_file(self, content: str, file_path: Path) -> list[CodeAnnotation]:
         """Analyze .tfvars file for sensitive data"""
         annotations = []
         lines = content.split('\n')
-        
+
         sensitive_patterns = [
             (r'(password|secret|key|token|credential)\s*=\s*"([^"]+)"', ["IA-5"]),
             (r'(private_key|api_key|access_key)\s*=\s*"([^"]+)"', ["IA-5"]),
             (r'(connection_string|database_url)\s*=\s*"([^"]+)"', ["IA-5", "SC-8"])
         ]
-        
+
         for i, line in enumerate(lines, 1):
             for pattern, controls in sensitive_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
@@ -240,45 +240,45 @@ class TerraformAnalyzer(BaseAnalyzer):
                         confidence=0.90,
                         component="terraform-vars"
                     ))
-        
+
         return annotations
-    
-    def _detect_provider(self, content: str) -> Optional[str]:
+
+    def _detect_provider(self, content: str) -> str | None:
         """Detect which cloud provider is being used"""
         provider_indicators = {
             "aws": r'provider\s+"aws"|resource\s+"aws_',
             "azurerm": r'provider\s+"azurerm"|resource\s+"azurerm_',
             "google": r'provider\s+"google"|resource\s+"google_'
         }
-        
+
         for provider, pattern in provider_indicators.items():
             if re.search(pattern, content):
                 return provider
-        
+
         return None
-    
+
     def _check_pattern(
-        self, 
-        content: str, 
-        pattern_def: Dict[str, Any], 
+        self,
+        content: str,
+        pattern_def: dict[str, Any],
         file_path: Path,
         component: str
-    ) -> List[CodeAnnotation]:
+    ) -> list[CodeAnnotation]:
         """Check content against a pattern definition"""
         annotations = []
-        
+
         for match in re.finditer(pattern_def["pattern"], content, re.MULTILINE | re.DOTALL):
             line_number = content[:match.start()].count('\n') + 1
             logger.debug(f"Pattern matched: {pattern_def['pattern'][:50]}... at line {line_number}")
-            
+
             # If there's a check function, use it to validate
             if "check_function" in pattern_def:
                 result = pattern_def["check_function"](match.group(0))
                 logger.debug(f"Check function returned {result}")
                 if not result:
-                    logger.debug(f"Check function returned False, skipping")
+                    logger.debug("Check function returned False, skipping")
                     continue
-            
+
             annotations.append(CodeAnnotation(
                 file_path=str(file_path),
                 line_number=line_number,
@@ -287,34 +287,34 @@ class TerraformAnalyzer(BaseAnalyzer):
                 confidence=pattern_def["confidence"],
                 component=component
             ))
-        
+
         return annotations
-    
+
     def _check_rds_encryption(self, resource_block: str) -> bool:
         """Check if RDS instance block is missing encryption"""
         # Return True if encryption is missing (i.e., we should flag it)
         logger.debug(f"Checking RDS block: {resource_block[:100]}...")
         has_encryption = "storage_encrypted" in resource_block and "storage_encrypted   = true" in resource_block
         return not has_encryption  # Return True if missing encryption
-    
+
     def _check_azure_https_only(self, resource_block: str) -> bool:
         """Check if Azure storage account is missing HTTPS enforcement"""
         # Return True if HTTPS is not enforced
         # Remove comments to avoid false matches
         lines = resource_block.split('\n')
         clean_block = '\n'.join(line for line in lines if not line.strip().startswith('#'))
-        
+
         has_https = "enable_https_traffic_only = true" in clean_block
         logger.debug(f"Has HTTPS enforcement: {has_https}")
         return not has_https  # Return True if missing HTTPS enforcement
-    
-    def _analyze_modules(self, content: str, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_modules(self, content: str, file_path: Path) -> list[CodeAnnotation]:
         """Analyze module usage for security issues"""
         annotations = []
-        
+
         # Check for modules from untrusted sources
         untrusted_module_pattern = r'module\s+"[^"]+"\s*\{[^}]*source\s*=\s*"(?!\.\/|\.\.\/|github\.com\/hashicorp|registry\.terraform\.io)'
-        
+
         for match in re.finditer(untrusted_module_pattern, content, re.MULTILINE | re.DOTALL):
             line_number = content[:match.start()].count('\n') + 1
             annotations.append(CodeAnnotation(
@@ -325,20 +325,20 @@ class TerraformAnalyzer(BaseAnalyzer):
                 confidence=0.70,
                 component="terraform-module"
             ))
-        
+
         return annotations
-    
-    def _analyze_data_sources(self, content: str, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_data_sources(self, content: str, file_path: Path) -> list[CodeAnnotation]:
         """Analyze data sources for potential information disclosure"""
         annotations = []
-        
+
         # Check for data sources that might expose sensitive info
         sensitive_data_patterns = [
             (r'data\s+"aws_iam_policy_document"', ["AC-3", "AC-4"], "IAM policy document exposure"),
             (r'data\s+"aws_secretsmanager_secret"', ["IA-5"], "Secrets manager data source"),
             (r'data\s+"azurerm_key_vault_secret"', ["IA-5"], "Key vault secret exposure")
         ]
-        
+
         for pattern, controls, evidence in sensitive_data_patterns:
             for match in re.finditer(pattern, content):
                 line_number = content[:match.start()].count('\n') + 1
@@ -350,13 +350,13 @@ class TerraformAnalyzer(BaseAnalyzer):
                     confidence=0.60,
                     component="terraform-data"
                 ))
-        
+
         return annotations
-    
-    def suggest_controls(self, code: str) -> Set[str]:
+
+    def suggest_controls(self, code: str) -> set[str]:
         """Suggest NIST controls based on Terraform resources"""
         controls = set()
-        
+
         # Resource type to controls mapping
         resource_controls = {
             "security_group": ["SC-7", "SI-4"],
@@ -370,22 +370,22 @@ class TerraformAnalyzer(BaseAnalyzer):
             "backup": ["CP-9", "CP-10"],
             "encryption": ["SC-8", "SC-13", "SC-28"]
         }
-        
+
         for resource_type, type_controls in resource_controls.items():
             if resource_type in code.lower():
                 controls.update(type_controls)
-        
+
         return controls
-    
-    def _analyze_config_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_config_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze Terraform configuration files"""
         annotations = []
-        
+
         # Check for backend configuration security
         if file_path.name in ['backend.tf', 'main.tf']:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
-            
+
             # Check for insecure backend
             if 'backend "local"' in content:
                 annotations.append(CodeAnnotation(
@@ -396,21 +396,21 @@ class TerraformAnalyzer(BaseAnalyzer):
                     confidence=0.50,
                     component="terraform-backend"
                 ))
-        
+
         return annotations
-    
-    def analyze_project(self, project_path: Path) -> Dict[str, Any]:
+
+    def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Terraform project"""
         from src.compliance.scanner import ComplianceScanner
-        
+
         # Use the compliance scanner for project-wide analysis
         scanner = ComplianceScanner()
         results = scanner.scan_directory(project_path)
-        
+
         # Convert to expected format
         tf_files = []
         total_controls = set()
-        
+
         for file_path, annotations in results.items():
             if any(str(file_path).endswith(ext) for ext in self.file_extensions):
                 tf_files.append({
@@ -427,7 +427,7 @@ class TerraformAnalyzer(BaseAnalyzer):
                 })
                 for ann in annotations:
                     total_controls.update(ann.control_ids)
-        
+
         return {
             'summary': {
                 'files_analyzed': len(tf_files),
@@ -437,16 +437,16 @@ class TerraformAnalyzer(BaseAnalyzer):
             'files': tf_files,
             'controls': sorted(total_controls)
         }
-    
-    def _count_resources(self, project_path: Path) -> Dict[str, int]:
+
+    def _count_resources(self, project_path: Path) -> dict[str, int]:
         """Count Terraform resources in project"""
         resource_counts = {}
-        
+
         for file_path in project_path.rglob('*.tf'):
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path) as f:
                     content = f.read()
-                
+
                 # Count resource types
                 import re
                 resource_pattern = r'resource\s+"([^"]+)"\s+"[^"]+"'
@@ -455,5 +455,5 @@ class TerraformAnalyzer(BaseAnalyzer):
                     resource_counts[resource_type] = resource_counts.get(resource_type, 0) + 1
             except Exception:
                 continue
-        
+
         return resource_counts

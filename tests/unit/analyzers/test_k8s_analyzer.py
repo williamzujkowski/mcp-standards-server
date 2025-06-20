@@ -4,21 +4,20 @@ Tests for Kubernetes manifest analyzer
 @evidence: Comprehensive Kubernetes analyzer testing
 """
 
+
 import pytest
-from pathlib import Path
 
 from src.analyzers.k8s_analyzer import KubernetesAnalyzer
-from src.analyzers.base import CodeAnnotation
 
 
 class TestKubernetesAnalyzer:
     """Test Kubernetes manifest analysis capabilities"""
-    
+
     @pytest.fixture
     def analyzer(self):
         """Create analyzer instance"""
         return KubernetesAnalyzer()
-    
+
     def test_detect_privileged_pod(self, analyzer, tmp_path):
         """Test detection of privileged containers"""
         test_file = tmp_path / "privileged-pod.yaml"
@@ -39,18 +38,18 @@ spec:
   hostIPC: true
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect multiple security issues
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "AC-6" in controls  # Privileged mode
         assert "SC-7" in controls  # Host namespaces
         assert "CM-2" in controls  # Latest tag
-        
+
         # Check specific issues
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("privileged" in ev for ev in evidence_texts)
@@ -58,7 +57,7 @@ spec:
         assert any("host pid" in ev for ev in evidence_texts)
         assert any("host ipc" in ev for ev in evidence_texts)
         assert any("root" in ev or "uid 0" in ev for ev in evidence_texts)
-    
+
     def test_detect_secure_pod(self, analyzer, tmp_path):
         """Test secure pod configuration"""
         test_file = tmp_path / "secure-pod.yaml"
@@ -101,18 +100,18 @@ spec:
         port: 8080
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect good practices
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("non-root" in ev and "good" in ev for ev in evidence_texts)
-        
+
         # Should not have critical issues
         critical_issues = [ann for ann in results if "critical" in ann.evidence.lower() or
                           "privileged" in ann.evidence.lower()]
         assert len(critical_issues) == 0
-    
+
     def test_detect_deployment_issues(self, analyzer, tmp_path):
         """Test deployment security analysis"""
         test_file = tmp_path / "deployment.yaml"
@@ -145,25 +144,25 @@ spec:
         # Missing health checks
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect multiple issues
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "IA-5" in controls  # Hardcoded secrets
         assert "CM-6" in controls  # Missing security context
         assert "SC-5" in controls  # Missing resource limits
         assert "AU-12" in controls or "SI-4" in controls  # Missing health checks
-        
+
         # Check specific issues
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("password" in ev or "secret" in ev for ev in evidence_texts)
         assert any("security context" in ev for ev in evidence_texts)
         assert any("resource limits" in ev for ev in evidence_texts)
-    
+
     def test_detect_rbac_issues(self, analyzer, tmp_path):
         """Test RBAC security analysis"""
         test_file = tmp_path / "rbac.yaml"
@@ -201,23 +200,23 @@ rules:
   verbs: ["get", "list", "watch"]
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect RBAC issues
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "AC-6" in controls  # Excessive privileges
         assert "AC-3" in controls  # Access control
-        
+
         # Check specific issues
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("*:*:*" in ev or "overly permissive" in ev for ev in evidence_texts)
         assert any("cluster-admin" in ev for ev in evidence_texts)
         assert any("secret" in ev for ev in evidence_texts)
-    
+
     def test_detect_network_policy(self, analyzer, tmp_path):
         """Test network policy analysis"""
         test_file = tmp_path / "network-policy.yaml"
@@ -253,20 +252,20 @@ spec:
       port: 5432
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect good network segmentation
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SC-7" in controls  # Network segmentation
         assert "AC-4" in controls  # Information flow
-        
+
         # Should identify this as good practice
         assert any("good" in ann.evidence.lower() and "network" in ann.evidence.lower() for ann in results)
-    
+
     def test_detect_ingress_issues(self, analyzer, tmp_path):
         """Test ingress security analysis"""
         test_file = tmp_path / "ingress.yaml"
@@ -291,20 +290,20 @@ spec:
   # Missing TLS configuration
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect missing TLS
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SC-8" in controls  # Transmission security
         assert "SC-13" in controls  # Cryptographic protection
-        
+
         # Check specific issues
         assert any("tls" in ann.evidence.lower() for ann in results)
-    
+
     def test_detect_service_issues(self, analyzer, tmp_path):
         """Test service security analysis"""
         test_file = tmp_path / "service.yaml"
@@ -334,22 +333,22 @@ spec:
     targetPort: 8080
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect service exposure issues
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "SC-7" in controls  # Boundary protection
         assert "AC-4" in controls  # Information flow
-        
+
         # Check specific issues
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("nodeport" in ev for ev in evidence_texts)
         assert any("loadbalancer" in ev for ev in evidence_texts)
-    
+
     def test_detect_statefulset_security(self, analyzer, tmp_path):
         """Test StatefulSet security analysis"""
         test_file = tmp_path / "statefulset.yaml"
@@ -421,20 +420,20 @@ spec:
           storage: 10Gi
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should recognize secure configuration with some necessary exceptions
         evidence_texts = [ann.evidence.lower() for ann in results]
-        
+
         # Should see good practices
         assert any("non-root" in ev and "good" in ev for ev in evidence_texts)
-        
+
         # Writable filesystem is noted but understood for database
         writable_issues = [ann for ann in results if "writable" in ann.evidence.lower()]
         assert len(writable_issues) > 0  # Should note it
         assert all(ann.confidence <= 0.60 for ann in writable_issues)  # But low confidence
-    
+
     def test_detect_cronjob_security(self, analyzer, tmp_path):
         """Test CronJob security analysis"""
         test_file = tmp_path / "cronjob.yaml"
@@ -464,20 +463,20 @@ spec:
               type: Directory
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect dangerous volume mount
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "AC-6" in controls  # Excessive access
         assert "SC-7" in controls  # Boundary violation
-        
+
         # Check specific issues
         assert any("host path" in ann.evidence.lower() and "/" in ann.evidence for ann in results)
-    
+
     def test_detect_secret_configuration(self, analyzer, tmp_path):
         """Test Secret resource analysis"""
         test_file = tmp_path / "secret.yaml"
@@ -500,20 +499,20 @@ data:
   tls.key: LS0tLS1CRUdJTi...
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect secret configuration
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "IA-5" in controls  # Authenticator management
-        
+
         # Check specific issues
         assert any("opaque" in ann.evidence.lower() for ann in results)
         assert any("encrypted at rest" in ann.evidence.lower() for ann in results)
-    
+
     def test_detect_daemonset_security(self, analyzer, tmp_path):
         """Test DaemonSet security analysis"""
         test_file = tmp_path / "daemonset.yaml"
@@ -556,23 +555,23 @@ spec:
           path: /sys
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should detect multiple host-level access issues
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
-        
+
         assert "AC-6" in controls  # Privileged access
         assert "SC-7" in controls  # Host namespaces
-        
+
         # Should detect all major issues
         evidence_texts = [ann.evidence.lower() for ann in results]
         assert any("privileged" in ev for ev in evidence_texts)
         assert any("host network" in ev for ev in evidence_texts)
         assert any("host pid" in ev for ev in evidence_texts)
-    
+
     def test_multi_document_yaml(self, analyzer, tmp_path):
         """Test multi-document YAML file analysis"""
         test_file = tmp_path / "multi-resource.yaml"
@@ -627,20 +626,20 @@ spec:
           runAsUser: 1000
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should analyze all documents
         assert len(results) > 0
-        
+
         # Should recognize good RBAC setup
-        evidence_texts = [ann.evidence.lower() for ann in results]
-        
+        [ann.evidence.lower() for ann in results]
+
         # Should not flag the limited RBAC as a problem
-        rbac_issues = [ann for ann in results if "rbac" in ann.evidence.lower() and 
+        rbac_issues = [ann for ann in results if "rbac" in ann.evidence.lower() and
                        ann.confidence > 0.80]
         assert len(rbac_issues) == 0  # Limited permissions are good
-    
+
     def test_non_k8s_yaml_ignored(self, analyzer, tmp_path):
         """Test that non-Kubernetes YAML files are ignored"""
         test_file = tmp_path / "config.yaml"
@@ -656,8 +655,8 @@ server:
     enabled: true
 '''
         test_file.write_text(manifest)
-        
+
         results = analyzer.analyze_file(test_file)
-        
+
         # Should not analyze non-K8s files
         assert len(results) == 0

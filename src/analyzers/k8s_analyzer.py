@@ -5,11 +5,12 @@ Kubernetes manifest analyzer for container orchestration security
 @oscal-component: k8s-analyzer
 """
 
-import re
-import yaml
 import logging
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
+
+import yaml
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -20,7 +21,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
     """
     Analyzes Kubernetes manifests for security issues
     """
-    
+
     def __init__(self):
         super().__init__()
         self.file_extensions = ['.yaml', '.yml']
@@ -33,8 +34,8 @@ class KubernetesAnalyzer(BaseAnalyzer):
         self.security_contexts = self._initialize_security_contexts()
         self.rbac_patterns = self._initialize_rbac_patterns()
         self.container_patterns = self._initialize_container_patterns()
-        
-    def _initialize_security_contexts(self) -> List[Dict[str, Any]]:
+
+    def _initialize_security_contexts(self) -> list[dict[str, Any]]:
         """Initialize security context patterns"""
         return [
             {
@@ -101,8 +102,8 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 "severity": "medium"
             }
         ]
-    
-    def _initialize_rbac_patterns(self) -> List[Dict[str, Any]]:
+
+    def _initialize_rbac_patterns(self) -> list[dict[str, Any]]:
         """Initialize RBAC patterns"""
         return [
             {
@@ -134,8 +135,8 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 "severity": "critical"
             }
         ]
-    
-    def _initialize_container_patterns(self) -> List[Dict[str, Any]]:
+
+    def _initialize_container_patterns(self) -> list[dict[str, Any]]:
         """Initialize container-specific patterns"""
         return [
             {
@@ -160,30 +161,30 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 "severity": "high"
             }
         ]
-    
-    def analyze_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def analyze_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze a Kubernetes manifest file"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
-            
+
             # Skip non-Kubernetes YAML files
             if not self._is_kubernetes_manifest(content):
                 return []
-            
+
             annotations = []
-            
+
             # Parse YAML documents (handle multi-doc files)
             documents = list(yaml.safe_load_all(content))
-            
+
             for doc_index, doc in enumerate(documents):
                 if not doc or not isinstance(doc, dict):
                     continue
-                
+
                 kind = doc.get('kind', '')
                 if kind not in self.k8s_kinds:
                     continue
-                
+
                 # Analyze based on resource type
                 if kind in ['Pod', 'Deployment', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob']:
                     annotations.extend(self._analyze_workload(doc, file_path, doc_index))
@@ -199,27 +200,27 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     annotations.extend(self._analyze_service(doc, file_path, doc_index))
                 elif kind == 'Secret':
                     annotations.extend(self._analyze_secret(doc, file_path, doc_index))
-            
+
             # Also check for patterns in raw content
             annotations.extend(self._analyze_raw_patterns(content, file_path))
-            
+
             return annotations
-            
+
         except Exception as e:
             logger.error(f"Error analyzing {file_path}: {e}")
             return []
-    
+
     def _is_kubernetes_manifest(self, content: str) -> bool:
         """Check if file is a Kubernetes manifest"""
         # Look for Kubernetes API version and kind
-        return bool(re.search(r'apiVersion:\s*\S+', content) and 
+        return bool(re.search(r'apiVersion:\s*\S+', content) and
                    re.search(r'kind:\s*(' + '|'.join(self.k8s_kinds) + ')', content))
-    
-    def _analyze_workload(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_workload(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze workload resources (Pod, Deployment, etc.)"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         # Get pod spec
         spec = manifest.get('spec', {})
         if manifest['kind'] == 'Pod':
@@ -230,23 +231,23 @@ class KubernetesAnalyzer(BaseAnalyzer):
         else:
             # For Deployment, StatefulSet, etc.
             pod_spec = spec.get('template', {}).get('spec', {})
-        
+
         # Check pod-level security
         annotations.extend(self._check_pod_security(pod_spec, file_path, base_line))
-        
+
         # Check containers
         containers = pod_spec.get('containers', [])
         for i, container in enumerate(containers):
             annotations.extend(self._check_container_security(container, file_path, base_line, i))
-        
+
         # Check init containers
         init_containers = pod_spec.get('initContainers', [])
         for i, container in enumerate(init_containers):
             annotations.extend(self._check_container_security(container, file_path, base_line, i, is_init=True))
-        
+
         # Check volumes
         annotations.extend(self._check_volumes(pod_spec.get('volumes', []), file_path, base_line))
-        
+
         # Check service account
         if not pod_spec.get('serviceAccountName') and not pod_spec.get('serviceAccount'):
             annotations.append(CodeAnnotation(
@@ -257,13 +258,13 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.70,
                 component="k8s-service-account"
             ))
-        
+
         return annotations
-    
-    def _check_pod_security(self, pod_spec: Dict[str, Any], file_path: Path, base_line: int) -> List[CodeAnnotation]:
+
+    def _check_pod_security(self, pod_spec: dict[str, Any], file_path: Path, base_line: int) -> list[CodeAnnotation]:
         """Check pod-level security settings"""
         annotations = []
-        
+
         # Check host namespaces
         if pod_spec.get('hostNetwork'):
             annotations.append(CodeAnnotation(
@@ -274,7 +275,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.95,
                 component="k8s-pod-security"
             ))
-        
+
         if pod_spec.get('hostPID'):
             annotations.append(CodeAnnotation(
                 file_path=str(file_path),
@@ -284,7 +285,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.95,
                 component="k8s-pod-security"
             ))
-        
+
         if pod_spec.get('hostIPC'):
             annotations.append(CodeAnnotation(
                 file_path=str(file_path),
@@ -294,7 +295,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.95,
                 component="k8s-pod-security"
             ))
-        
+
         # Check pod security context
         pod_security_context = pod_spec.get('securityContext', {})
         if not pod_security_context:
@@ -317,7 +318,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.90,
                     component="k8s-pod-security"
                 ))
-            
+
             # Good practice: runAsNonRoot
             if pod_security_context.get('runAsNonRoot'):
                 annotations.append(CodeAnnotation(
@@ -328,16 +329,16 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.90,
                     component="k8s-pod-security"
                 ))
-        
+
         return annotations
-    
-    def _check_container_security(self, container: Dict[str, Any], file_path: Path, 
-                                  base_line: int, index: int, is_init: bool = False) -> List[CodeAnnotation]:
+
+    def _check_container_security(self, container: dict[str, Any], file_path: Path,
+                                  base_line: int, index: int, is_init: bool = False) -> list[CodeAnnotation]:
         """Check container-level security settings"""
         annotations = []
         container_type = "init container" if is_init else "container"
         container_name = container.get('name', f'{container_type} {index}')
-        
+
         # Check image tag
         image = container.get('image', '')
         if image.endswith(':latest') or (':' not in image and '@' not in image):
@@ -349,7 +350,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.85,
                 component="k8s-container"
             ))
-        
+
         # Check security context
         security_context = container.get('securityContext', {})
         if not security_context:
@@ -372,7 +373,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.95,
                     component="k8s-container"
                 ))
-            
+
             # Check allowPrivilegeEscalation
             if security_context.get('allowPrivilegeEscalation') is not False:
                 annotations.append(CodeAnnotation(
@@ -383,7 +384,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.85,
                     component="k8s-container"
                 ))
-            
+
             # Check readOnlyRootFilesystem
             if not security_context.get('readOnlyRootFilesystem'):
                 annotations.append(CodeAnnotation(
@@ -394,7 +395,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.60,
                     component="k8s-container"
                 ))
-            
+
             # Check capabilities
             capabilities = security_context.get('capabilities', {})
             if capabilities.get('add'):
@@ -410,7 +411,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                             confidence=0.90,
                             component="k8s-container"
                         ))
-        
+
         # Check resource limits
         resources = container.get('resources', {})
         if not resources.get('limits'):
@@ -422,7 +423,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.80,
                 component="k8s-container"
             ))
-        
+
         # Check for secrets in env
         env_vars = container.get('env', [])
         for env in env_vars:
@@ -437,7 +438,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                         confidence=0.85,
                         component="k8s-container"
                     ))
-        
+
         # Check health checks
         if not container.get('livenessProbe') and not container.get('readinessProbe'):
             annotations.append(CodeAnnotation(
@@ -448,13 +449,13 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.70,
                 component="k8s-container"
             ))
-        
+
         return annotations
-    
-    def _check_volumes(self, volumes: List[Dict[str, Any]], file_path: Path, base_line: int) -> List[CodeAnnotation]:
+
+    def _check_volumes(self, volumes: list[dict[str, Any]], file_path: Path, base_line: int) -> list[CodeAnnotation]:
         """Check volume security"""
         annotations = []
-        
+
         for volume in volumes:
             # Check hostPath volumes
             if 'hostPath' in volume:
@@ -469,20 +470,20 @@ class KubernetesAnalyzer(BaseAnalyzer):
                         confidence=0.90,
                         component="k8s-volume"
                     ))
-        
+
         return annotations
-    
-    def _analyze_rbac(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_rbac(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze RBAC Role/ClusterRole"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         rules = manifest.get('rules', [])
         for rule in rules:
             api_groups = rule.get('apiGroups', [])
             resources = rule.get('resources', [])
             verbs = rule.get('verbs', [])
-            
+
             # Check for overly permissive rules
             if '*' in api_groups and '*' in resources and '*' in verbs:
                 annotations.append(CodeAnnotation(
@@ -502,7 +503,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.85,
                     component="k8s-rbac"
                 ))
-            
+
             # Check for sensitive resource access
             sensitive_resources = ['secrets', 'configmaps', 'serviceaccounts', 'pods/exec']
             for resource in resources:
@@ -515,14 +516,14 @@ class KubernetesAnalyzer(BaseAnalyzer):
                         confidence=0.75,
                         component="k8s-rbac"
                     ))
-        
+
         return annotations
-    
-    def _analyze_rbac_binding(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_rbac_binding(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze RBAC RoleBinding/ClusterRoleBinding"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         role_ref = manifest.get('roleRef', {})
         if role_ref.get('name') == 'cluster-admin':
             annotations.append(CodeAnnotation(
@@ -533,7 +534,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.95,
                 component="k8s-rbac-binding"
             ))
-        
+
         # Check subjects
         subjects = manifest.get('subjects', [])
         for subject in subjects:
@@ -546,16 +547,16 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.90,
                     component="k8s-rbac-binding"
                 ))
-        
+
         return annotations
-    
-    def _analyze_network_policy(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_network_policy(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze NetworkPolicy"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         spec = manifest.get('spec', {})
-        
+
         # Good practice: having network policies
         annotations.append(CodeAnnotation(
             file_path=str(file_path),
@@ -565,11 +566,11 @@ class KubernetesAnalyzer(BaseAnalyzer):
             confidence=0.80,
             component="k8s-network-policy"
         ))
-        
+
         # Check for overly permissive policies
         ingress = spec.get('ingress', [])
         egress = spec.get('egress', [])
-        
+
         if not ingress and 'ingress' in spec.get('policyTypes', []):
             annotations.append(CodeAnnotation(
                 file_path=str(file_path),
@@ -579,7 +580,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.85,
                 component="k8s-network-policy"
             ))
-        
+
         if not egress and 'egress' in spec.get('policyTypes', []):
             annotations.append(CodeAnnotation(
                 file_path=str(file_path),
@@ -589,16 +590,16 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.85,
                 component="k8s-network-policy"
             ))
-        
+
         return annotations
-    
-    def _analyze_ingress(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_ingress(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze Ingress resources"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         spec = manifest.get('spec', {})
-        
+
         # Check TLS configuration
         if not spec.get('tls'):
             annotations.append(CodeAnnotation(
@@ -609,7 +610,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.85,
                 component="k8s-ingress"
             ))
-        
+
         # Check annotations for security headers
         annotations_dict = manifest.get('metadata', {}).get('annotations', {})
         security_headers = [
@@ -617,7 +618,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
             'nginx.ingress.kubernetes.io/ssl-protocols',
             'nginx.ingress.kubernetes.io/ssl-ciphers'
         ]
-        
+
         for header in security_headers:
             if header not in annotations_dict:
                 annotations.append(CodeAnnotation(
@@ -628,16 +629,16 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.60,
                     component="k8s-ingress"
                 ))
-        
+
         return annotations
-    
-    def _analyze_service(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_service(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze Service resources"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         spec = manifest.get('spec', {})
-        
+
         # Check for NodePort services (potential security risk)
         if spec.get('type') == 'NodePort':
             annotations.append(CodeAnnotation(
@@ -648,7 +649,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.70,
                 component="k8s-service"
             ))
-        
+
         # Check for LoadBalancer without annotations
         if spec.get('type') == 'LoadBalancer':
             annotations_dict = manifest.get('metadata', {}).get('annotations', {})
@@ -661,14 +662,14 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.60,
                     component="k8s-service"
                 ))
-        
+
         return annotations
-    
-    def _analyze_secret(self, manifest: Dict[str, Any], file_path: Path, doc_index: int) -> List[CodeAnnotation]:
+
+    def _analyze_secret(self, manifest: dict[str, Any], file_path: Path, doc_index: int) -> list[CodeAnnotation]:
         """Analyze Secret resources"""
         annotations = []
         base_line = self._get_line_number(file_path, doc_index)
-        
+
         # Check if secret type is specified
         secret_type = manifest.get('type', 'Opaque')
         if secret_type == 'Opaque':
@@ -680,7 +681,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.50,
                 component="k8s-secret"
             ))
-        
+
         # Check for unencrypted data (should use stringData for clarity)
         if 'data' in manifest:
             annotations.append(CodeAnnotation(
@@ -691,14 +692,14 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 confidence=0.70,
                 component="k8s-secret"
             ))
-        
+
         return annotations
-    
-    def _analyze_raw_patterns(self, content: str, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_raw_patterns(self, content: str, file_path: Path) -> list[CodeAnnotation]:
         """Analyze raw content for patterns"""
         annotations = []
-        lines = content.split('\n')
-        
+        content.split('\n')
+
         # Check RBAC patterns
         for pattern_def in self.rbac_patterns:
             for match in re.finditer(pattern_def["pattern"], content, re.MULTILINE | re.DOTALL):
@@ -711,7 +712,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=pattern_def["confidence"],
                     component="k8s-pattern"
                 ))
-        
+
         # Check container patterns
         for pattern_def in self.container_patterns:
             for match in re.finditer(pattern_def["pattern"], content, re.MULTILINE):
@@ -724,19 +725,19 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=pattern_def["confidence"],
                     component="k8s-pattern"
                 ))
-        
+
         return annotations
-    
+
     def _get_line_number(self, file_path: Path, doc_index: int) -> int:
         """Get approximate line number for a YAML document"""
         # For multi-document YAML files, this is approximate
         # In practice, you'd parse the file to get exact positions
         return 1 + (doc_index * 10)  # Rough estimate
-    
-    def suggest_controls(self, code: str) -> Set[str]:
+
+    def suggest_controls(self, code: str) -> set[str]:
         """Suggest NIST controls based on Kubernetes resources"""
         controls = set()
-        
+
         # Resource type to controls mapping
         resource_controls = {
             "networkpolicy": ["SC-7", "AC-4"],
@@ -751,22 +752,22 @@ class KubernetesAnalyzer(BaseAnalyzer):
             "limitrange": ["SC-5"],
             "monitoring": ["AU-12", "SI-4"]
         }
-        
+
         for resource_type, type_controls in resource_controls.items():
             if resource_type in code.lower():
                 controls.update(type_controls)
-        
+
         return controls
-    
-    def _analyze_config_file(self, file_path: Path) -> List[CodeAnnotation]:
+
+    def _analyze_config_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze Kubernetes configuration files"""
         annotations = []
-        
+
         # Handle kubeconfig files
         if file_path.name in ['config', 'kubeconfig'] or file_path.suffix == '.kubeconfig':
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
-            
+
             # Check for embedded certificates/keys
             if 'client-certificate-data:' in content or 'client-key-data:' in content:
                 annotations.append(CodeAnnotation(
@@ -777,21 +778,21 @@ class KubernetesAnalyzer(BaseAnalyzer):
                     confidence=0.80,
                     component="k8s-kubeconfig"
                 ))
-        
+
         return annotations
-    
-    def analyze_project(self, project_path: Path) -> Dict[str, Any]:
+
+    def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Kubernetes project"""
         from src.compliance.scanner import ComplianceScanner
-        
+
         # Use the compliance scanner for project-wide analysis
         scanner = ComplianceScanner()
         results = scanner.scan_directory(project_path)
-        
+
         # Convert to expected format
         k8s_files = []
         total_controls = set()
-        
+
         for file_path, annotations in results.items():
             if any(str(file_path).endswith(ext) for ext in self.file_extensions):
                 k8s_files.append({
@@ -808,7 +809,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
                 })
                 for ann in annotations:
                     total_controls.update(ann.control_ids)
-        
+
         return {
             'summary': {
                 'files_analyzed': len(k8s_files),
@@ -818,16 +819,16 @@ class KubernetesAnalyzer(BaseAnalyzer):
             'files': k8s_files,
             'controls': sorted(total_controls)
         }
-    
-    def _count_resources(self, project_path: Path) -> Dict[str, int]:
+
+    def _count_resources(self, project_path: Path) -> dict[str, int]:
         """Count Kubernetes resources in project"""
         resource_counts = {}
-        
+
         for file_path in project_path.rglob('*.yaml'):
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path) as f:
                     content = f.read()
-                
+
                 if self._is_kubernetes_manifest(content):
                     documents = list(yaml.safe_load_all(content))
                     for doc in documents:
@@ -836,5 +837,5 @@ class KubernetesAnalyzer(BaseAnalyzer):
                             resource_counts[kind] = resource_counts.get(kind, 0) + 1
             except Exception:
                 continue
-        
+
         return resource_counts

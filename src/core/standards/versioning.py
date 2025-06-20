@@ -16,7 +16,6 @@ import yaml
 from pydantic import BaseModel, Field
 
 from ..logging import audit_log, get_logger
-from .models import StandardType
 
 logger = get_logger(__name__)
 
@@ -139,10 +138,10 @@ class StandardsVersionManager:
         self.standards_path = standards_path
         self.versions_path = versions_path or standards_path / ".versions"
         self.config = config or UpdateConfiguration()
-        
+
         # Create versions directory if needed
         self.versions_path.mkdir(exist_ok=True)
-        
+
         # Version registry file
         self.registry_file = self.versions_path / "version_registry.json"
         self.registry = self._load_registry()
@@ -179,11 +178,11 @@ class StandardsVersionManager:
         """
         # Generate version number
         version_num = await self._generate_version_number(standard_id, strategy)
-        
+
         # Calculate content checksum
         content_str = json.dumps(content, sort_keys=True)
         checksum = hashlib.sha256(content_str.encode()).hexdigest()
-        
+
         # Create version object
         version = StandardVersion(
             version=version_num,
@@ -195,25 +194,25 @@ class StandardsVersionManager:
             strategy=strategy,
             metadata={"content_size": len(content_str)}
         )
-        
+
         # Save version content
         version_dir = self.versions_path / standard_id / version_num
         version_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Save content
         content_file = version_dir / "content.yaml"
         with open(content_file, 'w') as f:
             yaml.dump(content, f, default_flow_style=False)
-        
+
         # Save version metadata
         meta_file = version_dir / "version.json"
         with open(meta_file, 'w') as f:
             json.dump(version.to_dict(), f, indent=2)
-        
+
         # Update registry
         if standard_id not in self.registry["versions"]:
             self.registry["versions"][standard_id] = []
-        
+
         self.registry["versions"][standard_id].append(version.to_dict())
         self.registry["latest"][standard_id] = version_num
         self.registry["history"].append({
@@ -223,14 +222,14 @@ class StandardsVersionManager:
             "version": version_num,
             "author": author
         })
-        
+
         self._save_registry()
-        
+
         logger.info(
             f"Created version {version_num} for standard {standard_id}",
             extra={"standard": standard_id, "version": version_num}
         )
-        
+
         return version
 
     async def _generate_version_number(
@@ -240,11 +239,11 @@ class StandardsVersionManager:
     ) -> str:
         """Generate next version number based on strategy"""
         existing_versions = self.registry["versions"].get(standard_id, [])
-        
+
         if strategy == VersioningStrategy.SEMANTIC:
             if not existing_versions:
                 return "1.0.0"
-            
+
             # Get latest semantic version
             latest = self.registry["latest"].get(standard_id, "0.0.0")
             parts = latest.split('.')
@@ -253,20 +252,20 @@ class StandardsVersionManager:
                 major, minor, patch = parts
                 return f"{major}.{minor}.{int(patch) + 1}"
             return "1.0.0"
-        
+
         elif strategy == VersioningStrategy.DATE_BASED:
             return datetime.now().strftime("%Y.%m.%d")
-        
+
         elif strategy == VersioningStrategy.INCREMENTAL:
             return f"v{len(existing_versions) + 1}"
-        
+
         elif strategy == VersioningStrategy.HASH_BASED:
             # Return first 8 chars of timestamp hash
             timestamp_hash = hashlib.sha256(
                 str(datetime.now().timestamp()).encode()
             ).hexdigest()
             return timestamp_hash[:8]
-        
+
         return "unknown"
 
     @audit_log(["CM-3", "CM-4"])  # type: ignore[misc]
@@ -284,20 +283,20 @@ class StandardsVersionManager:
         # Load both versions
         old_content = await self.get_version_content(standard_id, old_version)
         new_content = await self.get_version_content(standard_id, new_version)
-        
+
         # Analyze differences
         changes = []
         added_sections = []
         removed_sections = []
         modified_sections = []
-        
+
         # Compare sections
         old_sections = set(old_content.get("sections", {}).keys())
         new_sections = set(new_content.get("sections", {}).keys())
-        
+
         added_sections = list(new_sections - old_sections)
         removed_sections = list(old_sections - new_sections)
-        
+
         # Check for modifications
         for section in old_sections & new_sections:
             if old_content["sections"][section] != new_content["sections"][section]:
@@ -308,17 +307,17 @@ class StandardsVersionManager:
                     "old": old_content["sections"][section][:100] + "...",
                     "new": new_content["sections"][section][:100] + "..."
                 })
-        
+
         # Determine impact level
         impact_level = "low"
         if removed_sections:
             impact_level = "high"
         elif len(modified_sections) > 3:
             impact_level = "medium"
-        
+
         # Check for breaking changes
         breaking_changes = bool(removed_sections) or "breaking" in str(changes).lower()
-        
+
         return VersionDiff(
             old_version=old_version,
             new_version=new_version,
@@ -338,14 +337,14 @@ class StandardsVersionManager:
         """Get content for a specific version"""
         if version == "latest":
             version = self.registry["latest"].get(standard_id, "")
-        
+
         if not version:
             raise ValueError(f"No version found for {standard_id}")
-        
+
         content_file = self.versions_path / standard_id / version / "content.yaml"
         if not content_file.exists():
             raise FileNotFoundError(f"Version {version} not found for {standard_id}")
-        
+
         with open(content_file) as f:
             return yaml.safe_load(f)  # type: ignore[no-any-return]
 
@@ -362,7 +361,7 @@ class StandardsVersionManager:
         """
         if not self.config.allowed_sources and source_url not in self.config.allowed_sources:
             raise ValueError(f"Source {source_url} not in allowed sources")
-        
+
         update_report = {
             "timestamp": datetime.now().isoformat(),
             "source": source_url,
@@ -370,34 +369,34 @@ class StandardsVersionManager:
             "failed": [],
             "skipped": []
         }
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 # Fetch standards index
                 response = await client.get(f"{source_url}/standards_index.json")
                 response.raise_for_status()
-                
+
                 remote_index = response.json()
-                
+
                 # Process each standard
                 for std_id, std_info in remote_index["standards"].items():
                     if standards_filter and std_id not in standards_filter:
                         update_report["skipped"].append(std_id)
                         continue
-                    
+
                     try:
                         # Fetch standard content
                         std_response = await client.get(f"{source_url}/{std_info['file']}")
                         std_response.raise_for_status()
-                        
+
                         content = yaml.safe_load(std_response.text)
-                        
+
                         # Check if update needed
                         if await self._needs_update(std_id, content):
                             # Create backup if enabled
                             if self.config.backup_enabled:
                                 await self._backup_current_version(std_id)
-                            
+
                             # Validate if required
                             if self.config.validation_required:
                                 if not await self._validate_standard(content):
@@ -406,7 +405,7 @@ class StandardsVersionManager:
                                         "reason": "validation_failed"
                                     })
                                     continue
-                            
+
                             # Create new version
                             version = await self.create_version(
                                 std_id,
@@ -414,42 +413,42 @@ class StandardsVersionManager:
                                 author="auto-update",
                                 changelog=f"Updated from {source_url}"
                             )
-                            
+
                             # Update main file
                             std_file = self.standards_path / std_info['file']
                             with open(std_file, 'w') as f:
                                 yaml.dump(content, f, default_flow_style=False)
-                            
+
                             update_report["updated"].append({
                                 "standard": std_id,
                                 "version": version.version
                             })
                         else:
                             update_report["skipped"].append(std_id)
-                    
+
                     except Exception as e:
                         logger.error(f"Failed to update {std_id}: {e}")
                         update_report["failed"].append({
                             "standard": std_id,
                             "reason": str(e)
                         })
-        
+
         except Exception as e:
             logger.error(f"Update from source failed: {e}")
             update_report["error"] = str(e)
-        
+
         # Save update report
         report_file = self.versions_path / f"update_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(report_file, 'w') as f:
             json.dump(update_report, f, indent=2)
-        
+
         return update_report
 
     async def _needs_update(self, standard_id: str, new_content: dict[str, Any]) -> bool:
         """Check if standard needs update"""
         try:
             current = await self.get_version_content(standard_id, "latest")
-            
+
             # Calculate checksums
             current_checksum = hashlib.sha256(
                 json.dumps(current, sort_keys=True).encode()
@@ -457,7 +456,7 @@ class StandardsVersionManager:
             new_checksum = hashlib.sha256(
                 json.dumps(new_content, sort_keys=True).encode()
             ).hexdigest()
-            
+
             return current_checksum != new_checksum
         except (FileNotFoundError, ValueError):
             # Standard doesn't exist yet
@@ -467,11 +466,11 @@ class StandardsVersionManager:
         """Create backup of current version"""
         backup_dir = self.versions_path / "backups" / datetime.now().strftime("%Y%m%d")
         backup_dir.mkdir(parents=True, exist_ok=True)
-        
+
         try:
             current = await self.get_version_content(standard_id, "latest")
             backup_file = backup_dir / f"{standard_id}_backup.yaml"
-            
+
             with open(backup_file, 'w') as f:
                 yaml.dump(current, f, default_flow_style=False)
         except Exception as e:
@@ -484,12 +483,12 @@ class StandardsVersionManager:
         for field in required_fields:
             if field not in content:
                 return False
-        
+
         # Check content structure
         if not isinstance(content.get("content"), str):
             if "sections" not in content:
                 return False
-        
+
         return True
 
     async def rollback_version(
@@ -505,7 +504,7 @@ class StandardsVersionManager:
         """
         # Get target version content
         content = await self.get_version_content(standard_id, target_version)
-        
+
         # Create new version as rollback
         version = await self.create_version(
             standard_id,
@@ -514,18 +513,18 @@ class StandardsVersionManager:
             changelog=f"Rollback to {target_version}: {reason}",
             strategy=VersioningStrategy.SEMANTIC
         )
-        
+
         # Update main file
         std_files = list(self.standards_path.glob(f"*{standard_id}*.yaml"))
         if std_files:
             with open(std_files[0], 'w') as f:
                 yaml.dump(content, f, default_flow_style=False)
-        
+
         logger.info(
             f"Rolled back {standard_id} to version {target_version}",
             extra={"standard": standard_id, "target": target_version, "reason": reason}
         )
-        
+
         return version
 
     def get_version_history(self, standard_id: str) -> list[StandardVersion]:
@@ -546,7 +545,7 @@ class StandardsVersionManager:
         if not self.config.auto_update:
             logger.info("Auto-updates are disabled")
             return
-        
+
         # This would typically integrate with a task scheduler
         # For now, we'll just log the schedule
         logger.info(

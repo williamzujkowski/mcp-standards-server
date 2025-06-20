@@ -3,33 +3,32 @@ Enhanced NIST Control Pattern Detection
 @nist-controls: SA-11, SA-15, CA-7, PM-5
 @evidence: Comprehensive pattern detection for NIST 800-53 rev5 controls
 """
-from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple, Any
-from collections import defaultdict
 import re
+from collections import defaultdict
+from dataclasses import dataclass
 
 
 @dataclass
 class ControlPattern:
     """Enhanced control pattern with more context"""
     pattern_regex: str
-    control_ids: List[str]
+    control_ids: list[str]
     evidence_template: str
     confidence: float
     pattern_type: str
     severity: str = "medium"  # low, medium, high
-    
-    
+
+
 class EnhancedNISTPatterns:
     """
     Enhanced NIST 800-53 rev5 control pattern detection
     Based on comprehensive analysis of all 20 control families
     """
-    
+
     def __init__(self):
         self.patterns = self._initialize_patterns()
-        
-    def _initialize_patterns(self) -> Dict[str, List[ControlPattern]]:
+
+    def _initialize_patterns(self) -> dict[str, list[ControlPattern]]:
         """Initialize comprehensive pattern detection for all NIST families"""
         return {
             # Access Control (AC) Family - Enhanced
@@ -89,7 +88,7 @@ class EnhancedNISTPatterns:
                     0.82, "privacy"
                 ),
             ],
-            
+
             # Audit and Accountability (AU) Family - Enhanced
             "audit_accountability": [
                 ControlPattern(
@@ -141,7 +140,7 @@ class EnhancedNISTPatterns:
                     0.85, "monitoring"
                 ),
             ],
-            
+
             # Configuration Management (CM) Family - Enhanced
             "configuration_management": [
                 ControlPattern(
@@ -193,7 +192,7 @@ class EnhancedNISTPatterns:
                     0.85, "security_feature"
                 ),
             ],
-            
+
             # Contingency Planning (CP) Family
             "contingency_planning": [
                 ControlPattern(
@@ -227,7 +226,7 @@ class EnhancedNISTPatterns:
                     0.85, "testing"
                 ),
             ],
-            
+
             # Identification and Authentication (IA) Family - Enhanced
             "identification_authentication": [
                 ControlPattern(
@@ -279,7 +278,7 @@ class EnhancedNISTPatterns:
                     0.90, "authentication"
                 ),
             ],
-            
+
             # Incident Response (IR) Family
             "incident_response": [
                 ControlPattern(
@@ -313,7 +312,7 @@ class EnhancedNISTPatterns:
                     0.85, "incident_management"
                 ),
             ],
-            
+
             # Maintenance (MA) Family
             "maintenance": [
                 ControlPattern(
@@ -341,7 +340,7 @@ class EnhancedNISTPatterns:
                     0.82, "access_control"
                 ),
             ],
-            
+
             # Media Protection (MP) Family
             "media_protection": [
                 ControlPattern(
@@ -375,7 +374,7 @@ class EnhancedNISTPatterns:
                     0.90, "data_protection", "high"
                 ),
             ],
-            
+
             # Physical and Environmental Protection (PE) Family
             "physical_environmental": [
                 ControlPattern(
@@ -403,7 +402,7 @@ class EnhancedNISTPatterns:
                     0.82, "physical_security"
                 ),
             ],
-            
+
             # Personnel Security (PS) Family
             "personnel_security": [
                 ControlPattern(
@@ -431,7 +430,7 @@ class EnhancedNISTPatterns:
                     0.85, "hr_security"
                 ),
             ],
-            
+
             # Risk Assessment (RA) Family
             "risk_assessment": [
                 ControlPattern(
@@ -465,7 +464,7 @@ class EnhancedNISTPatterns:
                     0.82, "risk_management"
                 ),
             ],
-            
+
             # System and Communications Protection (SC) Family - Enhanced
             "system_communications": [
                 ControlPattern(
@@ -547,7 +546,7 @@ class EnhancedNISTPatterns:
                     0.85, "resilience"
                 ),
             ],
-            
+
             # System and Information Integrity (SI) Family - Enhanced
             "system_information_integrity": [
                 ControlPattern(
@@ -629,7 +628,7 @@ class EnhancedNISTPatterns:
                     0.85, "architecture"
                 ),
             ],
-            
+
             # Supply Chain Risk Management (SR) Family
             "supply_chain": [
                 ControlPattern(
@@ -663,7 +662,7 @@ class EnhancedNISTPatterns:
                     0.85, "supply_chain_security"
                 ),
             ],
-            
+
             # Privacy Authorization (PT) Family
             "privacy": [
                 ControlPattern(
@@ -698,36 +697,36 @@ class EnhancedNISTPatterns:
                 ),
             ],
         }
-    
-    def get_patterns_for_code(self, code: str) -> List[Tuple[ControlPattern, re.Match]]:
+
+    def get_patterns_for_code(self, code: str) -> list[tuple[ControlPattern, re.Match]]:
         """Get all matching patterns for a piece of code"""
         matches = []
-        code_lower = code.lower()
-        
-        for category, patterns in self.patterns.items():
+        code.lower()
+
+        for _category, patterns in self.patterns.items():
             for pattern in patterns:
                 # Try case-insensitive match first
                 match = re.search(pattern.pattern_regex, code, re.IGNORECASE | re.MULTILINE)
                 if match:
                     matches.append((pattern, match))
-                    
+
         return matches
-    
-    def get_unique_controls(self, code: str) -> Set[str]:
+
+    def get_unique_controls(self, code: str) -> set[str]:
         """Get unique set of applicable controls for code"""
         controls = set()
         matches = self.get_patterns_for_code(code)
-        
+
         for pattern, _ in matches:
             controls.update(pattern.control_ids)
-            
+
         return controls
-    
-    def get_evidence_statements(self, code: str) -> List[Dict[str, any]]:
+
+    def get_evidence_statements(self, code: str) -> list[dict[str, any]]:
         """Generate evidence statements for detected patterns"""
         evidence = []
         matches = self.get_patterns_for_code(code)
-        
+
         for pattern, match in matches:
             evidence.append({
                 "controls": pattern.control_ids,
@@ -737,13 +736,13 @@ class EnhancedNISTPatterns:
                 "severity": pattern.severity,
                 "line_match": match.group(0)
             })
-            
+
         return evidence
-    
-    def suggest_missing_controls(self, detected_controls: Set[str]) -> Dict[str, List[str]]:
+
+    def suggest_missing_controls(self, detected_controls: set[str]) -> dict[str, list[str]]:
         """Suggest related controls that might be missing"""
         suggestions = {}
-        
+
         # Control relationships and dependencies
         control_relationships = {
             "AC-2": ["AC-3", "AC-6", "AU-2"],  # Account mgmt requires access enforcement
@@ -757,17 +756,17 @@ class EnhancedNISTPatterns:
             "IR-4": ["IR-5", "IR-6"],  # Incident handling needs tracking
             "CP-9": ["CP-10", "MP-6"],  # Backup needs restore testing
         }
-        
+
         for control in detected_controls:
-            family = control.split('-')[0]
+            control.split('-')[0]
             related = control_relationships.get(control, [])
             missing = [c for c in related if c not in detected_controls]
             if missing:
                 suggestions[control] = missing
-                
+
         return suggestions
-    
-    def get_control_family_coverage(self, detected_controls: Set[str]) -> Dict[str, float]:
+
+    def get_control_family_coverage(self, detected_controls: set[str]) -> dict[str, float]:
         """Calculate coverage percentage for each control family"""
         # Approximate counts of implementable controls per family
         family_totals = {
@@ -775,15 +774,15 @@ class EnhancedNISTPatterns:
             "IR": 10, "MA": 6, "MP": 8, "PE": 20, "PS": 8,
             "RA": 10, "SC": 45, "SI": 23, "SR": 12, "PT": 8
         }
-        
+
         family_counts = defaultdict(int)
         for control in detected_controls:
             family = control.split('-')[0]
             family_counts[family] += 1
-            
+
         coverage = {}
         for family, total in family_totals.items():
             implemented = family_counts.get(family, 0)
             coverage[family] = (implemented / total) * 100 if total > 0 else 0
-            
+
         return coverage

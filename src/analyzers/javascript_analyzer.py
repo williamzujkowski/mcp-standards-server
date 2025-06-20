@@ -5,14 +5,12 @@ Enhanced JavaScript/TypeScript code analyzer
 """
 import re
 from pathlib import Path
-from typing import Any
 
-from .base import BaseAnalyzer, CodeAnnotation
 from .ast_utils import (
     get_javascript_functions,
     get_javascript_imports,
-    get_javascript_classes
 )
+from .base import BaseAnalyzer, CodeAnnotation
 
 
 class JavaScriptAnalyzer(BaseAnalyzer):
@@ -26,7 +24,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
         super().__init__()
         self.file_extensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs']
         self.language = 'javascript'
-        
+
         # Security-relevant imports/packages
         self.security_packages = {
             # Authentication/Authorization
@@ -38,7 +36,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             'firebase-auth': ['IA-2', 'IA-8'],
             'express-session': ['SC-23', 'AC-12'],
             'cookie-session': ['SC-23', 'AC-12'],
-            
+
             # Cryptography
             'crypto': ['SC-13', 'SC-28'],
             'bcrypt': ['IA-5', 'SC-13'],
@@ -46,7 +44,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             'argon2': ['IA-5', 'SC-13'],
             'node-forge': ['SC-13', 'SC-28'],
             'crypto-js': ['SC-13', 'SC-28'],
-            
+
             # Input Validation
             'validator': ['SI-10'],
             'express-validator': ['SI-10'],
@@ -55,21 +53,21 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             'ajv': ['SI-10'],
             'dompurify': ['SI-10'],
             'sanitize-html': ['SI-10'],
-            
+
             # Security Middleware
             'helmet': ['SC-8', 'SC-18'],
             'cors': ['AC-4', 'SC-8'],
             'express-rate-limit': ['SC-5'],
             'express-brute': ['SC-5'],
             'csurf': ['SI-10', 'SC-8'],
-            
+
             # Logging
             'winston': ['AU-2', 'AU-3'],
             'morgan': ['AU-2', 'AU-3'],
             'bunyan': ['AU-2', 'AU-3'],
             'pino': ['AU-2', 'AU-3'],
         }
-        
+
         # Security function patterns
         self.security_functions = {
             # Authentication
@@ -80,34 +78,34 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             'signout': ['AC-12'],
             'verifytoken': ['IA-2', 'SC-8'],
             'checkauth': ['IA-2', 'AC-3'],
-            
-            # Authorization  
+
+            # Authorization
             'authorize': ['AC-3', 'AC-6'],
             'checkpermission': ['AC-3', 'AC-6'],
             'hasrole': ['AC-3', 'AC-6'],
             'canaccess': ['AC-3', 'AC-6'],
             'isadmin': ['AC-6'],
-            
+
             # Encryption
             'encrypt': ['SC-13', 'SC-28'],
             'decrypt': ['SC-13', 'SC-28'],
             'hash': ['SC-13', 'IA-5'],
             'sign': ['SC-13', 'SI-7'],
             'verify': ['SC-13', 'SI-7'],
-            
+
             # Validation
             'validate': ['SI-10'],
             'sanitize': ['SI-10'],
             'escape': ['SI-10'],
             'clean': ['SI-10'],
             'purify': ['SI-10'],
-            
+
             # Logging
             'audit': ['AU-2', 'AU-3'],
             'logaccess': ['AU-2', 'AC-3'],
             'logevent': ['AU-2', 'AU-3'],
         }
-        
+
         # Middleware patterns
         self.middleware_patterns = {
             'authenticate': ['IA-2', 'AC-3'],
@@ -149,7 +147,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
 
         # Find implicit patterns
         annotations.extend(self._analyze_implicit_patterns(code, str(file_path)))
-        
+
         # Enhanced pattern detection
         annotations.extend(self.analyze_with_enhanced_patterns(code, str(file_path)))
 
@@ -167,10 +165,10 @@ class JavaScriptAnalyzer(BaseAnalyzer):
     def _analyze_imports(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze imports and requires for security packages"""
         annotations = []
-        
+
         # Get imports using AST utils
         imports = get_javascript_imports(code)
-        
+
         for import_info in imports:
             module = import_info.get('module', '')
             if module:
@@ -186,16 +184,16 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                             confidence=0.9
                         ))
                         break
-        
+
         return annotations
 
     def _analyze_functions(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze functions for security patterns"""
         annotations = []
-        
+
         # Get functions using AST utils
         functions = get_javascript_functions(code)
-        
+
         for func in functions:
             func_name = func.get('name', '').lower()
             if func_name:
@@ -211,7 +209,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                             confidence=0.85
                         ))
                         break
-        
+
         return annotations
 
     def _analyze_implicit_patterns(self, code: str, file_path: str) -> list[CodeAnnotation]:
@@ -350,7 +348,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
 
     def _analyze_framework_patterns(self, code: str, file_path: str, annotations: list[CodeAnnotation]):
         """Analyze framework-specific security patterns"""
-        
+
         # Express.js patterns
         if 'express' in code.lower():
             express_patterns = [
@@ -359,7 +357,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                 (r'res\.cookie\s*\(.*httpOnly\s*:\s*true', ["SC-8", "SC-23"], "HTTPOnly cookie flag"),
                 (r'app\.disable\s*\(\s*[\'"`]x-powered-by', ["SC-18"], "Hide Express version"),
             ]
-            
+
             for pattern, controls, evidence in express_patterns:
                 if re.search(pattern, code, re.IGNORECASE):
                     line_num = self._find_pattern_line(code, pattern.split('\\')[0])
@@ -379,7 +377,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                 (r'(sanitize|escape|purify).*dangerouslySetInnerHTML', ["SI-10"], "React sanitized HTML"),
                 (r'createContext.*(?:Auth|User|Permission)', ["IA-2", "AC-3"], "React auth context"),
             ]
-            
+
             for pattern, controls, evidence in react_patterns:
                 if re.search(pattern, code, re.IGNORECASE):
                     line_num = self._find_pattern_line(code, pattern.split('\\')[0])
@@ -395,51 +393,51 @@ class JavaScriptAnalyzer(BaseAnalyzer):
     def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls for JavaScript/TypeScript code"""
         suggestions = set()
-        
+
         # Analyze imports
         imports = get_javascript_imports(code)
         for import_info in imports:
             module = import_info.get('module', '').lower()
-            
+
             # Web frameworks
             if any(fw in module for fw in ['express', 'fastify', 'koa', 'hapi']):
                 suggestions.update(['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'])
-            
+
             # Authentication
             if any(auth in module for auth in ['passport', 'jwt', 'auth', 'oauth']):
                 suggestions.update(['IA-2', 'IA-5', 'IA-8', 'AC-3'])
-            
+
             # Frontend frameworks
             if any(fw in module for fw in ['react', 'vue', 'angular']):
                 suggestions.update(['SI-10', 'SC-8', 'AC-3'])
-            
+
             # Database
             if any(db in module for db in ['mongoose', 'sequelize', 'typeorm', 'prisma']):
                 suggestions.update(['SC-28', 'SI-10', 'AU-2'])
-        
+
         # Analyze functions
         functions = get_javascript_functions(code)
         for func in functions:
             func_name = func.get('name', '').lower()
-            
+
             if any(auth in func_name for auth in ['auth', 'login', 'verify']):
                 suggestions.update(['IA-2', 'AC-3', 'AC-7'])
-            
+
             if any(crypto in func_name for crypto in ['encrypt', 'decrypt', 'hash']):
                 suggestions.update(['SC-13', 'SC-28'])
-            
+
             if any(val in func_name for val in ['validate', 'sanitize', 'escape']):
                 suggestions.update(['SI-10'])
-        
+
         # Pattern-based suggestions
         patterns = self.find_security_patterns(code, "temp.js")
         for pattern in patterns:
             suggestions.update(pattern.suggested_controls)
-        
+
         # TypeScript specific
         if any(ext in code for ext in ['.ts', '.tsx', 'interface', 'type']):
             suggestions.update(['SI-10', 'SA-11'])  # Type safety helps with validation
-        
+
         return sorted(suggestions)
 
     def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
@@ -482,18 +480,18 @@ class JavaScriptAnalyzer(BaseAnalyzer):
     def _analyze_package_json(self, package_path: Path) -> list[CodeAnnotation]:
         """Analyze package.json for security-relevant dependencies"""
         annotations = []
-        
+
         try:
             import json
             with open(package_path, encoding='utf-8') as f:
                 package_data = json.load(f)
-            
+
             # Combine all dependencies
             all_deps = {}
             for dep_type in ['dependencies', 'devDependencies', 'peerDependencies']:
                 if dep_type in package_data:
                     all_deps.update(package_data[dep_type])
-            
+
             # Check each dependency
             line_num = 1
             for dep_name in all_deps:
@@ -509,8 +507,8 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                         ))
                         break
                 line_num += 1
-                        
+
         except Exception:
             pass
-            
+
         return annotations

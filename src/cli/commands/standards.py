@@ -3,7 +3,6 @@ Standards management CLI commands
 @nist-controls: CM-2, CM-3, CM-4
 @evidence: CLI interface for standards version management
 """
-from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -38,15 +37,15 @@ def version(
     """
     try:
         manager = StandardsVersionManager(standards_dir)
-        
+
         # Get version history
         versions = manager.get_version_history(standard_id)
         latest = manager.get_latest_version(standard_id)
-        
+
         if not versions:
             console.print(f"[yellow]No version history found for {standard_id}[/yellow]")
             return
-        
+
         # Display version table
         table = Table(title=f"Version History: {standard_id}")
         table.add_column("Version", style="cyan")
@@ -54,7 +53,7 @@ def version(
         table.add_column("Author", style="yellow")
         table.add_column("Strategy", style="magenta")
         table.add_column("Latest", style="bold")
-        
+
         for v in versions:
             is_latest = v.version == latest
             table.add_row(
@@ -64,9 +63,9 @@ def version(
                 v.strategy.value,
                 "✓" if is_latest else ""
             )
-        
+
         console.print(table)
-        
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
@@ -101,7 +100,7 @@ def update(
     @evidence: Controlled standards update process
     """
     console.print(f"[cyan]Updating standards from {source_url}...[/cyan]")
-    
+
     try:
         # Configure update
         config = UpdateConfiguration(
@@ -110,37 +109,37 @@ def update(
             validation_required=validate,
             allowed_sources=[source_url]
         )
-        
+
         manager = StandardsVersionManager(standards_dir, config=config)
-        
+
         # Run async update
         import asyncio
         report = asyncio.run(manager.update_from_source(source_url, standards))
-        
+
         # Display results
         console.print("\n[bold]Update Report:[/bold]")
         console.print(f"Timestamp: {report['timestamp']}")
         console.print(f"Source: {report['source']}")
-        
+
         if report.get("updated"):
             console.print(f"\n[green]✓ Updated ({len(report['updated'])}):[/green]")
             for item in report["updated"]:
                 console.print(f"  - {item['standard']} → {item['version']}")
-        
+
         if report.get("failed"):
             console.print(f"\n[red]✗ Failed ({len(report['failed'])}):[/red]")
             for item in report["failed"]:
                 console.print(f"  - {item['standard']}: {item['reason']}")
-        
+
         if report.get("skipped"):
             console.print(f"\n[yellow]⚠ Skipped ({len(report['skipped'])}):[/yellow]")
             for std in report["skipped"]:
                 console.print(f"  - {std}")
-        
+
         if report.get("error"):
             console.print(f"\n[red]Error: {report['error']}[/red]")
             raise typer.Exit(1)
-        
+
     except Exception as e:
         console.print(f"[red]Update failed: {e}[/red]")
         raise typer.Exit(1)
@@ -165,32 +164,32 @@ def compare(
     """
     try:
         manager = StandardsVersionManager(standards_dir)
-        
+
         # Run async comparison
         import asyncio
         diff = asyncio.run(manager.compare_versions(standard_id, version1, version2))
-        
+
         # Display comparison
         console.print(f"\n[bold]Version Comparison: {standard_id}[/bold]")
         console.print(f"Old: {diff.old_version} → New: {diff.new_version}")
         console.print(f"Impact Level: [{'red' if diff.impact_level == 'high' else 'yellow'}]{diff.impact_level}[/]")
         console.print(f"Breaking Changes: [{'red' if diff.breaking_changes else 'green'}]{diff.breaking_changes}[/]")
-        
+
         if diff.added_sections:
             console.print(f"\n[green]+ Added Sections ({len(diff.added_sections)}):[/green]")
             for section in diff.added_sections:
                 console.print(f"  + {section}")
-        
+
         if diff.removed_sections:
             console.print(f"\n[red]- Removed Sections ({len(diff.removed_sections)}):[/red]")
             for section in diff.removed_sections:
                 console.print(f"  - {section}")
-        
+
         if diff.modified_sections:
             console.print(f"\n[yellow]~ Modified Sections ({len(diff.modified_sections)}):[/yellow]")
             for section in diff.modified_sections:
                 console.print(f"  ~ {section}")
-        
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
@@ -217,18 +216,18 @@ def rollback(
     if not typer.confirm(f"Rollback {standard_id} to version {target_version}?"):
         console.print("[yellow]Rollback cancelled[/yellow]")
         return
-    
+
     try:
         manager = StandardsVersionManager(standards_dir)
-        
+
         # Run async rollback
         import asyncio
         version = asyncio.run(manager.rollback_version(standard_id, target_version, reason))
-        
-        console.print(f"[green]✓ Rollback successful![/green]")
+
+        console.print("[green]✓ Rollback successful![/green]")
         console.print(f"New version: {version.version}")
         console.print(f"Reason: {reason}")
-        
+
     except Exception as e:
         console.print(f"[red]Rollback failed: {e}[/red]")
         raise typer.Exit(1)
@@ -260,18 +259,18 @@ def schedule(
             update_frequency=frequency,
             auto_update=enable
         )
-        
+
         manager = StandardsVersionManager(standards_dir, config=config)
-        
+
         # Schedule updates
         import asyncio
         asyncio.run(manager.schedule_updates())
-        
+
         if enable:
             console.print(f"[green]✓ Auto-updates enabled: {frequency.value}[/green]")
         else:
             console.print("[yellow]Auto-updates disabled[/yellow]")
-        
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
@@ -302,17 +301,17 @@ def create_version(
     """
     try:
         manager = StandardsVersionManager(standards_dir)
-        
+
         # Load current content
         std_files = list(standards_dir.glob(f"*{standard_id}*.yaml"))
         if not std_files:
             console.print(f"[red]Standard {standard_id} not found[/red]")
             raise typer.Exit(1)
-        
+
         import yaml
         with open(std_files[0]) as f:
             content = yaml.safe_load(f)
-        
+
         # Create version
         import asyncio
         version = asyncio.run(
@@ -324,12 +323,12 @@ def create_version(
                 strategy=strategy
             )
         )
-        
+
         console.print(f"[green]✓ Version created: {version.version}[/green]")
         console.print(f"Author: {author or 'unknown'}")
         console.print(f"Changelog: {changelog}")
         console.print(f"Strategy: {strategy.value}")
-        
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)

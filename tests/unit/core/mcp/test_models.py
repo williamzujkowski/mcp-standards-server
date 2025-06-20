@@ -3,7 +3,7 @@ Test MCP Models
 @nist-controls: SA-11, CA-7
 @evidence: Unit tests for data models
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from pydantic import ValidationError

@@ -5,7 +5,6 @@ Enhanced Java code analyzer
 """
 import re
 from pathlib import Path
-from typing import Any
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -21,7 +20,7 @@ class JavaAnalyzer(BaseAnalyzer):
         super().__init__()
         self.file_extensions = ['.java']
         self.language = 'java'
-        
+
         # Security-relevant imports
         self.security_imports = {
             # Cryptography
@@ -36,7 +35,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'org.mindrot.jbcrypt': ['IA-5', 'SC-13'],
             'org.springframework.security.crypto': ['IA-5', 'SC-13'],
             'com.password4j': ['IA-5', 'SC-13'],
-            
+
             # Authentication/Authorization
             'org.springframework.security': ['IA-2', 'AC-3'],
             'org.springframework.security.core': ['IA-2', 'AC-3'],
@@ -49,7 +48,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'javax.servlet.http.HttpSession': ['SC-23', 'AC-12'],
             'org.apache.shiro': ['IA-2', 'AC-3'],
             'org.keycloak': ['IA-2', 'IA-8'],
-            
+
             # Input Validation
             'javax.validation': ['SI-10'],
             'org.hibernate.validator': ['SI-10'],
@@ -58,13 +57,13 @@ class JavaAnalyzer(BaseAnalyzer):
             'com.google.common.html': ['SI-10'],
             'org.apache.commons.text': ['SI-10'],
             'org.apache.commons.validator': ['SI-10'],
-            
+
             # Security Tools
             'org.springframework.security.web.csrf': ['SI-10', 'SC-8'],
             'org.springframework.security.config': ['SC-8', 'SC-18'],
             'org.owasp.esapi': ['SI-10', 'SC-8'],
             'com.google.common.util.concurrent.RateLimiter': ['SC-5'],
-            
+
             # Logging
             'org.slf4j': ['AU-2', 'AU-3'],
             'org.apache.logging.log4j': ['AU-2', 'AU-3'],
@@ -72,7 +71,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'ch.qos.logback': ['AU-2', 'AU-3'],
             'org.springframework.security.core.context.SecurityContextHolder': ['AU-2', 'AC-3'],
         }
-        
+
         # Security annotations
         self.security_annotations = {
             '@PreAuthorize': ['AC-3', 'AC-6'],
@@ -92,7 +91,7 @@ class JavaAnalyzer(BaseAnalyzer):
             '@EnableGlobalMethodSecurity': ['AC-3', 'AC-6'],
             '@EnableOAuth2Sso': ['IA-2', 'IA-8'],
         }
-        
+
         # Security method patterns
         self.security_methods = {
             # Authentication
@@ -104,7 +103,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'validateToken': ['IA-2', 'SC-8'],
             'verifyToken': ['IA-2', 'SC-8'],
             'generateToken': ['IA-2', 'SC-8'],
-            
+
             # Authorization
             'authorize': ['AC-3', 'AC-6'],
             'checkPermission': ['AC-3', 'AC-6'],
@@ -113,7 +112,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'hasAuthority': ['AC-3', 'AC-6'],
             'isAdmin': ['AC-6'],
             'canAccess': ['AC-3', 'AC-6'],
-            
+
             # Encryption
             'encrypt': ['SC-13', 'SC-28'],
             'decrypt': ['SC-13', 'SC-28'],
@@ -121,7 +120,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'sign': ['SC-13', 'SI-7'],
             'verify': ['SC-13', 'SI-7'],
             'generateKey': ['SC-13'],
-            
+
             # Validation
             'validate': ['SI-10'],
             'sanitize': ['SI-10'],
@@ -129,7 +128,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'clean': ['SI-10'],
             'validateInput': ['SI-10'],
             'encode': ['SI-10'],
-            
+
             # Logging
             'auditLog': ['AU-2', 'AU-3'],
             'logEvent': ['AU-2', 'AU-3'],
@@ -164,7 +163,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         # Find implicit patterns
         annotations.extend(self._analyze_implicit_patterns(code, str(file_path)))
-        
+
         # Enhanced pattern detection
         annotations.extend(self.analyze_with_enhanced_patterns(code, str(file_path)))
 
@@ -182,15 +181,15 @@ class JavaAnalyzer(BaseAnalyzer):
     def _analyze_imports(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze import statements for security packages"""
         annotations = []
-        
+
         # Java import pattern
         import_pattern = r'^import\s+(?:static\s+)?([a-zA-Z0-9_.]+(?:\.[A-Z][a-zA-Z0-9_]*)?);'
-        
+
         for i, line in enumerate(code.splitlines(), 1):
             match = re.match(import_pattern, line.strip())
             if match:
                 import_pkg = match.group(1)
-                
+
                 # Check against security imports
                 for sec_pkg, controls in self.security_imports.items():
                     if import_pkg.startswith(sec_pkg):
@@ -203,19 +202,19 @@ class JavaAnalyzer(BaseAnalyzer):
                             confidence=0.9
                         ))
                         break
-        
+
         return annotations
 
     def _analyze_security_annotations(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze Java security annotations"""
         annotations = []
-        
+
         for annotation, controls in self.security_annotations.items():
             pattern = rf'{re.escape(annotation)}(?:\([^)]*\))?'
-            
+
             for match in re.finditer(pattern, code):
                 line_num = code[:match.start()].count('\n') + 1
-                
+
                 annotations.append(CodeAnnotation(
                     file_path=file_path,
                     line_number=line_num,
@@ -224,20 +223,20 @@ class JavaAnalyzer(BaseAnalyzer):
                     component="annotation",
                     confidence=0.95
                 ))
-        
+
         return annotations
 
     def _analyze_methods(self, code: str, file_path: str) -> list[CodeAnnotation]:
         """Analyze method definitions for security patterns"""
         annotations = []
-        
+
         # Java method pattern with modifiers
         method_pattern = r'(?:public|private|protected|static|final|synchronized|native|abstract|\s)+[\w<>\[\]]+\s+(\w+)\s*\('
-        
+
         for match in re.finditer(method_pattern, code):
             method_name = match.group(1)
             line_num = code[:match.start()].count('\n') + 1
-            
+
             # Check against security methods
             for pattern, controls in self.security_methods.items():
                 if pattern.lower() in method_name.lower():
@@ -250,7 +249,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         confidence=0.85
                     ))
                     break
-        
+
         return annotations
 
     def _analyze_implicit_patterns(self, code: str, file_path: str) -> list[CodeAnnotation]:
@@ -370,7 +369,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
     def _analyze_framework_patterns(self, code: str, file_path: str, annotations: list[CodeAnnotation]):
         """Analyze Java framework-specific patterns"""
-        
+
         # Spring Boot patterns
         if '@SpringBootApplication' in code or 'springframework.boot' in code:
             boot_patterns = [
@@ -380,7 +379,7 @@ class JavaAnalyzer(BaseAnalyzer):
                 (r'SecurityFilterChain', ["SC-8", "AC-3"], "Spring Security filter chain"),
                 (r'CorsConfigurationSource', ["AC-4", "SC-8"], "CORS configuration"),
             ]
-            
+
             for pattern, controls, evidence in boot_patterns:
                 if re.search(pattern, code):
                     line_num = self._find_pattern_line(code, pattern.split('\\')[0])
@@ -400,7 +399,7 @@ class JavaAnalyzer(BaseAnalyzer):
                 (r'SecurityContext\.', ["IA-2", "AC-3"], "JAX-RS security context"),
                 (r'@Context\s+SecurityContext', ["IA-2", "AC-3"], "Security context injection"),
             ]
-            
+
             for pattern, controls, evidence in jaxrs_patterns:
                 if re.search(pattern, code):
                     line_num = self._find_pattern_line(code, pattern.split('\\')[0])
@@ -416,34 +415,34 @@ class JavaAnalyzer(BaseAnalyzer):
     def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls for Java code"""
         suggestions = set()
-        
+
         # Check imports
         import_pattern = r'^import\s+(?:static\s+)?([a-zA-Z0-9_.]+)'
         for match in re.finditer(import_pattern, code, re.MULTILINE):
             import_text = match.group(1).lower()
-            
+
             # Web frameworks
             if any(fw in import_text for fw in ['spring', 'javax.servlet', 'jakarta.servlet']):
                 suggestions.update(['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'])
-            
+
             # Security libraries
             if any(sec in import_text for sec in ['security', 'crypto', 'jwt', 'oauth']):
                 suggestions.update(['IA-2', 'IA-5', 'SC-13', 'SC-28', 'AC-3'])
-            
+
             # Database
             if any(db in import_text for db in ['sql', 'jdbc', 'jpa', 'hibernate']):
                 suggestions.update(['SC-28', 'SI-10', 'AU-2'])
-        
+
         # Check for security annotations
         for annotation in self.security_annotations:
             if annotation in code:
                 suggestions.update(self.security_annotations[annotation])
-        
+
         # Pattern-based suggestions
         patterns = self.find_security_patterns(code, "temp.java")
         for pattern in patterns:
             suggestions.update(pattern.suggested_controls)
-        
+
         return sorted(suggestions)
 
     def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
@@ -490,7 +489,7 @@ class JavaAnalyzer(BaseAnalyzer):
     def _analyze_pom_xml(self, pom_path: Path) -> list[CodeAnnotation]:
         """Analyze pom.xml for security-relevant dependencies"""
         annotations = []
-        
+
         security_artifacts = {
             'spring-security': ['IA-2', 'AC-3'],
             'spring-boot-starter-security': ['IA-2', 'AC-3'],
@@ -504,11 +503,11 @@ class JavaAnalyzer(BaseAnalyzer):
             'logback': ['AU-2', 'AU-3'],
             'log4j': ['AU-2', 'AU-3'],
         }
-        
+
         try:
             with open(pom_path, encoding='utf-8') as f:
                 content = f.read()
-            
+
             for i, line in enumerate(content.splitlines(), 1):
                 for artifact, controls in security_artifacts.items():
                     if f'<artifactId>{artifact}' in line:
@@ -523,13 +522,13 @@ class JavaAnalyzer(BaseAnalyzer):
                         break
         except Exception:
             pass
-            
+
         return annotations
 
     def _analyze_build_gradle(self, gradle_path: Path) -> list[CodeAnnotation]:
         """Analyze build.gradle for security-relevant dependencies"""
         annotations = []
-        
+
         security_deps = {
             'spring-security': ['IA-2', 'AC-3'],
             'spring-boot-starter-security': ['IA-2', 'AC-3'],
@@ -541,11 +540,11 @@ class JavaAnalyzer(BaseAnalyzer):
             'owasp': ['SI-10'],
             'hibernate-validator': ['SI-10'],
         }
-        
+
         try:
             with open(gradle_path, encoding='utf-8') as f:
                 content = f.read()
-            
+
             for i, line in enumerate(content.splitlines(), 1):
                 for dep, controls in security_deps.items():
                     if dep in line and ('implementation' in line or 'compile' in line):
@@ -560,5 +559,5 @@ class JavaAnalyzer(BaseAnalyzer):
                         break
         except Exception:
             pass
-            
+
         return annotations

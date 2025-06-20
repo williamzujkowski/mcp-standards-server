@@ -151,7 +151,7 @@ class StandardsEngine:
         self.cache_ttl = cache_ttl
         self.nl_mapper = NaturalLanguageMapper()
         self.loaded_standards: dict[str, StandardSection] = {}
-        
+
         # Initialize version manager
         self.version_manager = StandardsVersionManager(standards_path)
 
@@ -318,7 +318,7 @@ class StandardsEngine:
                     last_updated = None
                     if item.get("last_updated"):
                         last_updated = datetime.fromisoformat(item["last_updated"])
-                    
+
                     section = StandardSection(
                         id=item["id"],
                         type=StandardType.from_string(item["type"]),
@@ -437,7 +437,7 @@ class StandardsEngine:
                 try:
                     # Try to load from version manager
                     versioned_content = await self.version_manager.get_version_content(
-                        f"{std_type}_{section}_standards", 
+                        f"{std_type}_{section}_standards",
                         version
                     )
                     data = versioned_content
@@ -562,18 +562,18 @@ class StandardsEngine:
             TokenOptimizationStrategy.ESSENTIAL_ONLY: "essential",
             TokenOptimizationStrategy.HIERARCHICAL: "hierarchical"
         }
-        
+
         optimizer_strategy = strategy_map.get(strategy, "summarize")
-        
+
         # Use token optimizer
         optimized_content, metrics = await self.token_optimizer.optimize(
             section.content,
             optimizer_strategy,
             max_tokens
         )
-        
+
         logger.info(f"Optimized {section.id} from {metrics.original_tokens} to {metrics.optimized_tokens} tokens ({metrics.reduction_percentage:.1f}% reduction)")
-        
+
         return StandardSection(
             id=section.id,
             type=section.type,
@@ -653,7 +653,7 @@ class StandardsEngine:
                     report["errors"].append(f"{yaml_file}: {str(e)}")
 
         return report
-    
+
     async def get_available_versions(self, standard_id: str) -> list[str]:
         """
         Get available versions for a standard
@@ -662,9 +662,9 @@ class StandardsEngine:
         """
         versions = self.version_manager.get_version_history(standard_id)
         return [v.version for v in versions]
-    
+
     async def create_standard_version(
-        self, 
+        self,
         standard_id: str,
         author: str | None = None,
         changelog: str | None = None
@@ -678,11 +678,11 @@ class StandardsEngine:
         std_files = list(self.standards_path.glob(f"*{standard_id}*.yaml"))
         if not std_files:
             raise FileNotFoundError(f"Standard {standard_id} not found")
-        
+
         # Load current content
         with open(std_files[0]) as f:
             content = yaml.safe_load(f)
-        
+
         # Create version
         version = await self.version_manager.create_version(
             standard_id,
@@ -690,5 +690,5 @@ class StandardsEngine:
             author=author,
             changelog=changelog
         )
-        
+
         return version.version

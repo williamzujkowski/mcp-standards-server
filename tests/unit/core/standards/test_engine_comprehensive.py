@@ -41,7 +41,7 @@ def test_standards_path(tmp_path):
     # Create test standard files
     cs_dir = standards_dir / "CS"
     cs_dir.mkdir()
-    
+
     # Create api.yaml
     api_content = {
         "id": "CS:api",
@@ -51,7 +51,7 @@ def test_standards_path(tmp_path):
     }
     api_file = cs_dir / "api.yaml"
     api_file.write_text(yaml.dump(api_content))
-    
+
     # Create security.yaml
     security_content = {
         "id": "CS:security",
@@ -61,18 +61,18 @@ def test_standards_path(tmp_path):
     }
     security_file = cs_dir / "security.yaml"
     security_file.write_text(yaml.dump(security_content))
-    
+
     # Create standards index
     index_content = {
         "standards": {
             "CS:api": {
-                "file": "CS/api.yaml", 
+                "file": "CS/api.yaml",
                 "type": "CS",
                 "section": "api"
             },
             "CS:security": {
                 "file": "CS/security.yaml",
-                "type": "CS", 
+                "type": "CS",
                 "section": "security"
             }
         }

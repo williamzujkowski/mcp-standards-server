@@ -5,17 +5,16 @@ AST utilities for language analyzers (simplified implementation)
 """
 import ast
 import re
-from pathlib import Path
 from typing import Any
 
 
 def get_python_functions(code: str) -> list[dict[str, Any]]:
     """Extract function definitions from Python code using AST"""
     functions = []
-    
+
     try:
         tree = ast.parse(code)
-        
+
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 functions.append({
@@ -25,7 +24,7 @@ def get_python_functions(code: str) -> list[dict[str, Any]]:
                     'decorators': [ast.unparse(d) for d in node.decorator_list] if hasattr(ast, 'unparse') else [],
                     'is_async': isinstance(node, ast.AsyncFunctionDef)
                 })
-                
+
     except SyntaxError:
         # Fallback to regex
         pattern = r'^(?:async\s+)?def\s+(\w+)\s*\('
@@ -39,17 +38,17 @@ def get_python_functions(code: str) -> list[dict[str, Any]]:
                     'decorators': [],
                     'is_async': line.strip().startswith('async')
                 })
-    
+
     return functions
 
 
 def get_python_classes(code: str) -> list[dict[str, Any]]:
     """Extract class definitions from Python code using AST"""
     classes = []
-    
+
     try:
         tree = ast.parse(code)
-        
+
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 classes.append({
@@ -59,7 +58,7 @@ def get_python_classes(code: str) -> list[dict[str, Any]]:
                     'decorators': [ast.unparse(d) for d in node.decorator_list] if hasattr(ast, 'unparse') else [],
                     'bases': [ast.unparse(b) for b in node.bases] if hasattr(ast, 'unparse') else []
                 })
-                
+
     except SyntaxError:
         # Fallback to regex
         pattern = r'^class\s+(\w+)(?:\((.*?)\))?:'
@@ -73,17 +72,17 @@ def get_python_classes(code: str) -> list[dict[str, Any]]:
                     'decorators': [],
                     'bases': [b.strip() for b in match.group(2).split(',')] if match.group(2) else []
                 })
-    
+
     return classes
 
 
 def get_python_imports(code: str) -> list[dict[str, Any]]:
     """Extract import statements from Python code using AST"""
     imports = []
-    
+
     try:
         tree = ast.parse(code)
-        
+
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
@@ -103,15 +102,15 @@ def get_python_imports(code: str) -> list[dict[str, Any]]:
                         'line': node.lineno,
                         'type': 'from'
                     })
-                    
+
     except SyntaxError:
         # Fallback to regex
         import_pattern = r'^import\s+([\w.]+)(?:\s+as\s+(\w+))?'
         from_pattern = r'^from\s+([\w.]+)\s+import\s+(.+)'
-        
+
         for i, line in enumerate(code.splitlines(), 1):
             line = line.strip()
-            
+
             match = re.match(import_pattern, line)
             if match:
                 imports.append({
@@ -121,7 +120,7 @@ def get_python_imports(code: str) -> list[dict[str, Any]]:
                     'type': 'import'
                 })
                 continue
-                
+
             match = re.match(from_pattern, line)
             if match:
                 module = match.group(1)
@@ -146,19 +145,19 @@ def get_python_imports(code: str) -> list[dict[str, Any]]:
                             'line': i,
                             'type': 'from'
                         })
-    
+
     return imports
 
 
 def get_python_decorators(code: str) -> list[dict[str, Any]]:
     """Extract decorators from Python code"""
     decorators = []
-    
+
     try:
         tree = ast.parse(code)
-        
+
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            if isinstance(node, ast.FunctionDef | ast.ClassDef):
                 for decorator in node.decorator_list:
                     decorator_info = {
                         'line': decorator.lineno,
@@ -166,7 +165,7 @@ def get_python_decorators(code: str) -> list[dict[str, Any]]:
                         'target_name': node.name,
                         'target_type': 'function' if isinstance(node, ast.FunctionDef) else 'class'
                     }
-                    
+
                     # Extract decorator name
                     if isinstance(decorator, ast.Name):
                         decorator_info['name'] = decorator.id
@@ -177,14 +176,14 @@ def get_python_decorators(code: str) -> list[dict[str, Any]]:
                             decorator_info['name'] = decorator.func.id
                         elif isinstance(decorator.func, ast.Attribute):
                             decorator_info['name'] = decorator.func.attr
-                    
+
                     decorators.append(decorator_info)
-                    
+
     except SyntaxError:
         # Fallback to regex
         decorator_pattern = r'^@(\w+)(?:\((.*?)\))?'
         lines = code.splitlines()
-        
+
         for i, line in enumerate(lines):
             line = line.strip()
             match = re.match(decorator_pattern, line)
@@ -195,7 +194,7 @@ def get_python_decorators(code: str) -> list[dict[str, Any]]:
                     if target_line and not target_line.startswith('@'):
                         func_match = re.match(r'(?:async\s+)?def\s+(\w+)', target_line)
                         class_match = re.match(r'class\s+(\w+)', target_line)
-                        
+
                         if func_match or class_match:
                             decorators.append({
                                 'line': i + 1,
@@ -205,14 +204,14 @@ def get_python_decorators(code: str) -> list[dict[str, Any]]:
                                 'target_type': 'function' if func_match else 'class'
                             })
                             break
-    
+
     return decorators
 
 
 def get_javascript_functions(code: str) -> list[dict[str, Any]]:
     """Extract function definitions from JavaScript code using regex"""
     functions = []
-    
+
     # Function patterns
     patterns = [
         # Function declaration
@@ -226,7 +225,7 @@ def get_javascript_functions(code: str) -> list[dict[str, Any]]:
         # Class method
         (r'^\s*(?:static\s+)?(?:async\s+)?(\w+)\s*\(', 'class_method'),
     ]
-    
+
     lines = code.splitlines()
     for i, line in enumerate(lines):
         for pattern, func_type in patterns:
@@ -239,14 +238,14 @@ def get_javascript_functions(code: str) -> list[dict[str, Any]]:
                     'is_async': 'async' in line
                 })
                 break
-    
+
     return functions
 
 
 def get_javascript_classes(code: str) -> list[dict[str, Any]]:
     """Extract class definitions from JavaScript code"""
     classes = []
-    
+
     pattern = r'class\s+(\w+)(?:\s+extends\s+(\w+))?'
     for i, line in enumerate(code.splitlines(), 1):
         match = re.search(pattern, line)
@@ -256,14 +255,14 @@ def get_javascript_classes(code: str) -> list[dict[str, Any]]:
                 'start_line': i,
                 'extends': match.group(2)
             })
-    
+
     return classes
 
 
 def get_javascript_imports(code: str) -> list[dict[str, Any]]:
     """Extract import statements from JavaScript code"""
     imports = []
-    
+
     patterns = [
         # ES6 imports
         (r'import\s+(\w+)\s+from\s+[\'"]([^\'"]+)', 'default'),
@@ -273,7 +272,7 @@ def get_javascript_imports(code: str) -> list[dict[str, Any]]:
         (r'(?:const|let|var)\s+(\w+)\s*=\s*require\s*\([\'"]([^\'"]+)', 'commonjs'),
         (r'(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\s*\([\'"]([^\'"]+)', 'commonjs_destructure'),
     ]
-    
+
     for i, line in enumerate(code.splitlines(), 1):
         for pattern, import_type in patterns:
             match = re.search(pattern, line)
@@ -284,5 +283,5 @@ def get_javascript_imports(code: str) -> list[dict[str, Any]]:
                     'names': match.group(1),
                     'module': match.group(2) if match.lastindex > 1 else match.group(1)
                 })
-    
+
     return imports
