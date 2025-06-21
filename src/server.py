@@ -200,7 +200,8 @@ async def handle_load_standards(arguments: dict[str, Any]) -> str:
         query=arguments["query"],
         context=arguments.get("context"),
         version=arguments.get("version", "latest"),
-        token_limit=arguments.get("token_limit")
+        token_limit=arguments.get("token_limit"),
+        include_examples=arguments.get("include_examples", True)
     )
 
     result = await standards_engine.load_standards(query)
@@ -503,6 +504,8 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                 mimeType="application/json",
                 text=json.dumps(data, indent=2)
             )
+        else:
+            raise ValueError(f"Standard document not found: {doc_id}")
 
     elif uri_str.startswith("standards://category/"):
         # Load all standards in a category
@@ -515,7 +518,7 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                 index = json.load(f)
 
             if category in index["categories"]:
-                category_data = {
+                category_data: dict[str, Any] = {
                     "category": category,
                     "standards": []
                 }
@@ -534,6 +537,10 @@ async def read_resource(uri: AnyUrl) -> BlobResourceContents | TextResourceConte
                     mimeType="application/json",
                     text=json.dumps(category_data, indent=2)
                 )
+            else:
+                raise ValueError(f"Category not found: {category}")
+        else:
+            raise ValueError("Standards index not found")
 
     elif uri_str == "standards://catalog":
         # Return complete catalog

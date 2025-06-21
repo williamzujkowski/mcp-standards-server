@@ -734,7 +734,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
         # In practice, you'd parse the file to get exact positions
         return 1 + (doc_index * 10)  # Rough estimate
 
-    def suggest_controls(self, code: str) -> set[str]:
+    def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls based on Kubernetes resources"""
         controls = set()
 
@@ -757,7 +757,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
             if resource_type in code.lower():
                 controls.update(type_controls)
 
-        return controls
+        return list(controls)
 
     def _analyze_config_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze Kubernetes configuration files"""
@@ -781,34 +781,36 @@ class KubernetesAnalyzer(BaseAnalyzer):
 
         return annotations
 
-    def analyze_project(self, project_path: Path) -> dict[str, Any]:
+    async def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Kubernetes project"""
         from src.compliance.scanner import ComplianceScanner
 
         # Use the compliance scanner for project-wide analysis
         scanner = ComplianceScanner()
-        results = scanner.scan_directory(project_path)
+        results = await scanner.scan_directory(project_path)
 
         # Convert to expected format
         k8s_files = []
         total_controls = set()
 
-        for file_path, annotations in results.items():
+        for result in results:
+            file_path = result.get("file_path", "")
             if any(str(file_path).endswith(ext) for ext in self.file_extensions):
+                # Extract annotations from result
+                annotations = []
+                for control in result.get("controls_found", []):
+                    annotations.append({
+                        'line': 1,  # Scanner doesn't provide line numbers
+                        'controls': [control],
+                        'evidence': f"Control {control} detected",
+                        'confidence': 0.8
+                    })
+
                 k8s_files.append({
                     'file': str(file_path),
-                    'annotations': [
-                        {
-                            'line': ann.line_number,
-                            'controls': ann.control_ids,
-                            'evidence': ann.evidence,
-                            'confidence': ann.confidence
-                        }
-                        for ann in annotations
-                    ]
+                    'annotations': annotations
                 })
-                for ann in annotations:
-                    total_controls.update(ann.control_ids)
+                total_controls.update(result.get("controls_found", []))
 
         return {
             'summary': {
@@ -822,7 +824,7 @@ class KubernetesAnalyzer(BaseAnalyzer):
 
     def _count_resources(self, project_path: Path) -> dict[str, int]:
         """Count Kubernetes resources in project"""
-        resource_counts = {}
+        resource_counts: dict[str, int] = {}
 
         for file_path in project_path.rglob('*.yaml'):
             try:

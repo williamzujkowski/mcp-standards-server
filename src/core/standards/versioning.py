@@ -137,7 +137,14 @@ class StandardsVersionManager:
     ):
         self.standards_path = standards_path
         self.versions_path = versions_path or standards_path / ".versions"
-        self.config = config or UpdateConfiguration()
+        self.config = config or UpdateConfiguration(
+            source_url=None,
+            update_frequency=UpdateFrequency.MONTHLY,
+            auto_update=False,
+            backup_enabled=True,
+            validation_required=True,
+            notify_on_update=True
+        )
 
         # Create versions directory if needed
         self.versions_path.mkdir(exist_ok=True)
@@ -362,7 +369,7 @@ class StandardsVersionManager:
         if not self.config.allowed_sources and source_url not in self.config.allowed_sources:
             raise ValueError(f"Source {source_url} not in allowed sources")
 
-        update_report = {
+        update_report: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "source": source_url,
             "updated": [],

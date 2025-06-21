@@ -5,6 +5,7 @@ Enhanced JavaScript/TypeScript code analyzer
 """
 import re
 from pathlib import Path
+from typing import Any
 
 from .ast_utils import (
     get_javascript_functions,
@@ -509,7 +510,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
 
         return sorted(suggestions)
 
-    def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
+    async def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire JavaScript/TypeScript project"""
         results = {}
 

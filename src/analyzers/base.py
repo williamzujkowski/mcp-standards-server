@@ -51,7 +51,7 @@ class BaseAnalyzer(ABC):
         pass
 
     @abstractmethod
-    def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
+    async def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire project"""
         pass
 

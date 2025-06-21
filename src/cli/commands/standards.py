@@ -105,8 +105,11 @@ def update(
         # Configure update
         config = UpdateConfiguration(
             source_url=source_url,
+            update_frequency=UpdateFrequency.MONTHLY,
+            auto_update=False,
             backup_enabled=backup,
             validation_required=validate,
+            notify_on_update=False,
             allowed_sources=[source_url]
         )
 
@@ -256,8 +259,12 @@ def schedule(
     """
     try:
         config = UpdateConfiguration(
+            source_url=None,
             update_frequency=frequency,
-            auto_update=enable
+            auto_update=enable,
+            backup_enabled=True,
+            validation_required=True,
+            notify_on_update=True
         )
 
         manager = StandardsVersionManager(standards_dir, config=config)

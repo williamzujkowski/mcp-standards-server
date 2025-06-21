@@ -5,6 +5,7 @@ Enhanced Go code analyzer
 """
 import re
 from pathlib import Path
+from typing import Any
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -539,7 +540,7 @@ class GoAnalyzer(BaseAnalyzer):
 
         return sorted(suggestions)
 
-    def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
+    async def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Go project"""
         results = {}
 

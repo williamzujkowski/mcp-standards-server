@@ -129,6 +129,8 @@ class VectorIndex:
             return list(zip(indices[0], scores[0], strict=False))
         else:
             # Numpy cosine similarity
+            if self.embeddings is None:
+                return []
             similarities = np.dot(self.embeddings, query_norm)
             top_k_indices = np.argsort(similarities)[-k:][::-1]
             return [(int(idx), float(similarities[idx])) for idx in top_k_indices]
@@ -145,7 +147,8 @@ class VectorIndex:
         if self.use_faiss:
             self.faiss.write_index(self.index, str(path / "index.faiss"))
         else:
-            np.save(path / "embeddings.npy", self.embeddings)
+            if self.embeddings is not None:
+                np.save(path / "embeddings.npy", self.embeddings)
 
     def load(self, path: Path):
         """Load index from disk"""

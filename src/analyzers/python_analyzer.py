@@ -5,6 +5,7 @@ Enhanced Python code analyzer with tree-sitter
 """
 import re
 from pathlib import Path
+from typing import Any
 
 from .ast_utils import (
     get_python_classes,
@@ -399,7 +400,7 @@ class PythonAnalyzer(BaseAnalyzer):
 
         return sorted(suggestions)
 
-    def analyze_project(self, project_path: Path) -> dict[str, list[CodeAnnotation]]:
+    async def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Python project with tree-sitter"""
         results = {}
 

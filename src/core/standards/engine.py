@@ -266,7 +266,7 @@ class StandardsEngine:
                     # Apply token optimization
                     optimized = await self._optimize_for_tokens(
                         section,
-                        budget.available,
+                        budget.available or 0,
                         TokenOptimizationStrategy.TRUNCATE
                     )
                     if optimized and budget.can_fit(optimized.tokens):
@@ -649,7 +649,7 @@ class StandardsEngine:
 
     async def validate_standards(self) -> dict[str, Any]:
         """Validate all standards files and return report"""
-        report = {
+        report: dict[str, Any] = {
             "valid": 0,
             "invalid": 0,
             "total": 0,

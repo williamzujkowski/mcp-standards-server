@@ -224,7 +224,7 @@ class EnhancedNaturalLanguageMapper:
                 expanded_query,
                 k=10,
                 min_score=confidence_threshold
-            )
+            ) if self.semantic_engine else []
 
             if not results:
                 return None
@@ -373,7 +373,7 @@ class EnhancedNaturalLanguageMapper:
         }
 
         if self.semantic_engine:
-            stats["semantic_index"] = self.semantic_engine.get_index_stats()
+            stats["semantic_index"] = self.semantic_engine.get_index_stats()  # type: ignore[assignment]
 
         return stats
 

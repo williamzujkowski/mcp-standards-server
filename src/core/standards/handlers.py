@@ -44,7 +44,8 @@ class LoadStandardsHandler(MCPHandler):
             query=query,
             context=context_str,
             version=version,
-            token_limit=token_limit
+            token_limit=token_limit,
+            include_examples=True
         )
 
         # Load standards

@@ -228,7 +228,7 @@ class MicroStandardsGenerator:
 
     def _create_requirement_chunks(self, standard: Standard, context: ChunkingContext) -> list[MicroStandard]:
         """Create chunks for requirements"""
-        chunks = []
+        chunks: list[MicroStandard] = []
         all_requirements = []
 
         # Extract all requirements from standard
@@ -237,7 +237,7 @@ class MicroStandardsGenerator:
             for req in requirements:
                 all_requirements.append({
                     "requirement": req,
-                    "section": section.title,
+                    "section": section.title or "Requirements",
                     "section_id": section.id
                 })
 
@@ -245,7 +245,7 @@ class MicroStandardsGenerator:
             return chunks
 
         # Group requirements into chunks
-        current_chunk_reqs = []
+        current_chunk_reqs: list[dict[str, str]] = []
         current_tokens = 0
 
         for req_info in all_requirements:
@@ -283,7 +283,7 @@ class MicroStandardsGenerator:
         content_parts = [f"# {standard.title} - Requirements\n"]
 
         # Group by section
-        by_section = {}
+        by_section: dict[str, list[str]] = {}
         for req in requirements:
             section = req["section"]
             if section not in by_section:
@@ -293,8 +293,8 @@ class MicroStandardsGenerator:
         # Build content
         for section, reqs in by_section.items():
             content_parts.append(f"\n## {section}")
-            for req in reqs:
-                content_parts.append(f"- {req}")
+            for req_text in reqs:
+                content_parts.append(f"- {req_text}")
 
         content = "\n".join(content_parts)
 
@@ -375,7 +375,7 @@ class MicroStandardsGenerator:
             content=content,
             token_count=self._estimate_tokens(content),
             chunk_type="topic",
-            topics=[section.title] + (section.tags or []),
+            topics=([section.title] if section.title else []) + (section.tags or []),
             concepts=concepts[:10],
             nist_controls=list(controls),
             metadata={
@@ -396,7 +396,7 @@ class MicroStandardsGenerator:
         # Try to split by paragraphs
         paragraphs = section.content.split('\n\n')
 
-        current_content = []
+        current_content: list[str] = []
         current_tokens = 0
         chunk_num = 1
 
@@ -410,9 +410,17 @@ class MicroStandardsGenerator:
                     standard,
                     StandardSection(
                         id=f"{section.id}_part{chunk_num}",
+                        type=section.type,
+                        section=section.section,
                         title=section.title,
                         content=content,
-                        order=section.order
+                        tokens=self._estimate_tokens(content),
+                        version=section.version,
+                        tags=section.tags,
+                        last_updated=section.last_updated,
+                        dependencies=section.dependencies,
+                        nist_controls=section.nist_controls,
+                        metadata=section.metadata
                     ),
                     context,
                     subtitle=f"Part {chunk_num}"
@@ -433,9 +441,17 @@ class MicroStandardsGenerator:
                 standard,
                 StandardSection(
                     id=f"{section.id}_part{chunk_num}",
+                    type=section.type,
+                    section=section.section,
                     title=section.title,
                     content=content,
-                    order=section.order
+                    tokens=self._estimate_tokens(content),
+                    version=section.version,
+                    tags=section.tags,
+                    last_updated=section.last_updated,
+                    dependencies=section.dependencies,
+                    nist_controls=section.nist_controls,
+                    metadata=section.metadata
                 ),
                 context,
                 subtitle=f"Part {chunk_num}" if chunk_num > 1 else None
@@ -451,7 +467,7 @@ class MicroStandardsGenerator:
 
         # Look for implementation sections
         for section in standard.sections:
-            if any(keyword in section.title.lower() for keyword in ["implement", "example", "how to", "guide"]):
+            if section.title and any(keyword in section.title.lower() for keyword in ["implement", "example", "how to", "guide"]):
                 implementations.append(section)
 
         # Also extract code blocks
@@ -474,7 +490,7 @@ class MicroStandardsGenerator:
                         content=impl_content,
                         token_count=self._estimate_tokens(impl_content),
                         chunk_type="implementation",
-                        topics=[section.title, lang],
+                        topics=([section.title] if section.title else []) + [lang],
                         concepts=self._extract_concepts_from_text(explanation or ""),
                         nist_controls=self._extract_controls_from_text(section.content),
                         metadata={
@@ -496,7 +512,7 @@ class MicroStandardsGenerator:
 
             for i, example in enumerate(examples):
                 if self._estimate_tokens(example) > 50:  # Skip tiny examples
-                    example_content = f"# Example: {section.title}\n\n{example}"
+                    example_content = f"# Example: {section.title or 'Code'}\n\n{example}"
 
                     if self._estimate_tokens(example_content) <= context.max_tokens:
                         chunk = MicroStandard(
@@ -506,7 +522,7 @@ class MicroStandardsGenerator:
                             content=example_content,
                             token_count=self._estimate_tokens(example_content),
                             chunk_type="example",
-                            topics=[section.title],
+                            topics=[section.title] if section.title else [],
                             concepts=[],
                             nist_controls=self._extract_controls_from_text(example),
                             metadata={
@@ -533,7 +549,7 @@ class MicroStandardsGenerator:
             all_concepts.extend(concepts)
 
         # Count frequency and return most common
-        concept_counts = {}
+        concept_counts: dict[str, int] = {}
         for concept in all_concepts:
             concept_lower = concept.lower()
             concept_counts[concept_lower] = concept_counts.get(concept_lower, 0) + 1

@@ -226,7 +226,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
 
     def _analyze_base_image(self, base_image: str, line_number: int, file_path: Path) -> list[CodeAnnotation]:
         """Analyze base image for security issues"""
-        annotations = []
+        annotations: list[CodeAnnotation] = []
 
         if not base_image:
             return annotations
@@ -398,7 +398,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
 
         return annotations
 
-    def suggest_controls(self, code: str) -> set[str]:
+    def suggest_controls(self, code: str) -> list[str]:
         """Suggest NIST controls based on Dockerfile content"""
         controls = set()
 
@@ -421,7 +421,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
         if re.search(r'apt-get\s+update|yum\s+update|apk\s+update', code):
             controls.update(["SI-2"])
 
-        return controls
+        return list(controls)
 
     def _analyze_config_file(self, file_path: Path) -> list[CodeAnnotation]:
         """Analyze Docker-related configuration files"""
@@ -480,34 +480,36 @@ class DockerfileAnalyzer(BaseAnalyzer):
 
         return annotations
 
-    def analyze_project(self, project_path: Path) -> dict[str, Any]:
+    async def analyze_project(self, project_path: Path) -> dict[str, Any]:
         """Analyze entire Docker project"""
         from src.compliance.scanner import ComplianceScanner
 
         # Use the compliance scanner for project-wide analysis
         scanner = ComplianceScanner()
-        results = scanner.scan_directory(project_path)
+        results = await scanner.scan_directory(project_path)
 
         # Convert to expected format
         docker_files = []
         total_controls = set()
 
-        for file_path, annotations in results.items():
+        for result in results:
+            file_path = result.get("file_path", "")
             if any(pattern in str(file_path) for pattern in self.file_patterns):
+                # Extract annotations from result
+                annotations = []
+                for control in result.get("controls_found", []):
+                    annotations.append({
+                        'line': 1,  # Scanner doesn't provide line numbers
+                        'controls': [control],
+                        'evidence': f"Control {control} detected",
+                        'confidence': 0.8
+                    })
+
                 docker_files.append({
                     'file': str(file_path),
-                    'annotations': [
-                        {
-                            'line': ann.line_number,
-                            'controls': ann.control_ids,
-                            'evidence': ann.evidence,
-                            'confidence': ann.confidence
-                        }
-                        for ann in annotations
-                    ]
+                    'annotations': annotations
                 })
-                for ann in annotations:
-                    total_controls.update(ann.control_ids)
+                total_controls.update(result.get("controls_found", []))
 
         return {
             'summary': {
@@ -521,7 +523,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
 
     def _count_images(self, project_path: Path) -> dict[str, int]:
         """Count Docker images in project"""
-        image_counts = {}
+        image_counts: dict[str, int] = {}
 
         for file_path in project_path.rglob('*'):
             if any(pattern in file_path.name for pattern in self.file_patterns):

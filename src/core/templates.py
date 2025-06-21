@@ -48,7 +48,7 @@ class TemplateGenerator:
 
     def _load_templates(self) -> dict[str, dict[str, str]]:
         """Load template definitions"""
-        templates = {}
+        templates: dict[str, dict[str, str]] = {}
 
         # API templates
         templates["api"] = {}

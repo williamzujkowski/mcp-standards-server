@@ -37,16 +37,21 @@ class ControlCoverageReporter:
         self.annotations_by_file: dict[str, list[CodeAnnotation]] = {}
         self.all_controls: set[str] = set()
 
-    def analyze_project(self, project_path: Path, analyzers: dict[str, BaseAnalyzer]) -> ControlCoverageMetrics:
+    async def analyze_project(self, project_path: Path, analyzers: dict[str, BaseAnalyzer]) -> ControlCoverageMetrics:
         """Analyze entire project for control coverage"""
         files_analyzed = 0
         files_with_controls = 0
 
         # Analyze all files
         for _analyzer_name, analyzer in analyzers.items():
-            results = analyzer.analyze_project(project_path)
+            results = await analyzer.analyze_project(project_path)
 
-            for file_path, annotations in results.items():
+            # Handle different result formats
+            if isinstance(results, dict) and 'files' in results:
+                # New format from compliance scanner
+                for file_info in results.get('files', []):
+                    file_path = file_info.get('file', '')
+                    annotations = file_info.get('annotations', [])
                 files_analyzed += 1
                 if annotations:
                     files_with_controls += 1
