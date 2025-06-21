@@ -135,7 +135,7 @@ def get_function_definitions(code: str, language: str) -> list[dict[str, Any]]:
     if not tree:
         return []
 
-    functions = []
+    functions: list[dict[str, Any]] = []
 
     # Language-specific queries
     queries = {
@@ -205,7 +205,7 @@ def get_imports(code: str, language: str) -> list[dict[str, Any]]:
     if not tree:
         return []
 
-    imports = []
+    imports: list[dict[str, Any]] = []
 
     # Language-specific queries
     queries = {
@@ -266,7 +266,7 @@ def get_class_definitions(code: str, language: str) -> list[dict[str, Any]]:
     if not tree:
         return []
 
-    classes = []
+    classes: list[dict[str, Any]] = []
 
     # Language-specific queries
     queries = {
@@ -328,7 +328,7 @@ def find_security_decorators(code: str, language: str) -> list[dict[str, Any]]:
     if not tree:
         return []
 
-    decorators = []
+    decorators: list[dict[str, Any]] = []
 
     # Language-specific queries
     queries = {

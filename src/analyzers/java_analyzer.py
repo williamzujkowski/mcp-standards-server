@@ -70,6 +70,11 @@ class JavaAnalyzer(BaseAnalyzer):
             'java.util.logging': ['AU-2', 'AU-3'],
             'ch.qos.logback': ['AU-2', 'AU-3'],
             'org.springframework.security.core.context.SecurityContextHolder': ['AU-2', 'AC-3'],
+            
+            # JPA/Persistence
+            'org.springframework.data.jpa.repository': ['SI-10'],  # JPA repositories
+            'org.springframework.data.repository.query': ['SI-10'],  # Query annotations
+            'javax.persistence': ['SI-10', 'AU-2'],  # JPA entities
         }
 
         # Security annotations
@@ -90,6 +95,11 @@ class JavaAnalyzer(BaseAnalyzer):
             '@EnableWebSecurity': ['SC-8', 'AC-3'],
             '@EnableGlobalMethodSecurity': ['AC-3', 'AC-6'],
             '@EnableOAuth2Sso': ['IA-2', 'IA-8'],
+            # JPA annotations
+            '@Query': ['SI-10'],  # Parameterized queries
+            '@Param': ['SI-10'],  # Parameter binding
+            '@Modifying': ['AC-3'],  # Write operations
+            '@EntityListeners': ['AU-2', 'AU-3'],  # Audit listeners
         }
 
         # Security method patterns
@@ -303,10 +313,12 @@ class JavaAnalyzer(BaseAnalyzer):
         crypto_patterns = [
             (r'Cipher\.getInstance\(', ["SC-13", "SC-28"], "Java cipher usage"),
             (r'MessageDigest\.getInstance\(', ["SC-13", "SI-7"], "Message digest algorithm"),
-            (r'KeyGenerator\.getInstance\(', ["SC-13"], "Key generation"),
+            (r'KeyGenerator\.getInstance\(', ["SC-12", "SC-13"], "Key generation"),
+            (r'KeyPairGenerator\.getInstance\(', ["SC-12", "SC-13"], "Key pair generation"),
             (r'SecureRandom\(\)|SecureRandom\.', ["SC-13"], "Secure random generation"),
             (r'BCrypt\.hashpw|BCrypt\.checkpw', ["IA-5", "SC-13"], "BCrypt password hashing"),
             (r'SSLContext\.getInstance\(', ["SC-8", "SC-13"], "SSL/TLS configuration"),
+            (r'PBKDF2|PBEKeySpec', ["IA-5", "SC-13"], "PBKDF2 key derivation"),
         ]
 
         for pattern, controls, evidence in crypto_patterns:
@@ -328,11 +340,14 @@ class JavaAnalyzer(BaseAnalyzer):
             (r'HtmlUtils\.htmlEscape|StringEscapeUtils\.', ["SI-10"], "HTML escaping"),
             (r'PreparedStatement\.|setString\(|setInt\(', ["SI-10"], "SQL injection prevention"),
             (r'Pattern\.compile\(|matcher\(', ["SI-10"], "Regular expression validation"),
+            (r'containsSqlInjection|SQL_INJECTION|checkSqlInjection', ["SI-10"], "SQL injection detection"),
         ]
 
         for pattern, controls, evidence in validation_patterns:
             if re.search(pattern, code):
-                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
+                # For patterns without backslashes, use first part before |
+                search_term = pattern.split('\\')[0].split('|')[0]
+                line_num = self._find_pattern_line(code, search_term)
                 annotations.append(CodeAnnotation(
                     file_path=file_path,
                     line_number=line_num,
@@ -496,7 +511,11 @@ class JavaAnalyzer(BaseAnalyzer):
             'jjwt': ['IA-2', 'SC-8'],
             'java-jwt': ['IA-2', 'SC-8'],
             'bcrypt': ['IA-5', 'SC-13'],
+            'bcprov': ['SC-13', 'SC-28'],  # BouncyCastle
             'jasypt': ['SC-13', 'SC-28'],
+            'encoder': ['SI-10'],  # OWASP encoder
+            'dependency-check': ['RA-5', 'SI-2'],  # OWASP dependency check
+            'spotbugs': ['SA-11', 'SI-2'],  # Static analysis
             'owasp-esapi': ['SI-10', 'SC-8'],
             'owasp-java-html-sanitizer': ['SI-10'],
             'hibernate-validator': ['SI-10'],

@@ -242,7 +242,7 @@ class StandardsEngine:
             query_info["context_refs"] = context_refs
 
         # Initialize token budget
-        budget = TokenBudget(total_limit=query_obj.token_limit or 50000)
+        budget = TokenBudget(total=query_obj.token_limit or 50000)
 
         # Load each standard
         loaded = []
@@ -507,7 +507,9 @@ class StandardsEngine:
 
             # Find all standards for this category/type
             category = std_type.lower()
-            if category in index["categories"]:
+            
+            # Try categories field first (newer format)
+            if "categories" in index and category in index["categories"]:
                 for std_id in index["categories"][category]:
                     std_info = index["standards"][std_id]
                     yaml_file = self.standards_path / std_info["file"]
@@ -516,6 +518,16 @@ class StandardsEngine:
                         section_data = await self._load_yaml_standard(yaml_file, std_type, section_name, version)
                         if section_data:
                             sections.append(section_data)
+            else:
+                # Fallback: search through all standards for matching type
+                for std_id, std_info in index.get("standards", {}).items():
+                    if std_info.get("type", "").lower() == category:
+                        yaml_file = self.standards_path / std_info["file"]
+                        if yaml_file.exists():
+                            section_name = std_info.get("section", std_id.split(":")[-1])
+                            section_data = await self._load_yaml_standard(yaml_file, std_type, section_name, version)
+                            if section_data:
+                                sections.append(section_data)
 
         # Sort sections by a predefined order if available
         section_order = {

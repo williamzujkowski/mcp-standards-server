@@ -849,7 +849,7 @@ require (
 '''
         mod_file.write_text(mod_content)
 
-        results = analyzer._analyze_config_file(mod_file)
+        results = analyzer._analyze_go_mod(mod_file)
 
         # Should detect security packages
         assert len(results) >= 6

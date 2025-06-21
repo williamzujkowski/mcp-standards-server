@@ -282,10 +282,11 @@ def create_version(
     changelog: str = typer.Option(..., "--changelog", "-c", help="Version changelog"),
     author: str = typer.Option(None, "--author", "-a", help="Version author"),
     strategy: VersioningStrategy = typer.Option(
-        VersioningStrategy.SEMANTIC,
+        VersioningStrategy.SEMANTIC.value,
         "--strategy",
         "-s",
-        help="Versioning strategy"
+        help="Versioning strategy",
+        case_sensitive=False
     ),
     standards_dir: Path = typer.Option(
         Path("data/standards"),

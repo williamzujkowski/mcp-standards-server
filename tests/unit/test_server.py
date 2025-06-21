@@ -5,7 +5,7 @@ Test MCP Server
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from mcp.types import TextContent
@@ -295,14 +295,28 @@ class TestServerInitialization:
     @pytest.mark.asyncio
     async def test_initialize_server(self):
         """Test server initialization"""
-        with patch('src.server.Path') as mock_path:
-            mock_path.return_value.parent.parent = Path("/fake/path")
+        with patch('src.server.Path') as mock_path, \
+             patch('src.core.standards.versioning.Path') as mock_versioning_path:
+            
+            # Mock the paths
+            fake_root = Path("/fake/path")
+            mock_path.return_value.parent.parent = fake_root
+            
+            # Mock the versioning path operations
+            mock_versions_path = Mock()
+            mock_versions_path.mkdir = Mock()
+            mock_versions_path.__truediv__ = Mock(return_value=Mock(exists=Mock(return_value=False)))
+            
+            mock_versioning_path.return_value = mock_versions_path
+            mock_versioning_path.return_value.parent = mock_versioning_path.return_value
+            
+            # Also need to patch the StandardsEngine initialization
+            with patch('src.core.standards.engine.StandardsVersionManager'):
+                await initialize_server()
 
-            await initialize_server()
-
-            # Verify globals were set
-            from src.server import standards_engine
-            assert standards_engine is not None
+                # Verify globals were set
+                from src.server import standards_engine
+                assert standards_engine is not None
 
     def test_main_function(self):
         """Test main entry point"""

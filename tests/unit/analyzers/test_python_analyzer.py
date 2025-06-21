@@ -172,7 +172,7 @@ SECURE_HSTS_SECONDS = 31536000
         evidence_list = [ann.evidence for ann in annotations]
         assert any('allowed hosts' in ev.lower() for ev in evidence_list)
         assert any('ssl redirect' in ev.lower() for ev in evidence_list)
-        assert any('secure.*cookie' in ev.lower() for ev in evidence_list)
+        assert any('secure' in ev.lower() and 'cookie' in ev.lower() for ev in evidence_list)
 
     def test_sql_injection_prevention(self, tmp_path):
         """Test SQL injection prevention patterns"""

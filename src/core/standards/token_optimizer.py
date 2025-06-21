@@ -232,7 +232,7 @@ class SummarizationStrategy(OptimizationStrategy):
             return ""
 
         # Group similar requirements
-        grouped = {}
+        grouped: dict[str, list[str]] = {}
         for req in requirements:
             key = self._get_requirement_key(req)
             if key not in grouped:
@@ -356,7 +356,7 @@ class EssentialOnlyStrategy(OptimizationStrategy):
     def _truncate_to_fit(self, content: str, max_tokens: int) -> str:
         """Truncate content to fit token budget while preserving structure"""
         lines = content.split('\n')
-        result = []
+        result: list[str] = []
         current_tokens = 0
 
         for line in lines:
@@ -417,7 +417,7 @@ class HierarchicalStrategy(OptimizationStrategy):
 
     def _build_hierarchy(self, content: str) -> dict[str, Any]:
         """Build hierarchical structure from content"""
-        hierarchy = {
+        hierarchy: dict[str, Any] = {
             "title": "Document Summary",
             "overview": "",
             "sections": [],

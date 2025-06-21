@@ -22,7 +22,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
 
     def __init__(self):
         super().__init__()
-        self.file_extensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs']
+        self.file_extensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.vue']
         self.language = 'javascript'
 
         # Security-relevant imports/packages
@@ -286,6 +286,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             (r'DOMPurify\.sanitize', ["SI-10"], "DOM sanitization"),
             (r'\.replace\s*\(\s*[/\\<>]', ["SI-10"], "Manual sanitization"),
             (r'express-validator', ["SI-10"], "Express validator middleware"),
+            (r'JSON\.parse\s*\(|Invalid\s*message\s*format', ["SI-10"], "JSON validation"),
         ]
 
         for pattern, controls, evidence in validation_patterns:
@@ -305,7 +306,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             (r'helmet\s*\(\s*\)', ["SC-8", "SC-18"], "Helmet security headers"),
             (r'app\.use\s*\(\s*cors', ["AC-4", "SC-8"], "CORS configuration"),
             (r'csurf\s*\(\s*\)', ["SI-10", "SC-8"], "CSRF protection"),
-            (r'rateLimit\s*\(\s*{', ["SC-5"], "Rate limiting middleware"),
+            (r'rateLimit\s*\(\s*{|rate\s*limit|limiter\.messages|Rate\s*limit\s*exceeded', ["SC-5"], "Rate limiting"),
             (r'X-Frame-Options|Content-Security-Policy', ["SC-18"], "Security headers"),
         ]
 
@@ -341,7 +342,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                     confidence=0.8
                 ))
 
-        # Framework-specific patterns
+        # Framework-specific patterns (including Vue)
         self._analyze_framework_patterns(code, file_path, annotations)
 
         return annotations
@@ -388,6 +389,74 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                         evidence=f"React: {evidence}",
                         component="framework-security",
                         confidence=0.7 if 'dangerously' in pattern else 0.85
+                    ))
+                    
+        # Angular patterns
+        if '@angular' in code or 'angular' in code.lower() or '.component.ts' in file_path:
+            angular_patterns = [
+                (r'(DomSanitizer|sanitizer\.sanitize)', ["SI-10"], "Angular DOM sanitization"),
+                (r'\[innerHTML\]', ["SI-10"], "Angular HTML binding - needs sanitization"),
+                (r'SecurityContext\.(HTML|STYLE|SCRIPT)', ["SI-10"], "Angular security context"),
+                (r'Validators\.(required|email|pattern|minLength)', ["SI-10"], "Angular form validation"),
+                (r'hasRole\(|hasPermission\(|canEdit|canView', ["AC-3", "AC-6"], "Angular role-based access"),
+                (r'@angular/platform-browser.*SafeHtml', ["SI-10"], "Angular safe HTML type"),
+                (r'isAuthenticated\(\)', ["IA-2"], "Angular authentication check"),
+            ]
+            
+            for pattern, controls, evidence in angular_patterns:
+                if re.search(pattern, code):  # Remove re.IGNORECASE to fix pattern matching
+                    # Find a suitable search term for line number
+                    if 'DomSanitizer' in pattern:
+                        search_term = 'DomSanitizer'
+                    elif 'sanitizer' in pattern:
+                        search_term = 'sanitizer'
+                    elif 'SecurityContext' in pattern:
+                        search_term = 'SecurityContext'
+                    elif 'Validators' in pattern:
+                        search_term = 'Validators'
+                    elif 'hasRole' in pattern:
+                        search_term = 'hasRole'
+                    elif 'SafeHtml' in pattern:
+                        search_term = 'SafeHtml'
+                    elif 'isAuthenticated' in pattern:
+                        search_term = 'isAuthenticated'
+                    elif 'innerHTML' in pattern:
+                        search_term = 'innerHTML'
+                    else:
+                        search_term = pattern.split('(')[0]
+                    
+                    line_num = self._find_pattern_line(code, search_term)
+                    annotations.append(CodeAnnotation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        control_ids=controls,
+                        evidence=f"Angular: {evidence}",
+                        component="framework-security",
+                        confidence=0.85
+                    ))
+                    
+        # Vue.js patterns
+        if 'vue' in code.lower() or '.vue' in file_path:
+            vue_patterns = [
+                (r'v-html', ["SI-10"], "Vue.js v-html directive - potential XSS risk"),
+                (r'v-text', ["SI-10"], "Vue.js v-text directive - safe text interpolation"),
+                (r'DOMPurify\.sanitize', ["SI-10"], "DOM sanitization"),
+                (r'hasPermission\(|canEdit|canView', ["AC-3", "AC-6"], "Vue permission check"),
+                (r':pattern=|emailPattern', ["SI-10"], "Vue pattern validation"),
+                (r'validateForm\(', ["SI-10"], "Form validation"),
+                (r'@submit\.prevent', ["SI-10"], "Vue form handling with validation"),
+            ]
+            
+            for pattern, controls, evidence in vue_patterns:
+                if re.search(pattern, code):
+                    line_num = self._find_pattern_line(code, pattern.split('(')[0].replace('\\', ''))
+                    annotations.append(CodeAnnotation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        control_ids=controls,
+                        evidence=f"Vue: {evidence}",
+                        component="framework-security",
+                        confidence=0.85
                     ))
 
     def suggest_controls(self, code: str) -> list[str]:

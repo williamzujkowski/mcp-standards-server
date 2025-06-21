@@ -90,7 +90,7 @@ class MicroStandardIndex(BaseModel):
                 if current in children:
                     parent = p_id
                     break
-            current = parent
+            current = parent  # type: ignore[assignment]
 
         return list(reversed(path))
 
@@ -207,11 +207,8 @@ class MicroStandardsGenerator:
 
         # Optimize to fit token limit
         if self._estimate_tokens(content) > context.max_tokens:
-            content, _ = self.token_optimizer.optimize(
-                content,
-                "hierarchical",
-                context.target_tokens
-            )
+            # Simple truncation for now - async optimization not available in sync context
+            content = self.tokenizer.truncate_to_tokens(content, context.target_tokens)
 
         return MicroStandard(
             id=self._generate_chunk_id(standard.id, "overview"),
@@ -368,11 +365,8 @@ class MicroStandardsGenerator:
 
         # Optimize if needed
         if self._estimate_tokens(content) > context.target_tokens:
-            content, _ = self.token_optimizer.optimize(
-                content,
-                "summarize",
-                context.target_tokens
-            )
+            # Simple truncation for now - async optimization not available in sync context
+            content = self.tokenizer.truncate_to_tokens(content, context.target_tokens)
 
         return MicroStandard(
             id=self._generate_chunk_id(standard.id, "topic"),

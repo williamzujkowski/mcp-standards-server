@@ -4,11 +4,11 @@ Standards Engine Data Models
 @evidence: Data models for standards management
 """
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class StandardType(Enum):
@@ -60,7 +60,9 @@ class StandardSection:
     content: str
     tokens: int
     version: str
-    last_updated: datetime | None
+    title: str | None = None
+    tags: list[str] = field(default_factory=list)
+    last_updated: datetime | None = None
     dependencies: list[str] = field(default_factory=list)
     nist_controls: set[str] = field(default_factory=set)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -71,13 +73,49 @@ class StandardSection:
             "id": self.id,
             "type": self.type.value,
             "section": self.section,
+            "title": self.title,
             "content": self.content,
             "tokens": self.tokens,
             "version": self.version,
+            "tags": self.tags,
             "last_updated": self.last_updated.isoformat() if self.last_updated else None,
             "dependencies": self.dependencies,
             "nist_controls": list(self.nist_controls),
             "metadata": self.metadata
+        }
+
+
+@dataclass
+class Standard:
+    """
+    Complete standard document
+    @nist-controls: AC-4, CM-7
+    @evidence: Full standard document representation
+    """
+    id: str
+    title: str
+    description: str | None = None
+    category: str = ""
+    version: str = "latest"
+    sections: list[StandardSection] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization"""
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "category": self.category,
+            "version": self.version,
+            "sections": [s.to_dict() for s in self.sections],
+            "tags": self.tags,
+            "metadata": self.metadata,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
 
 
@@ -90,7 +128,8 @@ class StandardQuery(BaseModel):
     query: str = Field(..., description="Standard query string")
     context: str | None = Field(None, description="Additional context for query")
     version: str = Field("latest", description="Standard version")
-    token_limit: int | None = Field(None, description="Maximum tokens to return")
+    token_limit: int | None = Field(10000, description="Maximum tokens to return")
+    include_examples: bool = Field(True, description="Include code examples")
 
     @field_validator('query')
     @classmethod
@@ -184,18 +223,35 @@ class StandardCache(BaseModel):
     @evidence: Secure caching with TTL
     """
     key: str
-    value: list[dict[str, Any]]
+    value: dict[str, Any] | list[dict[str, Any]]
     created_at: datetime
     expires_at: datetime
     access_count: int = 0
+    hit_count: int | None = None  # Alias for access_count
+
+    @model_validator(mode='after')
+    def sync_counts(self) -> 'StandardCache':
+        """Sync hit_count with access_count"""
+        if self.hit_count is not None and self.access_count == 0:
+            self.access_count = self.hit_count
+        elif self.hit_count is None:
+            self.hit_count = self.access_count
+        return self
 
     def is_expired(self) -> bool:
         """Check if cache entry is expired"""
-        return datetime.utcnow() > self.expires_at
+        # If expires_at is naive, compare with naive datetime
+        if self.expires_at.tzinfo is None:
+            return datetime.now() > self.expires_at
+        else:
+            # Use timezone-aware comparison
+            return datetime.now(timezone.utc) > self.expires_at
 
     def increment_access(self) -> None:
         """Track cache hits"""
         self.access_count += 1
+        if self.hit_count is not None:
+            self.hit_count += 1
 
 
 class TokenOptimizationStrategy(Enum):
@@ -217,29 +273,63 @@ class TokenBudget:
     @nist-controls: SA-8
     @evidence: Resource management for LLM contexts
     """
-    total_limit: int
+    total: int
     used: int = 0
+    available: int | None = None
     reserved: int = 0
 
+    def __post_init__(self):
+        """Initialize calculated fields"""
+        # Validate non-negative values
+        if self.total < 0:
+            raise ValueError("Total tokens cannot be negative")
+        if self.used < 0:
+            raise ValueError("Used tokens cannot be negative")
+        if self.reserved < 0:
+            raise ValueError("Reserved tokens cannot be negative")
+            
+        if self.available is None:
+            self.available = self.total - self.used - self.reserved
+        elif self.available < 0:
+            raise ValueError("Available tokens cannot be negative")
+
     @property
-    def available(self) -> int:
-        """Calculate available tokens"""
-        return self.total_limit - self.used - self.reserved
+    def total_limit(self) -> int:
+        """Alias for total"""
+        return self.total
+
+    def get_net_available(self) -> int:
+        """Get available minus reserved"""
+        return self.available - self.reserved if self.available else 0
+
+    def can_consume(self, tokens: int) -> bool:
+        """Check if tokens can be consumed"""
+        return tokens <= self.get_net_available()
+
+    def consume(self, tokens: int) -> None:
+        """Consume tokens from budget"""
+        if not self.can_consume(tokens):
+            raise ValueError(f"Cannot consume {tokens} tokens, only {self.get_net_available()} available")
+        self.used += tokens
+        if self.available is not None:
+            self.available -= tokens
 
     def can_fit(self, tokens: int) -> bool:
         """Check if tokens fit in budget"""
-        return tokens <= self.available
+        return tokens <= self.available if self.available else False
 
     def allocate(self, tokens: int) -> bool:
         """Allocate tokens from budget"""
         if self.can_fit(tokens):
             self.used += tokens
+            self.available = self.total - self.used - self.reserved
             return True
         return False
 
     def reserve(self, tokens: int) -> bool:
         """Reserve tokens for future use"""
-        if tokens <= (self.total_limit - self.used - self.reserved):
+        if tokens <= (self.total - self.used - self.reserved):
             self.reserved += tokens
+            self.available = self.total - self.used - self.reserved
             return True
         return False

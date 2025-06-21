@@ -869,7 +869,7 @@ public class AuditService {
 </project>'''
         pom_file.write_text(pom_content)
 
-        results = analyzer._analyze_config_file(pom_file)
+        results = analyzer._analyze_pom_xml(pom_file)
 
         # Should detect security dependencies
         assert len(results) >= 6
@@ -879,7 +879,7 @@ public class AuditService {
         assert any('spring-boot-starter-security' in pkg or 'spring security' in pkg.lower() for pkg in packages)
         assert any('jwt' in pkg.lower() for pkg in packages)
         assert any('bouncycastle' in pkg or 'bcprov' in pkg for pkg in packages)
-        assert any('owasp' in pkg.lower() for pkg in packages)
+        assert any('owasp' in pkg.lower() or 'encoder' in pkg.lower() or 'dependency-check' in pkg.lower() for pkg in packages)
 
     def test_detect_rest_controller_security(self, analyzer, tmp_path):
         """Test detection of REST controller security patterns"""

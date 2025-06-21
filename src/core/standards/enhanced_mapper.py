@@ -28,7 +28,7 @@ class MappingResult:
     confidence: float
     method: str  # 'static', 'semantic', 'hybrid'
     keywords: list[str]
-    semantic_matches: list[SearchResult] = None
+    semantic_matches: list[SearchResult] | None = None
 
 
 class EnhancedNaturalLanguageMapper:
@@ -160,7 +160,13 @@ class EnhancedNaturalLanguageMapper:
             # Combine results
             result = self._combine_results(static_result, semantic_result, query)
         else:
-            result = static_result
+            result = static_result if static_result else MappingResult(
+                standard_refs=[],
+                confidence=0.0,
+                method='none',
+                keywords=[],
+                semantic_matches=None
+            )
 
         # Cache result
         self._cache[cache_key] = result
@@ -242,7 +248,7 @@ class EnhancedNaturalLanguageMapper:
             confidence = results[0].score if results else 0.0
 
             # Rerank if context provided
-            if context:
+            if context and self.semantic_engine:
                 results = self.semantic_engine.rerank_results(query, results, context)
 
             return MappingResult(

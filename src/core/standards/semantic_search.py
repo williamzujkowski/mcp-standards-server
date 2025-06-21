@@ -78,9 +78,11 @@ class VectorIndex:
 
     def __init__(self, dimension: int | None = None):
         self.dimension = dimension
-        self.index = None
+        self.index: Any = None  # FAISS index or None
+        self.embeddings: np.ndarray | None = None  # Numpy embeddings for fallback
         self.metadata: list[dict[str, Any]] = []
         self.use_faiss = self._try_import_faiss()
+        self.faiss: Any = None  # FAISS module
 
     def _try_import_faiss(self) -> bool:
         """Try to import FAISS for optimized search"""
@@ -119,7 +121,7 @@ class VectorIndex:
         # Normalize query
         query_norm = query_embedding / np.linalg.norm(query_embedding)
 
-        if self.use_faiss:
+        if self.use_faiss and self.index is not None:
             # FAISS search
             scores, indices = self.index.search(
                 query_norm.reshape(1, -1).astype('float32'), k
@@ -154,7 +156,10 @@ class VectorIndex:
         # Load index
         if self.use_faiss and (path / "index.faiss").exists():
             self.index = self.faiss.read_index(str(path / "index.faiss"))
-            self.dimension = self.index.d
+            if hasattr(self.index, 'd'):
+                self.dimension = self.index.d
+            else:
+                self.dimension = None
         elif (path / "embeddings.npy").exists():
             self.embeddings = np.load(path / "embeddings.npy")
             self.dimension = self.embeddings.shape[1]
@@ -401,7 +406,7 @@ class SemanticSearchEngine:
         # Simple paragraph-based chunking
         paragraphs = text.split('\n\n')
         chunks = []
-        current_chunk = []
+        current_chunk: list[str] = []
         current_size = 0
 
         for para in paragraphs:
@@ -443,7 +448,7 @@ class SemanticSearchEngine:
             return {"indexed": False}
 
         # Count different types
-        type_counts = {}
+        type_counts: dict[str, int] = {}
         for metadata in self.index.metadata:
             doc_type = metadata.get('type', 'unknown')
             type_counts[doc_type] = type_counts.get(doc_type, 0) + 1

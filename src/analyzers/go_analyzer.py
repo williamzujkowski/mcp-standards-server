@@ -72,6 +72,15 @@ class GoAnalyzer(BaseAnalyzer):
             'github.com/sirupsen/logrus': ['AU-2', 'AU-3'],
             'go.uber.org/zap': ['AU-2', 'AU-3'],
             'github.com/rs/zerolog': ['AU-2', 'AU-3'],
+            
+            # Framework packages
+            'github.com/gin-gonic/gin': ['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'],
+            'github.com/gin-contrib/secure': ['SC-8', 'SC-18'],
+            'github.com/gin-contrib/cors': ['AC-4', 'SC-8'],
+            'github.com/ulule/limiter/v3': ['SC-5'],
+            
+            # Additional crypto
+            'golang.org/x/crypto': ['SC-13', 'SC-28'],
         }
 
         # Security function patterns
@@ -261,6 +270,10 @@ class GoAnalyzer(BaseAnalyzer):
             (r'session\.Get|session\.Save', ["SC-23", "AC-12"], "Session management"),
             (r'Bearer\s+token|Authorization:\s*Bearer', ["IA-2", "SC-8"], "Bearer token authentication"),
             (r'oauth2\.Config|oauth2\.Token', ["IA-2", "IA-8"], "OAuth2 implementation"),
+            (r'verifyToken|ValidateToken', ["IA-2"], "Token verification"),
+            (r'grpc\.UnaryInterceptor|grpc\.StreamInterceptor', ["IA-2", "AC-3"], "gRPC interceptors"),
+            (r'codes\.Unauthenticated|status\.Error.*Unauthenticated', ["IA-2"], "gRPC authentication"),
+            (r'RequireRole|codes\.PermissionDenied', ["AC-3", "AC-6"], "gRPC authorization"),
         ]
 
         for pattern, controls, evidence in auth_patterns:
@@ -323,6 +336,8 @@ class GoAnalyzer(BaseAnalyzer):
             (r'regexp\.MustCompile|regexp\.Match', ["SI-10"], "Regular expression validation"),
             (r'strings\.Replace.*[<>"]|html/template', ["SI-10"], "Output sanitization"),
             (r'json\.Valid|json\.Unmarshal', ["SI-10"], "JSON validation"),
+            (r'(?:sql|SQL).*(?:injection|Injection)|sqlPatterns', ["SI-10"], "SQL injection prevention"),
+            (r'(?:Sanitize|sanitize|Clean|clean).*(?:Input|String|Text)', ["SI-10"], "Input sanitization"),
         ]
 
         for pattern, controls, evidence in validation_patterns:
@@ -342,7 +357,7 @@ class GoAnalyzer(BaseAnalyzer):
             (r'secure\.New|secure\.Options', ["SC-8", "SC-18"], "Security headers middleware"),
             (r'csrf\.Protect|nosurf\.New', ["SI-10", "SC-8"], "CSRF protection"),
             (r'cors\.New|cors\.Default', ["AC-4", "SC-8"], "CORS configuration"),
-            (r'ratelimit\.New|limiter\.NewLimiter', ["SC-5"], "Rate limiting"),
+            (r'ratelimit\.New|limiter\.NewLimiter|limiter\.Rate|limiter/v3', ["SC-5"], "Rate limiting"),
             (r'helmet\.Default|secure\.Headers', ["SC-8", "SC-18"], "Security headers"),
         ]
 
@@ -364,6 +379,10 @@ class GoAnalyzer(BaseAnalyzer):
             (r'logger\.Info.*(?:login|logout|auth)', ["AU-2", "AU-3"], "Authentication logging"),
             (r'zap\.L\(\)|zerolog\.', ["AU-2", "AU-3"], "Structured logging"),
             (r'syslog\.New|syslog\.Write', ["AU-2", "AU-9"], "System logging"),
+            (r'AuditLog|LogSecurityEvent|SecurityEvent', ["AU-2", "AU-3"], "Security event logging"),
+            (r'timestamp.*ISO8601|EncodeTime.*ISO8601', ["AU-3"], "Timestamp formatting"),
+            (r'OutputPaths.*\[|config\.OutputPaths', ["AU-4"], "Audit storage configuration"),
+            (r'Sampling\s*=\s*nil', ["AU-2"], "Comprehensive event logging"),
         ]
 
         for pattern, controls, evidence in logging_patterns:
@@ -376,6 +395,27 @@ class GoAnalyzer(BaseAnalyzer):
                     evidence=evidence,
                     component="logging",
                     confidence=0.8
+                ))
+
+        # Database security patterns
+        db_patterns = [
+            (r'NamedExec|NamedQuery|Named\(', ["SI-10"], "Parameterized queries with named parameters"),
+            (r'\$\d+|:\w+', ["SI-10"], "SQL parameter placeholders"),
+            (r'Prepare\(|PrepareContext\(|Prepared|Preparex', ["SI-10"], "Prepared statements"),
+            (r'BeginTx|tx\.Rollback|tx\.Commit', ["AC-3"], "Transaction management"),
+            (r'audit_log|audit.*log', ["AU-2", "AU-3"], "Database audit logging"),
+        ]
+
+        for pattern, controls, evidence in db_patterns:
+            if re.search(pattern, code):
+                line_num = self._find_pattern_line(code, pattern.split('\\')[0])
+                annotations.append(CodeAnnotation(
+                    file_path=file_path,
+                    line_number=line_num,
+                    control_ids=controls,
+                    evidence=evidence,
+                    component="database-security",
+                    confidence=0.85
                 ))
 
         # Framework-specific patterns
@@ -424,6 +464,29 @@ class GoAnalyzer(BaseAnalyzer):
                         line_number=line_num,
                         control_ids=controls,
                         evidence=f"Echo framework: {evidence}",
+                        component="framework-security",
+                        confidence=0.85
+                    ))
+
+        # Fiber framework
+        if 'gofiber/fiber' in code:
+            fiber_patterns = [
+                (r'fiber/v2/middleware/csrf', ["SI-10", "SC-8"], "Fiber CSRF protection"),
+                (r'fiber/v2/middleware/helmet', ["SC-8", "SC-18"], "Fiber security headers"),
+                (r'fiber/v2/middleware/limiter', ["SC-5"], "Fiber rate limiting"),
+                (r'fiber/v2/middleware/cors', ["AC-4", "SC-8"], "Fiber CORS configuration"),
+                (r'fiber/v2/middleware/logger', ["AU-2", "AU-3"], "Fiber logging middleware"),
+                (r'limiter\.New\(|Max:\s*\d+|Expiration:\s*time\.', ["SC-5"], "Rate limiting configuration"),
+            ]
+
+            for pattern, controls, evidence in fiber_patterns:
+                if re.search(pattern, code):
+                    line_num = self._find_pattern_line(code, pattern.split('\\')[0])
+                    annotations.append(CodeAnnotation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        control_ids=controls,
+                        evidence=f"Fiber framework: {evidence}",
                         component="framework-security",
                         confidence=0.85
                     ))

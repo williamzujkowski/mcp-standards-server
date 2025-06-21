@@ -123,7 +123,7 @@ class EnhancedNISTPatterns:
                     0.85, "monitoring"
                 ),
                 ControlPattern(
-                    r"(tamper|integrity)_(proof|protection)|log_signing",
+                    r"(tamper|integrity)[_-]?(proof|protection)|log[_-]?sign|sign[_-]?log",
                     ["AU-9", "AU-9(2)", "AU-9(3)"],
                     "Audit information protection",
                     0.92, "security_feature"
@@ -267,7 +267,7 @@ class EnhancedNISTPatterns:
                     0.85, "authentication"
                 ),
                 ControlPattern(
-                    r"session_timeout|idle_timeout|inactivity_logout",
+                    r"session_timeout|idle_timeout|inactivity_logout|session_lifetime|permanent_session",
                     ["IA-11", "AC-12"],
                     "Re-authentication for sessions",
                     0.88, "session_management"
@@ -587,7 +587,7 @@ class EnhancedNISTPatterns:
                     0.95, "input_validation", "high"
                 ),
                 ControlPattern(
-                    r"error_handl|exception_handl|error_message|stack_trace",
+                    r"error[_\s]?handl|exception[_\s]?handl|error_message|stack_trace|except\s+\w+Exception",
                     ["SI-11"],
                     "Error handling",
                     0.88, "error_handling"
@@ -645,7 +645,7 @@ class EnhancedNISTPatterns:
                     0.87, "asset_management"
                 ),
                 ControlPattern(
-                    r"vendor_assessment|supplier_audit|third_party_audit",
+                    r"vendor[_\s]?(assessment|risk|audit)|supplier[_\s]?audit|third[_\s]?party[_\s]?(audit|risk)",
                     ["SR-6", "SR-6(1)"],
                     "Supplier assessments",
                     0.82, "vendor_management"

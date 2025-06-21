@@ -77,7 +77,7 @@ class TestMCPEndToEnd:
         resources = await list_resources()
 
         assert len(resources) > 0
-        resource_uris = [r.uri for r in resources]
+        resource_uris = [r["uri"] for r in resources]
         assert "standards://catalog" in resource_uris
 
         # Read a resource
@@ -85,7 +85,9 @@ class TestMCPEndToEnd:
 
         resource = await read_resource(AnyUrl("standards://catalog"))
 
-        assert resource.uri == "standards://catalog"
+        # The resource is returned as TextResourceContents or BlobResourceContents
+        assert hasattr(resource, "text") or hasattr(resource, "blob")
+        assert str(resource.uri) == "standards://catalog"
         assert resource.mimeType == "application/json"
         assert "standards" in resource.text
 
@@ -97,15 +99,15 @@ class TestMCPEndToEnd:
         prompts = await list_prompts()
 
         assert len(prompts) > 0
-        prompt_names = [p.name for p in prompts]
+        prompt_names = [p["name"] for p in prompts]
         assert "secure-api-design" in prompt_names
 
         # Get a prompt
         prompt = await get_prompt("secure-api-design", {"api_type": "GraphQL"})
 
-        assert prompt.description == "Design a secure GraphQL API"
-        assert len(prompt.messages) > 0
-        assert "GraphQL" in prompt.messages[0].content
+        assert prompt["description"] == "Design a secure GraphQL API"
+        assert len(prompt["messages"]) > 0
+        assert "GraphQL" in prompt["messages"][0]["content"]
 
 
 @pytest.mark.integration

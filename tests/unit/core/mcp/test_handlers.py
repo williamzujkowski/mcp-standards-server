@@ -264,11 +264,13 @@ class TestHandlerIntegration:
         )
 
         # Create message and context
+        import time
+        current_time = time.time()
         message = MCPMessage(
             id="lifecycle-123",
             method="lifecycle.test",
             params={},
-            timestamp=1234567890.0
+            timestamp=current_time
         )
 
         context = ComplianceContext(
@@ -276,7 +278,7 @@ class TestHandlerIntegration:
             organization_id="test-org",
             session_id="test-session",
             request_id="test-request",
-            timestamp=1234567890.0,
+            timestamp=current_time,
             ip_address="127.0.0.1",
             user_agent="test-client",
             auth_method="jwt",
@@ -324,11 +326,12 @@ class TestHandlerIntegration:
             assert retrieved == handler
 
             # Create test message
+            import time
             message = MCPMessage(
                 id=f"{method}-123",
                 method=method,
                 params={},
-                timestamp=1234567890.0
+                timestamp=time.time()
             )
 
             context = ComplianceContext(
@@ -336,7 +339,7 @@ class TestHandlerIntegration:
                 organization_id="test-org",
                 session_id="test-session",
                 request_id="test-request",
-                timestamp=1234567890.0,
+                timestamp=time.time(),
                 ip_address="127.0.0.1",
                 user_agent="test-client",
                 auth_method="jwt",
