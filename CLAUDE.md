@@ -12,13 +12,13 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
 5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support
 
 ### Key Metrics
-- **Current Test Coverage**: 61% (up from 54%)
+- **Current Test Coverage**: 70% (up from 54%)
 - **Standards Imported**: 17/23 from williamzujkowski/standards
 - **Token Reduction**: 0% (Target: 90%)
 - **Languages Supported**: 4 (Python, JS/TS, Go, Java)
 - **IaC Analyzers**: 3 (Terraform, Dockerfile, Kubernetes)
 - **NIST Controls Detected**: 200+ across 20 families
-- **Total Tests**: 456 (up from 362)
+- **Total Tests**: 523 (up from 362)
 - **New Test Methods**: 120+
 
 ## Project Overview
@@ -49,7 +49,7 @@ This is a Model Context Protocol (MCP) server built with the official Python SDK
 - **Git Integration**: Automated hooks for pre-commit and pre-push compliance checking
 - **VS Code Support**: Integrated settings and workflow configuration
 - **Example Projects**: Python API, JavaScript frontend with comprehensive documentation
-- **Test Coverage**: 61% (improving from 54%, targeting 80%)
+- **Test Coverage**: 70% (improved from 54%, targeting 80%)
 - **GitHub Workflows**: CI/CD pipelines with security scanning
 
 ### 🚧 Remaining Tasks (Low Priority)

@@ -28,7 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AST Utilities**: Native AST parsing for Python with pattern fallback for other languages
 - **Tree-sitter Foundation**: Infrastructure for future tree-sitter integration
 - **Comprehensive Test Suites**: Added 120+ test methods across analyzers, CLI, and server modules
-- **Test Coverage Improvements**: Increased from 54% to 61% (targeting 80%)
+- **Test Coverage Improvements**: Increased from 54% to 70% (targeting 80%)
+  - `enhanced_mapper.py`: 100% coverage (was 0%)
+  - `semantic_search.py`: 88% coverage (was 0%)
+  - `oscal_handler.py`: 61% coverage (was 0%)
+  - Total tests increased from 456 to 523
 
 ### Enhanced
 - **Standards Index**: JSON-based indexing for efficient searching and categorization
