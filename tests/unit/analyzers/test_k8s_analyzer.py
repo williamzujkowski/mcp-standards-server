@@ -688,9 +688,9 @@ server:
           tls:
           - secretName: tls-secret
         '''
-        
+
         controls = analyzer.suggest_controls(code)
-        
+
         # Should suggest appropriate controls for detected resources
         assert 'SC-7' in controls  # Network policy
         assert 'AC-3' in controls  # RBAC
@@ -724,7 +724,7 @@ server:
                 ports:
                 - containerPort: 80
         """)
-        
+
         service_file = tmp_path / "service.yaml"
         service_file.write_text("""
         apiVersion: v1
@@ -739,7 +739,7 @@ server:
             targetPort: 80
           type: ClusterIP
         """)
-        
+
         # Non-K8s file (should be ignored)
         config_file = tmp_path / "app-config.yaml"
         config_file.write_text("""
@@ -747,15 +747,15 @@ server:
           host: localhost
           port: 5432
         """)
-        
+
         # Run project analysis
         results = await analyzer.analyze_project(tmp_path)
-        
+
         # Should analyze Kubernetes project
         assert 'summary' in results
         assert 'files' in results
         assert 'controls' in results
-        
+
         # Should have resource counts
         assert 'k8s_resources' in results['summary']
         resource_counts = results['summary']['k8s_resources']
@@ -771,7 +771,7 @@ server:
           name: test
         '''
         assert analyzer._is_kubernetes_manifest(k8s_content) is True
-        
+
         # Invalid - missing apiVersion
         invalid_content = '''
         kind: Pod
@@ -779,7 +779,7 @@ server:
           name: test
         '''
         assert analyzer._is_kubernetes_manifest(invalid_content) is False
-        
+
         # Invalid - unknown kind
         unknown_kind = '''
         apiVersion: v1
@@ -788,7 +788,7 @@ server:
           name: test
         '''
         assert analyzer._is_kubernetes_manifest(unknown_kind) is False
-        
+
         # Valid - different API version
         valid_apps = '''
         apiVersion: apps/v1
@@ -819,7 +819,7 @@ server:
         metadata:
           name: deploy1
         ''')
-        
+
         single_resource = tmp_path / "single.yaml"
         single_resource.write_text('''
         apiVersion: v1
@@ -827,14 +827,14 @@ server:
         metadata:
           name: config1
         ''')
-        
+
         # Non-K8s file
         non_k8s = tmp_path / "config.yaml"
         non_k8s.write_text('database: localhost')
-        
+
         # Count resources
         resource_counts = analyzer._count_resources(tmp_path)
-        
+
         # Should count different resource types
         assert "Pod" in resource_counts
         assert resource_counts["Pod"] == 1
@@ -848,7 +848,7 @@ server:
     def test_get_line_number_function(self, analyzer, tmp_path):
         """Test line number estimation for YAML documents"""
         fake_path = tmp_path / "test.yaml"
-        
+
         # Test line number calculation
         assert analyzer._get_line_number(fake_path, 0) == 1
         assert analyzer._get_line_number(fake_path, 1) == 11
@@ -1056,7 +1056,7 @@ server:
         results = analyzer.analyze_file(test_file)
 
         # Should not have TLS-related issues due to proper configuration
-        tls_issues = [ann for ann in results if "tls" in ann.evidence.lower() and 
+        tls_issues = [ann for ann in results if "tls" in ann.evidence.lower() and
                      ann.confidence > 0.8]
         assert len(tls_issues) == 0
 
@@ -1358,7 +1358,7 @@ server:
         """Test error handling for malformed YAML files"""
         test_file = tmp_path / "malformed.yaml"
         test_file.write_text("invalid: yaml: content: [unclosed")
-        
+
         # Should not crash on malformed YAML
         results = analyzer.analyze_file(test_file)
         assert isinstance(results, list)
@@ -1382,7 +1382,7 @@ server:
         comments_file.write_text("""
         # This is a comment
         # Another comment
-        
+
         # apiVersion: v1 (commented out)
         # kind: Pod (commented out)
         """)
@@ -1392,7 +1392,7 @@ server:
     def test_file_extensions_matching(self, analyzer):
         """Test that analyzer recognizes correct file extensions"""
         extensions = analyzer.file_extensions
-        
+
         # Should match YAML file extensions
         assert '.yaml' in extensions
         assert '.yml' in extensions
@@ -1400,17 +1400,17 @@ server:
     def test_k8s_kinds_recognition(self, analyzer):
         """Test recognition of Kubernetes resource kinds"""
         kinds = analyzer.k8s_kinds
-        
+
         # Should include major Kubernetes resource types
         workload_kinds = {'Pod', 'Deployment', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob'}
         assert workload_kinds.issubset(kinds)
-        
+
         network_kinds = {'Service', 'Ingress', 'NetworkPolicy'}
         assert network_kinds.issubset(kinds)
-        
+
         rbac_kinds = {'Role', 'ClusterRole', 'RoleBinding', 'ClusterRoleBinding'}
         assert rbac_kinds.issubset(kinds)
-        
+
         storage_kinds = {'Secret', 'ConfigMap'}
         assert storage_kinds.issubset(kinds)
 
@@ -1423,7 +1423,7 @@ server:
           name: test-role
         rules:
         - apiGroups: ["*"]
-          resources: ["*"]  
+          resources: ["*"]
           verbs: ["*"]
         ---
         apiVersion: v1
@@ -1448,6 +1448,6 @@ server:
         assert len(pattern_results) >= 1
 
         # Should detect RBAC wildcard pattern
-        rbac_patterns = [ann for ann in pattern_results if 
+        rbac_patterns = [ann for ann in pattern_results if
                         any(control in ["AC-6", "AC-3"] for control in ann.control_ids)]
         assert len(rbac_patterns) >= 1

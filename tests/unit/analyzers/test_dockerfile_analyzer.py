@@ -490,9 +490,9 @@ CMD ["dockerd"]
         HEALTHCHECK --interval=30s CMD curl -f http://localhost:8080/health
         RUN apk update && apk add curl
         '''
-        
+
         controls = analyzer.suggest_controls(code)
-        
+
         # Should suggest appropriate controls for detected patterns
         assert 'CM-2' in controls  # Configuration management
         assert 'AC-6' in controls  # Least privilege (USER)
@@ -516,7 +516,7 @@ CMD ["dockerd"]
         HEALTHCHECK --interval=30s CMD curl -f http://localhost:8000/health
         CMD ["python", "app.py"]
         """)
-        
+
         dockerfile2 = tmp_path / "services" / "Dockerfile.web"
         dockerfile2.parent.mkdir()
         dockerfile2.write_text("""
@@ -526,19 +526,19 @@ CMD ["dockerd"]
         USER nginx
         EXPOSE 80
         """)
-        
+
         # Non-Docker file (should be ignored)
         readme_file = tmp_path / "README.md"
         readme_file.write_text("# Docker Project")
-        
+
         # Run project analysis
         results = await analyzer.analyze_project(tmp_path)
-        
+
         # Should analyze Docker project
         assert 'summary' in results
         assert 'files' in results
         assert 'controls' in results
-        
+
         # Should have image counts
         assert 'docker_images' in results['summary']
         image_counts = results['summary']['docker_images']
@@ -554,7 +554,7 @@ CMD ["dockerd"]
             ("FROM gcr.io/distroless/java:11", "gcr.io/distroless/java:11"),
             ("FROM scratch", "scratch"),
         ]
-        
+
         for from_line, expected in test_cases:
             result = analyzer._extract_base_image(from_line)
             assert result == expected
@@ -567,23 +567,23 @@ CMD ["dockerd"]
         FROM python:3.9
         FROM alpine:3.14
         ''')
-        
+
         dockerfile2 = tmp_path / "backend" / "Dockerfile"
         dockerfile2.parent.mkdir()
         dockerfile2.write_text('''
         FROM node:16
         FROM nginx:alpine
         ''')
-        
+
         dockerfile3 = tmp_path / "Dockerfile.prod"
         dockerfile3.write_text('''
         FROM python:3.9
         FROM scratch
         ''')
-        
+
         # Count images
         image_counts = analyzer._count_images(tmp_path)
-        
+
         # Should count different base images
         assert "python" in image_counts
         assert image_counts["python"] == 2  # Used in 2 files
@@ -696,7 +696,7 @@ CMD ["dockerd"]
         *.log
         node_modules
         __pycache__
-        
+
         # Missing important patterns like .env, *.key, etc.
         '''
         dockerignore_file.write_text(content)
@@ -723,10 +723,10 @@ CMD ["dockerd"]
         RUN sudo apt-get update
         RUN sudo apt-get install -y python3
         RUN sudo chmod 755 /app
-        
+
         # Non-sudo commands (good)
         RUN apt-get update && apt-get install -y curl
-        
+
         USER 1000
         '''
         test_file.write_text(dockerfile)
@@ -752,10 +752,10 @@ CMD ["dockerd"]
         # Installing SSH server
         RUN apt-get update && apt-get install -y ssh openssh-server
         RUN yum install -y openssh-server
-        
+
         # Other installations (should not trigger)
         RUN apt-get install -y curl git
-        
+
         EXPOSE 22
         USER root
         '''
@@ -784,31 +784,31 @@ CMD ["dockerd"]
         # Multiple security issues
         ENV DATABASE_PASSWORD=admin123
         ENV API_KEY=sk-1234567890abcdef
-        
+
         # No cleanup, no version pinning
         RUN apt-get update && apt-get install -y \
             python3 \
             curl \
             openssh-server
-            
+
         # Dangerous patterns
         RUN curl -L https://get.docker.com | sh
         ADD https://example.com/file.tar.gz /tmp/
-        
+
         # Copying sensitive files
         COPY .env /app/
         COPY id_rsa /root/.ssh/
-        
+
         # No chown
         COPY app.py /app/
-        
+
         # Exposing SSH
         EXPOSE 22 80
-        
+
         # No USER instruction - runs as root
         # No HEALTHCHECK
         # No WORKDIR
-        
+
         CMD ["python3", "/app/app.py"]
         '''
         test_file.write_text(dockerfile)
@@ -826,23 +826,23 @@ CMD ["dockerd"]
         # Configuration management
         assert "CM-2" in all_controls  # Latest tag, no version pinning
         assert "CM-6" in all_controls  # Package cleanup, best practices
-        
+
         # Access control
         assert "AC-6" in all_controls  # Root user, file ownership
-        
+
         # Authentication/Authorization
         assert "IA-2" in all_controls  # SSH exposure
         assert "IA-5" in all_controls  # Hardcoded secrets
-        
+
         # System integrity
         assert "SI-2" in all_controls  # Curl pipe to shell, ADD with URL
-        
+
         # Data protection
         assert "SC-28" in all_controls  # Sensitive files
-        
+
         # Boundary protection
         assert "SC-7" in all_controls  # SSH port exposure
-        
+
         # Audit generation
         assert "AU-12" in all_controls  # Missing healthcheck
 
@@ -851,30 +851,30 @@ CMD ["dockerd"]
         test_file = tmp_path / "Dockerfile"
         dockerfile = '''# Multi-stage build for security
         FROM golang:1.19-alpine AS builder
-        
+
         LABEL maintainer="security-team@example.com"
         LABEL version="1.0.0"
         LABEL security.scan="enabled"
         LABEL build-date="2023-01-01"
-        
+
         WORKDIR /build
         COPY go.mod go.sum ./
         RUN go mod download
         COPY . .
         RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
-        
+
         # Final minimal image
         FROM gcr.io/distroless/static:nonroot
-        
+
         WORKDIR /app
         COPY --from=builder --chown=nonroot:nonroot /build/app .
-        
+
         USER nonroot
         EXPOSE 8080
-        
+
         HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
           CMD ["/app", "health"]
-          
+
         ENTRYPOINT ["/app"]
         '''
         test_file.write_text(dockerfile)
@@ -893,7 +893,7 @@ CMD ["dockerd"]
         """Test error handling for malformed files"""
         test_file = tmp_path / "Dockerfile"
         test_file.write_text("This is not a valid Dockerfile {{{ unclosed")
-        
+
         # Should not crash on malformed files
         results = analyzer.analyze_file(test_file)
         assert isinstance(results, list)
@@ -917,18 +917,18 @@ CMD ["dockerd"]
         comments_file.write_text("""
         # This is a comment
         # Another comment
-        
+
         # FROM ubuntu:20.04 (commented out)
         """)
         results = analyzer.analyze_file(comments_file)
-        
+
         # Should detect missing essential instructions
         assert len(results) >= 2  # Missing USER, HEALTHCHECK, etc.
 
     def test_file_patterns_matching(self, analyzer):
         """Test that analyzer recognizes different Dockerfile patterns"""
         patterns = analyzer.file_patterns
-        
+
         # Should match various Dockerfile naming conventions
         assert 'Dockerfile' in patterns
         assert 'Dockerfile.*' in patterns
@@ -937,7 +937,7 @@ CMD ["dockerd"]
     def test_secure_base_images_recognition(self, analyzer):
         """Test recognition of secure base images"""
         secure_images = analyzer.secure_base_images
-        
+
         # Should include known secure base images
         assert 'gcr.io/distroless' in secure_images
         assert 'alpine' in secure_images
@@ -950,15 +950,15 @@ CMD ["dockerd"]
         # Test docker-compose.yml detection
         compose_file = tmp_path / "docker-compose.yml"
         compose_file.write_text("version: '3.8'")
-        
+
         results = analyzer._analyze_config_file(compose_file)
         # Currently returns empty list as compose analysis is placeholder
         assert isinstance(results, list)
-        
+
         # Test .dockerignore detection
         dockerignore_file = tmp_path / ".dockerignore"
         dockerignore_file.write_text(".git\n*.log")
-        
+
         results = analyzer._analyze_config_file(dockerignore_file)
         assert isinstance(results, list)
         assert len(results) >= 1  # Should suggest additional patterns
@@ -967,16 +967,16 @@ CMD ["dockerd"]
         """Test that context tracking works correctly with USER instruction"""
         test_file = tmp_path / "Dockerfile"
         dockerfile = '''FROM alpine:3.14
-        
+
         # Has USER instruction
         USER nobody
-        
+
         WORKDIR /app
         COPY app.py .
-        
+
         # Has HEALTHCHECK
         HEALTHCHECK --interval=30s CMD ping -c 1 localhost
-        
+
         CMD ["python", "app.py"]
         '''
         test_file.write_text(dockerfile)
@@ -986,7 +986,7 @@ CMD ["dockerd"]
         # Should NOT complain about missing USER or HEALTHCHECK
         root_issues = [ann for ann in results if "runs as root" in ann.evidence.lower()]
         assert len(root_issues) == 0
-        
+
         healthcheck_issues = [ann for ann in results if "healthcheck" in ann.evidence.lower()]
         assert len(healthcheck_issues) == 0
 
@@ -994,13 +994,13 @@ CMD ["dockerd"]
         """Test handling of platform-specific FROM instructions"""
         test_file = tmp_path / "Dockerfile"
         dockerfile = '''FROM --platform=linux/amd64 ubuntu:20.04
-        
+
         RUN apt-get update && apt-get install -y python3
-        
+
         FROM --platform=linux/arm64 alpine:3.14
-        
+
         RUN apk add --no-cache nodejs
-        
+
         USER 1000
         '''
         test_file.write_text(dockerfile)
@@ -1020,14 +1020,14 @@ CMD ["dockerd"]
         """Test handling of multiple EXPOSE instructions"""
         test_file = tmp_path / "Dockerfile"
         dockerfile = '''FROM nginx:alpine
-        
+
         # Multiple ports exposed
         EXPOSE 80
-        EXPOSE 443  
+        EXPOSE 443
         EXPOSE 8080
         EXPOSE 22   # This should be flagged
         EXPOSE 3000
-        
+
         USER nginx
         '''
         test_file.write_text(dockerfile)

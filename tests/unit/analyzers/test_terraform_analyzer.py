@@ -604,26 +604,26 @@ resource "aws_flow_log" "vpc" {
         resource "aws_security_group" "web" {
           name = "web-sg"
         }
-        
+
         resource "aws_iam_role" "app_role" {
           name = "app-role"
         }
-        
+
         resource "aws_s3_bucket" "data" {
           bucket = "my-data-bucket"
         }
-        
+
         resource "aws_rds_cluster" "database" {
           cluster_identifier = "my-cluster"
         }
-        
+
         resource "aws_kms_key" "example" {
           description = "KMS key"
         }
         '''
-        
+
         controls = analyzer.suggest_controls(code)
-        
+
         # Should suggest appropriate controls for detected resources
         assert 'SC-7' in controls  # Security groups -> boundary protection
         assert 'AC-3' in controls  # IAM -> access enforcement
@@ -639,15 +639,15 @@ resource "aws_flow_log" "vpc" {
         provider "aws" {
           region = "us-west-2"
         }
-        
+
         resource "aws_vpc" "main" {
           cidr_block = "10.0.0.0/16"
         }
-        
+
         resource "aws_security_group" "web" {
           name = "web-sg"
           vpc_id = aws_vpc.main.id
-          
+
           ingress {
             from_port = 443
             to_port = 443
@@ -656,7 +656,7 @@ resource "aws_flow_log" "vpc" {
           }
         }
         """)
-        
+
         variables_tf = tmp_path / "variables.tf"
         variables_tf.write_text("""
         variable "environment" {
@@ -664,7 +664,7 @@ resource "aws_flow_log" "vpc" {
           type = string
         }
         """)
-        
+
         # Test file (should be analyzed)
         test_tf = tmp_path / "test.tf"
         test_tf.write_text("""
@@ -672,19 +672,19 @@ resource "aws_flow_log" "vpc" {
           bucket = "test-bucket"
         }
         """)
-        
+
         # Non-Terraform file (should be ignored)
         readme_file = tmp_path / "README.md"
         readme_file.write_text("# Terraform Project")
-        
+
         # Run project analysis
         results = await analyzer.analyze_project(tmp_path)
-        
+
         # Should analyze Terraform project
         assert 'summary' in results
         assert 'files' in results
         assert 'controls' in results
-        
+
         # Should have resource counts
         assert 'terraform_resources' in results['summary']
         resource_counts = results['summary']['terraform_resources']
@@ -700,7 +700,7 @@ resource "aws_flow_log" "vpc" {
           ami = "ami-12345"
         }
         '''
-        
+
         azure_code = '''
         provider "azurerm" {
           features {}
@@ -709,7 +709,7 @@ resource "aws_flow_log" "vpc" {
           name = "web-vm"
         }
         '''
-        
+
         gcp_code = '''
         provider "google" {
           project = "my-project"
@@ -718,7 +718,7 @@ resource "aws_flow_log" "vpc" {
           name = "web-vm"
         }
         '''
-        
+
         # Test provider detection
         assert analyzer._detect_provider(aws_code) == "aws"
         assert analyzer._detect_provider(azure_code) == "azurerm"
@@ -736,7 +736,7 @@ resource "aws_flow_log" "vpc" {
           allocated_storage = 20
         }
         '''
-        
+
         # Block with encryption
         encrypted_block = '''
         resource "aws_db_instance" "test" {
@@ -747,10 +747,10 @@ resource "aws_flow_log" "vpc" {
           storage_encrypted   = true
         }
         '''
-        
+
         # Should flag unencrypted (return True to indicate issue found)
         assert analyzer._check_rds_encryption(unencrypted_block) is True
-        
+
         # Should not flag encrypted (return False to indicate no issue)
         assert analyzer._check_rds_encryption(encrypted_block) is False
 
@@ -764,7 +764,7 @@ resource "aws_flow_log" "vpc" {
           account_tier = "Standard"
         }
         '''
-        
+
         # Block with HTTPS enforcement
         https_block = '''
         resource "azurerm_storage_account" "test" {
@@ -774,7 +774,7 @@ resource "aws_flow_log" "vpc" {
           enable_https_traffic_only = true
         }
         '''
-        
+
         # Block with commented HTTPS (should still flag)
         commented_block = '''
         resource "azurerm_storage_account" "test" {
@@ -783,11 +783,11 @@ resource "aws_flow_log" "vpc" {
           # enable_https_traffic_only = true
         }
         '''
-        
+
         # Should flag missing HTTPS (return True)
         assert analyzer._check_azure_https_only(no_https_block) is True
         assert analyzer._check_azure_https_only(commented_block) is True
-        
+
         # Should not flag when HTTPS is enabled (return False)
         assert analyzer._check_azure_https_only(https_block) is False
 
@@ -866,7 +866,7 @@ resource "aws_flow_log" "vpc" {
 
         # Should suggest remote backend
         assert len(results) >= 1
-        
+
         controls = set()
         for ann in results:
             controls.update(ann.control_ids)
@@ -883,7 +883,7 @@ resource "aws_flow_log" "vpc" {
         # Multiple security issues in one file
         resource "aws_security_group" "problematic" {
           name = "problematic-sg"
-          
+
           # Too permissive
           ingress {
             from_port = 0
@@ -891,7 +891,7 @@ resource "aws_flow_log" "vpc" {
             protocol = "tcp"
             cidr_blocks = ["0.0.0.0/0"]
           }
-          
+
           # SSH open to world
           ingress {
             from_port = 22
@@ -900,19 +900,19 @@ resource "aws_flow_log" "vpc" {
             cidr_blocks = ["0.0.0.0/0"]
           }
         }
-        
+
         # Unencrypted storage
         resource "aws_s3_bucket" "insecure_bucket" {
           bucket = "my-insecure-bucket"
           acl = "public-read"
-          
+
           # No encryption block
         }
-        
+
         # Overly permissive IAM
         resource "aws_iam_policy" "dangerous" {
           name = "dangerous-policy"
-          
+
           policy = jsonencode({
             Version = "2012-10-17"
             Statement = [
@@ -924,23 +924,23 @@ resource "aws_flow_log" "vpc" {
             ]
           })
         }
-        
+
         # Database with multiple issues
         resource "aws_db_instance" "insecure_db" {
           identifier = "insecure-db"
           engine = "mysql"
           instance_class = "db.t3.micro"
-          
+
           # Hardcoded password
           username = "admin"
           password = "hardcoded123!"
-          
+
           # No encryption
           # storage_encrypted = false (implicit)
-          
+
           # Publicly accessible
           publicly_accessible = true
-          
+
           skip_final_snapshot = true
         }
         '''
@@ -959,14 +959,14 @@ resource "aws_flow_log" "vpc" {
         # Network security
         assert "SC-7" in all_controls  # Boundary protection
         assert "SI-4" in all_controls  # Information monitoring
-        
+
         # Data protection
         assert "SC-28" in all_controls  # Protection at rest
-        
+
         # Access control
         assert "AC-3" in all_controls or "AC-4" in all_controls
         assert "AC-6" in all_controls  # Least privilege
-        
+
         # Authentication
         assert "IA-5" in all_controls  # Authenticator management
 
@@ -978,36 +978,36 @@ resource "aws_flow_log" "vpc" {
         resource "aws_vpc" "main" {
           cidr_block = "10.0.0.0/16"
         }
-        
+
         resource "aws_subnet" "public" {
           vpc_id = aws_vpc.main.id
           cidr_block = "10.0.1.0/24"
         }
-        
+
         resource "aws_subnet" "private" {
           vpc_id = aws_vpc.main.id
           cidr_block = "10.0.2.0/24"
         }
         ''')
-        
+
         security_tf = tmp_path / "security.tf"
         security_tf.write_text('''
         resource "aws_security_group" "web" {
           name = "web-sg"
         }
-        
+
         resource "aws_security_group" "db" {
           name = "db-sg"
         }
         ''')
-        
+
         # Count resources
         resource_counts = analyzer._count_resources(tmp_path)
-        
+
         # Should count different resource types
         assert "aws_vpc" in resource_counts
         assert resource_counts["aws_vpc"] == 1
-        assert "aws_subnet" in resource_counts  
+        assert "aws_subnet" in resource_counts
         assert resource_counts["aws_subnet"] == 2
         assert "aws_security_group" in resource_counts
         assert resource_counts["aws_security_group"] == 2
@@ -1016,7 +1016,7 @@ resource "aws_flow_log" "vpc" {
         """Test error handling for malformed files"""
         test_file = tmp_path / "broken.tf"
         test_file.write_text("This is not valid HCL {{{ unclosed")
-        
+
         # Should not crash on malformed files
         results = analyzer.analyze_file(test_file)
         assert isinstance(results, list)
@@ -1050,17 +1050,17 @@ resource "aws_flow_log" "vpc" {
         provider "aws" {
           region = "us-west-2"
         }
-        
+
         resource "aws_s3_bucket" "aws_bucket" {
           bucket = "aws-bucket"
           acl = "public-read"
         }
-        
-        # Azure resources  
+
+        # Azure resources
         provider "azurerm" {
           features {}
         }
-        
+
         resource "azurerm_storage_account" "azure_storage" {
           name = "azurestorage"
           resource_group_name = "rg"
@@ -1069,12 +1069,12 @@ resource "aws_flow_log" "vpc" {
           account_replication_type = "LRS"
           allow_blob_public_access = true
         }
-        
+
         # GCP resources
         provider "google" {
           project = "my-project"
         }
-        
+
         resource "google_storage_bucket" "gcp_bucket" {
           name = "gcp-bucket"
           location = "US"
@@ -1095,32 +1095,32 @@ resource "aws_flow_log" "vpc" {
 
         # Should have access control issues from AWS and Azure
         assert "AC-3" in all_controls or "AC-4" in all_controls
-        
+
         # Should have data protection issues from GCP
         assert "CP-9" in all_controls or "SI-12" in all_controls
 
     def test_ssh_keys_detection(self, analyzer, tmp_path):
         """Test detection of SSH keys in configuration"""
-        test_file = tmp_path / "ssh.tf" 
+        test_file = tmp_path / "ssh.tf"
         code = '''
         resource "aws_instance" "web" {
           ami = "ami-12345678"
           instance_type = "t2.micro"
-          
+
           # SSH keys in configuration
           key_name = aws_key_pair.deployer.key_name
         }
-        
+
         resource "aws_key_pair" "deployer" {
           key_name = "deployer-key"
           public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
         }
-        
+
         resource "google_compute_instance" "vm" {
           name = "test-vm"
           machine_type = "f1-micro"
           zone = "us-central1-a"
-          
+
           metadata = {
             ssh_keys = "admin:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
           }
@@ -1146,23 +1146,23 @@ resource "aws_flow_log" "vpc" {
         code = '''
         resource "aws_s3_bucket" "important_data" {
           bucket = "critical-data-bucket"
-          
+
           lifecycle {
             prevent_destroy = false  # This should be flagged
           }
         }
-        
+
         resource "aws_dynamodb_table" "critical_table" {
           name = "critical-table"
-          
+
           lifecycle {
             prevent_destroy = true  # This is good
           }
         }
-        
+
         resource "aws_s3_bucket" "temp_data" {
           bucket = "temp-data-bucket"
-          
+
           # No lifecycle block at all
         }
         '''
@@ -1178,5 +1178,5 @@ resource "aws_flow_log" "vpc" {
         assert "CP-9" in controls or "SI-12" in controls
 
         # Should identify the specific issue
-        assert any("deletion protection" in ann.evidence.lower() or 
+        assert any("deletion protection" in ann.evidence.lower() or
                   "prevent_destroy" in ann.evidence.lower() for ann in results)

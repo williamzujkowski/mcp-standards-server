@@ -645,7 +645,7 @@ export interface AuditLog {
         const bcrypt = require('bcrypt');
         const mongoose = require('mongoose');
         '''
-        
+
         controls = analyzer.suggest_controls(code)
         assert 'AC-3' in controls  # Express access control
         assert 'IA-2' in controls  # JWT authentication
@@ -657,7 +657,7 @@ export interface AuditLog {
         # Create project structure
         src_dir = tmp_path / "src"
         src_dir.mkdir()
-        
+
         # Main app file
         app_file = src_dir / "app.js"
         app_file.write_text("""
@@ -666,7 +666,7 @@ export interface AuditLog {
         const app = express();
         app.use(helmet());
         """)
-        
+
         # Auth module
         auth_file = src_dir / "auth.js"
         auth_file.write_text("""
@@ -675,7 +675,7 @@ export interface AuditLog {
             return jwt.verify(token, process.env.JWT_SECRET);
         }
         """)
-        
+
         # Test file (should be skipped unless it has security patterns)
         test_file = src_dir / "app.test.js"
         test_file.write_text("""
@@ -685,7 +685,7 @@ export interface AuditLog {
             });
         });
         """)
-        
+
         # Package.json
         package_file = tmp_path / "package.json"
         package_file.write_text("""
@@ -697,22 +697,22 @@ export interface AuditLog {
             }
         }
         """)
-        
+
         # Run analysis
         results = await analyzer.analyze_project(tmp_path)
-        
+
         # Should find the main files but skip the test
         assert str(app_file) in results
         assert str(auth_file) in results
         assert str(test_file) not in results
         assert str(package_file) in results
-        
+
         # Check controls found
         all_controls = set()
         for annotations in results.values():
             for ann in annotations:
                 all_controls.update(ann.control_ids)
-        
+
         assert 'SC-8' in all_controls or 'SC-18' in all_controls  # Helmet
         assert 'IA-2' in all_controls  # JWT
 
@@ -720,7 +720,7 @@ export interface AuditLog {
         """Test error handling for malformed files"""
         test_file = tmp_path / "broken.js"
         test_file.write_text("This is not valid JavaScript {{{")
-        
+
         # Should not crash
         results = analyzer.analyze_file(test_file)
         # May or may not find patterns in broken code

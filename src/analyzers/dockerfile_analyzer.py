@@ -5,11 +5,11 @@ Dockerfile analyzer for container security
 @oscal-component: container-analyzer
 """
 
+import fnmatch
 import logging
 import re
 from pathlib import Path
 from typing import Any
-import fnmatch
 
 from .base import BaseAnalyzer, CodeAnnotation
 
