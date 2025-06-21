@@ -636,3 +636,112 @@ export interface AuditLog {
 
         assert any(c.startswith("IA-2") for c in controls)  # Auth interfaces (includes IA-2(1), IA-2(2), etc.)
         assert "AU-2" in controls or "AU-3" in controls or "AU-8" in controls  # Audit log interface
+
+    def test_suggest_controls(self, analyzer):
+        """Test control suggestions for JavaScript code"""
+        code = '''
+        const express = require('express');
+        const jwt = require('jsonwebtoken');
+        const bcrypt = require('bcrypt');
+        const mongoose = require('mongoose');
+        '''
+        
+        controls = analyzer.suggest_controls(code)
+        assert 'AC-3' in controls  # Express access control
+        assert 'IA-2' in controls  # JWT authentication
+        assert 'SC-28' in controls  # Database encryption
+
+    @pytest.mark.asyncio
+    async def test_analyze_project(self, analyzer, tmp_path):
+        """Test project-wide analysis"""
+        # Create project structure
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        
+        # Main app file
+        app_file = src_dir / "app.js"
+        app_file.write_text("""
+        const express = require('express');
+        const helmet = require('helmet');
+        const app = express();
+        app.use(helmet());
+        """)
+        
+        # Auth module
+        auth_file = src_dir / "auth.js"
+        auth_file.write_text("""
+        const jwt = require('jsonwebtoken');
+        function verifyToken(token) {
+            return jwt.verify(token, process.env.JWT_SECRET);
+        }
+        """)
+        
+        # Test file (should be skipped unless it has security patterns)
+        test_file = src_dir / "app.test.js"
+        test_file.write_text("""
+        describe('App tests', () => {
+            it('should work', () => {
+                expect(true).toBe(true);
+            });
+        });
+        """)
+        
+        # Package.json
+        package_file = tmp_path / "package.json"
+        package_file.write_text("""
+        {
+            "name": "test-app",
+            "dependencies": {
+                "express": "^4.18.0",
+                "helmet": "^5.0.0"
+            }
+        }
+        """)
+        
+        # Run analysis
+        results = await analyzer.analyze_project(tmp_path)
+        
+        # Should find the main files but skip the test
+        assert str(app_file) in results
+        assert str(auth_file) in results
+        assert str(test_file) not in results
+        assert str(package_file) in results
+        
+        # Check controls found
+        all_controls = set()
+        for annotations in results.values():
+            for ann in annotations:
+                all_controls.update(ann.control_ids)
+        
+        assert 'SC-8' in all_controls or 'SC-18' in all_controls  # Helmet
+        assert 'IA-2' in all_controls  # JWT
+
+    def test_error_handling(self, analyzer, tmp_path):
+        """Test error handling for malformed files"""
+        test_file = tmp_path / "broken.js"
+        test_file.write_text("This is not valid JavaScript {{{")
+        
+        # Should not crash
+        results = analyzer.analyze_file(test_file)
+        # May or may not find patterns in broken code
+        assert isinstance(results, list)
+
+    def test_file_not_found(self, analyzer, tmp_path):
+        """Test handling of non-existent files"""
+        fake_file = tmp_path / "does_not_exist.js"
+        results = analyzer.analyze_file(fake_file)
+        assert results == []
+
+    def test_empty_file(self, analyzer, tmp_path):
+        """Test handling of empty files"""
+        empty_file = tmp_path / "empty.js"
+        empty_file.write_text("")
+        results = analyzer.analyze_file(empty_file)
+        assert results == []
+
+    def test_non_js_file_extension(self, analyzer, tmp_path):
+        """Test handling of non-JavaScript file extensions"""
+        python_file = tmp_path / "test.py"
+        python_file.write_text("print('hello')")
+        results = analyzer.analyze_file(python_file)
+        assert results == []

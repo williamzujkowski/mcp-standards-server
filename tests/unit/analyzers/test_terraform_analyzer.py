@@ -597,3 +597,586 @@ resource "aws_flow_log" "vpc" {
         # Should find specific issues
         assert any("deletion protection" in ann.evidence.lower() for ann in results)
         assert any("logging disabled" in ann.evidence.lower() for ann in results)
+
+    def test_suggest_controls(self, analyzer):
+        """Test control suggestions for Terraform code"""
+        code = '''
+        resource "aws_security_group" "web" {
+          name = "web-sg"
+        }
+        
+        resource "aws_iam_role" "app_role" {
+          name = "app-role"
+        }
+        
+        resource "aws_s3_bucket" "data" {
+          bucket = "my-data-bucket"
+        }
+        
+        resource "aws_rds_cluster" "database" {
+          cluster_identifier = "my-cluster"
+        }
+        
+        resource "aws_kms_key" "example" {
+          description = "KMS key"
+        }
+        '''
+        
+        controls = analyzer.suggest_controls(code)
+        
+        # Should suggest appropriate controls for detected resources
+        assert 'SC-7' in controls  # Security groups -> boundary protection
+        assert 'AC-3' in controls  # IAM -> access enforcement
+        assert 'SC-28' in controls  # S3/RDS -> data protection
+        assert 'SC-13' in controls  # KMS -> cryptographic protection
+
+    @pytest.mark.asyncio
+    async def test_analyze_project(self, analyzer, tmp_path):
+        """Test project-wide analysis"""
+        # Create Terraform project structure
+        main_tf = tmp_path / "main.tf"
+        main_tf.write_text("""
+        provider "aws" {
+          region = "us-west-2"
+        }
+        
+        resource "aws_vpc" "main" {
+          cidr_block = "10.0.0.0/16"
+        }
+        
+        resource "aws_security_group" "web" {
+          name = "web-sg"
+          vpc_id = aws_vpc.main.id
+          
+          ingress {
+            from_port = 443
+            to_port = 443
+            protocol = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+        }
+        """)
+        
+        variables_tf = tmp_path / "variables.tf"
+        variables_tf.write_text("""
+        variable "environment" {
+          description = "Environment name"
+          type = string
+        }
+        """)
+        
+        # Test file (should be analyzed)
+        test_tf = tmp_path / "test.tf"
+        test_tf.write_text("""
+        resource "aws_s3_bucket" "test" {
+          bucket = "test-bucket"
+        }
+        """)
+        
+        # Non-Terraform file (should be ignored)
+        readme_file = tmp_path / "README.md"
+        readme_file.write_text("# Terraform Project")
+        
+        # Run project analysis
+        results = await analyzer.analyze_project(tmp_path)
+        
+        # Should analyze Terraform project
+        assert 'summary' in results
+        assert 'files' in results
+        assert 'controls' in results
+        
+        # Should have resource counts
+        assert 'terraform_resources' in results['summary']
+        resource_counts = results['summary']['terraform_resources']
+        assert isinstance(resource_counts, dict)
+
+    def test_provider_detection(self, analyzer):
+        """Test cloud provider detection"""
+        aws_code = '''
+        provider "aws" {
+          region = "us-west-2"
+        }
+        resource "aws_instance" "web" {
+          ami = "ami-12345"
+        }
+        '''
+        
+        azure_code = '''
+        provider "azurerm" {
+          features {}
+        }
+        resource "azurerm_virtual_machine" "web" {
+          name = "web-vm"
+        }
+        '''
+        
+        gcp_code = '''
+        provider "google" {
+          project = "my-project"
+        }
+        resource "google_compute_instance" "web" {
+          name = "web-vm"
+        }
+        '''
+        
+        # Test provider detection
+        assert analyzer._detect_provider(aws_code) == "aws"
+        assert analyzer._detect_provider(azure_code) == "azurerm"
+        assert analyzer._detect_provider(gcp_code) == "google"
+        assert analyzer._detect_provider("# No provider") is None
+
+    def test_rds_encryption_check_function(self, analyzer):
+        """Test RDS encryption validation function"""
+        # Block without encryption
+        unencrypted_block = '''
+        resource "aws_db_instance" "test" {
+          identifier = "test-db"
+          engine = "mysql"
+          instance_class = "db.t3.micro"
+          allocated_storage = 20
+        }
+        '''
+        
+        # Block with encryption
+        encrypted_block = '''
+        resource "aws_db_instance" "test" {
+          identifier = "test-db"
+          engine = "mysql"
+          instance_class = "db.t3.micro"
+          allocated_storage = 20
+          storage_encrypted   = true
+        }
+        '''
+        
+        # Should flag unencrypted (return True to indicate issue found)
+        assert analyzer._check_rds_encryption(unencrypted_block) is True
+        
+        # Should not flag encrypted (return False to indicate no issue)
+        assert analyzer._check_rds_encryption(encrypted_block) is False
+
+    def test_azure_https_check_function(self, analyzer):
+        """Test Azure HTTPS enforcement validation"""
+        # Block without HTTPS enforcement
+        no_https_block = '''
+        resource "azurerm_storage_account" "test" {
+          name = "teststorage"
+          location = "West Europe"
+          account_tier = "Standard"
+        }
+        '''
+        
+        # Block with HTTPS enforcement
+        https_block = '''
+        resource "azurerm_storage_account" "test" {
+          name = "teststorage"
+          location = "West Europe"
+          account_tier = "Standard"
+          enable_https_traffic_only = true
+        }
+        '''
+        
+        # Block with commented HTTPS (should still flag)
+        commented_block = '''
+        resource "azurerm_storage_account" "test" {
+          name = "teststorage"
+          location = "West Europe"
+          # enable_https_traffic_only = true
+        }
+        '''
+        
+        # Should flag missing HTTPS (return True)
+        assert analyzer._check_azure_https_only(no_https_block) is True
+        assert analyzer._check_azure_https_only(commented_block) is True
+        
+        # Should not flag when HTTPS is enabled (return False)
+        assert analyzer._check_azure_https_only(https_block) is False
+
+    def test_data_source_analysis(self, analyzer, tmp_path):
+        """Test data source security analysis"""
+        test_file = tmp_path / "data.tf"
+        code = '''
+        # Potentially sensitive data sources
+        data "aws_iam_policy_document" "example" {
+          statement {
+            effect = "Allow"
+            actions = ["s3:GetObject"]
+            resources = ["*"]
+          }
+        }
+
+        data "aws_secretsmanager_secret" "db_password" {
+          name = "prod/db/password"
+        }
+
+        data "azurerm_key_vault_secret" "api_key" {
+          name         = "api-key"
+          key_vault_id = data.azurerm_key_vault.example.id
+        }
+
+        # Non-sensitive data sources
+        data "aws_availability_zones" "available" {
+          state = "available"
+        }
+
+        data "aws_ami" "ubuntu" {
+          most_recent = true
+          owners      = ["099720109477"] # Canonical
+        }
+        '''
+        test_file.write_text(code)
+
+        results = analyzer.analyze_file(test_file)
+
+        # Should detect sensitive data source usage
+        controls = set()
+        for ann in results:
+            controls.update(ann.control_ids)
+
+        # Should include access control and authenticator management
+        assert any(control.startswith("AC-") for control in controls)
+        assert "IA-5" in controls
+
+        # Should identify data source risks
+        evidence_texts = [ann.evidence.lower() for ann in results]
+        assert any("policy document" in ev or "secret" in ev for ev in evidence_texts)
+
+    def test_backend_configuration_analysis(self, analyzer, tmp_path):
+        """Test backend configuration security analysis"""
+        backend_file = tmp_path / "backend.tf"
+        code = '''
+        terraform {
+          backend "local" {
+            path = "terraform.tfstate"
+          }
+        }
+
+        # This would be better:
+        # terraform {
+        #   backend "s3" {
+        #     bucket = "my-terraform-state"
+        #     key    = "prod/terraform.tfstate"
+        #     region = "us-west-2"
+        #     encrypt = true
+        #   }
+        # }
+        '''
+        backend_file.write_text(code)
+
+        results = analyzer._analyze_config_file(backend_file)
+
+        # Should suggest remote backend
+        assert len(results) >= 1
+        
+        controls = set()
+        for ann in results:
+            controls.update(ann.control_ids)
+
+        assert "CP-9" in controls or "SC-28" in controls
+
+        # Should identify local backend issue
+        assert any("local backend" in ann.evidence.lower() for ann in results)
+
+    def test_complex_security_patterns(self, analyzer, tmp_path):
+        """Test complex security pattern detection"""
+        test_file = tmp_path / "complex.tf"
+        code = '''
+        # Multiple security issues in one file
+        resource "aws_security_group" "problematic" {
+          name = "problematic-sg"
+          
+          # Too permissive
+          ingress {
+            from_port = 0
+            to_port = 65535
+            protocol = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+          
+          # SSH open to world
+          ingress {
+            from_port = 22
+            to_port = 22
+            protocol = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+        }
+        
+        # Unencrypted storage
+        resource "aws_s3_bucket" "insecure_bucket" {
+          bucket = "my-insecure-bucket"
+          acl = "public-read"
+          
+          # No encryption block
+        }
+        
+        # Overly permissive IAM
+        resource "aws_iam_policy" "dangerous" {
+          name = "dangerous-policy"
+          
+          policy = jsonencode({
+            Version = "2012-10-17"
+            Statement = [
+              {
+                Effect = "Allow"
+                Action = "*"
+                Resource = "*"
+              }
+            ]
+          })
+        }
+        
+        # Database with multiple issues
+        resource "aws_db_instance" "insecure_db" {
+          identifier = "insecure-db"
+          engine = "mysql"
+          instance_class = "db.t3.micro"
+          
+          # Hardcoded password
+          username = "admin"
+          password = "hardcoded123!"
+          
+          # No encryption
+          # storage_encrypted = false (implicit)
+          
+          # Publicly accessible
+          publicly_accessible = true
+          
+          skip_final_snapshot = true
+        }
+        '''
+        test_file.write_text(code)
+
+        results = analyzer.analyze_file(test_file)
+
+        # Should detect multiple issues
+        assert len(results) >= 4
+
+        # Should detect various control families
+        all_controls = set()
+        for ann in results:
+            all_controls.update(ann.control_ids)
+
+        # Network security
+        assert "SC-7" in all_controls  # Boundary protection
+        assert "SI-4" in all_controls  # Information monitoring
+        
+        # Data protection
+        assert "SC-28" in all_controls  # Protection at rest
+        
+        # Access control
+        assert "AC-3" in all_controls or "AC-4" in all_controls
+        assert "AC-6" in all_controls  # Least privilege
+        
+        # Authentication
+        assert "IA-5" in all_controls  # Authenticator management
+
+    def test_count_resources_function(self, analyzer, tmp_path):
+        """Test resource counting functionality"""
+        # Create multiple terraform files
+        main_tf = tmp_path / "main.tf"
+        main_tf.write_text('''
+        resource "aws_vpc" "main" {
+          cidr_block = "10.0.0.0/16"
+        }
+        
+        resource "aws_subnet" "public" {
+          vpc_id = aws_vpc.main.id
+          cidr_block = "10.0.1.0/24"
+        }
+        
+        resource "aws_subnet" "private" {
+          vpc_id = aws_vpc.main.id
+          cidr_block = "10.0.2.0/24"
+        }
+        ''')
+        
+        security_tf = tmp_path / "security.tf"
+        security_tf.write_text('''
+        resource "aws_security_group" "web" {
+          name = "web-sg"
+        }
+        
+        resource "aws_security_group" "db" {
+          name = "db-sg"
+        }
+        ''')
+        
+        # Count resources
+        resource_counts = analyzer._count_resources(tmp_path)
+        
+        # Should count different resource types
+        assert "aws_vpc" in resource_counts
+        assert resource_counts["aws_vpc"] == 1
+        assert "aws_subnet" in resource_counts  
+        assert resource_counts["aws_subnet"] == 2
+        assert "aws_security_group" in resource_counts
+        assert resource_counts["aws_security_group"] == 2
+
+    def test_error_handling(self, analyzer, tmp_path):
+        """Test error handling for malformed files"""
+        test_file = tmp_path / "broken.tf"
+        test_file.write_text("This is not valid HCL {{{ unclosed")
+        
+        # Should not crash on malformed files
+        results = analyzer.analyze_file(test_file)
+        assert isinstance(results, list)
+        # May or may not find patterns in broken code
+
+    def test_file_not_found(self, analyzer, tmp_path):
+        """Test handling of non-existent files"""
+        fake_file = tmp_path / "does_not_exist.tf"
+        results = analyzer.analyze_file(fake_file)
+        assert results == []
+
+    def test_empty_file(self, analyzer, tmp_path):
+        """Test handling of empty files"""
+        empty_file = tmp_path / "empty.tf"
+        empty_file.write_text("")
+        results = analyzer.analyze_file(empty_file)
+        assert results == []
+
+    def test_non_terraform_file_extension(self, analyzer, tmp_path):
+        """Test handling of non-Terraform file extensions"""
+        python_file = tmp_path / "test.py"
+        python_file.write_text("print('hello')")
+        results = analyzer.analyze_file(python_file)
+        assert results == []
+
+    def test_multiple_providers_in_file(self, analyzer, tmp_path):
+        """Test file with multiple cloud providers"""
+        test_file = tmp_path / "multi_cloud.tf"
+        code = '''
+        # AWS resources
+        provider "aws" {
+          region = "us-west-2"
+        }
+        
+        resource "aws_s3_bucket" "aws_bucket" {
+          bucket = "aws-bucket"
+          acl = "public-read"
+        }
+        
+        # Azure resources  
+        provider "azurerm" {
+          features {}
+        }
+        
+        resource "azurerm_storage_account" "azure_storage" {
+          name = "azurestorage"
+          resource_group_name = "rg"
+          location = "West Europe"
+          account_tier = "Standard"
+          account_replication_type = "LRS"
+          allow_blob_public_access = true
+        }
+        
+        # GCP resources
+        provider "google" {
+          project = "my-project"
+        }
+        
+        resource "google_storage_bucket" "gcp_bucket" {
+          name = "gcp-bucket"
+          location = "US"
+          force_destroy = true
+        }
+        '''
+        test_file.write_text(code)
+
+        results = analyzer.analyze_file(test_file)
+
+        # Should detect issues from multiple providers
+        assert len(results) >= 3  # At least one issue per provider
+
+        # Should detect provider-specific controls
+        all_controls = set()
+        for ann in results:
+            all_controls.update(ann.control_ids)
+
+        # Should have access control issues from AWS and Azure
+        assert "AC-3" in all_controls or "AC-4" in all_controls
+        
+        # Should have data protection issues from GCP
+        assert "CP-9" in all_controls or "SI-12" in all_controls
+
+    def test_ssh_keys_detection(self, analyzer, tmp_path):
+        """Test detection of SSH keys in configuration"""
+        test_file = tmp_path / "ssh.tf" 
+        code = '''
+        resource "aws_instance" "web" {
+          ami = "ami-12345678"
+          instance_type = "t2.micro"
+          
+          # SSH keys in configuration
+          key_name = aws_key_pair.deployer.key_name
+        }
+        
+        resource "aws_key_pair" "deployer" {
+          key_name = "deployer-key"
+          public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
+        }
+        
+        resource "google_compute_instance" "vm" {
+          name = "test-vm"
+          machine_type = "f1-micro"
+          zone = "us-central1-a"
+          
+          metadata = {
+            ssh_keys = "admin:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
+          }
+        }
+        '''
+        test_file.write_text(code)
+
+        results = analyzer.analyze_file(test_file)
+
+        # Should detect SSH key usage
+        controls = set()
+        for ann in results:
+            controls.update(ann.control_ids)
+
+        assert "IA-2" in controls or "IA-5" in controls
+
+        # Should identify SSH key evidence
+        assert any("ssh" in ann.evidence.lower() for ann in results)
+
+    def test_prevent_destroy_lifecycle(self, analyzer, tmp_path):
+        """Test prevent_destroy lifecycle detection"""
+        test_file = tmp_path / "lifecycle.tf"
+        code = '''
+        resource "aws_s3_bucket" "important_data" {
+          bucket = "critical-data-bucket"
+          
+          lifecycle {
+            prevent_destroy = false  # This should be flagged
+          }
+        }
+        
+        resource "aws_dynamodb_table" "critical_table" {
+          name = "critical-table"
+          
+          lifecycle {
+            prevent_destroy = true  # This is good
+          }
+        }
+        
+        resource "aws_s3_bucket" "temp_data" {
+          bucket = "temp-data-bucket"
+          
+          # No lifecycle block at all
+        }
+        '''
+        test_file.write_text(code)
+
+        results = analyzer.analyze_file(test_file)
+
+        # Should detect prevent_destroy = false
+        controls = set()
+        for ann in results:
+            controls.update(ann.control_ids)
+
+        assert "CP-9" in controls or "SI-12" in controls
+
+        # Should identify the specific issue
+        assert any("deletion protection" in ann.evidence.lower() or 
+                  "prevent_destroy" in ann.evidence.lower() for ann in results)

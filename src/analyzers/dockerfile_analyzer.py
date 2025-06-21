@@ -9,6 +9,7 @@ import logging
 import re
 from pathlib import Path
 from typing import Any
+import fnmatch
 
 from .base import BaseAnalyzer, CodeAnnotation
 
@@ -31,70 +32,70 @@ class DockerfileAnalyzer(BaseAnalyzer):
         """Initialize Dockerfile instruction security patterns"""
         return [
             {
-                "pattern": r'^FROM\s+[\w/\-:]+:latest',
+                "pattern": r'^\s*FROM\s+[\w/\-:]+:latest',
                 "controls": ["CM-2"],
                 "evidence": "Using 'latest' tag - unpinned base image version",
                 "confidence": 0.90,
                 "severity": "medium"
             },
             {
-                "pattern": r'^USER\s+root\s*$',
+                "pattern": r'^\s*USER\s+root\s*$',
                 "controls": ["AC-6"],
                 "evidence": "Explicitly running as root user",
                 "confidence": 0.95,
                 "severity": "high"
             },
             {
-                "pattern": r'^RUN\s+.*sudo\s+',
+                "pattern": r'^\s*RUN\s+.*sudo\s+',
                 "controls": ["AC-6"],
                 "evidence": "Using sudo indicates running with elevated privileges",
                 "confidence": 0.85,
                 "severity": "medium"
             },
             {
-                "pattern": r'^ENV\s+\w*(?:PASSWORD|SECRET|KEY|TOKEN|API_KEY|PRIVATE_KEY)\w*\s*=',
+                "pattern": r'^\s*ENV\s+\w*(?:PASSWORD|SECRET|KEY|TOKEN|API_KEY|PRIVATE_KEY)\w*\s*=',
                 "controls": ["IA-5"],
                 "evidence": "Hardcoded secrets in ENV instruction",
                 "confidence": 0.95,
                 "severity": "critical"
             },
             {
-                "pattern": r'^ARG\s+\w*(?:PASSWORD|SECRET|KEY|TOKEN|API_KEY|PRIVATE_KEY)\w*\s*=',
+                "pattern": r'^\s*ARG\s+\w*(?:PASSWORD|SECRET|KEY|TOKEN|API_KEY|PRIVATE_KEY)\w*\s*=',
                 "controls": ["IA-5"],
                 "evidence": "Hardcoded secrets in ARG instruction",
                 "confidence": 0.95,
                 "severity": "critical"
             },
             {
-                "pattern": r'^EXPOSE\s+22\b',
+                "pattern": r'^\s*EXPOSE\s+22\b',
                 "controls": ["IA-2", "SC-7"],
                 "evidence": "Exposing SSH port 22",
                 "confidence": 0.90,
                 "severity": "high"
             },
             {
-                "pattern": r'^ADD\s+https?://',
+                "pattern": r'^\s*ADD\s+https?://',
                 "controls": ["SI-2", "CM-6"],
                 "evidence": "Using ADD with URL - prefer COPY with verified files",
                 "confidence": 0.80,
                 "severity": "medium"
             },
             {
-                "pattern": r'^RUN\s+.*curl.*\|\s*sh',
+                "pattern": r'^\s*RUN\s+.*curl.*\|\s*sh',
                 "controls": ["SI-2", "CM-6"],
                 "evidence": "Piping curl to shell - security risk",
                 "confidence": 0.95,
                 "severity": "high"
             },
             {
-                "pattern": r'^RUN\s+.*wget.*\|\s*sh',
+                "pattern": r'^\s*RUN\s+.*wget.*\|\s*sh',
                 "controls": ["SI-2", "CM-6"],
                 "evidence": "Piping wget to shell - security risk",
                 "confidence": 0.95,
                 "severity": "high"
             },
             {
-                "pattern": r'^RUN\s+apt-get\s+install.*-y\s+ssh',
+                "pattern": r'^\s*RUN\s+apt-get\s+install.*-y\s+ssh',
                 "controls": ["CM-6", "IA-2"],
                 "evidence": "Installing SSH server in container",
                 "confidence": 0.85,
@@ -106,14 +107,14 @@ class DockerfileAnalyzer(BaseAnalyzer):
         """Initialize base image security patterns"""
         return [
             {
-                "pattern": r'^FROM\s+(?:ubuntu|debian|centos):(?:\d+\.?\d*|latest)',
+                "pattern": r'^\s*FROM\s+(?:ubuntu|debian|centos):(?:\d+\.?\d*|latest)',
                 "controls": ["AC-6", "SI-2"],
                 "evidence": "Using full OS base image - consider minimal/distroless",
                 "confidence": 0.70,
                 "severity": "low"
             },
             {
-                "pattern": r'^FROM\s+[\w/\-:]+:?(?:alpha|beta|rc|dev|snapshot)',
+                "pattern": r'^\s*FROM\s+[\w/\-.:]+(?:alpha|beta|rc|dev|snapshot)',
                 "controls": ["CM-2", "SI-2"],
                 "evidence": "Using pre-release base image version",
                 "confidence": 0.85,
@@ -154,20 +155,20 @@ class DockerfileAnalyzer(BaseAnalyzer):
                     continue
 
                 # Check for USER instruction
-                if line.startswith('USER ') and not line.startswith('USER root'):
+                if re.match(r'^\s*USER\s+', line) and not re.match(r'^\s*USER\s+root\s*$', line):
                     has_user_instruction = True
 
                 # Check for HEALTHCHECK
-                if line.startswith('HEALTHCHECK'):
+                if re.match(r'^\s*HEALTHCHECK', line):
                     has_healthcheck = True
 
                 # Extract base image
-                if line.startswith('FROM '):
+                if re.match(r'^\s*FROM\s+', line):
                     base_image = self._extract_base_image(line)
                     annotations.extend(self._analyze_base_image(base_image, i, file_path))
 
                 # Track exposed ports
-                if line.startswith('EXPOSE '):
+                if re.match(r'^\s*EXPOSE\s+', line):
                     ports = re.findall(r'\d+', line)
                     exposed_ports.extend(ports)
 
@@ -281,7 +282,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
         annotations = []
 
         # Check for missing cleanup after package installation
-        if re.match(r'^RUN\s+(?:apt-get|yum|apk)\s+install', line, re.IGNORECASE):
+        if re.match(r'^\s*RUN\s+(?:apt-get|yum|apk)\s+install', line, re.IGNORECASE):
             if not any(cleanup in line for cleanup in ['&& rm -rf', '&& apt-get clean', '&& yum clean']):
                 annotations.append(CodeAnnotation(
                     file_path=str(file_path),
@@ -293,7 +294,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
                 ))
 
         # Check for missing package version pinning
-        if re.match(r'^RUN\s+.*(?:apt-get|yum|apk)\s+install\s+(?!.*=)', line, re.IGNORECASE):
+        if re.match(r'^\s*RUN\s+.*(?:apt-get|yum|apk)\s+install\s+(?!.*=)', line, re.IGNORECASE):
             if not re.search(r'[=@:][\d\.]', line):  # No version specification
                 annotations.append(CodeAnnotation(
                     file_path=str(file_path),
@@ -311,7 +312,7 @@ class DockerfileAnalyzer(BaseAnalyzer):
         annotations = []
 
         # Check for COPY/ADD without --chown
-        if re.match(r'^(?:COPY|ADD)\s+(?!--chown)', line):
+        if re.match(r'^\s*(?:COPY|ADD)\s+(?!--chown)', line):
             # Only flag if we're in a multi-stage build or have USER instruction
             annotations.append(CodeAnnotation(
                 file_path=str(file_path),
@@ -526,13 +527,13 @@ class DockerfileAnalyzer(BaseAnalyzer):
         image_counts: dict[str, int] = {}
 
         for file_path in project_path.rglob('*'):
-            if any(pattern in file_path.name for pattern in self.file_patterns):
+            if file_path.is_file() and any(fnmatch.fnmatch(file_path.name, pattern) for pattern in self.file_patterns):
                 try:
                     with open(file_path) as f:
                         content = f.read()
 
                     # Count base images
-                    from_pattern = r'^FROM\s+(?:--platform=\S+\s+)?(\S+)'
+                    from_pattern = r'^\s*FROM\s+(?:--platform=\S+\s+)?(\S+)'
                     for match in re.finditer(from_pattern, content, re.MULTILINE):
                         image = match.group(1)
                         base_name = image.split(':')[0]
