@@ -70,7 +70,7 @@ class JavaAnalyzer(BaseAnalyzer):
             'java.util.logging': ['AU-2', 'AU-3'],
             'ch.qos.logback': ['AU-2', 'AU-3'],
             'org.springframework.security.core.context.SecurityContextHolder': ['AU-2', 'AC-3'],
-            
+
             # JPA/Persistence
             'org.springframework.data.jpa.repository': ['SI-10'],  # JPA repositories
             'org.springframework.data.repository.query': ['SI-10'],  # Query annotations

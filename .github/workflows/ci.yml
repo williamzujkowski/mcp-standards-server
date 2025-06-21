@@ -31,7 +31,7 @@ jobs:
     - name: Install dependencies
       run: |
         source .venv/bin/activate
-        uv pip install -e ".[dev]"
+        uv pip install -e ".[dev,llm]"
         
     - name: Run ruff
       run: |
@@ -67,7 +67,7 @@ jobs:
     - name: Install dependencies
       run: |
         source .venv/bin/activate
-        uv pip install -e ".[dev]"
+        uv pip install -e ".[dev,llm]"
         
     - name: Run tests
       run: |
@@ -120,7 +120,7 @@ jobs:
     - name: Install dependencies
       run: |
         source .venv/bin/activate
-        uv pip install -e .
+        uv pip install -e ".[llm]"
         
     - name: Run compliance scan
       run: |

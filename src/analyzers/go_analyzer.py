@@ -72,13 +72,13 @@ class GoAnalyzer(BaseAnalyzer):
             'github.com/sirupsen/logrus': ['AU-2', 'AU-3'],
             'go.uber.org/zap': ['AU-2', 'AU-3'],
             'github.com/rs/zerolog': ['AU-2', 'AU-3'],
-            
+
             # Framework packages
             'github.com/gin-gonic/gin': ['AC-3', 'AC-4', 'SC-8', 'SI-10', 'AU-2'],
             'github.com/gin-contrib/secure': ['SC-8', 'SC-18'],
             'github.com/gin-contrib/cors': ['AC-4', 'SC-8'],
             'github.com/ulule/limiter/v3': ['SC-5'],
-            
+
             # Additional crypto
             'golang.org/x/crypto': ['SC-13', 'SC-28'],
         }

@@ -449,7 +449,7 @@ class PythonAnalyzer(BaseAnalyzer):
             # Web Frameworks with Security Features
             'django': ['AC-3', 'AC-4', 'SC-8', 'SI-10'],
             'flask': ['AC-3', 'SC-8'],
-            
+
             # Authentication/Authorization
             'django-allauth': ['IA-2', 'IA-8'],
             'django-guardian': ['AC-3', 'AC-6'],

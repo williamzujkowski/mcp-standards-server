@@ -507,7 +507,7 @@ class StandardsEngine:
 
             # Find all standards for this category/type
             category = std_type.lower()
-            
+
             # Try categories field first (newer format)
             if "categories" in index and category in index["categories"]:
                 for std_id in index["categories"][category]:
@@ -579,11 +579,11 @@ class StandardsEngine:
         if strategy == TokenOptimizationStrategy.TRUNCATE:
             # Simple truncation: cut content and add [truncated] marker
             truncated_content = self.tokenizer.truncate_to_tokens(
-                section.content, 
+                section.content,
                 max_tokens - 10  # Reserve tokens for [truncated] marker
             )
             truncated_content += "\n\n[truncated]"
-            
+
             return StandardSection(
                 id=section.id,
                 type=section.type,

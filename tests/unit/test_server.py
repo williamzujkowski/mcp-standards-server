@@ -297,19 +297,19 @@ class TestServerInitialization:
         """Test server initialization"""
         with patch('src.server.Path') as mock_path, \
              patch('src.core.standards.versioning.Path') as mock_versioning_path:
-            
+
             # Mock the paths
             fake_root = Path("/fake/path")
             mock_path.return_value.parent.parent = fake_root
-            
+
             # Mock the versioning path operations
             mock_versions_path = Mock()
             mock_versions_path.mkdir = Mock()
             mock_versions_path.__truediv__ = Mock(return_value=Mock(exists=Mock(return_value=False)))
-            
+
             mock_versioning_path.return_value = mock_versions_path
             mock_versioning_path.return_value.parent = mock_versioning_path.return_value
-            
+
             # Also need to patch the StandardsEngine initialization
             with patch('src.core.standards.engine.StandardsVersionManager'):
                 await initialize_server()

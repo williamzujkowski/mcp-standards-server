@@ -390,7 +390,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                         component="framework-security",
                         confidence=0.7 if 'dangerously' in pattern else 0.85
                     ))
-                    
+
         # Angular patterns
         if '@angular' in code or 'angular' in code.lower() or '.component.ts' in file_path:
             angular_patterns = [
@@ -402,7 +402,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                 (r'@angular/platform-browser.*SafeHtml', ["SI-10"], "Angular safe HTML type"),
                 (r'isAuthenticated\(\)', ["IA-2"], "Angular authentication check"),
             ]
-            
+
             for pattern, controls, evidence in angular_patterns:
                 if re.search(pattern, code):  # Remove re.IGNORECASE to fix pattern matching
                     # Find a suitable search term for line number
@@ -424,7 +424,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                         search_term = 'innerHTML'
                     else:
                         search_term = pattern.split('(')[0]
-                    
+
                     line_num = self._find_pattern_line(code, search_term)
                     annotations.append(CodeAnnotation(
                         file_path=file_path,
@@ -434,7 +434,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                         component="framework-security",
                         confidence=0.85
                     ))
-                    
+
         # Vue.js patterns
         if 'vue' in code.lower() or '.vue' in file_path:
             vue_patterns = [
@@ -446,7 +446,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
                 (r'validateForm\(', ["SI-10"], "Form validation"),
                 (r'@submit\.prevent', ["SI-10"], "Vue form handling with validation"),
             ]
-            
+
             for pattern, controls, evidence in vue_patterns:
                 if re.search(pattern, code):
                     line_num = self._find_pattern_line(code, pattern.split('(')[0].replace('\\', ''))

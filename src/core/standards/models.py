@@ -4,7 +4,7 @@ Standards Engine Data Models
 @evidence: Data models for standards management
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -245,7 +245,7 @@ class StandardCache(BaseModel):
             return datetime.now() > self.expires_at
         else:
             # Use timezone-aware comparison
-            return datetime.now(timezone.utc) > self.expires_at
+            return datetime.now(UTC) > self.expires_at
 
     def increment_access(self) -> None:
         """Track cache hits"""
@@ -287,7 +287,7 @@ class TokenBudget:
             raise ValueError("Used tokens cannot be negative")
         if self.reserved < 0:
             raise ValueError("Reserved tokens cannot be negative")
-            
+
         if self.available is None:
             self.available = self.total - self.used - self.reserved
         elif self.available < 0:
