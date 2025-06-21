@@ -5,7 +5,7 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 ## 🚀 Features
 
 ### Core Compliance
-- 🔒 **NIST 800-53r5 Compliance**: Detects 200+ controls across all 20 families with 91.56% test coverage
+- 🔒 **NIST 800-53r5 Compliance**: Detects 200+ controls across all 20 families
 - 📊 **17 Standards Imported**: Complete standards library from official repository
 - 📝 **OSCAL 1.0.0 Support**: Generate System Security Plans (SSPs) automatically
 - 🔍 **Multi-Language Analysis**: Python, JavaScript/TypeScript, Go, Java with enhanced AST parsing

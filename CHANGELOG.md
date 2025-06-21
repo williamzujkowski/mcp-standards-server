@@ -22,12 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Standards Engine**: Complete YAML loading, Redis caching, natural language mapping
 - **GitHub Actions**: CI/CD workflows with comprehensive security scanning
 - **Documentation**: Complete API docs, user guides, and implementation examples
-- **Test Coverage**: 91.56% coverage exceeding industry standards
 - **Enhanced NIST Patterns**: 200+ control detection patterns across all 20 families
 - **Standards Versioning**: Complete version management with rollback capabilities
 - **Control Coverage Reports**: Comprehensive gap analysis with multiple output formats
 - **AST Utilities**: Native AST parsing for Python with pattern fallback for other languages
 - **Tree-sitter Foundation**: Infrastructure for future tree-sitter integration
+- **Comprehensive Test Suites**: Added 120+ test methods across analyzers, CLI, and server modules
+- **Test Coverage Improvements**: Increased from 54% to 61% (targeting 80%)
 
 ### Enhanced
 - **Standards Index**: JSON-based indexing for efficient searching and categorization
@@ -58,6 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Actions**: Updated deprecated actions and fixed all CI/CD workflows
 - **Type Annotations**: Modernized to use Python 3.11+ union syntax (X | None)
 - **MyPy Configuration**: Relaxed strictness for better compatibility
+- **MyPy Type Errors**: Reduced from 80 errors to 5 warnings
+- **Linting Issues**: Fixed all ruff linting errors (import ordering, whitespace)
+- **Async/Await Compatibility**: Fixed analyzer methods to properly support async operations
+- **YAML Parsing**: Fixed indentation issues in Kubernetes manifest tests
 
 ## [0.1.0] - 2024-01-20
 
