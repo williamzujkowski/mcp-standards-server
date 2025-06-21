@@ -1,5 +1,21 @@
 # TODO: Implement Language-Specific Analyzers
 
+## 🚨 CRITICAL: Test Coverage Required
+
+**Current Status**: All analyzers are implemented but test coverage is at 54% (below required 80%)
+
+### Immediate Actions Required:
+1. **Write comprehensive test suites for all analyzers**
+2. **Achieve 80% test coverage to pass CI/CD**
+3. **Fix any bugs discovered during testing**
+
+### Completed Work:
+- ✅ All core language analyzers (Python, JS, Go, Java)
+- ✅ All Phase 1 IaC analyzers (Terraform, Dockerfile, K8s)
+- ✅ Fixed all MyPy type errors
+- ✅ Fixed async/await compatibility
+- ✅ Fixed linting issues
+
 ## 🎯 Status: Core Analyzers Complete + IaC Analyzers Complete!
 
 ### ✅ Completed Programming Language Analyzers (100%)
@@ -8,9 +24,9 @@
 - Go analyzer with Gin/Fiber/gRPC patterns
 - Java analyzer with Spring/JPA patterns
 - Enhanced NIST pattern detection (200+ controls)
-- Comprehensive test coverage for all analyzers
 - AST utilities and pattern matching
 - Framework-specific security detection
+- ⚠️ **Tests needed**: Comprehensive test coverage pending (current coverage: 54%)
 
 ### ✅ Completed Infrastructure as Code Analyzers (Phase 1 - 100%)
 - **Terraform Analyzer**: HCL parsing, multi-provider support (AWS/Azure/GCP), state file detection
@@ -95,15 +111,18 @@ Current analyzers have been enhanced with:
 
 ### 5. Testing Infrastructure
 
-✅ Comprehensive tests have been added:
+⚠️ **Tests need to be written for new analyzers**:
 ```
 tests/unit/analyzers/
-├── test_python_analyzer.py       ✅ Comprehensive tests with AST analysis
-├── test_javascript_analyzer.py   ✅ Framework-specific tests (React, Angular, Vue, Express)
-├── test_go_analyzer.py          ✅ Gin, Fiber, gRPC security tests
-├── test_java_analyzer.py        ✅ Spring Security, JPA, crypto tests
-├── test_enhanced_patterns.py    ✅ Pattern detection tests
-└── test_analyzer_integration.py ✅ Integration tests
+├── test_python_analyzer.py       ✅ Basic tests exist
+├── test_javascript_analyzer.py   ❌ Needs comprehensive tests
+├── test_go_analyzer.py          ❌ Needs comprehensive tests
+├── test_java_analyzer.py        ❌ Needs comprehensive tests
+├── test_terraform_analyzer.py   ❌ Needs to be created
+├── test_dockerfile_analyzer.py  ❌ Needs to be created
+├── test_k8s_analyzer.py        ❌ Needs to be created
+├── test_enhanced_patterns.py    ✅ Basic tests exist
+└── test_analyzer_integration.py ✅ Integration tests exist
 ```
 
 ### 6. Performance Optimization
@@ -112,6 +131,8 @@ tests/unit/analyzers/
 - [ ] Add parallel processing for large codebases
 - [ ] Optimize pattern matching algorithms
 - [ ] Add progress reporting for long-running analyses
+- [x] Fixed async/await issues in analyzers
+- [x] Fixed type annotations and MyPy errors
 
 ### 7. Integration with Tree-sitter
 
@@ -184,7 +205,22 @@ class PythonAnalyzer(BaseAnalyzer):
 
 ## Remaining Work
 
-### Traditional Programming Languages
+### High Priority Tasks
+1. **Write comprehensive tests for all analyzers** (to meet 80% coverage requirement)
+   - JavaScript analyzer tests (framework-specific)
+   - Go analyzer tests (Gin, Fiber, gRPC)
+   - Java analyzer tests (Spring, JPA)
+   - Terraform analyzer tests
+   - Dockerfile analyzer tests
+   - Kubernetes analyzer tests
+
+2. **Fix remaining issues**:
+   - [x] ~~MyPy type errors~~ (Fixed - 5 yaml warnings remain)
+   - [x] ~~Async/await compatibility~~ (Fixed)
+   - [x] ~~Return type mismatches~~ (Fixed)
+   - [ ] Increase test coverage from 54% to 80%
+
+### Medium Priority Tasks
 - Add support for additional languages (Ruby, PHP, C++, Rust, C#)
 - Cloud-specific pattern detection (AWS, Azure, GCP)
 - Performance benchmarking and optimization
@@ -238,7 +274,7 @@ Infrastructure as Code introduces unique security challenges that require specia
 - [x] Added .tfvars file analysis ✓
 - [x] State file security detection ✓
 - [x] Module source validation ✓
-- [x] Comprehensive test coverage (12 test cases) ✓
+- [ ] **NEEDS TESTS**: Create comprehensive test suite
 
 ### 2. CloudFormation Analyzer (`cloudformation_analyzer.py`)
 
@@ -380,7 +416,7 @@ Infrastructure as Code introduces unique security challenges that require specia
 - [x] Added secret scanning for common patterns ✓
 - [x] Implemented best practice detection ✓
 - [x] Added metadata recommendations (labels) ✓
-- [x] Comprehensive test coverage (14 test cases) ✓
+- [ ] **NEEDS TESTS**: Create comprehensive test suite
 
 ### 7. Docker Compose Analyzer (`compose_analyzer.py`)
 
@@ -473,7 +509,7 @@ Infrastructure as Code introduces unique security challenges that require specia
 - [x] Implemented Secret and ConfigMap analysis ✓
 - [x] Added Service and Ingress validation ✓
 - [x] Non-K8s YAML file filtering ✓
-- [x] Comprehensive test coverage (13 test cases) ✓
+- [ ] **NEEDS TESTS**: Create comprehensive test suite
 
 ## 🌐 Web Technology Analyzers
 
@@ -575,8 +611,8 @@ Infrastructure as Code introduces unique security challenges that require specia
 All Phase 1 analyzers have been implemented with:
 - Comprehensive pattern detection
 - NIST control mappings
-- Full test coverage
 - Production-ready code
+- ⚠️ **MISSING**: Test coverage
 
 ### Phase 2: Extended IaC (Next Priority)
 4. CloudFormation Analyzer
@@ -601,6 +637,85 @@ Each analyzer requires:
 - [ ] Performance benchmarks for large files
 - [ ] False positive/negative rate analysis
 - [ ] Cross-platform compatibility tests
+
+### Test Implementation Template
+
+```python
+# tests/unit/analyzers/test_[analyzer_name]_analyzer.py
+import pytest
+from pathlib import Path
+from src.analyzers.[analyzer_name]_analyzer import [AnalyzerName]Analyzer
+
+class Test[AnalyzerName]Analyzer:
+    def setup_method(self):
+        self.analyzer = [AnalyzerName]Analyzer()
+    
+    def test_detects_security_issue(self, tmp_path):
+        # Create test file with security issue
+        test_file = tmp_path / "test.[ext]"
+        test_file.write_text("""[problematic code]""")
+        
+        # Analyze
+        results = self.analyzer.analyze_file(test_file)
+        
+        # Assert
+        assert len(results) > 0
+        assert "[CONTROL-ID]" in results[0].control_ids
+    
+    def test_suggests_controls(self):
+        code = """[sample code]"""
+        controls = self.analyzer.suggest_controls(code)
+        assert "[CONTROL-ID]" in controls
+    
+    async def test_analyze_project(self, tmp_path):
+        # Test project analysis
+        results = await self.analyzer.analyze_project(tmp_path)
+        assert isinstance(results, dict)
+```
+
+### Required Test Cases for Each Analyzer
+
+1. **JavaScript Analyzer Tests**:
+   - Framework detection (React, Angular, Vue, Express)
+   - Security middleware patterns
+   - Authentication/authorization patterns
+   - Input validation detection
+   - Package.json dependency scanning
+
+2. **Go Analyzer Tests**:
+   - Framework patterns (Gin, Fiber, gRPC)
+   - Security import detection
+   - Crypto usage patterns
+   - Error handling patterns
+   - go.mod dependency analysis
+
+3. **Java Analyzer Tests**:
+   - Spring Security annotations
+   - JPA query validation
+   - Crypto API usage
+   - Authentication patterns
+   - Maven/Gradle dependency checks
+
+4. **Terraform Analyzer Tests**:
+   - AWS security group rules
+   - Azure network security
+   - GCP firewall rules
+   - IAM policy detection
+   - State file security
+
+5. **Dockerfile Analyzer Tests**:
+   - Base image security
+   - User privilege checks
+   - Secret detection
+   - Best practice validation
+   - Multi-stage build analysis
+
+6. **Kubernetes Analyzer Tests**:
+   - Pod security contexts
+   - RBAC configurations
+   - Network policies
+   - Secret management
+   - Resource limits
 
 ## 📚 Documentation Requirements
 
