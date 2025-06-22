@@ -4,18 +4,17 @@ Comprehensive tests for server.py module
 @evidence: Complete MCP server testing
 """
 
+import asyncio
 import json
-import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, mock_open
-from typing import Any
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 import yaml
 
 # Import the server module and components
 from src import server
-from src.server import app, standards_engine, compliance_scanner
+from src.server import app, compliance_scanner, standards_engine
 
 
 class TestMCPServer:
@@ -30,7 +29,7 @@ class TestMCPServer:
         engine.get_available_standards = MagicMock()
         return engine
 
-    @pytest.fixture  
+    @pytest.fixture
     def mock_compliance_scanner(self):
         """Mock compliance scanner"""
         scanner = MagicMock()
@@ -46,17 +45,17 @@ class TestMCPServer:
     def test_global_instances_initialization(self):
         """Test global instance variables"""
         # Should be initially None before initialization
-        assert isinstance(standards_engine, (type(None), MagicMock))
-        assert isinstance(compliance_scanner, (type(None), MagicMock))
+        assert isinstance(standards_engine, type(None) | MagicMock)
+        assert isinstance(compliance_scanner, type(None) | MagicMock)
 
     @pytest.mark.asyncio
     async def test_list_tools(self):
         """Test list_tools functionality"""
         tools = await server.list_tools()
-        
+
         assert isinstance(tools, list)
         assert len(tools) > 0
-        
+
         # Check that all tools have required fields
         for tool in tools:
             assert hasattr(tool, 'name')
@@ -68,27 +67,27 @@ class TestMCPServer:
         """Test that list_tools contains expected tool names"""
         tools = await server.list_tools()
         tool_names = [tool.name for tool in tools]
-        
+
         expected_tools = [
             "load_standards",
-            "query_standards", 
+            "query_standards",
             "scan_code",
             "suggest_controls",
             "validate_compliance",
             "generate_ssp"
         ]
-        
+
         for expected_tool in expected_tools:
             assert expected_tool in tool_names, f"Missing expected tool: {expected_tool}"
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_list_resources(self):
         """Test list_resources functionality"""
         resources = await server.list_resources()
-        
+
         assert isinstance(resources, list)
         assert len(resources) > 0
-        
+
         # Check that all resources have required fields
         for resource in resources:
             assert hasattr(resource, 'uri')
@@ -99,13 +98,13 @@ class TestMCPServer:
         """Test that list_resources contains expected resource URIs"""
         resources = await server.list_resources()
         resource_uris = [resource.uri for resource in resources]
-        
+
         expected_prefixes = [
             "standards://",
             "controls://",
             "templates://"
         ]
-        
+
         for prefix in expected_prefixes:
             assert any(str(uri).startswith(prefix) for uri in resource_uris), \
                 f"Missing resources with prefix: {prefix}"
@@ -117,7 +116,7 @@ class TestMCPServer:
         with patch('builtins.open', mock_open(read_data='{"test": "data"}')):
             with patch('pathlib.Path.exists', return_value=True):
                 result = await server.read_resource("standards://nist-800-53/doc1")
-                
+
                 assert isinstance(result, list)
                 assert len(result) > 0
                 assert hasattr(result[0], 'text')
@@ -128,10 +127,10 @@ class TestMCPServer:
         with patch('builtins.open', mock_open(read_data='{"controls": []}')):
             with patch('pathlib.Path.exists', return_value=True):
                 result = await server.read_resource("controls://index")
-                
+
                 assert isinstance(result, list)
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_read_resource_nonexistent(self):
         """Test reading non-existent resource"""
         with patch('pathlib.Path.exists', return_value=False):
@@ -146,12 +145,12 @@ class TestMCPServer:
                 "name": "NIST 800-53",
                 "controls": ["AC-1", "AC-2"]
             }
-            
+
             result = await server.call_tool(
                 "load_standards",
                 {"standard": "nist-800-53", "version": "rev5"}
             )
-            
+
             assert isinstance(result, list)
             mock_standards_engine.load_standard.assert_called_once()
 
@@ -162,12 +161,12 @@ class TestMCPServer:
             mock_standards_engine.natural_query.return_value = [
                 {"control": "AC-3", "description": "Access control"}
             ]
-            
+
             result = await server.call_tool(
-                "query_standards", 
+                "query_standards",
                 {"query": "access control", "limit": 10}
             )
-            
+
             assert isinstance(result, list)
             mock_standards_engine.natural_query.assert_called_once()
 
@@ -178,12 +177,12 @@ class TestMCPServer:
             mock_compliance_scanner.scan_file.return_value = [
                 {"file": "test.py", "controls": ["AC-3"], "issues": []}
             ]
-            
+
             result = await server.call_tool(
                 "scan_code",
                 {"file_path": "/path/to/file.py", "language": "python"}
             )
-            
+
             assert isinstance(result, list)
             mock_compliance_scanner.scan_file.assert_called_once()
 
@@ -194,12 +193,12 @@ class TestMCPServer:
             mock_standards_engine.suggest_controls_for_code.return_value = [
                 "AC-3", "AU-2", "IA-2"
             ]
-            
+
             result = await server.call_tool(
                 "suggest_controls",
                 {"code_snippet": "def authenticate():", "language": "python"}
             )
-            
+
             assert isinstance(result, list)
 
     @pytest.mark.asyncio
@@ -210,12 +209,12 @@ class TestMCPServer:
                 "summary": {"total_files": 5, "issues_found": 2},
                 "findings": []
             }
-            
+
             result = await server.call_tool(
                 "validate_compliance",
                 {"project_path": "/path/to/project", "profile": "moderate"}
             )
-            
+
             assert isinstance(result, list)
             mock_compliance_scanner.scan_directory.assert_called_once()
 
@@ -226,12 +225,12 @@ class TestMCPServer:
             mock_handler = MagicMock()
             mock_oscal.return_value = mock_handler
             mock_handler.generate_ssp.return_value = {"system-security-plan": {}}
-            
+
             result = await server.call_tool(
                 "generate_ssp",
                 {"project_path": "/path/to/project", "output_format": "json"}
             )
-            
+
             assert isinstance(result, list)
             mock_handler.generate_ssp.assert_called_once()
 
@@ -245,10 +244,10 @@ class TestMCPServer:
     async def test_list_prompts(self):
         """Test list_prompts functionality"""
         prompts = await server.list_prompts()
-        
+
         assert isinstance(prompts, list)
         assert len(prompts) > 0
-        
+
         # Check that all prompts have required fields
         for prompt in prompts:
             assert hasattr(prompt, 'name')
@@ -259,15 +258,15 @@ class TestMCPServer:
         """Test that list_prompts contains expected prompt names"""
         prompts = await server.list_prompts()
         prompt_names = [prompt.name for prompt in prompts]
-        
+
         expected_prompts = [
             "nist_compliance_review",
-            "security_gap_analysis", 
+            "security_gap_analysis",
             "control_implementation_guide",
             "ssp_generation_assistant",
             "remediation_suggestions"
         ]
-        
+
         for expected_prompt in expected_prompts:
             assert expected_prompt in prompt_names, f"Missing expected prompt: {expected_prompt}"
 
@@ -278,7 +277,7 @@ class TestMCPServer:
             "nist_compliance_review",
             {"code": "def test():", "controls": ["AC-3"]}
         )
-        
+
         assert isinstance(result, list)
         assert len(result) > 0
 
@@ -289,7 +288,7 @@ class TestMCPServer:
             "security_gap_analysis",
             {"baseline": "moderate", "current_controls": ["AC-1"]}
         )
-        
+
         assert isinstance(result, list)
 
     @pytest.mark.asyncio
@@ -321,11 +320,11 @@ class TestMCPServer:
                 mock_scanner = MagicMock()
                 mock_engine_class.return_value = mock_engine
                 mock_scanner_class.return_value = mock_scanner
-                
+
                 # Call initialization function if it exists
                 if hasattr(server, '_initialize_engines'):
                     await server._initialize_engines()
-                
+
                 # Otherwise just verify classes are available
                 assert mock_engine_class is not None
                 assert mock_scanner_class is not None
@@ -339,7 +338,7 @@ class TestMCPServer:
                 "load_standards",
                 {"standard": "nist-800-53"}
             )
-            
+
             # Should handle gracefully
             assert isinstance(result, list)
 
@@ -352,7 +351,7 @@ class TestMCPServer:
             "templates://api-security",
             "invalid://uri"
         ]
-        
+
         for uri in test_uris:
             try:
                 result = await server.read_resource(uri)
@@ -366,11 +365,11 @@ class TestMCPServer:
         """Test JSON serialization of responses"""
         # Test with simple data
         test_data = {"test": "value", "number": 42}
-        
+
         # Verify JSON can be serialized
         json_str = json.dumps(test_data)
         assert isinstance(json_str, str)
-        
+
         # Verify it can be deserialized
         parsed = json.loads(json_str)
         assert parsed == test_data
@@ -384,7 +383,7 @@ class TestMCPServer:
           - AC-1
           - AC-2
         """
-        
+
         # Test YAML parsing
         parsed = yaml.safe_load(yaml_content)
         assert parsed['version'] == 1.0
@@ -395,7 +394,7 @@ class TestMCPServer:
         """Test Path object handling"""
         test_path = Path("/test/path")
         assert isinstance(test_path, Path)
-        
+
         # Test path operations don't crash
         assert test_path.name == "path"
         assert test_path.parent.name == "test"
@@ -404,7 +403,7 @@ class TestMCPServer:
         """Test server constants and global variables"""
         # Test that app is properly configured
         assert server.app.name == "mcp-standards-server"
-        
+
         # Test global variables exist
         assert hasattr(server, 'standards_engine')
         assert hasattr(server, 'compliance_scanner')
@@ -417,13 +416,13 @@ class TestMCPServer:
         with patch('builtins.open', mock_open(read_data='{"test": "data"}')):
             with patch('pathlib.Path.exists', return_value=True):
                 result = await server.read_resource("standards://test")
-                
+
                 assert isinstance(result, list)
                 if result:
                     # Should be TextContent or similar
                     assert hasattr(result[0], 'text') or hasattr(result[0], 'content')
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_tool_input_validation(self):
         """Test tool input validation"""
         # Test with invalid inputs
@@ -433,7 +432,7 @@ class TestMCPServer:
             {"file_path": ""},
             {"standard": None}
         ]
-        
+
         for invalid_input in invalid_inputs:
             try:
                 result = await server.call_tool("load_standards", invalid_input)
@@ -454,29 +453,29 @@ class TestMCPServer:
                 {"query": f"test query {i}", "limit": 5}
             )
             tasks.append(task)
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # All should complete (successfully or with exception)
         assert len(results) == 3
         for result in results:
-            assert isinstance(result, (list, Exception))
+            assert isinstance(result, list | Exception)
 
     def test_mcp_types_integration(self):
         """Test MCP types integration"""
         # Verify MCP types are properly imported and usable
-        from mcp.types import Tool, TextContent, ImageContent
-        
+        from mcp.types import TextContent, Tool
+
         # Test Tool creation
         tool = Tool(
             name="test_tool",
             description="Test tool",
             inputSchema={"type": "object", "properties": {}}
         )
-        
+
         assert tool.name == "test_tool"
         assert tool.description == "Test tool"
-        
+
         # Test TextContent creation
         text_content = TextContent(text="Test content")
         assert text_content.text == "Test content"
@@ -486,14 +485,14 @@ class TestMCPServer:
         """Test server lifecycle methods"""
         # Test server can be created and configured
         assert server.app is not None
-        
+
         # Test that handlers are registered
         tools = await server.list_tools()
         resources = await server.list_resources()
         prompts = await server.list_prompts()
-        
+
         assert len(tools) > 0
-        assert len(resources) > 0  
+        assert len(resources) > 0
         assert len(prompts) > 0
 
     def test_nist_annotations_present(self):
@@ -501,6 +500,6 @@ class TestMCPServer:
         # Check module docstring has NIST annotations
         assert "@nist-controls:" in server.__doc__
         assert "@evidence:" in server.__doc__
-        
+
         # Check that controls are documented
         assert "AC-4" in server.__doc__ or "SC-8" in server.__doc__

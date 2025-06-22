@@ -838,7 +838,7 @@ server:
         # Should return a dictionary with resource counts
         assert isinstance(resource_counts, dict)
         assert len(resource_counts) > 0
-        
+
         # Should count at least some resources
         total_resources = sum(resource_counts.values())
         assert total_resources >= 1

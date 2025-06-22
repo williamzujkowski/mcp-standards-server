@@ -15,6 +15,8 @@ from redis.exceptions import RedisError
 
 from ..logging import audit_log, get_logger
 from ..tokenizer import get_default_tokenizer
+from .enhanced_mapper import EnhancedNaturalLanguageMapper
+from .hybrid_vector_store import HybridConfig, HybridVectorStore
 from .models import (
     NaturalLanguageMapping,
     StandardLoadResult,
@@ -24,12 +26,10 @@ from .models import (
     TokenBudget,
     TokenOptimizationStrategy,
 )
+from .semantic_search import EmbeddingModel
+from .tiered_storage_strategy import DocumentMetadata, TieredStorageStrategy
 from .token_optimizer import TokenOptimizationEngine
 from .versioning import StandardsVersionManager
-from .hybrid_vector_store import HybridVectorStore, HybridConfig
-from .enhanced_mapper import EnhancedNaturalLanguageMapper
-from .semantic_search import EmbeddingModel
-from .tiered_storage_strategy import TieredStorageStrategy, DocumentMetadata
 
 logger = get_logger(__name__)
 
@@ -164,26 +164,26 @@ class StandardsEngine:
         self.hybrid_store = None
         self.embedding_model = None
         self.storage_strategy = None
-        
+
         if enable_hybrid_search:
             try:
                 # Initialize hybrid vector store
                 self.hybrid_store = HybridVectorStore(hybrid_config or HybridConfig())
-                
+
                 # Initialize embedding model
                 self.embedding_model = EmbeddingModel()
-                
+
                 # Initialize storage strategy
                 self.storage_strategy = TieredStorageStrategy(
                     hot_cache_size=hybrid_config.hot_cache_size if hybrid_config else 1000,
                     access_threshold=hybrid_config.access_threshold if hybrid_config else 10
                 )
-                
+
                 # Initialize enhanced mapper with semantic search
                 self.nl_mapper = EnhancedNaturalLanguageMapper(
                     index_path=standards_path / ".semantic_index"
                 )
-                
+
                 logger.info("Initialized hybrid vector store with semantic search")
             except Exception as e:
                 logger.warning(f"Failed to initialize hybrid search, falling back to basic: {e}")
@@ -202,7 +202,7 @@ class StandardsEngine:
 
         # Initialize schema if available
         self.schema = self._load_schema()
-        
+
         # Index standards on startup if hybrid search enabled
         if self.enable_hybrid_search and self.hybrid_store:
             self._index_standards_async()
@@ -214,12 +214,12 @@ class StandardsEngine:
             with open(schema_path) as f:
                 return yaml.safe_load(f)  # type: ignore[no-any-return]
         return None
-    
+
     def _index_standards_async(self) -> None:
         """Index standards asynchronously for hybrid search"""
         import asyncio
         import threading
-        
+
         def index_task():
             try:
                 loop = asyncio.new_event_loop()
@@ -227,38 +227,38 @@ class StandardsEngine:
                 loop.run_until_complete(self._index_all_standards())
             except Exception as e:
                 logger.error(f"Failed to index standards: {e}")
-        
+
         # Run indexing in background thread
         thread = threading.Thread(target=index_task, daemon=True)
         thread.start()
-    
+
     async def _index_all_standards(self) -> None:
         """Index all standards into hybrid vector store"""
         if not self.hybrid_store or not self.embedding_model:
             return
-        
+
         logger.info("Starting standards indexing for hybrid search")
         indexed_count = 0
-        
+
         # Iterate through all standard files
         for yaml_file in self.standards_path.glob("**/*.yaml"):
             if yaml_file.name == "standards-schema.yaml":
                 continue
-            
+
             try:
                 with open(yaml_file) as f:
                     data = yaml.safe_load(f)
-                
+
                 if not isinstance(data, dict):
                     continue
-                
+
                 # Extract standard info
                 standard_id = yaml_file.stem
                 content = self._extract_content_for_indexing(data)
-                
+
                 # Generate embedding
                 embedding = await self.embedding_model.encode(content)
-                
+
                 # Create metadata
                 metadata = DocumentMetadata(
                     id=standard_id,
@@ -267,7 +267,7 @@ class StandardsEngine:
                     document_type="standard",
                     priority=data.get("priority", "normal")
                 )
-                
+
                 # Add to hybrid store
                 await self.hybrid_store.add(
                     id=standard_id,
@@ -275,24 +275,24 @@ class StandardsEngine:
                     embedding=embedding,
                     metadata=metadata.model_dump()
                 )
-                
+
                 indexed_count += 1
-                
+
             except Exception as e:
                 logger.error(f"Failed to index {yaml_file}: {e}")
-        
+
         logger.info(f"Indexed {indexed_count} standards into hybrid vector store")
-    
+
     def _extract_content_for_indexing(self, data: dict) -> str:
         """Extract indexable content from standard data"""
         parts = []
-        
+
         # Add title and description
         if "title" in data:
             parts.append(f"Title: {data['title']}")
         if "description" in data:
             parts.append(f"Description: {data['description']}")
-        
+
         # Add sections
         if "sections" in data:
             for section in data["sections"]:
@@ -301,11 +301,11 @@ class StandardsEngine:
                         parts.append(f"Section: {section['title']}")
                     if "content" in section:
                         parts.append(section["content"])
-        
+
         # Add keywords
         if "keywords" in data:
             parts.append(f"Keywords: {', '.join(data['keywords'])}")
-        
+
         return "\n\n".join(parts)
 
     @audit_log(["AC-4", "SI-10"])  # type: ignore[misc]
@@ -337,22 +337,22 @@ class StandardsEngine:
                 try:
                     # Generate query embedding
                     query_embedding = await self.embedding_model.encode(query)
-                    
+
                     # Search hybrid store
                     results = await self.hybrid_store.search(
                         query=query,
                         query_embedding=query_embedding,
                         k=10
                     )
-                    
+
                     # Record access for tier optimization
                     if self.storage_strategy:
                         for result in results:
                             self.storage_strategy.record_access(
-                                result.id, 
+                                result.id,
                                 query_context=query[:50]
                             )
-                    
+
                     # Extract standard refs from results
                     refs = []
                     for result in results[:5]:  # Top 5 results
@@ -362,23 +362,23 @@ class StandardsEngine:
                             refs.append(f"{category.upper()}:{name}")
                         else:
                             refs.append(result.id)
-                    
+
                     query_info["query_type"] = "semantic_search"
                     query_info["confidence"] = results[0].score if results else 0.0
                     query_info["semantic_results"] = len(results)
                     query_info["mapped_refs"] = refs
-                    
+
                     # Fall back to static mapping if no semantic results
                     if not refs:
                         refs, confidence = self.nl_mapper.map_query(query)
                         query_info["query_type"] = "natural_language_fallback"
                         query_info["confidence"] = confidence
-                    
+
                     return refs, query_info
-                    
+
                 except Exception as e:
                     logger.warning(f"Semantic search failed, falling back to static: {e}")
-            
+
             # Fall back to static mapping
             refs, confidence = self.nl_mapper.map_query(query)
             query_info["query_type"] = "natural_language"
@@ -917,7 +917,7 @@ class StandardsEngine:
         )
 
         return version.version
-    
+
     async def optimize_tiers(self) -> dict[str, Any]:
         """
         Run tier optimization for hybrid vector store
@@ -926,27 +926,27 @@ class StandardsEngine:
         """
         if not self.enable_hybrid_search or not self.storage_strategy:
             return {"status": "not_enabled", "message": "Hybrid search not enabled"}
-        
+
         # Run optimization
         results = self.storage_strategy.optimize_tier_placement()
-        
+
         # Apply evictions and promotions to hybrid store
         if self.hybrid_store:
             # Process evictions
             for eviction in results.get("evictions", []):
                 await self.hybrid_store.faiss_tier.remove(eviction["document_id"])
-            
+
             # Process promotions (would need full implementation)
             # For now, just log what would happen
             for promotion in results.get("promotions", []):
                 logger.info(f"Would promote {promotion['document_id']} to FAISS")
-        
+
         # Run hybrid store optimization
         if self.hybrid_store:
             await self.hybrid_store.optimize()
-        
+
         return results
-    
+
     async def get_tier_stats(self) -> dict[str, Any]:
         """Get statistics for all storage tiers"""
         stats = {
@@ -954,22 +954,22 @@ class StandardsEngine:
             "storage_tiers": {},
             "access_patterns": {}
         }
-        
+
         if self.hybrid_store:
             stats["storage_tiers"] = await self.hybrid_store.get_stats()
-        
+
         if self.storage_strategy:
             stats["access_patterns"] = self.storage_strategy.get_tier_stats()
-        
+
         return stats
-    
+
     async def clear_cache(self, tier: str | None = None) -> dict[str, Any]:
         """Clear cache for specified tier or all tiers"""
         results = {"cleared": []}
-        
+
         if not self.enable_hybrid_search or not self.hybrid_store:
             return {"status": "not_enabled", "message": "Hybrid search not enabled"}
-        
+
         if tier in [None, "redis"]:
             # Clear Redis cache
             if self.redis_client:
@@ -980,17 +980,17 @@ class StandardsEngine:
                     results["cleared"].append("redis")
                 except Exception as e:
                     logger.error(f"Failed to clear Redis cache: {e}")
-        
+
         if tier in [None, "faiss"]:
             # Clear FAISS hot cache
             self.hybrid_store.faiss_tier._lru_cache.clear()
             self.hybrid_store.faiss_tier._init_faiss()
             results["cleared"].append("faiss")
-        
+
         if tier in [None, "stats"]:
             # Clear access statistics
             if self.storage_strategy:
                 self.storage_strategy.clear_stats()
             results["cleared"].append("stats")
-        
+
         return results

@@ -4,10 +4,9 @@ Comprehensive tests for CLI main module
 @evidence: Complete CLI functionality testing
 """
 
-import json
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import typer.testing
@@ -41,7 +40,7 @@ class TestCLIMain:
 
     @patch('src.cli.main.ComplianceScanner')
     @patch('src.cli.main.GoAnalyzer')
-    @patch('src.cli.main.JavaAnalyzer') 
+    @patch('src.cli.main.JavaAnalyzer')
     @patch('src.cli.main.JavaScriptAnalyzer')
     @patch('src.cli.main.PythonAnalyzer')
     def test_init_command_basic(self, mock_python, mock_js, mock_java, mock_go, mock_scanner, runner, temp_project):
@@ -51,13 +50,13 @@ class TestCLIMain:
         mock_js.return_value = MagicMock()
         mock_java.return_value = MagicMock()
         mock_go.return_value = MagicMock()
-        
+
         # Mock scanner
         mock_scanner_instance = MagicMock()
         mock_scanner.return_value = mock_scanner_instance
-        
+
         result = runner.invoke(app, ["init", str(temp_project)])
-        
+
         # Should succeed (exit code 0)
         assert result.exit_code == 0
         assert "Initializing MCP Standards" in result.stdout
@@ -67,9 +66,9 @@ class TestCLIMain:
         """Test init command with profile option"""
         mock_scanner_instance = MagicMock()
         mock_scanner.return_value = mock_scanner_instance
-        
+
         result = runner.invoke(app, ["init", str(temp_project), "--profile", "high"])
-        
+
         assert result.exit_code == 0
         assert "Initializing MCP Standards" in result.stdout
 
@@ -78,9 +77,9 @@ class TestCLIMain:
         """Test init command with language option"""
         mock_scanner_instance = MagicMock()
         mock_scanner.return_value = mock_scanner_instance
-        
+
         result = runner.invoke(app, ["init", str(temp_project), "--language", "python"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.ComplianceScanner')
@@ -88,9 +87,9 @@ class TestCLIMain:
         """Test init command without git hooks"""
         mock_scanner_instance = MagicMock()
         mock_scanner.return_value = mock_scanner_instance
-        
+
         result = runner.invoke(app, ["init", str(temp_project), "--no-setup-hooks"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -104,9 +103,9 @@ class TestCLIMain:
             'controls': ['AC-3', 'AU-2'],
             'summary': {'files_scanned': 5, 'issues_found': 0}
         }
-        
+
         result = runner.invoke(app, ["scan", str(temp_project)])
-        
+
         assert result.exit_code == 0
         mock_asyncio_run.assert_called_once()
 
@@ -120,10 +119,10 @@ class TestCLIMain:
             'controls': ['AC-3'],
             'summary': {'files_scanned': 5, 'issues_found': 0}
         }
-        
+
         output_file = temp_project / "scan_results.json"
         result = runner.invoke(app, ["scan", str(temp_project), "--output-file", str(output_file)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -135,9 +134,9 @@ class TestCLIMain:
             'controls': ['AC-3'],
             'summary': {'files_scanned': 5, 'issues_found': 0}
         }
-        
+
         result = runner.invoke(app, ["scan", str(temp_project), "--deep"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -149,9 +148,9 @@ class TestCLIMain:
             'controls': ['AC-3'],
             'summary': {'files_scanned': 5, 'issues_found': 0}
         }
-        
+
         result = runner.invoke(app, ["scan", str(temp_project), "--output-format", "json"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.OSCALHandler')
@@ -162,16 +161,16 @@ class TestCLIMain:
         mock_handler = MagicMock()
         mock_oscal.return_value = mock_handler
         mock_handler.generate_ssp.return_value = {"system-security-plan": {}}
-        
+
         # Mock scan results
         mock_asyncio_run.return_value = {
             'findings': [],
             'controls': ['AC-3', 'AU-2'],
             'summary': {'files_scanned': 5}
         }
-        
+
         result = runner.invoke(app, ["ssp", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.OSCALHandler')
@@ -181,16 +180,16 @@ class TestCLIMain:
         mock_handler = MagicMock()
         mock_oscal.return_value = mock_handler
         mock_handler.generate_ssp.return_value = {"system-security-plan": {}}
-        
+
         mock_asyncio_run.return_value = {
             'findings': [],
             'controls': ['AC-3'],
             'summary': {'files_scanned': 5}
         }
-        
+
         output_file = temp_project / "custom_ssp.json"
         result = runner.invoke(app, ["ssp", str(temp_project), "--output", str(output_file)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.OSCALHandler')
@@ -200,24 +199,24 @@ class TestCLIMain:
         mock_handler = MagicMock()
         mock_oscal.return_value = mock_handler
         mock_handler.generate_ssp.return_value = {"system-security-plan": {}}
-        
+
         mock_asyncio_run.return_value = {
             'findings': [],
             'controls': ['AC-3'],
             'summary': {'files_scanned': 5}
         }
-        
+
         result = runner.invoke(app, ["ssp", str(temp_project), "--format", "oscal"])
-        
+
         assert result.exit_code == 0
 
     def test_server_command_basic(self, runner):
         """Test basic server command"""
         with patch('src.cli.main.subprocess.run') as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-            
+
             result = runner.invoke(app, ["server"])
-            
+
             assert result.exit_code == 0
             mock_run.assert_called_once()
 
@@ -225,24 +224,24 @@ class TestCLIMain:
         """Test server command with custom port"""
         with patch('src.cli.main.subprocess.run') as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-            
+
             result = runner.invoke(app, ["server", "--port", "3001"])
-            
+
             assert result.exit_code == 0
 
     def test_server_with_debug(self, runner):
         """Test server command with debug mode"""
         with patch('src.cli.main.subprocess.run') as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-            
+
             result = runner.invoke(app, ["server", "--debug"])
-            
+
             assert result.exit_code == 0
 
     def test_version_command(self, runner):
         """Test version command"""
         result = runner.invoke(app, ["version"])
-        
+
         assert result.exit_code == 0
         assert "MCP Standards Server" in result.stdout
 
@@ -250,63 +249,63 @@ class TestCLIMain:
     def test_generate_command_basic(self, mock_asyncio_run, runner, temp_project):
         """Test basic generate command"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "api", "--output", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
     def test_generate_api_template(self, mock_asyncio_run, runner, temp_project):
         """Test generate API template"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "api", "--output", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
     def test_generate_auth_template(self, mock_asyncio_run, runner, temp_project):
         """Test generate auth template"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "auth", "--output", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
     def test_generate_logging_template(self, mock_asyncio_run, runner, temp_project):
         """Test generate logging template"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "logging", "--output", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
     def test_generate_encryption_template(self, mock_asyncio_run, runner, temp_project):
         """Test generate encryption template"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "encryption", "--output", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
     def test_generate_database_template(self, mock_asyncio_run, runner, temp_project):
         """Test generate database template"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "database", "--output", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
     def test_generate_with_language_option(self, mock_asyncio_run, runner, temp_project):
         """Test generate command with language option"""
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["generate", "api", "--output", str(temp_project), "--language", "python"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -318,9 +317,9 @@ class TestCLIMain:
             'errors': [],
             'warnings': []
         }
-        
+
         result = runner.invoke(app, ["validate", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -331,9 +330,9 @@ class TestCLIMain:
             'errors': [],
             'warnings': []
         }
-        
+
         result = runner.invoke(app, ["validate", str(temp_project), "--schema", "nist-800-53"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -344,9 +343,9 @@ class TestCLIMain:
             'errors': [],
             'warnings': []
         }
-        
+
         result = runner.invoke(app, ["validate", str(temp_project), "--strict"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -358,9 +357,9 @@ class TestCLIMain:
             'coverage_percentage': 85.0,
             'gaps': ['AC-4', 'AU-5']
         }
-        
+
         result = runner.invoke(app, ["coverage", str(temp_project)])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -372,9 +371,9 @@ class TestCLIMain:
             'coverage_percentage': 85.0,
             'gaps': ['AC-4']
         }
-        
+
         result = runner.invoke(app, ["coverage", str(temp_project), "--baseline", "moderate"])
-        
+
         assert result.exit_code == 0
 
     @patch('src.cli.main.asyncio.run')
@@ -386,47 +385,47 @@ class TestCLIMain:
             'coverage_percentage': 85.0,
             'gaps': []
         }
-        
+
         result = runner.invoke(app, ["coverage", str(temp_project), "--format", "html"])
-        
+
         assert result.exit_code == 0
 
     def test_help_command(self, runner):
         """Test help command"""
         result = runner.invoke(app, ["--help"])
-        
+
         assert result.exit_code == 0
         assert "NIST compliance" in result.stdout
 
     def test_invalid_command(self, runner):
         """Test invalid command handling"""
         result = runner.invoke(app, ["invalid-command"])
-        
+
         assert result.exit_code != 0
 
     @patch('src.cli.main.typer.prompt')
     def test_init_interactive_mode(self, mock_prompt, runner, temp_project):
         """Test init command in interactive mode"""
         mock_prompt.side_effect = ["python", "moderate", "y"]
-        
+
         with patch('src.cli.main.ComplianceScanner'):
             result = runner.invoke(app, ["init", str(temp_project)], input="python\nmoderate\ny\n")
-            
+
             assert result.exit_code == 0
 
     def test_scan_nonexistent_directory(self, runner):
         """Test scan command with non-existent directory"""
         result = runner.invoke(app, ["scan", "/path/that/does/not/exist"])
-        
+
         # Should handle gracefully - either succeed with warning or fail with useful message
         assert isinstance(result.exit_code, int)
 
     def test_app_has_required_commands(self):
         """Test that app has all required commands"""
         command_names = [cmd.name for cmd in app.commands.values()]
-        
+
         required_commands = ["init", "scan", "ssp", "server", "version", "generate", "validate", "coverage"]
-        
+
         for cmd in required_commands:
             assert cmd in command_names, f"Missing required command: {cmd}"
 
@@ -440,11 +439,11 @@ class TestCLIMain:
         """Test progress display during operations"""
         mock_progress_instance = MagicMock()
         mock_progress.return_value.__enter__.return_value = mock_progress_instance
-        
+
         with patch('src.cli.main.asyncio.run') as mock_run:
             mock_run.return_value = {'findings': [], 'controls': []}
             result = runner.invoke(app, ["scan", str(temp_project)])
-            
+
             assert result.exit_code == 0
 
     def test_error_handling_import_failures(self):
@@ -466,7 +465,7 @@ class TestCLIMain:
             if cmd.name == "init":
                 init_cmd = cmd
                 break
-        
+
         assert init_cmd is not None
         # Commands should have proper type hints and parameters
         assert hasattr(init_cmd, 'callback')
@@ -475,21 +474,21 @@ class TestCLIMain:
     def test_json_output_formatting(self, mock_json_dumps, runner, temp_project):
         """Test JSON output formatting"""
         mock_json_dumps.return_value = '{"test": "data"}'
-        
+
         with patch('src.cli.main.asyncio.run') as mock_run:
             mock_run.return_value = {'findings': [], 'controls': []}
             result = runner.invoke(app, ["scan", str(temp_project), "--output-format", "json"])
-            
+
             assert result.exit_code == 0
 
     def test_path_handling(self, runner):
         """Test Path object handling"""
         from pathlib import Path
-        
+
         # Test that commands accept Path objects
         test_path = Path.cwd()
         assert isinstance(test_path, Path)
-        
+
         # Commands should handle Path objects properly
         result = runner.invoke(app, ["scan", str(test_path), "--help"])
         assert result.exit_code == 0
@@ -497,7 +496,7 @@ class TestCLIMain:
     def test_async_function_integration(self):
         """Test async function integration with CLI"""
         import asyncio
-        
+
         # Verify asyncio is properly imported and used
         assert hasattr(asyncio, 'run')
 
@@ -505,11 +504,20 @@ class TestCLIMain:
         """Test that all required modules are importable"""
         # Test imports don't fail
         from src.cli.main import (
-            app, console, typer, json, Path, yaml,
-            GoAnalyzer, JavaAnalyzer, JavaScriptAnalyzer, PythonAnalyzer,
-            ComplianceScanner, OSCALHandler
+            ComplianceScanner,
+            GoAnalyzer,
+            JavaAnalyzer,
+            JavaScriptAnalyzer,
+            OSCALHandler,
+            Path,
+            PythonAnalyzer,
+            app,
+            console,
+            json,
+            typer,
+            yaml,
         )
-        
+
         assert all([
             app, console, typer, json, Path, yaml,
             GoAnalyzer, JavaAnalyzer, JavaScriptAnalyzer, PythonAnalyzer,
@@ -519,5 +527,5 @@ class TestCLIMain:
     def test_standards_subcommand_integration(self):
         """Test that standards subcommand is properly integrated"""
         # Should have standards subcommand
-        subcommands = [cmd for cmd in app.registered_groups.keys()]
+        list(app.registered_groups)
         assert "standards" in [group.name for group in app.registered_groups.values()]
