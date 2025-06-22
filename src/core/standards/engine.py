@@ -994,3 +994,66 @@ class StandardsEngine:
             results["cleared"].append("stats")
 
         return results
+
+    async def semantic_search(
+        self,
+        query: str,
+        k: int = 10,
+        filters: Dict[str, Any] | None = None,
+        rerank: bool = False
+    ) -> list[Dict[str, Any]]:
+        """
+        Perform semantic search using hybrid vector store.
+        
+        @nist-controls: SI-10, AC-4
+        @evidence: Secure semantic search with access control
+        """
+        if not self.hybrid_store or not self.embedding_model:
+            # Fallback to standard search
+            results = await self.natural_query(query, limit=k)
+            return [{"id": str(i), "content": r, "score": 1.0} for i, r in enumerate(results)]
+        
+        # Generate query embedding
+        query_embedding = await self.embedding_model.encode(query)
+        
+        # Perform hybrid search
+        search_results = await self.hybrid_store.search(
+            query=query,
+            query_embedding=query_embedding,
+            k=k,
+            filters=filters,
+            use_cache=True
+        )
+        
+        # Convert to dict format
+        results = []
+        for result in search_results:
+            results.append({
+                "id": result.id,
+                "content": result.content,
+                "score": result.score,
+                "metadata": result.metadata,
+                "source_tier": result.source_tier
+            })
+        
+        # Optional reranking
+        if rerank and self.hybrid_store.chroma_tier:
+            # Use ChromaDB's reranking capability
+            reranked = await self.hybrid_store.chroma_tier.search_with_rerank(
+                query_embedding=query_embedding,
+                query_text=query,
+                k=k,
+                filters=filters
+            )
+            
+            results = []
+            for result in reranked:
+                results.append({
+                    "id": result.id,
+                    "content": result.content,
+                    "score": result.score,
+                    "metadata": result.metadata,
+                    "source_tier": result.source_tier
+                })
+        
+        return results

@@ -48,7 +48,7 @@ async def list_tools() -> list[Tool]:
     return [
         Tool(
             name="load_standards",
-            description="Load standards based on natural language or notation query",
+            description="Load standards based on natural language or notation query with hybrid search",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -65,6 +65,17 @@ async def list_tools() -> list[Tool]:
                         "description": "Maximum tokens to return",
                         "minimum": 100,
                         "maximum": 100000
+                    },
+                    "use_cache": {
+                        "type": "boolean",
+                        "description": "Use tiered caching for faster repeated queries",
+                        "default": True
+                    },
+                    "search_tier": {
+                        "type": "string",
+                        "description": "Preferred search tier: auto, redis, faiss, or chromadb",
+                        "enum": ["auto", "redis", "faiss", "chromadb"],
+                        "default": "auto"
                     }
                 },
                 "required": ["query"]
@@ -155,6 +166,50 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["file_path"]
             }
+        ),
+        Tool(
+            name="semantic_search",
+            description="Semantic search across all standards using hybrid vector store",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language search query"
+                    },
+                    "k": {
+                        "type": "integer",
+                        "description": "Number of results to return",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "default": 10
+                    },
+                    "filters": {
+                        "type": "object",
+                        "description": "Metadata filters (e.g., {\"type\": \"standard\", \"category\": \"security\"})"
+                    },
+                    "rerank": {
+                        "type": "boolean",
+                        "description": "Use reranking for better relevance",
+                        "default": False
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        Tool(
+            name="cache_stats",
+            description="Get performance statistics for the hybrid vector store",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "include_details": {
+                        "type": "boolean",
+                        "description": "Include detailed tier statistics",
+                        "default": False
+                    }
+                }
+            }
         )
     ]
 
@@ -179,6 +234,10 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
             result = await handle_generate_template(arguments)
         elif name == "validate_compliance":
             result = await handle_validate_compliance(arguments)
+        elif name == "semantic_search":
+            result = await handle_semantic_search(arguments)
+        elif name == "cache_stats":
+            result = await handle_cache_stats(arguments)
         else:
             result = f"Unknown tool: {name}"
 
@@ -794,13 +853,180 @@ async def get_prompt(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"Unknown prompt: {name}")
 
 
+async def handle_semantic_search(arguments: dict[str, Any]) -> str:
+    """
+    Handle semantic_search tool call using hybrid vector store
+    @nist-controls: SI-10, AC-4
+    @evidence: Secure semantic search with access control
+    """
+    global standards_engine
+    
+    if not standards_engine:
+        return "Standards engine not initialized"
+    
+    query = arguments["query"]
+    k = arguments.get("k", 10)
+    filters = arguments.get("filters")
+    rerank = arguments.get("rerank", False)
+    
+    # Perform semantic search
+    try:
+        # Use the standards engine's hybrid search capability
+        results = await standards_engine.semantic_search(
+            query=query,
+            k=k,
+            filters=filters,
+            rerank=rerank
+        )
+        
+        # Format results
+        output = f"# Semantic Search Results\n\n**Query**: {query}\n**Results**: {len(results)}\n\n"
+        
+        for i, result in enumerate(results, 1):
+            output += f"## {i}. {result.get('id', 'Unknown')}\n"
+            output += f"**Score**: {result.get('score', 0):.3f}\n"
+            output += f"**Source**: {result.get('source_tier', 'unknown')}\n"
+            
+            # Show content preview
+            content = result.get('content', '')
+            preview = content[:300] + "..." if len(content) > 300 else content
+            output += f"**Content**: {preview}\n"
+            
+            # Show metadata
+            if 'metadata' in result:
+                output += f"**Metadata**: {json.dumps(result['metadata'], indent=2)}\n"
+            
+            output += "\n"
+        
+        # Add performance info
+        if results and results[0].get('source_tier'):
+            tier_counts = {}
+            for r in results:
+                tier = r.get('source_tier', 'unknown')
+                tier_counts[tier] = tier_counts.get(tier, 0) + 1
+            
+            output += "## Performance\n"
+            for tier, count in tier_counts.items():
+                output += f"- {tier}: {count} results\n"
+        
+        return output
+        
+    except Exception as e:
+        logger.error(f"Semantic search error: {e}")
+        return f"Error performing semantic search: {str(e)}"
+
+
+async def handle_cache_stats(arguments: dict[str, Any]) -> str:
+    """
+    Handle cache_stats tool call
+    @nist-controls: AU-6, SI-6
+    @evidence: Performance monitoring and reporting
+    """
+    global standards_engine
+    
+    if not standards_engine:
+        return "Standards engine not initialized"
+    
+    include_details = arguments.get("include_details", False)
+    
+    try:
+        # Get tier statistics
+        stats = await standards_engine.get_tier_stats()
+        
+        # Format statistics
+        output = "# Hybrid Vector Store Statistics\n\n"
+        
+        output += f"**Hybrid Search**: {'Enabled' if stats.get('hybrid_search_enabled') else 'Disabled'}\n\n"
+        
+        if stats.get('hybrid_search_enabled') and 'storage_tiers' in stats:
+            tiers = stats['storage_tiers'].get('tiers', {})
+            
+            # Overall statistics
+            output += "## Overall Performance\n"
+            output += f"- Total Searches: {stats['storage_tiers'].get('total_searches', 0)}\n"
+            output += f"- Overall Hit Rate: {stats['storage_tiers'].get('overall_hit_rate', 0):.1%}\n\n"
+            
+            # FAISS tier
+            if 'faiss' in tiers:
+                faiss = tiers['faiss']
+                output += "## FAISS Hot Cache\n"
+                output += f"- Items: {faiss.get('size', 0)}/{faiss.get('capacity', 1000)}\n"
+                output += f"- Utilization: {faiss.get('utilization', 0):.1%}\n"
+                output += f"- Hit Rate: {faiss.get('hit_rate', 0):.1%}\n"
+                output += f"- Avg Latency: {faiss.get('avg_latency_ms', 0):.2f}ms\n"
+                
+                if include_details:
+                    output += f"- P95 Latency: {faiss.get('p95_latency_ms', 0):.2f}ms\n"
+                    output += f"- Total Hits: {faiss.get('hits', 0)}\n"
+                    output += f"- Total Misses: {faiss.get('misses', 0)}\n"
+                output += "\n"
+            
+            # Redis tier
+            if 'redis' in tiers:
+                redis = tiers['redis']
+                output += "## Redis Query Cache\n"
+                output += f"- Connected: {'Yes' if redis.get('redis_connected') else 'No'}\n"
+                output += f"- Hit Rate: {redis.get('hit_rate', 0):.1%}\n"
+                output += f"- Avg Latency: {redis.get('avg_latency_ms', 0):.2f}ms\n"
+                
+                if include_details and redis.get('redis_connected'):
+                    output += f"- Memory Usage: {redis.get('redis_memory_mb', 0):.1f}MB\n"
+                    output += f"- Keys: {redis.get('redis_keys', 0)}\n"
+                output += "\n"
+            
+            # ChromaDB tier
+            if 'chromadb' in tiers:
+                chroma = tiers['chromadb']
+                output += "## ChromaDB Persistent Storage\n"
+                output += f"- Status: {chroma.get('status', 'unknown')}\n"
+                output += f"- Documents: {chroma.get('total_documents', 0)}\n"
+                output += f"- Hit Rate: {chroma.get('hit_rate', 0):.1%}\n"
+                
+                if include_details:
+                    output += f"- Collection: {chroma.get('collection_name', 'unknown')}\n"
+                    output += f"- Path: {chroma.get('persistent_path', 'unknown')}\n"
+                output += "\n"
+            
+            # Access patterns
+            if include_details and 'access_patterns' in stats:
+                patterns = stats['access_patterns']
+                output += "## Access Patterns\n"
+                output += f"- Documents Tracked: {patterns.get('total_documents_tracked', 0)}\n"
+                output += f"- Hot Cache Candidates: {patterns.get('documents_above_threshold', 0)}\n"
+                output += f"- Access Threshold: {patterns.get('access_threshold', 10)}\n"
+                output += f"- Mean Access Count: {patterns.get('access_count_mean', 0):.1f}\n"
+                output += f"- P95 Access Count: {patterns.get('access_count_p95', 0):.0f}\n"
+        else:
+            output += "*Hybrid search not enabled. Using standard search.*\n"
+        
+        return output
+        
+    except Exception as e:
+        logger.error(f"Cache stats error: {e}")
+        return f"Error retrieving cache statistics: {str(e)}"
+
+
 async def initialize_server() -> None:
     """Initialize server components"""
     global standards_engine, compliance_scanner
 
-    # Initialize standards engine
+    # Initialize standards engine with hybrid search support
     standards_path = Path(__file__).parent.parent / "data" / "standards"
-    standards_engine = StandardsEngine(standards_path)
+    
+    # Try to initialize with Redis if available
+    try:
+        from src.core.redis_client import get_redis_client
+        redis_client = get_redis_client()
+        standards_engine = StandardsEngine(
+            standards_path, 
+            redis_client=redis_client,
+            enable_hybrid_search=True
+        )
+        logger.info("Standards engine initialized with hybrid search")
+    except Exception as e:
+        logger.warning(f"Failed to initialize hybrid search: {e}")
+        standards_engine = StandardsEngine(standards_path)
+        logger.info("Standards engine initialized with standard search")
 
     # Initialize compliance scanner (placeholder)
     # compliance_scanner = ComplianceScanner()
