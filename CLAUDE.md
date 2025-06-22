@@ -5,22 +5,24 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
 ## 🤖 LLM Quick Reference
 
 ### Priority Actions
-1. **Token Optimization**: We need to achieve 90% token reduction (currently at 0%)
-2. **Micro Standards**: Implement 500-token chunks (partially implemented, tests exist but have import issues)
-3. ✅ **Hybrid Vector Store**: Three-tier architecture implemented (FAISS + ChromaDB + Redis)
-4. **Test Coverage**: Add comprehensive tests for analyzers (✅ completed - 70% coverage achieved)
-5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support
+1. **CI/CD Fixes**: Fix mypy type errors and test failures (URGENT - blocking deployment)
+2. **Test Coverage**: Restore to 80% (currently 62% - add tests for hybrid modules)
+3. **Token Optimization**: Complete micro_standards.py testing (90% reduction target)
+4. ✅ **Hybrid Vector Store**: Three-tier architecture COMPLETED (FAISS + ChromaDB + Redis)
+5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support (future enhancement)
 
 ### Key Metrics
-- **Current Test Coverage**: 70% (up from 54%)
+- **Current Test Coverage**: 62% (down from 70%, target: 80%)
 - **Standards Imported**: 17/23 from williamzujkowski/standards
-- **Token Reduction**: 0% (Target: 90%)
+- **Token Reduction**: Implementation complete, testing needed (Target: 90%)
 - **Languages Supported**: 4 (Python, JS/TS, Go, Java)
 - **IaC Analyzers**: 3 (Terraform, Dockerfile, Kubernetes)
 - **NIST Controls Detected**: 200+ across 20 families
-- **Total Tests**: 523 (up from 362)
-- **New Test Methods**: 120+
-- **Hybrid Search Performance**: <1ms (FAISS), 10-50ms (ChromaDB), instant (Redis)
+- **Hybrid Search**: ✅ FULLY IMPLEMENTED
+  - Redis Query Cache: Instant repeats
+  - FAISS Hot Cache: <1ms for top 1000
+  - ChromaDB Persistent: 10-50ms with metadata
+- **New MCP Tools**: semantic_search, cache_stats, enhanced load_standards
 
 ## Project Overview
 
@@ -221,6 +223,38 @@ Before committing:
 2. **Tool Schema Validation**: Must be valid JSON Schema
 3. **Async/Await**: All MCP handlers must be async
 4. **Return Types**: Tools must return TextContent/ImageContent list
+
+## 🚨 Current CI/CD Issues
+
+### Urgent Fixes Required
+The hybrid vector store implementation is complete, but CI/CD is failing:
+
+1. **MyPy Type Errors** (~25 errors)
+   - `engine.py`: Missing Dict/List imports, incompatible types
+   - `hybrid_vector_store.py`: ChromaDBTier assignment issues
+   - `tiered_storage_strategy.py`: numpy type mismatches
+
+2. **Test Failures**
+   - `CodeAnnotation` API changed (remove 'snippet' parameter)
+   - `MockTokenizer` needs abstract methods implemented
+   - Coverage dropped to 62% (need 80%)
+
+3. **Modules Without Tests**
+   - `hybrid_vector_store.py` (628 lines)
+   - `chromadb_tier.py` (351 lines)
+   - `tiered_storage_strategy.py` (455 lines)
+
+### Fix Strategy
+```bash
+# 1. Fix type errors
+# Add missing imports, fix type annotations
+
+# 2. Update failing tests
+# Fix CodeAnnotation usage, implement MockTokenizer methods
+
+# 3. Add test coverage
+# Create tests for hybrid modules to reach 80%
+```
 
 ## 🧭 LLM Decision Trees
 
