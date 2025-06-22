@@ -1,8 +1,52 @@
 # TODO: Language-Specific and Infrastructure Analyzers
 
-## 🚨 CRITICAL UPDATE: Test Coverage Status
+## 🚨 CRITICAL UPDATE: Three-Tier Hybrid Architecture Implementation
 
-**Current Status**: All analyzers are implemented and test coverage has improved to **70%** (approaching the 80% target)
+**Architecture Status**: Implementing FAISS + ChromaDB + Redis hybrid approach for optimal performance
+
+### Three-Tier Search Architecture:
+1. **Tier 1: FAISS Hot Cache** - <1ms response for top 1000 standards
+2. **Tier 2: ChromaDB Persistent Storage** - 10-50ms for full corpus with metadata filtering  
+3. **Tier 3: Redis Query Cache** - Instant response for repeated queries
+
+### Implementation Plan:
+1. **Phase 1: Core Infrastructure** (High Priority)
+   - Create `HybridVectorStore` base class for three-tier architecture
+   - Implement FAISS hot cache with LRU eviction (top 1000 standards)
+   - Integrate ChromaDB for persistent storage with metadata
+   - Add Redis query cache layer for instant repeats
+   - Create `TieredStorageStrategy` for intelligent data placement
+
+2. **Phase 2: Integration** (High Priority)
+   - Update `StandardsEngine` to use `HybridVectorStore`
+   - Replace `NaturalLanguageMapper` with `EnhancedNaturalLanguageMapper`
+   - Implement access tracking for hot cache promotion
+   - Add ChromaDB metadata schema for standards filtering
+
+3. **Phase 3: Optimization** (Medium Priority)
+   - Create migration script from current FAISS-only to hybrid
+   - Implement performance monitoring for each tier
+   - Add CLI commands for cache management
+   - Create benchmarks comparing single vs hybrid approach
+   - Update MCP tools to leverage tiered search
+
+4. **Phase 4: Documentation** (Low Priority)
+   - Document hybrid architecture in README
+   - Add configuration options for tier thresholds
+   - Create performance tuning guide
+
+### Key Benefits:
+- **Ultra-fast searches**: <1ms for common queries via FAISS
+- **No startup delay**: ChromaDB persists embeddings
+- **Rich filtering**: Query by language, framework, NIST family
+- **Smart caching**: Redis eliminates repeated computation
+- **Token optimization**: 500-token micro-standards in hot cache
+
+---
+
+## 📊 Current Test Coverage Status
+
+**Current Status**: Test coverage at **70%** (targeting 80%)
 
 ### Progress Update:
 1. **Fixed all MyPy type errors** ✅ (reduced from 80 to 5 warnings)
@@ -13,10 +57,14 @@
 
 ### Remaining Work for 80% Coverage:
 The following modules need tests to reach 80% target:
-- `micro_standards.py` (381 lines, 0% coverage)
-- `semantic_search.py` (251 lines, 0% coverage)
-- `enhanced_mapper.py` (137 lines, 0% coverage)
-- `oscal_handler.py` (121 lines, 0% coverage)
+- `micro_standards.py` (381 lines, 0% coverage) - Critical for token optimization
+- `semantic_search.py` (251 lines, 0% coverage) - Core of hybrid architecture
+- `enhanced_mapper.py` (137 lines, 0% coverage) - Enhanced query understanding
+- `oscal_handler.py` (121 lines, 0% coverage) - Compliance reporting
+
+**Note**: These modules are critical for the hybrid architecture implementation
+
+---
 
 ## 🎯 Status: All Analyzers Implemented!
 
@@ -51,7 +99,7 @@ tests/unit/analyzers/
 ```
 
 #### Test Implementation Highlights:
-- **456 total tests** (up from 362)
+- **523 total tests** (up from 362)
 - **120+ new test methods** added
 - All analyzer test suites now include:
   - Basic functionality tests
@@ -65,7 +113,7 @@ tests/unit/analyzers/
 - **CLI (main.py)**: ~30% coverage
 - **Server (server.py)**: 45% coverage
 - **Tree-sitter utils**: 57% coverage
-- **Core modules**: Need improvement
+- **Core modules**: Need improvement (especially semantic_search)
 
 ## Implementation Summary
 
@@ -154,6 +202,12 @@ All analyzers include comprehensive pattern detection:
 
 ## 🚧 Future Enhancements
 
+### Hybrid Architecture Integration
+- **HybridVectorStore**: Three-tier search implementation
+- **Semantic Search**: Full integration with analyzers
+- **Token Optimization**: 90% reduction via micro-standards
+- **Performance Monitoring**: Per-tier metrics and alerting
+
 ### Additional Language Support
 - Ruby analyzer (`ruby_analyzer.py`)
 - PHP analyzer (`php_analyzer.py`)
@@ -182,14 +236,14 @@ All analyzers include comprehensive pattern detection:
 - ✅ Security pattern detection validated
 - ✅ Framework-specific tests implemented
 - ✅ Error handling and edge cases covered
-- ⚠️ Overall coverage at 61% (need 80%)
+- ⚠️ Overall coverage at 70% (need 80%)
 
 ### To Reach 80% Coverage:
-Priority modules to test:
-1. `micro_standards.py` - Would add ~7% coverage
-2. `semantic_search.py` - Would add ~5% coverage
-3. `enhanced_mapper.py` - Would add ~3% coverage
-4. `oscal_handler.py` - Would add ~2% coverage
+Priority modules to test (aligned with hybrid architecture):
+1. `semantic_search.py` - Critical for hybrid implementation (~5% coverage gain)
+2. `micro_standards.py` - Essential for token optimization (~7% coverage gain)
+3. `enhanced_mapper.py` - Needed for improved queries (~3% coverage gain)
+4. `oscal_handler.py` - Compliance reporting (~2% coverage gain)
 
 ## Integration Status
 
@@ -200,11 +254,12 @@ Priority modules to test:
 - Compliance scanner integration
 - Coverage report generation
 
-### 🔄 Continuous Improvements:
-- Performance optimization ongoing
-- Pattern library expansion
-- Documentation updates
-- Example project templates
+### 🔄 Pending Hybrid Architecture Integrations:
+- HybridVectorStore in StandardsEngine
+- ChromaDB metadata indexing
+- Redis query caching
+- FAISS hot cache management
+- Tiered search in MCP tools
 
 ## Documentation
 
@@ -213,21 +268,30 @@ Priority modules to test:
 - STANDARD_TEMPLATE.md - Standards format guide
 - API documentation in code
 - NIST control annotations throughout
+- CLAUDE.md - LLM-specific instructions
 
 ### 📝 Documentation Updates Needed:
-- Advanced usage examples
-- Custom pattern creation guide
-- Performance tuning guide
-- Integration tutorials
+- Hybrid architecture guide
+- Performance tuning for three-tier system
+- ChromaDB metadata schema reference
+- Cache management best practices
+- Migration guide from single-tier to hybrid
 
 ## Summary
 
-All planned analyzers for Phase 1 (core languages + IaC) have been successfully implemented with comprehensive security pattern detection. The implementation includes:
+All planned analyzers for Phase 1 (core languages + IaC) have been successfully implemented with comprehensive security pattern detection. The project is now transitioning to a three-tier hybrid architecture using FAISS + ChromaDB + Redis for optimal performance.
 
+**Current achievements:**
 - **7 production-ready analyzers** (Python, JS, Go, Java, Terraform, Dockerfile, K8s)
 - **200+ NIST control patterns** across 20 control families
 - **Framework-specific detection** for major frameworks
-- **Comprehensive test suites** with 456 total tests
-- **70% test coverage** (improved from 54%)
+- **523 total tests** with 70% coverage
+- **Semantic search infrastructure** ready for integration
 
-The remaining work focuses on reaching the 80% test coverage requirement by adding tests for the uncovered core modules, particularly the standards processing and semantic search components.
+**Next phase priorities:**
+1. Implement three-tier hybrid architecture
+2. Achieve 80% test coverage (focus on semantic_search and micro_standards)
+3. Complete token optimization (90% reduction target)
+4. Full semantic search integration across all tools
+
+The hybrid approach will provide <1ms response times for common queries while maintaining rich metadata filtering and persistence capabilities.

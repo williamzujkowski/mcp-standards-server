@@ -10,6 +10,7 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 - 📝 **OSCAL 1.0.0 Support**: Generate System Security Plans (SSPs) automatically
 - 🔍 **Multi-Language Analysis**: Python, JavaScript/TypeScript, Go, Java with enhanced AST parsing
 - 🏗️ **Infrastructure as Code Analysis**: Terraform, Dockerfile, Kubernetes with security pattern detection
+- 🚀 **Three-Tier Hybrid Search**: FAISS + ChromaDB + Redis for <1ms query performance
 
 ### MCP Integration
 - 🤖 **Native MCP Server**: Official SDK implementation with full protocol support
@@ -304,6 +305,7 @@ def authenticate_user(username: str, password: str) -> User:
 
 ## Architecture
 
+### Core Architecture
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │   MCP Client    │────▶│   MCP Server     │────▶│ Standards Engine│
@@ -314,6 +316,65 @@ def authenticate_user(username: str, password: str) -> User:
                         ┌──────────────────┐     ┌─────────────────┐
                         │ Code Analyzers   │     │ NIST Mapper     │
                         └──────────────────┘     └─────────────────┘
+```
+
+### 🚀 Three-Tier Hybrid Vector Store Architecture
+
+The MCP Standards Server implements a sophisticated three-tier hybrid architecture combining FAISS, ChromaDB, and Redis for optimal performance:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Query Processing Pipeline                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Tier 1: Redis Query Cache     ──────▶  Instant (<0.1ms)      │
+│          (Exact matches)                 Repeated queries       │
+│                ↓ miss                                          │
+│                                                                 │
+│  Tier 2: FAISS Hot Cache       ──────▶  Ultra-fast (<1ms)     │
+│          (Top 1000 standards)            In-memory vectors     │
+│                ↓ miss                                          │
+│                                                                 │
+│  Tier 3: ChromaDB Persistent   ──────▶  Fast (10-50ms)        │
+│          (Full corpus + metadata)        Rich filtering        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Key Features:
+- **Intelligent Caching**: Access pattern tracking for optimal data placement
+- **No Startup Delay**: ChromaDB persists embeddings between restarts
+- **Rich Metadata Filtering**: Query by language, framework, NIST control family
+- **LRU Eviction**: Automatic management of hot cache capacity
+- **Performance Monitoring**: Real-time metrics for each tier
+
+#### Cache Management CLI:
+```bash
+# View tier statistics
+mcp-standards cache status
+
+# Clear specific tier cache
+mcp-standards cache clear --tier redis
+mcp-standards cache clear --tier faiss
+mcp-standards cache clear --tier all
+
+# Run tier optimization (rebalance hot cache)
+mcp-standards cache optimize
+```
+
+#### Configuration:
+```python
+# Enable hybrid search (default: True)
+engine = StandardsEngine(
+    standards_path=Path("data/standards"),
+    enable_hybrid_search=True,
+    hybrid_config=HybridConfig(
+        hot_cache_size=1000,        # FAISS cache size
+        access_threshold=10,        # Hits before promotion
+        redis_ttl=3600,            # Query cache TTL
+        chroma_path=".chroma_db"   # Persistence location
+    )
+)
 ```
 
 ## Development

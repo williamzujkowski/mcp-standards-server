@@ -64,6 +64,7 @@ llm = [
     "transformers>=4.30.0",
     "sentence-transformers>=2.2.0",
     "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.22",
 ]
 
 [project.scripts]

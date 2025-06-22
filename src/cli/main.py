@@ -589,5 +589,126 @@ def version() -> None:
     console.print("NIST 800-53r5 compliant")
 
 
+@app.command()
+def cache(
+    action: str = typer.Argument(..., help="Action: status, clear, optimize"),
+    tier: str = typer.Option(None, "--tier", "-t", help="Specific tier: redis, faiss, stats, or all"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force action without confirmation")
+) -> None:
+    """
+    Manage hybrid vector store cache
+    @nist-controls: SI-12, AU-12
+    @evidence: Cache management with audit logging
+    """
+    from ..core.standards.engine import StandardsEngine
+    from ..core.redis_client import get_redis_client
+    
+    async def run_cache_command() -> None:
+        # Initialize engine with hybrid search
+        engine = StandardsEngine(
+            standards_path=Path("data/standards"),
+            redis_client=get_redis_client(),
+            enable_hybrid_search=True
+        )
+        
+        if action == "status":
+            # Get tier statistics
+            stats = await engine.get_tier_stats()
+            
+            console.print("[bold]Hybrid Vector Store Status[/bold]")
+            console.print(f"Enabled: {stats['hybrid_search_enabled']}")
+            
+            if stats['hybrid_search_enabled'] and 'storage_tiers' in stats:
+                tiers = stats['storage_tiers'].get('tiers', {})
+                
+                # FAISS tier
+                if 'faiss' in tiers:
+                    faiss = tiers['faiss']
+                    console.print("\n[bold cyan]FAISS Hot Cache:[/bold cyan]")
+                    console.print(f"  Items: {faiss.get('size', 0)}/{faiss.get('capacity', 1000)}")
+                    console.print(f"  Utilization: {faiss.get('utilization', 0):.1%}")
+                    console.print(f"  Hit Rate: {faiss.get('hit_rate', 0):.1%}")
+                    console.print(f"  Avg Latency: {faiss.get('avg_latency_ms', 0):.2f}ms")
+                
+                # Redis tier
+                if 'redis' in tiers:
+                    redis = tiers['redis']
+                    console.print("\n[bold red]Redis Query Cache:[/bold red]")
+                    console.print(f"  Connected: {redis.get('redis_connected', False)}")
+                    console.print(f"  Hit Rate: {redis.get('hit_rate', 0):.1%}")
+                    console.print(f"  Avg Latency: {redis.get('avg_latency_ms', 0):.2f}ms")
+                
+                # ChromaDB tier
+                if 'chromadb' in tiers:
+                    chroma = tiers['chromadb']
+                    console.print("\n[bold green]ChromaDB Persistent Storage:[/bold green]")
+                    console.print(f"  Status: {chroma.get('status', 'unknown')}")
+                    console.print(f"  Documents: {chroma.get('total_documents', 0)}")
+                    console.print(f"  Hit Rate: {chroma.get('hit_rate', 0):.1%}")
+                
+                # Access patterns
+                if 'access_patterns' in stats:
+                    patterns = stats['access_patterns']
+                    console.print("\n[bold]Access Patterns:[/bold]")
+                    console.print(f"  Documents Tracked: {patterns.get('total_documents_tracked', 0)}")
+                    console.print(f"  Above Threshold: {patterns.get('documents_above_threshold', 0)}")
+                    
+        elif action == "clear":
+            if not force:
+                confirm = typer.confirm(f"Clear cache for tier '{tier or 'all'}'?")
+                if not confirm:
+                    console.print("[yellow]Cancelled[/yellow]")
+                    return
+            
+            results = await engine.clear_cache(tier)
+            
+            if 'status' in results and results['status'] == 'not_enabled':
+                console.print("[red]Hybrid search not enabled[/red]")
+            else:
+                for cleared_tier in results.get('cleared', []):
+                    console.print(f"[green]✓[/green] Cleared {cleared_tier} cache")
+                    
+        elif action == "optimize":
+            console.print("[bold]Running tier optimization...[/bold]")
+            
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console
+            ) as progress:
+                task = progress.add_task("Optimizing...", total=None)
+                
+                results = await engine.optimize_tiers()
+                
+                progress.update(task, completed=True)
+            
+            if 'status' in results and results['status'] == 'not_enabled':
+                console.print("[red]Hybrid search not enabled[/red]")
+            else:
+                console.print(f"\n[bold]Optimization Results:[/bold]")
+                console.print(f"Cache utilization before: {results.get('cache_utilization_before', 0):.1%}")
+                console.print(f"Cache utilization after: {results.get('cache_utilization_after', 0):.1%}")
+                console.print(f"Evictions: {len(results.get('evictions', []))}")
+                console.print(f"Promotions: {len(results.get('promotions', []))}")
+                console.print(f"Duration: {results.get('duration_ms', 0):.1f}ms")
+                
+                # Show top evictions/promotions
+                if results.get('evictions'):
+                    console.print("\n[yellow]Top Evictions:[/yellow]")
+                    for eviction in results['evictions'][:5]:
+                        console.print(f"  - {eviction['document_id']} (score: {eviction['score']:.3f})")
+                
+                if results.get('promotions'):
+                    console.print("\n[green]Top Promotions:[/green]")
+                    for promotion in results['promotions'][:5]:
+                        console.print(f"  + {promotion['document_id']} (score: {promotion['score']:.3f})")
+        else:
+            console.print(f"[red]Unknown action: {action}[/red]")
+            console.print("Available actions: status, clear, optimize")
+    
+    # Run async command
+    asyncio.run(run_cache_command())
+
+
 if __name__ == "__main__":
     app()
