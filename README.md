@@ -21,7 +21,7 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 - 🛠️ **Complete CLI**: init, scan, generate, validate, ssp, coverage, standards commands
 - 📋 **Code Templates**: NIST-compliant templates for common patterns
 - 🔧 **Git Integration**: Automated hooks for pre-commit compliance checking
-- 🎯 **VS Code Support**: Integrated settings and workflow
+- 🎯 **VS Code Support**: Integrated settings and workflow (planned)
 - 📈 **Coverage Analysis**: Comprehensive control coverage reports with gap analysis
 - 🔄 **Standards Versioning**: Version control and rollback for imported standards
 
@@ -70,7 +70,7 @@ mcp-standards init --profile moderate --setup-hooks
 # - .mcp-standards/config.yaml (project configuration)
 # - compliance/ (documentation structure)
 # - Git hooks for automated validation
-# - VS Code settings
+# - VS Code settings (planned)
 ```
 
 #### Scan for Compliance
@@ -384,7 +384,7 @@ mcp-standards-server/
 │   ├── javascript-frontend/ # Secure frontend SPA
 │   └── secure-database/    # Database security patterns
 ├── docs/                   # Comprehensive documentation
-├── tests/                  # Test suite (91.56% coverage)
+├── tests/                  # Test suite (70% coverage)
 └── scripts/                # Utility scripts
 ```
 
@@ -442,11 +442,11 @@ The server now detects **200+ controls** across all 20 NIST families:
 - **MP-6**: Media Sanitization
 
 ### Security Features
-- **91.56% Test Coverage** - Exceeding industry standards
+- **70% Test Coverage** - Comprehensive test suite with 523 tests
 - **Real Standards Content** - Official williamzujkowski/standards repository
 - **OSCAL 1.0.0 Compliance** - Generate compliant SSPs
 - **Multi-Language Analysis** - AST-based security pattern detection
-- **Automated Workflows** - Git hooks for continuous compliance
+- **Automated Workflows** - GitHub Actions for CI/CD compliance
 
 ## Contributing
 

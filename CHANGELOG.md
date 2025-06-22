@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Code Templates**: NIST-compliant templates for API, auth, logging, encryption, database
 - **MCP Resources**: 20+ dynamic resource endpoints with real-time standards loading
 - **MCP Prompts**: 5 specialized prompt templates for compliance scenarios
-- **Git Integration**: Automated pre-commit and pre-push compliance hooks
-- **VS Code Support**: Integrated settings and workflow configuration
+- **Git Integration**: Automated pre-commit compliance hooks
+- **VS Code Support**: Planned feature for integrated settings and workflow
 - **Example Projects**: Production-ready Python API and JavaScript frontend examples
 - **Standards Engine**: Complete YAML loading, Redis caching, natural language mapping
 - **GitHub Actions**: CI/CD workflows with comprehensive security scanning
