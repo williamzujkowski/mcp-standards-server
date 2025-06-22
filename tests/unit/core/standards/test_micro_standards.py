@@ -22,6 +22,15 @@ from src.core.tokenizer import BaseTokenizer
 
 class MockTokenizer(BaseTokenizer):
     """Mock tokenizer for testing"""
+    
+    def encode(self, text: str) -> list[int]:
+        # Simple word-based encoding for testing
+        return list(range(len(text.split())))
+    
+    def decode(self, tokens: list[int]) -> str:
+        # Mock decode - just return a dummy string
+        return " ".join(["word"] * len(tokens))
+    
     def count_tokens(self, text: str) -> int:
         # Simple word-based estimation for testing
         return len(text.split())
@@ -29,6 +38,17 @@ class MockTokenizer(BaseTokenizer):
     def truncate_to_tokens(self, text: str, max_tokens: int) -> str:
         words = text.split()
         return ' '.join(words[:max_tokens])
+    
+    def split_to_chunks(self, text: str, chunk_size: int, overlap: int = 0) -> list[str]:
+        # Simple word-based chunking for testing
+        words = text.split()
+        chunks = []
+        i = 0
+        while i < len(words):
+            chunk_words = words[i:i + chunk_size]
+            chunks.append(' '.join(chunk_words))
+            i += chunk_size - overlap
+        return chunks
 
 
 class TestMicroStandard:

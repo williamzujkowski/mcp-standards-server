@@ -9,7 +9,7 @@ import json
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -268,7 +268,7 @@ class TieredStorageStrategy:
         # Get current FAISS cache utilization
         cache_utilization = len(self._faiss_contents) / self.hot_cache_size
 
-        results = {
+        results: Dict[str, Any] = {
             "start_time": start_time,
             "cache_utilization_before": cache_utilization,
             "evictions": [],

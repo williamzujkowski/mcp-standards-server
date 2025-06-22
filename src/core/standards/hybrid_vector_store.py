@@ -23,9 +23,11 @@ logger = get_logger(__name__)
 
 try:
     from .chromadb_tier import ChromaDBTier
+    CHROMADB_AVAILABLE = True
 except ImportError:
     # This will be handled when ChromaDB is initialized
-    ChromaDBTier = None
+    ChromaDBTier = None  # type: ignore
+    CHROMADB_AVAILABLE = False
 
 
 @dataclass
@@ -334,8 +336,14 @@ class RedisQueryCache(VectorStoreTier):
         self.metrics.record_miss()
         return []
 
-    async def add(self, query_embedding: np.ndarray, results: list[SearchResult],
-                 k: int, filters: dict[str, Any] | None = None) -> bool:
+    async def add(self, id: str, embedding: np.ndarray,
+                 content: str, metadata: dict[str, Any]) -> bool:
+        """Redis doesn't store individual documents, only caches query results."""
+        # Redis is only used for caching query results, not storing documents
+        return True
+    
+    async def cache_results(self, query_embedding: np.ndarray, results: list[SearchResult],
+                           k: int, filters: dict[str, Any] | None = None) -> bool:
         """Cache query results in Redis."""
         if not self._redis:
             return False
@@ -466,7 +474,7 @@ class HybridVectorStore:
 
                 # Cache the results
                 if use_cache:
-                    await self.redis_tier.add(query_embedding, all_results[:k], k, filters)
+                    await self.redis_tier.cache_results(query_embedding, all_results[:k], k, filters)
 
                 return all_results[:k]
 
@@ -496,7 +504,7 @@ class HybridVectorStore:
 
             # Cache the results
             if use_cache and final_results:
-                await self.redis_tier.add(query_embedding, final_results, k, filters)
+                await self.redis_tier.cache_results(query_embedding, final_results, k, filters)
 
             return final_results
 

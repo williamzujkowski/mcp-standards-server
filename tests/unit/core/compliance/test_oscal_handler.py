@@ -132,28 +132,25 @@ class TestOSCALHandler:
                 control_ids=["AC-3", "AC-6"],
                 evidence="Role-based access control implementation",
                 confidence=0.95,
-                file_path=Path("/app/auth.py"),
+                file_path="/app/auth.py",
                 line_number=42,
-                snippet="def check_access(user, resource):",
-                frameworks=["rbac"]
+                component="auth"
             ),
             CodeAnnotation(
                 control_ids=["AU-2", "AU-3"],
                 evidence="Comprehensive audit logging",
                 confidence=0.90,
-                file_path=Path("/app/logging.py"),
+                file_path="/app/logging.py",
                 line_number=15,
-                snippet="def log_event(event_type, user, details):",
-                frameworks=["logging"]
+                component="logging"
             ),
             CodeAnnotation(
                 control_ids=["AC-3"],  # Duplicate control
                 evidence="Additional access control",
                 confidence=0.85,
-                file_path=Path("/app/permissions.py"),
+                file_path="/app/permissions.py",
                 line_number=100,
-                snippet="class PermissionChecker:",
-                frameworks=["permissions"]
+                component="permissions"
             )
         ]
 
@@ -225,8 +222,9 @@ class TestOSCALHandler:
                 control_ids=["SC-8"],
                 evidence=None,  # No evidence text
                 confidence=0.7,
-                file_path=Path("/app/crypto.py"),
-                line_number=10
+                file_path="/app/crypto.py",
+                line_number=10,
+                component=None
             )
         ]
 
@@ -679,17 +677,17 @@ class TestOSCALHandler:
                 control_ids=["AC-3"],
                 evidence="RBAC implementation",
                 confidence=0.9,
-                file_path=Path("/app/auth.py"),
+                file_path="/app/auth.py",
                 line_number=10,
-                frameworks=["django", "rest_framework"]
+                component="django"
             ),
             CodeAnnotation(
                 control_ids=["AC-3"],
                 evidence="Permission checks",
                 confidence=0.85,
-                file_path=Path("/app/views.py"),
+                file_path="/app/views.py",
                 line_number=50,
-                frameworks=["django"]
+                component="django"
             )
         ]
 
@@ -714,37 +712,33 @@ class TestIntegration:
                 control_ids=["AC-2", "AC-3", "AC-6"],
                 evidence="User account management with RBAC",
                 confidence=0.92,
-                file_path=Path("/app/auth/users.py"),
+                file_path="/app/auth/users.py",
                 line_number=25,
-                snippet="class UserManager:\n    def create_user(self, username, role):",
-                frameworks=["django"]
+                component="django"
             ),
             CodeAnnotation(
                 control_ids=["AU-2", "AU-3", "AU-4"],
                 evidence="Comprehensive audit logging with rotation",
                 confidence=0.88,
-                file_path=Path("/app/audit/logger.py"),
+                file_path="/app/audit/logger.py",
                 line_number=100,
-                snippet="def log_security_event(event_type, user, details):",
-                frameworks=["python-logging"]
+                component="python-logging"
             ),
             CodeAnnotation(
                 control_ids=["SC-8", "SC-13"],
                 evidence="TLS encryption for data in transit",
                 confidence=0.95,
-                file_path=Path("/app/security/crypto.py"),
+                file_path="/app/security/crypto.py",
                 line_number=50,
-                snippet="def setup_tls_context():",
-                frameworks=["ssl"]
+                component="ssl"
             ),
             CodeAnnotation(
                 control_ids=["IA-2", "IA-2(1)"],
                 evidence="Multi-factor authentication implementation",
                 confidence=0.90,
-                file_path=Path("/app/auth/mfa.py"),
+                file_path="/app/auth/mfa.py",
                 line_number=75,
-                snippet="class MFAHandler:\n    def verify_totp(self, user, token):",
-                frameworks=["pyotp"]
+                component="pyotp"
             )
         ]
 

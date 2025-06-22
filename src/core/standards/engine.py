@@ -7,7 +7,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Union
 
 import redis
 import yaml
@@ -15,7 +15,7 @@ from redis.exceptions import RedisError
 
 from ..logging import audit_log, get_logger
 from ..tokenizer import get_default_tokenizer
-from .enhanced_mapper import EnhancedNaturalLanguageMapper
+from .enhanced_mapper import EnhancedNaturalLanguageMapper, MappingResult
 from .hybrid_vector_store import HybridConfig, HybridVectorStore
 from .models import (
     NaturalLanguageMapping,
@@ -164,6 +164,7 @@ class StandardsEngine:
         self.hybrid_store = None
         self.embedding_model = None
         self.storage_strategy = None
+        self.nl_mapper: Union[NaturalLanguageMapper, EnhancedNaturalLanguageMapper]
 
         if enable_hybrid_search:
             try:
@@ -257,7 +258,7 @@ class StandardsEngine:
                 content = self._extract_content_for_indexing(data)
 
                 # Generate embedding
-                embedding = await self.embedding_model.encode(content)
+                embedding = self.embedding_model.encode([content])[0]
 
                 # Create metadata
                 metadata = DocumentMetadata(
@@ -273,7 +274,7 @@ class StandardsEngine:
                     id=standard_id,
                     content=content,
                     embedding=embedding,
-                    metadata=metadata.model_dump()
+                    metadata=metadata.__dict__
                 )
 
                 indexed_count += 1
@@ -336,7 +337,7 @@ class StandardsEngine:
             if self.enable_hybrid_search and self.hybrid_store and self.embedding_model:
                 try:
                     # Generate query embedding
-                    query_embedding = await self.embedding_model.encode(query)
+                    query_embedding = self.embedding_model.encode([query])[0]
 
                     # Search hybrid store
                     results = await self.hybrid_store.search(
@@ -370,9 +371,14 @@ class StandardsEngine:
 
                     # Fall back to static mapping if no semantic results
                     if not refs:
-                        refs, confidence = self.nl_mapper.map_query(query)
+                        if isinstance(self.nl_mapper, EnhancedNaturalLanguageMapper):
+                            mapping_result: MappingResult = self.nl_mapper.map_query(query)
+                            refs = mapping_result.standard_refs
+                            query_info["confidence"] = mapping_result.confidence
+                        else:
+                            refs, confidence = self.nl_mapper.map_query(query)
+                            query_info["confidence"] = confidence
                         query_info["query_type"] = "natural_language_fallback"
-                        query_info["confidence"] = confidence
 
                     return refs, query_info
 
@@ -380,9 +386,14 @@ class StandardsEngine:
                     logger.warning(f"Semantic search failed, falling back to static: {e}")
 
             # Fall back to static mapping
-            refs, confidence = self.nl_mapper.map_query(query)
+            if isinstance(self.nl_mapper, EnhancedNaturalLanguageMapper):
+                fallback_result: MappingResult = self.nl_mapper.map_query(query)
+                refs = fallback_result.standard_refs
+                query_info["confidence"] = fallback_result.confidence
+            else:
+                refs, confidence = self.nl_mapper.map_query(query)
+                query_info["confidence"] = confidence
             query_info["query_type"] = "natural_language"
-            query_info["confidence"] = confidence
             query_info["mapped_refs"] = refs
             return refs, query_info
 
@@ -965,7 +976,7 @@ class StandardsEngine:
 
     async def clear_cache(self, tier: str | None = None) -> dict[str, Any]:
         """Clear cache for specified tier or all tiers"""
-        results = {"cleared": []}
+        results: Dict[str, Any] = {"cleared": []}
 
         if not self.enable_hybrid_search or not self.hybrid_store:
             return {"status": "not_enabled", "message": "Hybrid search not enabled"}
@@ -1009,12 +1020,12 @@ class StandardsEngine:
         @evidence: Secure semantic search with access control
         """
         if not self.hybrid_store or not self.embedding_model:
-            # Fallback to standard search
-            results = await self.natural_query(query, limit=k)
-            return [{"id": str(i), "content": r, "score": 1.0} for i, r in enumerate(results)]
+            # Fallback to parse query and return empty results
+            logger.warning("Hybrid search not available, returning empty results")
+            return []
 
         # Generate query embedding
-        query_embedding = await self.embedding_model.encode(query)
+        query_embedding = self.embedding_model.encode([query])[0]
 
         # Perform hybrid search
         search_results = await self.hybrid_store.search(

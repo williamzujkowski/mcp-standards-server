@@ -250,7 +250,7 @@ class ChromaDBTier(VectorStoreTier):
 
     def _clean_metadata(self, metadata: dict[str, Any]) -> dict[str, Any]:
         """Clean metadata to ensure it's serializable for ChromaDB."""
-        clean = {}
+        clean: dict[str, Any] = {}
 
         for key, value in metadata.items():
             if value is None:
