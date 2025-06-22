@@ -999,12 +999,12 @@ class StandardsEngine:
         self,
         query: str,
         k: int = 10,
-        filters: Dict[str, Any] | None = None,
+        filters: dict[str, Any] | None = None,
         rerank: bool = False
-    ) -> list[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Perform semantic search using hybrid vector store.
-        
+
         @nist-controls: SI-10, AC-4
         @evidence: Secure semantic search with access control
         """
@@ -1012,10 +1012,10 @@ class StandardsEngine:
             # Fallback to standard search
             results = await self.natural_query(query, limit=k)
             return [{"id": str(i), "content": r, "score": 1.0} for i, r in enumerate(results)]
-        
+
         # Generate query embedding
         query_embedding = await self.embedding_model.encode(query)
-        
+
         # Perform hybrid search
         search_results = await self.hybrid_store.search(
             query=query,
@@ -1024,7 +1024,7 @@ class StandardsEngine:
             filters=filters,
             use_cache=True
         )
-        
+
         # Convert to dict format
         results = []
         for result in search_results:
@@ -1035,7 +1035,7 @@ class StandardsEngine:
                 "metadata": result.metadata,
                 "source_tier": result.source_tier
             })
-        
+
         # Optional reranking
         if rerank and self.hybrid_store.chroma_tier:
             # Use ChromaDB's reranking capability
@@ -1045,7 +1045,7 @@ class StandardsEngine:
                 k=k,
                 filters=filters
             )
-            
+
             results = []
             for result in reranked:
                 results.append({
@@ -1055,5 +1055,5 @@ class StandardsEngine:
                     "metadata": result.metadata,
                     "source_tier": result.source_tier
                 })
-        
+
         return results
