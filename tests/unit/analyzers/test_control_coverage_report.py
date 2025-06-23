@@ -4,7 +4,6 @@ Unit tests for control coverage report analyzer
 @evidence: Control coverage report testing
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,7 +19,7 @@ from src.core.nist_controls import NISTControl
 
 class TestCoverageLevel:
     """Test CoverageLevel enum"""
-    
+
     def test_coverage_levels(self):
         """Test coverage level values"""
         assert CoverageLevel.NONE.value == "none"
@@ -30,7 +29,7 @@ class TestCoverageLevel:
 
 class TestImplementationStatus:
     """Test ImplementationStatus enum"""
-    
+
     def test_implementation_status_values(self):
         """Test implementation status values"""
         assert ImplementationStatus.NOT_IMPLEMENTED.value == "not_implemented"
@@ -42,7 +41,7 @@ class TestImplementationStatus:
 
 class TestCoverageStats:
     """Test CoverageStats model"""
-    
+
     def test_coverage_stats_creation(self):
         """Test creating coverage stats"""
         stats = CoverageStats(
@@ -54,7 +53,7 @@ class TestCoverageStats:
             by_family={"AC": 10, "AU": 5},
             by_priority={"high": 20, "medium": 10}
         )
-        
+
         assert stats.total_controls == 100
         assert stats.implemented_controls == 75
         assert stats.partial_controls == 15
@@ -66,7 +65,7 @@ class TestCoverageStats:
     def test_coverage_stats_defaults(self):
         """Test coverage stats with defaults"""
         stats = CoverageStats()
-        
+
         assert stats.total_controls == 0
         assert stats.implemented_controls == 0
         assert stats.partial_controls == 0
@@ -78,7 +77,7 @@ class TestCoverageStats:
 
 class TestControlCoverageReport:
     """Test ControlCoverageReport class"""
-    
+
     @pytest.fixture
     def mock_scanner(self):
         """Create mock compliance scanner"""
@@ -127,9 +126,9 @@ class TestControlCoverageReport:
         def check_access():
             pass
         """)
-        
+
         results = report.analyze_coverage(str(tmp_path))
-        
+
         assert isinstance(results, dict)
         assert "coverage_stats" in results
         assert "implemented_controls" in results
@@ -142,17 +141,17 @@ class TestControlCoverageReport:
             NISTControl(id="AC-3", name="Access Enforcement", description="", family="AC"),
             NISTControl(id="AU-2", name="Audit Events", description="", family="AU")
         ]
-        
+
         partial = [
             NISTControl(id="IA-2", name="Authentication", description="", family="IA")
         ]
-        
+
         missing = [
             NISTControl(id="SC-8", name="Transmission Confidentiality", description="", family="SC")
         ]
-        
+
         stats = report._calculate_coverage_stats(implemented, partial, missing)
-        
+
         assert stats.total_controls == 4
         assert stats.implemented_controls == 2
         assert stats.partial_controls == 1
@@ -169,9 +168,9 @@ class TestControlCoverageReport:
                 {"control_id": "AU-2", "evidence": ["Partial logging"]}
             ]
         }
-        
+
         implemented, partial, missing = report._categorize_controls(scan_results)
-        
+
         assert len(implemented) >= 1
         assert any(c.id == "AC-3" for c in implemented)
         # The actual categorization depends on evidence analysis
@@ -194,12 +193,12 @@ class TestControlCoverageReport:
                 priority="medium"
             )
         ]
-        
+
         recommendations = report._generate_recommendations(
             missing_controls,
             partial_controls=[]
         )
-        
+
         assert isinstance(recommendations, list)
         assert len(recommendations) > 0
         assert any("AC-3" in rec for rec in recommendations)
@@ -224,9 +223,9 @@ class TestControlCoverageReport:
             ],
             "recommendations": ["Implement SC-8"]
         }
-        
+
         json_report = report.format_report(results, "json")
-        
+
         assert isinstance(json_report, str)
         import json
         parsed = json.loads(json_report)
@@ -252,9 +251,9 @@ class TestControlCoverageReport:
             ],
             "recommendations": ["Implement SC-8 for data in transit"]
         }
-        
+
         md_report = report.format_report(results, "markdown")
-        
+
         assert isinstance(md_report, str)
         assert "# NIST Control Coverage Report" in md_report
         assert "## Coverage Summary" in md_report
@@ -276,9 +275,9 @@ class TestControlCoverageReport:
             "missing_controls": [],
             "recommendations": []
         }
-        
+
         html_report = report.format_report(results, "html")
-        
+
         assert isinstance(html_report, str)
         assert "<html>" in html_report
         assert "NIST Control Coverage Report" in html_report
@@ -292,9 +291,9 @@ class TestControlCoverageReport:
             "missing_controls": [],
             "recommendations": ["Test recommendation"]
         }
-        
+
         text_report = report.format_report(results, "text")
-        
+
         assert isinstance(text_report, str)
         assert "NIST Control Coverage Report" in text_report
         assert "75.0%" in text_report
@@ -311,9 +310,9 @@ class TestControlCoverageReport:
                 implementation_guidance="Use RBAC"
             )
         ]
-        
+
         gaps = report._generate_gap_analysis(missing_controls)
-        
+
         assert isinstance(gaps, list)
         assert len(gaps) > 0
         gap = gaps[0]
@@ -329,9 +328,9 @@ class TestControlCoverageReport:
             NISTControl(id="AU-2", name="Audit", description="", family="AU", priority="high"),
             NISTControl(id="IA-2", name="Auth", description="", family="IA", priority="medium")
         ]
-        
+
         prioritized = report._prioritize_controls(controls)
-        
+
         assert len(prioritized) == 3
         # High priority should come first
         assert prioritized[0].id == "AU-2"
@@ -348,9 +347,9 @@ class TestControlCoverageReport:
             description="Enforce access control",
             family="AC"
         )
-        
+
         examples = report._get_implementation_examples(control)
-        
+
         assert isinstance(examples, list)
         assert len(examples) > 0
         # Should provide language-specific examples
@@ -363,7 +362,7 @@ class TestControlCoverageReport:
             control_families=["AC", "AU"],
             min_priority="medium"
         )
-        
+
         assert isinstance(results, dict)
         assert "coverage_stats" in results
         # Should only include specified families
@@ -379,12 +378,12 @@ class TestControlCoverageReport:
             "missing_controls": [],
             "recommendations": []
         }
-        
+
         # Export as JSON
         json_file = tmp_path / "coverage.json"
         report.export_results(results, str(json_file), "json")
         assert json_file.exists()
-        
+
         # Export as Markdown
         md_file = tmp_path / "coverage.md"
         report.export_results(results, str(md_file), "markdown")
@@ -399,7 +398,7 @@ class TestControlCoverageReport:
             ),
             "implemented_controls": [{"id": "AC-3"}]
         }
-        
+
         current = {
             "coverage_stats": CoverageStats(
                 implemented_controls=7,
@@ -407,9 +406,9 @@ class TestControlCoverageReport:
             ),
             "implemented_controls": [{"id": "AC-3"}, {"id": "AU-2"}]
         }
-        
+
         comparison = report.compare_coverage(previous, current)
-        
+
         assert comparison["coverage_change"] == 20.0
         assert comparison["new_controls"] == 2
         assert len(comparison["newly_implemented"]) >= 1
@@ -428,9 +427,9 @@ class TestControlCoverageReport:
                 "Enhance audit logging"
             ]
         }
-        
+
         summary = report.generate_executive_summary(results)
-        
+
         assert isinstance(summary, str)
         assert "75.0%" in summary
         assert "75 of 100" in summary
@@ -443,7 +442,7 @@ class TestControlCoverageReport:
         results = report.analyze_coverage("/nonexistent/path")
         assert results is not None
         assert "error" in results or "coverage_stats" in results
-        
+
         # Invalid format
         formatted = report.format_report({}, "invalid_format")
         assert isinstance(formatted, str)  # Should fallback to text
@@ -453,9 +452,9 @@ class TestControlCoverageReport:
         custom_controls = [
             "AC-3", "AC-4", "AU-2", "IA-2", "SC-8"
         ]
-        
+
         report.set_required_controls(custom_controls)
-        
+
         assert len(report.required_controls) == 5
         assert all(c in report.required_controls for c in custom_controls)
 
@@ -466,9 +465,9 @@ class TestControlCoverageReport:
             {"date": "2024-02-01", "coverage": 60.0},
             {"date": "2024-03-01", "coverage": 75.0}
         ]
-        
+
         trends = report.analyze_trends(historical_data)
-        
+
         assert "average_improvement" in trends
         assert "projected_full_coverage" in trends
         assert trends["average_improvement"] > 0
@@ -480,9 +479,9 @@ class TestControlCoverageReport:
             "AU-2": ["logger.py"],
             "INVALID-1": ["test.py"]  # Invalid control
         }
-        
+
         valid_mappings = report.validate_control_mappings(mappings)
-        
+
         assert "AC-3" in valid_mappings
         assert "AU-2" in valid_mappings
         assert "INVALID-1" not in valid_mappings
@@ -505,12 +504,13 @@ class TestControlCoverageReport:
                 priority="medium"
             )
         ]
-        
+
         plan = report.generate_remediation_plan(missing_controls)
-        
+
         assert isinstance(plan, dict)
         assert "phases" in plan
         assert len(plan["phases"]) > 0
         # High priority should be in early phases
         phase1 = plan["phases"][0]
         assert any("AC-3" in task["control_id"] for task in phase1["tasks"])
+
