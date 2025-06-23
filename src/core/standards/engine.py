@@ -985,12 +985,13 @@ class StandardsEngine:
             # Clear Redis cache
             if self.redis_client:
                 try:
-                    pattern_keys = self.redis_client.keys("mcp:*")
-                    if pattern_keys:
-                        # Convert to list to ensure it's iterable
-                        keys_list = list(pattern_keys) if pattern_keys else []
-                        if keys_list:
-                            self.redis_client.delete(*keys_list)
+                    # Get all keys matching pattern
+                    all_keys = []
+                    for key in self.redis_client.scan_iter(match="mcp:*"):
+                        all_keys.append(key)
+                    
+                    if all_keys:
+                        self.redis_client.delete(*all_keys)
                     results["cleared"].append("redis")
                 except Exception as e:
                     logger.error(f"Failed to clear Redis cache: {e}")
