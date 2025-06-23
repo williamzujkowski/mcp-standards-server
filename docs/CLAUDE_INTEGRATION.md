@@ -16,16 +16,40 @@ This guide provides detailed instructions for integrating the MCP Standards Serv
 ### Prerequisites
 - Python 3.11 or higher
 - Claude Desktop application
-- Redis (optional, for caching)
+- **Redis** (required for three-tier hybrid caching)
+- **FAISS & ChromaDB** (auto-installed with MCP Standards Server)
 
-### Install MCP Standards Server
+### Install Dependencies
 
-#### Option 1: From PyPI (Recommended)
+#### 1. Install Redis (Required)
+**macOS:**
 ```bash
+brew install redis
+brew services start redis
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update && sudo apt install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+```
+
+**Windows (WSL):**
+```bash
+sudo apt install redis-server
+sudo service redis-server start
+```
+
+#### 2. Install MCP Standards Server
+
+**Option 1: From PyPI (Recommended)**
+```bash
+# This automatically installs FAISS and ChromaDB
 pip install mcp-standards-server
 ```
 
-#### Option 2: From Source
+**Option 2: From Source**
 ```bash
 git clone https://github.com/williamzujkowski/mcp-standards-server.git
 cd mcp-standards-server
@@ -274,23 +298,43 @@ Compliance Report Summary:
 
 ### Performance Issues
 
-1. **Enable Redis caching**:
+1. **Verify three-tier system is working**:
    ```bash
-   # Start Redis
-   redis-server
+   # Check all tiers status
+   mcp-standards cache status
    
-   # Configure in env
+   # Should show:
+   # - Redis Query Cache: Connected
+   # - FAISS Hot Cache: Active with utilization %
+   # - ChromaDB Persistent: Status with document count
+   ```
+
+2. **Fix Redis connection issues**:
+   ```bash
+   # Test Redis connection
+   redis-cli ping  # Should return: PONG
+   
+   # Start Redis if stopped
+   # macOS: brew services start redis
+   # Ubuntu: sudo systemctl start redis-server
+   
+   # Configure Redis URL if needed
    export REDIS_URL="redis://localhost:6379"
    ```
 
-2. **Check cache status**:
+3. **Optimize the three-tier cache**:
    ```bash
-   mcp-standards cache status
+   # Run tier optimization
+   mcp-standards cache optimize
+   
+   # Clear caches if corrupted
+   mcp-standards cache clear --tier all
    ```
 
-3. **Optimize cache**:
+4. **Check FAISS/ChromaDB installation**:
    ```bash
-   mcp-standards cache optimize
+   # Test if properly installed
+   python -c "import faiss; import chromadb; print('Vector stores available')"
    ```
 
 ### Debug Mode
@@ -324,9 +368,11 @@ For detailed debugging:
    mcp-standards init --profile moderate
    ```
 
-2. **Use Redis for Better Performance**:
-   - Install Redis: `brew install redis` (macOS) or `apt install redis` (Linux)
-   - Start Redis: `redis-server`
+2. **Ensure Three-Tier Architecture is Active**:
+   - **Redis must be running**: Required for query caching tier
+   - **FAISS hot cache**: Automatically manages top 1000 standards
+   - **ChromaDB persistence**: Handles full corpus with metadata
+   - Check status: `mcp-standards cache status`
 
 3. **Regular Updates**:
    ```bash

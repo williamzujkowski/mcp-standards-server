@@ -32,16 +32,41 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 
 - Python 3.11+
 - [uv](https://github.com/astral-sh/uv) package manager (recommended) or pip
-- Redis (optional, for caching)
+- **Redis** - Required for query caching tier
+- **FAISS** - Required for hot cache tier (auto-installed)
+- **ChromaDB** - Required for persistent storage tier (auto-installed)
 
 ### Installation
 
-#### Using pip
+#### 1. Install Redis (Required)
+**macOS:**
+```bash
+brew install redis
+brew services start redis
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update && sudo apt install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+```
+
+**Windows:**
+```bash
+# Using Windows Subsystem for Linux (WSL)
+sudo apt update && sudo apt install redis-server
+sudo service redis-server start
+```
+
+#### 2. Install MCP Standards Server
+
+**Using pip:**
 ```bash
 pip install mcp-standards-server
 ```
 
-#### From source
+**From source:**
 1. Clone the repository:
 ```bash
 git clone https://github.com/williamzujkowski/mcp-standards-server.git
@@ -58,6 +83,21 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -e .
+```
+
+#### 3. Verify Installation
+```bash
+# Test Redis connection
+redis-cli ping
+# Should return: PONG
+
+# Test MCP Standards Server
+mcp-standards version
+# Should return version info
+
+# Test three-tier cache system
+mcp-standards cache status
+# Should show Redis, FAISS, and ChromaDB status
 ```
 
 ### Basic Usage
@@ -320,7 +360,7 @@ def authenticate_user(username: str, password: str) -> User:
 
 ### 🚀 Three-Tier Hybrid Vector Store Architecture
 
-The MCP Standards Server implements a sophisticated three-tier hybrid architecture combining FAISS, ChromaDB, and Redis for optimal performance:
+The MCP Standards Server implements a sophisticated three-tier hybrid architecture combining FAISS, ChromaDB, and Redis for optimal performance. **All three components are required core dependencies**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -462,9 +502,11 @@ mcp-standards-server/
 
 ### Environment Variables
 - `STANDARDS_PATH` - Path to standards repository (default: `./data/standards`)
-- `REDIS_URL` - Redis connection URL for caching (optional)
+- `REDIS_URL` - Redis connection URL for caching tier (required: `redis://localhost:6379`)
 - `LOG_LEVEL` - Logging level (default: `INFO`)
 - `MCP_SERVER_NAME` - Server name for MCP protocol
+- `FAISS_HOT_CACHE_SIZE` - FAISS tier capacity (default: `1000`)
+- `CHROMADB_PERSIST_PATH` - ChromaDB storage location (default: `./.chroma_db`)
 
 ### Project Configuration (.mcp-standards/config.yaml)
 ```yaml

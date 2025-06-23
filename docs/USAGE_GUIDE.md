@@ -15,14 +15,29 @@ This guide provides comprehensive instructions for using the MCP Standards Serve
 
 ### Prerequisites
 
-1. Install Claude CLI:
+1. **Install Required Dependencies:**
+
+**Redis (Required for caching tier):**
+```bash
+# macOS
+brew install redis && brew services start redis
+
+# Ubuntu/Debian
+sudo apt update && sudo apt install redis-server
+sudo systemctl start redis-server
+
+# Windows (WSL)
+sudo apt install redis-server && sudo service redis-server start
+```
+
+2. **Install Claude CLI:**
 ```bash
 npm install -g @anthropic-ai/claude-cli
 ```
 
-2. Install MCP Standards Server:
+3. **Install MCP Standards Server:**
 ```bash
-# Using pip
+# Using pip (installs FAISS and ChromaDB automatically)
 pip install mcp-standards-server
 
 # Or from source
@@ -31,6 +46,15 @@ cd mcp-standards-server
 uv venv
 source .venv/bin/activate
 uv pip install -e .
+```
+
+4. **Verify Installation:**
+```bash
+# Test Redis
+redis-cli ping  # Should return: PONG
+
+# Test MCP server
+mcp-standards cache status  # Should show all three tiers
 ```
 
 ### Configuration for Claude CLI
@@ -110,11 +134,13 @@ What MCP tools are available?
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `STANDARDS_PATH` | Path to standards directory | `./data/standards` |
-| `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
+| `REDIS_URL` | Redis connection URL (required) | `redis://localhost:6379` |
 | `LOG_LEVEL` | Logging level | `INFO` |
-| `CACHE_TTL` | Cache time-to-live (seconds) | `3600` |
+| `CACHE_TTL` | Redis cache time-to-live (seconds) | `3600` |
 | `MAX_TOKENS` | Maximum tokens per response | `10000` |
-| `VECTOR_STORE_TYPE` | Vector store type | `hybrid` |
+| `VECTOR_STORE_TYPE` | Always `hybrid` (three-tier) | `hybrid` |
+| `FAISS_HOT_CACHE_SIZE` | FAISS tier capacity | `1000` |
+| `CHROMADB_PERSIST_PATH` | ChromaDB storage location | `./.chroma_db` |
 
 ### Configuration File
 
@@ -145,14 +171,23 @@ analysis:
     - django
     - react
 
-# MCP settings
+# MCP settings with three-tier architecture
 mcp:
   max_tokens: 10000
-  cache_enabled: true
   vector_store:
-    type: hybrid
-    faiss_size: 1000
-    chromadb_persist: true
+    type: hybrid  # Always hybrid (FAISS + ChromaDB + Redis)
+    # Tier 1: Redis Query Cache
+    redis:
+      url: redis://localhost:6379
+      ttl: 3600
+    # Tier 2: FAISS Hot Cache  
+    faiss:
+      hot_cache_size: 1000
+      access_threshold: 10
+    # Tier 3: ChromaDB Persistent Storage
+    chromadb:
+      persist_path: ./.chroma_db
+      batch_size: 100
 ```
 
 ## CLI Commands Reference
@@ -656,14 +691,23 @@ mcp-standards standards import --source williamzujkowski/standards
 mcp-standards cache clear --tier all
 ```
 
-**3. Redis Connection Failed**
+**3. Three-Tier Cache Issues**
 ```bash
-# Check Redis is running
-redis-cli ping
+# Check all tiers status
+mcp-standards cache status
 
-# Run without Redis (performance impact)
-export REDIS_URL=""
-mcp-standards server
+# Test Redis (required tier)
+redis-cli ping  # Must return: PONG
+
+# Fix Redis if not running
+# macOS: brew services start redis
+# Ubuntu: sudo systemctl start redis-server
+
+# Test vector stores
+python -c "import faiss; import chromadb; print('Vector stores OK')"
+
+# Clear corrupted caches
+mcp-standards cache clear --tier all
 ```
 
 **4. Import Errors**

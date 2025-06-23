@@ -3,10 +3,18 @@
 ## 🚀 Quick Setup with Claude CLI
 
 ```bash
-# 1. Install MCP Standards Server
+# 1. Install Redis (Required)
+# macOS: brew install redis && brew services start redis
+# Ubuntu: sudo apt install redis-server && sudo systemctl start redis-server
+
+# 2. Install MCP Standards Server (includes FAISS & ChromaDB)
 pip install mcp-standards-server
 
-# 2. Configure Claude Desktop
+# 3. Verify installation
+redis-cli ping  # Should return: PONG
+mcp-standards cache status  # Should show all tiers
+
+# 4. Configure Claude Desktop
 # Edit: ~/.config/claude/claude_desktop_config.json (macOS/Linux)
 #   or: %APPDATA%\Claude\claude_desktop_config.json (Windows)
 
@@ -172,10 +180,20 @@ mcp-standards validate --output-format json
 # Check version
 mcp-standards version
 
+# Verify three-tier architecture
+mcp-standards cache status
+# Should show Redis, FAISS, and ChromaDB status
+
+# Test Redis (required)
+redis-cli ping  # Must return: PONG
+
+# Test vector stores
+python -c "import faiss; import chromadb; print('OK')"
+
 # Debug MCP connection
 mcp-standards server --log-level DEBUG
 
-# Clear all caches if having issues
+# Clear corrupted caches
 mcp-standards cache clear --tier all --force
 
 # Verify standards are loaded

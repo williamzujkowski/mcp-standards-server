@@ -35,6 +35,11 @@ dependencies = [
     "click>=8.1.0",
     "pyjwt>=2.8.0",
     "cryptography>=41.0.0",
+    # Three-tier hybrid vector store core dependencies
+    "tiktoken>=0.5.0",
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.22",
 ]
 
 [project.urls]
@@ -60,11 +65,7 @@ dev = [
 ]
 
 llm = [
-    "tiktoken>=0.5.0",
     "transformers>=4.30.0",
-    "sentence-transformers>=2.2.0",
-    "faiss-cpu>=1.7.4",
-    "chromadb>=0.4.22",
 ]
 
 [project.scripts]
