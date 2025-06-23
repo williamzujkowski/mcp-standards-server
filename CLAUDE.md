@@ -56,7 +56,7 @@ This is a Model Context Protocol (MCP) server built with the official Python SDK
 - **Git Integration**: Automated hooks for pre-commit compliance checking
 - **VS Code Support**: Planned feature for integrated settings and workflow
 - **Example Projects**: Python API, JavaScript frontend with comprehensive documentation
-- **Test Coverage**: 70% (improved from 54%, targeting 80%)
+- **Test Coverage**: ~67% (improved from 62%, targeting 80%)
 - **GitHub Workflows**: CI/CD pipelines with security scanning
 - **Three-Tier Hybrid Search**: FAISS hot cache + ChromaDB persistence + Redis query cache
 - **Semantic Search Integration**: EnhancedNaturalLanguageMapper with ML-based understanding
@@ -322,16 +322,16 @@ What's the issue?
    - `src/core/standards/tiered_storage_strategy.py` - Intelligent placement
    - Performance: <1ms (FAISS), 10-50ms (ChromaDB), instant (Redis)
 
-### Critical Missing Features (High Priority)
-1. **Token Reduction Engine** (0% → 90%)
+### Remaining Features to Complete
+1. **Token Reduction Engine** (Implementation needed)
    - Location: `src/core/standards/engine.py`
    - Required: Implement SUMMARIZE, ESSENTIAL_ONLY, HIERARCHICAL strategies
    - Test: `tests/unit/core/standards/test_token_optimization.py`
 
 2. **Micro Standards Generator** (500-token chunks)
-   - Location: `src/core/standards/micro_standards.py` (exists, ~21% coverage)
-   - Required: Complete chunking algorithm, index generation
-   - Test: `tests/unit/core/standards/test_micro_standards.py` (exists, needs expansion)
+   - Location: `src/core/standards/micro_standards.py` (exists, 0% coverage)
+   - Required: Complete implementation of chunking algorithm
+   - Test: `tests/unit/core/standards/test_micro_standards.py` (exists, needs fixing)
    - Integration: Store chunks in FAISS hot cache for fast retrieval
 
 ### Medium Priority Features
@@ -350,21 +350,21 @@ What's the issue?
 5. Update metrics tracking
 6. Document in README.md
 
-### Creating Micro Standards
-1. Create `src/core/standards/micro_standards.py`
-2. Implement `MicroStandardsGenerator` class
-3. Add chunking algorithm (500 tokens max)
+### Completing Micro Standards Implementation
+1. Fix existing `src/core/standards/micro_standards.py` (already exists)
+2. Complete `MicroStandardsGenerator` class implementation
+3. Fix chunking algorithm to work with actual tokenizer
 4. Create index for quick lookup
 5. Integrate with MCP resources
 6. Add CLI command for generation
 
-### Implementing Semantic Search
-1. Create `src/core/standards/semantic_search.py`
-2. Add embedding model (sentence-transformers)
-3. Build vector database (FAISS/ChromaDB)
-4. Replace static mappings in NaturalLanguageMapper
+### Completing Semantic Search Implementation
+1. Complete `src/core/standards/semantic_search.py` (exists, 17% coverage)
+2. Fix embedding model integration
+3. Complete vector database integration with hybrid store
+4. Enhance NaturalLanguageMapper with semantic capabilities
 5. Add similarity threshold configuration
-6. Create evaluation metrics
+6. Create evaluation metrics and tests
 
 ## 📁 File Navigation Guide
 
