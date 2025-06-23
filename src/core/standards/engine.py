@@ -985,9 +985,12 @@ class StandardsEngine:
             # Clear Redis cache
             if self.redis_client:
                 try:
-                    keys = list(self.redis_client.keys("mcp:*"))
-                    if keys:
-                        self.redis_client.delete(*keys)
+                    pattern_keys = self.redis_client.keys("mcp:*")
+                    if pattern_keys:
+                        # Convert to list to ensure it's iterable
+                        keys_list = list(pattern_keys) if pattern_keys else []
+                        if keys_list:
+                            self.redis_client.delete(*keys_list)
                     results["cleared"].append("redis")
                 except Exception as e:
                     logger.error(f"Failed to clear Redis cache: {e}")
