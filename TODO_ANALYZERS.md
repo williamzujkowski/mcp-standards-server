@@ -51,7 +51,7 @@
 
 ## ✅ CI/CD Issues - RESOLVED
 
-**Status**: All critical CI/CD issues have been fixed!
+**Status**: All critical CI/CD issues have been fixed and test coverage significantly improved!
 
 ### ✅ Fixed Issues:
 1. **Linting (ruff)**: All 327 linting errors resolved ✅
@@ -64,31 +64,36 @@
    - Implemented missing abstract methods in MockTokenizer
    - Fixed test expectations
 
+### ✅ Test Coverage Improvements:
+1. **Test Coverage**: Improved from 62% to ~67%
+   - Added tests for `hybrid_vector_store.py` ✅ (27 tests, 63% coverage)
+   - Added tests for `tiered_storage_strategy.py` ✅ (31 tests, 98% coverage!)
+   - Added tests for `chromadb_tier.py` ✅ (written but need ChromaDB installed)
+   
 ### 🔧 Remaining Work:
-1. **Test Coverage**: Currently at 62%, need 80%
-   - Added tests for `hybrid_vector_store.py` ✅ (27 tests, all passing)
-   - Still need tests for `chromadb_tier.py` (351 lines)
-   - Still need tests for `tiered_storage_strategy.py` (455 lines)
-   - Need to complete `micro_standards.py` implementation
+1. **Complete micro_standards.py implementation** (currently 0% coverage)
+2. **Add integration tests** for the full three-tier system
+3. **Reach 80% overall test coverage** (currently ~67%)
 
 ---
 
 ## 📊 Current Test Coverage Status
 
-**Current Status**: Test coverage at **66%** (improved from 62%, targeting 80%)
+**Current Status**: Test coverage at **~67%** (improved from 62%, targeting 80%)
 
 ### Coverage Improvement:
-1. Added comprehensive test suite for hybrid_vector_store.py
-2. Fixed all type errors and test failures
-3. All tests now passing (except FAISS tests which are skipped)
+1. Added comprehensive test suite for hybrid_vector_store.py ✅
+2. Added comprehensive test suite for tiered_storage_strategy.py ✅
+3. Fixed all type errors and test failures ✅
+4. All tests now passing (except FAISS/ChromaDB tests when dependencies missing)
 
-### Test Coverage Progress:
-- ✅ `hybrid_vector_store.py` (628 lines, 64% coverage) - Comprehensive test suite added (27 tests)
-- ❌ `chromadb_tier.py` (351 lines, 17% coverage) - Needs tests
-- ❌ `tiered_storage_strategy.py` (455 lines, 25% coverage) - Needs tests
-- ❌ `micro_standards.py` (381 lines, ~21% coverage) - Implementation incomplete
-- ❌ `semantic_search.py` (251 lines, ~17% coverage) - Needs completion
-- ❌ `enhanced_mapper.py` (137 lines, ~20% coverage) - Needs tests
+### Module Test Coverage:
+- ✅ `hybrid_vector_store.py` (332 lines, **63% coverage**) - 27 tests added
+- ✅ `tiered_storage_strategy.py` (204 lines, **98% coverage**) - 31 tests added!
+- ⚠️ `chromadb_tier.py` (166 lines, 4% coverage) - Tests written but need ChromaDB
+- ❌ `micro_standards.py` (381 lines, 0% coverage) - Implementation incomplete
+- ❌ `semantic_search.py` (251 lines, 17% coverage) - Needs completion
+- ❌ `enhanced_mapper.py` (137 lines, 20% coverage) - Needs tests
 
 ---
 
