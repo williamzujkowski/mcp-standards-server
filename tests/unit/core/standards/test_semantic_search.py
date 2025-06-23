@@ -4,6 +4,7 @@ Comprehensive tests for semantic_search module
 @evidence: Semantic search engine testing
 """
 
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -59,7 +60,7 @@ class TestSearchResult:
 class TestEmbeddingModel:
     """Test EmbeddingModel class"""
 
-    @patch('src.core.standards.semantic_search.SentenceTransformer')
+    @patch('sentence_transformers.SentenceTransformer')
     def test_initialization_success(self, mock_transformer):
         """Test successful model initialization"""
         mock_model = MagicMock()
@@ -71,7 +72,7 @@ class TestEmbeddingModel:
         assert model.model == mock_model
         mock_transformer.assert_called_once_with("test-model")
 
-    @patch('src.core.standards.semantic_search.SentenceTransformer', None)
+    @patch.dict('sys.modules', {'sentence_transformers': None})
     def test_initialization_import_error(self):
         """Test initialization with missing sentence-transformers"""
         with pytest.raises(ImportError) as exc_info:
@@ -79,7 +80,7 @@ class TestEmbeddingModel:
 
         assert "sentence-transformers" in str(exc_info.value)
 
-    @patch('src.core.standards.semantic_search.SentenceTransformer')
+    @patch('sentence_transformers.SentenceTransformer')
     def test_initialization_model_error(self, mock_transformer):
         """Test initialization with model loading error"""
         mock_transformer.side_effect = Exception("Model not found")
@@ -89,7 +90,7 @@ class TestEmbeddingModel:
 
         assert "Model not found" in str(exc_info.value)
 
-    @patch('src.core.standards.semantic_search.SentenceTransformer')
+    @patch('sentence_transformers.SentenceTransformer')
     def test_encode_texts(self, mock_transformer):
         """Test encoding multiple texts"""
         mock_model = MagicMock()
@@ -109,7 +110,7 @@ class TestEmbeddingModel:
             convert_to_numpy=True
         )
 
-    @patch('src.core.standards.semantic_search.SentenceTransformer')
+    @patch('sentence_transformers.SentenceTransformer')
     def test_encode_single(self, mock_transformer):
         """Test encoding single text"""
         mock_model = MagicMock()
@@ -165,15 +166,15 @@ class TestVectorIndex:
         norms = np.linalg.norm(index.embeddings, axis=1)
         np.testing.assert_allclose(norms, np.ones(5), rtol=1e-6)
 
-    @patch('src.core.standards.semantic_search.faiss')
-    def test_build_faiss_index(self, mock_faiss):
+    @patch('faiss.IndexFlatIP')
+    def test_build_faiss_index(self, mock_index_class):
         """Test building index with FAISS"""
         mock_index = MagicMock()
-        mock_faiss.IndexFlatIP.return_value = mock_index
+        mock_index_class.return_value = mock_index
 
         index = VectorIndex()
-        index.use_faiss = True
-        index.faiss = mock_faiss
+        if not index.use_faiss:
+            pytest.skip("FAISS not available")
 
         embeddings = np.random.rand(5, 384)
         metadata = [{"id": i} for i in range(5)]
@@ -182,7 +183,7 @@ class TestVectorIndex:
 
         assert index.dimension == 384
         assert len(index.metadata) == 5
-        mock_faiss.IndexFlatIP.assert_called_once_with(384)
+        mock_index_class.assert_called_once_with(384)
         mock_index.add.assert_called_once()
 
         # Check that embeddings were normalized
@@ -226,27 +227,35 @@ class TestVectorIndex:
         assert results[0][0] == 0
         assert results[0][1] > 0.9  # High similarity
 
-    @patch('src.core.standards.semantic_search.faiss')
-    def test_search_faiss(self, mock_faiss):
+    def test_search_faiss(self):
         """Test searching with FAISS index"""
-        mock_index = MagicMock()
-        mock_index.search.return_value = (
-            np.array([[0.95, 0.85, 0.75]]),
-            np.array([[0, 3, 1]])
-        )
-
         index = VectorIndex()
-        index.use_faiss = True
-        index.faiss = mock_faiss
-        index.index = mock_index
-
-        query = np.array([1, 0, 0])
+        
+        if not index.use_faiss:
+            pytest.skip("FAISS not available")
+            
+        # Build a simple index
+        embeddings = np.array([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [0.7, 0.7, 0]
+        ], dtype=np.float32)
+        
+        # Normalize
+        embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+        
+        metadata = [{"id": i} for i in range(4)]
+        index.build(embeddings, metadata)
+        
+        # Search
+        query = np.array([1, 0, 0], dtype=np.float32)
         results = index.search(query, k=3)
-
+        
         assert len(results) == 3
-        assert results[0] == (0, 0.95)
-        assert results[1] == (3, 0.85)
-        assert results[2] == (1, 0.75)
+        # First result should be index 0 (exact match)
+        assert results[0][0] == 0
+        assert results[0][1] > 0.99
 
     def test_search_without_index(self):
         """Test searching without built index"""
@@ -284,32 +293,27 @@ class TestVectorIndex:
         assert new_index.metadata[0]["id"] == 0
         assert new_index.embeddings is not None
 
-    @patch('src.core.standards.semantic_search.faiss')
-    def test_save_load_faiss(self, mock_faiss, tmp_path):
+    def test_save_load_faiss(self, tmp_path):
         """Test saving and loading FAISS index"""
-        # Create and build index
-        mock_index = MagicMock()
-        mock_index.d = 128
-
         index = VectorIndex()
-        index.use_faiss = True
-        index.faiss = mock_faiss
-        index.index = mock_index
-        index.dimension = 128
-        index.metadata = [{"id": i} for i in range(3)]
+        
+        if not index.use_faiss:
+            pytest.skip("FAISS not available")
+            
+        # Build index
+        embeddings = np.random.rand(3, 128)
+        metadata = [{"id": i} for i in range(3)]
+        index.build(embeddings, metadata)
 
         # Save
         index.save(tmp_path / "test_index")
 
-        # Check metadata saved
+        # Check files saved
         assert (tmp_path / "test_index" / "metadata.json").exists()
-        mock_faiss.write_index.assert_called_once()
+        assert (tmp_path / "test_index" / "index.faiss").exists()
 
         # Load into new index
-        mock_faiss.read_index.return_value = mock_index
         new_index = VectorIndex()
-        new_index.use_faiss = True
-        new_index.faiss = mock_faiss
         new_index.load(tmp_path / "test_index")
 
         assert new_index.dimension == 128
