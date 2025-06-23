@@ -1,0 +1,517 @@
+{
+  "repository": {
+    "name": "mcp-standards-server",
+    "description": "Model Context Protocol server for NIST 800-53r5 compliance checking and standards enforcement",
+    "version": "0.1.0",
+    "architecture": "three-tier-hybrid-vector-store",
+    "core_technologies": ["Python", "MCP SDK", "FAISS", "ChromaDB", "Redis", "NIST 800-53r5"],
+    "last_updated": "2025-06-23",
+    "total_files": 150,
+    "total_python_files": 50,
+    "test_coverage": "77%",
+    "nist_controls_detected": "200+",
+    "standards_imported": 17
+  },
+  "file_index": {
+    "core_components": {
+      "src/server.py": {
+        "type": "python",
+        "category": "mcp-server",
+        "description": "Main MCP server entry point implementing all tools, resources, and prompts",
+        "key_functions": ["list_tools", "call_tool", "list_resources", "read_resource", "list_prompts", "get_prompt"],
+        "nist_controls": ["AC-3", "AU-2", "SI-10"],
+        "evidence": "MCP protocol implementation with security controls",
+        "dependencies": ["mcp", "standards_engine", "analyzers", "compliance_scanner"],
+        "related_files": ["src/core/standards/engine.py", "src/analyzers/base.py"],
+        "lines_of_code": 400,
+        "mcp_tools": ["load_standards", "analyze_code", "suggest_controls", "generate_template", "validate_compliance", "scan_with_llm", "semantic_search", "cache_stats"],
+        "mcp_resources": 20,
+        "mcp_prompts": 5,
+        "architecture_tier": "mcp-interface"
+      },
+      "src/core/standards/engine.py": {
+        "type": "python",
+        "category": "standards-engine",
+        "description": "Core standards loading and management engine with three-tier hybrid vector store",
+        "key_classes": ["StandardsEngine", "TokenOptimizationStrategy"],
+        "key_functions": ["load_standards", "parse_query", "get_tier_stats", "clear_cache", "optimize_tiers"],
+        "nist_controls": ["SI-10", "SI-12", "AC-4"],
+        "evidence": "Standards processing with token optimization and caching",
+        "dependencies": ["HybridVectorStore", "NaturalLanguageMapper", "Redis", "FAISS", "ChromaDB"],
+        "related_files": ["src/core/standards/hybrid_vector_store.py", "src/core/standards/enhanced_mapper.py"],
+        "lines_of_code": 850,
+        "architecture_tier": "tier-orchestrator",
+        "performance": "<1ms for cached queries, 10-50ms for full search"
+      },
+      "src/core/standards/hybrid_vector_store.py": {
+        "type": "python",
+        "category": "vector-store",
+        "description": "Three-tier hybrid vector store orchestrator (Redis + FAISS + ChromaDB)",
+        "key_classes": ["HybridVectorStore", "FAISSHotCache", "HybridConfig"],
+        "key_functions": ["search", "add_document", "get_tier_stats", "optimize_cache"],
+        "nist_controls": ["SI-12", "SC-8"],
+        "evidence": "High-performance vector search with intelligent caching",
+        "dependencies": ["ChromaDBTier", "TieredStorageStrategy", "Redis", "FAISS"],
+        "related_files": ["src/core/standards/chromadb_tier.py", "src/core/standards/tiered_storage_strategy.py"],
+        "lines_of_code": 650,
+        "architecture_tier": "tier-1-orchestrator",
+        "performance": {
+          "redis_query_cache": "<0.1ms",
+          "faiss_hot_cache": "<1ms",
+          "chromadb_persistent": "10-50ms"
+        }
+      },
+      "src/core/standards/chromadb_tier.py": {
+        "type": "python",
+        "category": "vector-store",
+        "description": "ChromaDB persistent storage tier with metadata filtering",
+        "key_classes": ["ChromaDBTier", "ChromaDBConfig"],
+        "key_functions": ["search", "add_documents", "create_collection", "get_stats"],
+        "nist_controls": ["SI-12", "SC-8"],
+        "evidence": "Persistent vector storage with rich metadata",
+        "dependencies": ["chromadb", "sentence-transformers"],
+        "related_files": ["src/core/standards/hybrid_vector_store.py"],
+        "lines_of_code": 350,
+        "architecture_tier": "tier-3-persistent",
+        "features": ["metadata_filtering", "persistent_embeddings", "batch_operations"]
+      },
+      "src/core/standards/tiered_storage_strategy.py": {
+        "type": "python",
+        "category": "caching-strategy", 
+        "description": "Intelligent data placement strategy for three-tier architecture",
+        "key_classes": ["TieredStorageStrategy", "AccessPattern", "CacheDecision"],
+        "key_functions": ["should_promote_to_hot", "should_evict_from_hot", "track_access", "optimize_placement"],
+        "nist_controls": ["SI-12", "AC-4"],
+        "evidence": "Intelligent caching with access pattern tracking",
+        "dependencies": ["redis", "dataclasses"],
+        "related_files": ["src/core/standards/hybrid_vector_store.py"],
+        "lines_of_code": 455,
+        "architecture_tier": "caching-intelligence",
+        "algorithms": ["LRU", "access_frequency", "recency_weighting"]
+      }
+    },
+    "analyzers": {
+      "src/analyzers/base.py": {
+        "type": "python",
+        "category": "analyzer-framework",
+        "description": "Base analyzer framework and common analysis patterns",
+        "key_classes": ["BaseAnalyzer", "CodeAnnotation", "AnalysisResult"],
+        "key_functions": ["analyze_file", "analyze_project", "detect_patterns", "extract_annotations"],
+        "nist_controls": ["CA-7", "RA-5", "SA-11"],
+        "evidence": "Code analysis framework with NIST control detection",
+        "dependencies": ["tree-sitter", "enhanced_patterns"],
+        "related_files": ["src/analyzers/enhanced_patterns.py"],
+        "lines_of_code": 300,
+        "supported_languages": 4,
+        "supported_iac": 3
+      },
+      "src/analyzers/python_analyzer.py": {
+        "type": "python",
+        "category": "language-analyzer",
+        "description": "Python code analyzer with Django/Flask/FastAPI framework detection",
+        "key_classes": ["PythonAnalyzer"],
+        "key_functions": ["analyze_file", "detect_frameworks", "extract_security_patterns"],
+        "nist_controls": ["SI-10", "AC-3", "AU-2", "SC-8", "IA-2"],
+        "evidence": "Python security analysis with framework-specific patterns",
+        "dependencies": ["ast", "tree-sitter", "enhanced_patterns"],
+        "related_files": ["src/analyzers/base.py", "src/analyzers/enhanced_patterns.py"],
+        "lines_of_code": 450,
+        "frameworks_supported": ["Django", "Flask", "FastAPI", "Pydantic"],
+        "patterns_detected": 50
+      },
+      "src/analyzers/javascript_analyzer.py": {
+        "type": "python",
+        "category": "language-analyzer",
+        "description": "JavaScript/TypeScript analyzer with React/Angular/Vue/Express support",
+        "key_classes": ["JavaScriptAnalyzer"],
+        "key_functions": ["analyze_file", "detect_frameworks", "analyze_security_patterns"],
+        "nist_controls": ["SI-10", "AC-3", "SC-8", "IA-2"],
+        "evidence": "JavaScript security analysis with modern framework support",
+        "dependencies": ["tree-sitter", "enhanced_patterns"],
+        "related_files": ["src/analyzers/base.py"],
+        "lines_of_code": 400,
+        "frameworks_supported": ["React", "Angular", "Vue", "Express", "Next.js"],
+        "patterns_detected": 45
+      },
+      "src/analyzers/terraform_analyzer.py": {
+        "type": "python",
+        "category": "iac-analyzer",
+        "description": "Terraform/HCL analyzer for AWS/Azure/GCP infrastructure security",
+        "key_classes": ["TerraformAnalyzer"],
+        "key_functions": ["analyze_file", "detect_providers", "analyze_security_configurations"],
+        "nist_controls": ["AC-3", "SC-7", "SC-8", "CM-2", "CP-9"],
+        "evidence": "Infrastructure as Code security analysis",
+        "dependencies": ["tree-sitter", "enhanced_patterns"],
+        "related_files": ["src/analyzers/base.py"],
+        "lines_of_code": 350,
+        "providers_supported": ["AWS", "Azure", "GCP"],
+        "resource_types": 100
+      },
+      "src/analyzers/enhanced_patterns.py": {
+        "type": "python",
+        "category": "pattern-detection",
+        "description": "Enhanced NIST control pattern detection across all 20 families",
+        "key_classes": ["EnhancedNISTPatterns", "ControlPattern"],
+        "key_functions": ["detect_patterns", "get_control_family_coverage", "suggest_missing_controls"],
+        "nist_controls": ["ALL_FAMILIES"],
+        "evidence": "Comprehensive NIST 800-53r5 pattern detection",
+        "dependencies": ["re", "dataclasses"],
+        "related_files": ["src/analyzers/base.py"],
+        "lines_of_code": 800,
+        "control_families": 20,
+        "patterns_total": 200,
+        "confidence_scoring": true
+      }
+    },
+    "compliance": {
+      "src/compliance/scanner.py": {
+        "type": "python",
+        "category": "compliance-scanner",
+        "description": "Main compliance scanning engine coordinating all analyzers",
+        "key_classes": ["ComplianceScanner"],
+        "key_functions": ["scan_directory", "scan_file", "generate_report", "validate_compliance"],
+        "nist_controls": ["CA-7", "PM-31", "AU-6"],
+        "evidence": "Automated compliance scanning and reporting",
+        "dependencies": ["analyzers", "enhanced_patterns"],
+        "related_files": ["src/analyzers/base.py"],
+        "lines_of_code": 400,
+        "output_formats": ["table", "json", "yaml", "oscal"],
+        "scan_modes": ["file", "directory", "project"]
+      },
+      "src/core/compliance/oscal_handler.py": {
+        "type": "python",
+        "category": "oscal-compliance",
+        "description": "OSCAL 1.0.0 System Security Plan generation and validation",
+        "key_classes": ["OSCALHandler"],
+        "key_functions": ["generate_ssp_content", "create_component_from_annotations", "export_to_file"],
+        "nist_controls": ["CA-2", "PM-31", "SA-11"],
+        "evidence": "OSCAL-compliant SSP generation",
+        "dependencies": ["pydantic", "json", "hashlib"],
+        "related_files": ["src/compliance/scanner.py"],
+        "lines_of_code": 300,
+        "oscal_version": "1.0.0",
+        "output_formats": ["json", "yaml"]
+      }
+    },
+    "cli": {
+      "src/cli/main.py": {
+        "type": "python",
+        "category": "cli-interface",
+        "description": "Complete CLI interface with 9 commands for NIST compliance",
+        "key_functions": ["init", "scan", "ssp", "validate", "coverage", "generate", "standards", "cache", "server", "version"],
+        "nist_controls": ["AC-3", "AU-2", "SI-10"],
+        "evidence": "Secure CLI with audit logging",
+        "dependencies": ["typer", "rich", "analyzers", "compliance"],
+        "related_files": ["src/server.py", "src/compliance/scanner.py"],
+        "lines_of_code": 700,
+        "commands_total": 10,
+        "output_formats": ["table", "json", "yaml", "html", "markdown"]
+      },
+      "src/cli/commands/standards.py": {
+        "type": "python",
+        "category": "cli-commands",
+        "description": "Standards management CLI commands (list, import, update, rollback, search)",
+        "key_functions": ["list_standards", "import_standards", "update_standards", "search_standards"],
+        "nist_controls": ["CM-3", "CM-2"],
+        "evidence": "Standards version control and management",
+        "dependencies": ["typer", "standards_engine"],
+        "related_files": ["src/cli/main.py"],
+        "lines_of_code": 200,
+        "subcommands": 5
+      }
+    },
+    "documentation": {
+      "README.md": {
+        "type": "markdown",
+        "category": "primary-documentation",
+        "description": "Main project documentation with three-tier architecture overview",
+        "sections": ["features", "installation", "usage", "architecture", "mcp-tools", "configuration"],
+        "dependencies_documented": ["Redis", "FAISS", "ChromaDB"],
+        "related_files": ["docs/USAGE_GUIDE.md", "docs/QUICK_REFERENCE.md"],
+        "lines_of_code": 530,
+        "architecture_diagrams": 2,
+        "installation_platforms": ["macOS", "Linux", "Windows"]
+      },
+      "docs/USAGE_GUIDE.md": {
+        "type": "markdown",
+        "category": "comprehensive-guide",
+        "description": "Complete usage guide with all CLI commands and MCP tools",
+        "sections": ["prerequisites", "configuration", "cli-commands", "mcp-tools", "troubleshooting"],
+        "commands_documented": 9,
+        "mcp_tools_documented": 8,
+        "related_files": ["README.md", "docs/CLAUDE_INTEGRATION.md"],
+        "lines_of_code": 767,
+        "code_examples": 50
+      },
+      "docs/QUICK_REFERENCE.md": {
+        "type": "markdown",
+        "category": "reference-card",
+        "description": "Quick reference card for common commands and workflows",
+        "sections": ["setup", "commands", "workflows", "troubleshooting"],
+        "related_files": ["docs/USAGE_GUIDE.md"],
+        "lines_of_code": 230,
+        "workflow_examples": 5
+      },
+      "docs/CLAUDE_INTEGRATION.md": {
+        "type": "markdown",
+        "category": "integration-guide",
+        "description": "Detailed Claude CLI integration setup and configuration",
+        "sections": ["installation", "configuration", "usage", "troubleshooting"],
+        "platforms_covered": ["macOS", "Linux", "Windows"],
+        "related_files": ["docs/USAGE_GUIDE.md"],
+        "lines_of_code": 442,
+        "configuration_examples": 5
+      },
+      "CLAUDE.md": {
+        "type": "markdown",
+        "category": "llm-instructions",
+        "description": "Comprehensive LLM logic router with project instructions and decision trees",
+        "sections": ["priorities", "status", "decision-trees", "workflows", "troubleshooting"],
+        "decision_trees": 4,
+        "related_files": ["README.md", "TODO_ANALYZERS.md"],
+        "lines_of_code": 400,
+        "optimization_strategies": 3
+      }
+    },
+    "configuration": {
+      "pyproject.toml": {
+        "type": "toml",
+        "category": "package-configuration",
+        "description": "Python package configuration with core dependencies",
+        "dependencies_core": ["mcp", "pydantic", "redis", "faiss-cpu", "chromadb", "tiktoken", "sentence-transformers"],
+        "dependencies_optional": ["transformers"],
+        "dependencies_dev": ["pytest", "ruff", "mypy", "coverage"],
+        "related_files": ["README.md"],
+        "python_versions": ["3.11", "3.12"],
+        "entry_points": 2
+      },
+      ".github/workflows/ci.yml": {
+        "type": "yaml",
+        "category": "ci-configuration",
+        "description": "GitHub Actions CI/CD pipeline with testing, linting, and security checks",
+        "jobs": ["test", "lint", "security", "compliance"],
+        "python_versions": ["3.11", "3.12"],
+        "related_files": [".github/workflows/nist-compliance.yml"],
+        "security_tools": ["trivy", "mypy", "ruff"],
+        "coverage_target": "80%"
+      }
+    },
+    "standards_data": {
+      "data/standards/UNIFIED_STANDARDS.yaml": {
+        "type": "yaml",
+        "category": "standards-content",
+        "description": "Master unified standards document with all compliance requirements",
+        "nist_controls": ["ALL"],
+        "related_files": ["data/standards/MODERN_SECURITY_STANDARDS.yaml"],
+        "lines_of_code": 1500,
+        "sections": ["security", "development", "infrastructure", "compliance"]
+      },
+      "data/standards/MODERN_SECURITY_STANDARDS.yaml": {
+        "type": "yaml", 
+        "category": "security-standards",
+        "description": "Modern security standards with NIST 800-53r5 mappings",
+        "nist_controls": ["AC", "AU", "SC", "SI", "IA"],
+        "related_files": ["data/standards/UNIFIED_STANDARDS.yaml"],
+        "lines_of_code": 800,
+        "control_families": 20
+      },
+      "data/standards/standards_index.json": {
+        "type": "json",
+        "category": "standards-index",
+        "description": "Index of all imported standards with metadata",
+        "standards_count": 17,
+        "related_files": ["scripts/import_standards.py"],
+        "last_updated": "2025-06-23"
+      }
+    },
+    "tests": {
+      "tests/unit/core/standards/test_hybrid_vector_store.py": {
+        "type": "python",
+        "category": "unit-tests",
+        "description": "Comprehensive tests for three-tier hybrid vector store",
+        "test_classes": ["TestHybridVectorStore", "TestFAISSHotCache"],
+        "test_methods": 27,
+        "related_files": ["src/core/standards/hybrid_vector_store.py"],
+        "lines_of_code": 650,
+        "coverage": "64%"
+      },
+      "tests/unit/core/standards/test_tiered_storage_strategy.py": {
+        "type": "python",
+        "category": "unit-tests", 
+        "description": "Tests for intelligent caching strategy",
+        "test_methods": 31,
+        "related_files": ["src/core/standards/tiered_storage_strategy.py"],
+        "lines_of_code": 500,
+        "coverage": "98%"
+      },
+      "tests/unit/analyzers/test_python_analyzer.py": {
+        "type": "python",
+        "category": "analyzer-tests",
+        "description": "Tests for Python code analyzer with framework detection",
+        "frameworks_tested": ["Django", "Flask", "FastAPI"],
+        "related_files": ["src/analyzers/python_analyzer.py"],
+        "lines_of_code": 400,
+        "test_patterns": 25
+      }
+    },
+    "scripts": {
+      "scripts/import_standards.py": {
+        "type": "python",
+        "category": "utility-script",
+        "description": "Script to import standards from williamzujkowski/standards repository",
+        "key_functions": ["import_from_repo", "validate_standards", "update_index"],
+        "related_files": ["data/standards/standards_index.json"],
+        "lines_of_code": 200,
+        "import_sources": ["github"]
+      },
+      "scripts/migrate_to_hybrid.py": {
+        "type": "python",
+        "category": "migration-script",
+        "description": "Migration script from single-tier to three-tier hybrid architecture",
+        "key_functions": ["migrate_faiss_to_hybrid", "benchmark_performance"],
+        "related_files": ["src/core/standards/hybrid_vector_store.py"],
+        "lines_of_code": 150,
+        "migration_steps": 3
+      }
+    },
+    "examples": {
+      "examples/python-api/app.py": {
+        "type": "python",
+        "category": "example-implementation",
+        "description": "Example Python Flask API with NIST compliance annotations",
+        "nist_controls": ["AC-3", "AU-2", "IA-2", "SC-8"],
+        "evidence": "Production-ready secure API example",
+        "frameworks": ["Flask"],
+        "related_files": ["src/analyzers/python_analyzer.py"],
+        "lines_of_code": 200,
+        "endpoints": 5
+      }
+    }
+  },
+  "architecture_overview": {
+    "three_tier_hybrid": {
+      "tier_1": {
+        "name": "Redis Query Cache",
+        "purpose": "Instant response for repeated queries",
+        "performance": "<0.1ms",
+        "implementation": "src/core/standards/engine.py"
+      },
+      "tier_2": {
+        "name": "FAISS Hot Cache", 
+        "purpose": "Ultra-fast search for top 1000 standards",
+        "performance": "<1ms",
+        "implementation": "src/core/standards/hybrid_vector_store.py"
+      },
+      "tier_3": {
+        "name": "ChromaDB Persistent Storage",
+        "purpose": "Full corpus with metadata filtering",
+        "performance": "10-50ms",
+        "implementation": "src/core/standards/chromadb_tier.py"
+      }
+    },
+    "data_flow": [
+      "Query → Redis Cache Check",
+      "Cache Miss → FAISS Hot Cache",
+      "Hot Cache Miss → ChromaDB Search",
+      "Results → Cache Population",
+      "Response → Client"
+    ]
+  },
+  "nist_coverage": {
+    "control_families": {
+      "AC": "Access Control - 25 controls",
+      "AU": "Audit and Accountability - 16 controls", 
+      "CA": "Assessment, Authorization, and Monitoring - 9 controls",
+      "CM": "Configuration Management - 12 controls",
+      "CP": "Contingency Planning - 13 controls",
+      "IA": "Identification and Authentication - 12 controls",
+      "IR": "Incident Response - 10 controls",
+      "MA": "Maintenance - 6 controls",
+      "MP": "Media Protection - 8 controls",
+      "PE": "Physical and Environmental Protection - 23 controls",
+      "PL": "Planning - 11 controls",
+      "PM": "Program Management - 33 controls",
+      "PS": "Personnel Security - 9 controls",
+      "PT": "PII Processing and Transparency - 8 controls",
+      "RA": "Risk Assessment - 10 controls",
+      "SA": "System and Services Acquisition - 23 controls",
+      "SC": "System and Communications Protection - 45 controls",
+      "SI": "System and Information Integrity - 23 controls",
+      "SR": "Supply Chain Risk Management - 12 controls"
+    },
+    "high_priority_controls": [
+      "IA-2(1): Multi-factor Authentication",
+      "SC-8/SC-13: Encryption in Transit and at Rest", 
+      "SI-10: Input Validation",
+      "AU-2/AU-3: Security Event Logging",
+      "AC-3/AC-6: Access Control with Least Privilege"
+    ]
+  },
+  "development_patterns": {
+    "nist_annotations": {
+      "format": "@nist-controls: AC-3, AU-2",
+      "evidence": "@evidence: Implementation description",
+      "component": "@oscal-component: component-name",
+      "files_with_annotations": 45
+    },
+    "test_patterns": {
+      "unit_tests": 90,
+      "integration_tests": 5,
+      "e2e_tests": 2,
+      "total_coverage": "77%",
+      "target_coverage": "80%"
+    }
+  },
+  "llm_optimization": {
+    "token_reduction": {
+      "target": "90%",
+      "strategies": ["summarization", "essential_only", "hierarchical"],
+      "implementation": "src/core/standards/token_optimizer.py"
+    },
+    "semantic_search": {
+      "embeddings": "sentence-transformers",
+      "vector_store": "hybrid_three_tier",
+      "query_types": ["natural_language", "nist_notation", "mixed"],
+      "implementation": "src/core/standards/semantic_search.py"
+    }
+  },
+  "usage_patterns": {
+    "cli_commands": {
+      "most_common": ["scan", "validate", "coverage"],
+      "deployment": ["init", "ssp", "cache"],
+      "development": ["generate", "standards", "server"]
+    },
+    "mcp_tools": {
+      "most_used": ["load_standards", "analyze_code", "validate_compliance"],
+      "advanced": ["semantic_search", "scan_with_llm", "cache_stats"]
+    }
+  },
+  "performance_metrics": {
+    "query_performance": {
+      "redis_hits": "<0.1ms",
+      "faiss_searches": "<1ms", 
+      "chromadb_searches": "10-50ms",
+      "cache_hit_rate": "85%"
+    },
+    "analysis_performance": {
+      "python_files": "~50ms per file",
+      "javascript_files": "~40ms per file",
+      "terraform_files": "~60ms per file"
+    }
+  },
+  "integration_points": {
+    "claude_cli": {
+      "configuration": "docs/CLAUDE_INTEGRATION.md",
+      "mcp_protocol": "1.0",
+      "tools_exposed": 8,
+      "resources_exposed": 20,
+      "prompts_exposed": 5
+    },
+    "ci_cd": {
+      "github_actions": 4,
+      "pre_commit_hooks": true,
+      "security_scanning": ["trivy", "mypy"],
+      "compliance_checking": true
+    }
+  }
+}
