@@ -418,6 +418,12 @@ docker build -t mcp-standards-server .
 docker run -it mcp-standards-server
 ```
 
+## 📚 Documentation
+
+- **[Complete Usage Guide](docs/USAGE_GUIDE.md)** - Comprehensive documentation for all features
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Command cheat sheet and common workflows
+- **[Claude Integration Guide](docs/CLAUDE_INTEGRATION.md)** - Detailed Claude CLI setup instructions
+
 ## 📁 Project Structure
 
 ```
@@ -445,7 +451,10 @@ mcp-standards-server/
 │   ├── javascript-frontend/ # Secure frontend SPA
 │   └── secure-database/    # Database security patterns
 ├── docs/                   # Comprehensive documentation
-├── tests/                  # Test suite (70% coverage)
+│   ├── USAGE_GUIDE.md      # Complete command reference
+│   ├── QUICK_REFERENCE.md  # Command cheat sheet
+│   └── CLAUDE_INTEGRATION.md # Claude CLI setup guide
+├── tests/                  # Test suite (77% coverage)
 └── scripts/                # Utility scripts
 ```
 
