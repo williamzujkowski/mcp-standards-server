@@ -5,7 +5,6 @@ Unit tests for Hybrid Vector Store implementation.
 @evidence: Comprehensive testing of three-tier vector store
 """
 
-import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -23,7 +22,7 @@ from src.core.standards.hybrid_vector_store import (
 
 # Check if FAISS is available
 try:
-    import faiss
+    import faiss  # noqa: F401
     FAISS_AVAILABLE = True
 except ImportError:
     FAISS_AVAILABLE = False
@@ -65,7 +64,7 @@ class TestHybridConfig:
         assert config.chroma_collection == "standards"
         assert config.redis_ttl == 3600
         assert config.redis_prefix == "mcp:search:"
-        assert config.enable_monitoring == True
+        assert config.enable_monitoring is True
         assert config.access_threshold == 10
 
     def test_custom_config(self):
@@ -131,11 +130,11 @@ class TestTierMetrics:
     def test_latency_buffer_limit(self):
         """Test that latency buffer doesn't grow indefinitely"""
         metrics = TierMetrics()
-        
+
         # Add more than 10000 latencies
-        for i in range(15000):
+        for _ in range(15000):
             metrics.record_hit(0.1)
-        
+
         # Should only keep last 10000
         assert len(metrics.latencies) == 10000
 
@@ -167,7 +166,7 @@ class TestFAISSHotCache:
     async def test_add_document(self, faiss_cache):
         """Test adding a document to FAISS cache"""
         embedding = np.random.rand(384).astype(np.float32)
-        
+
         success = await faiss_cache.add(
             id="doc_001",
             embedding=embedding,
@@ -175,7 +174,7 @@ class TestFAISSHotCache:
             metadata={"type": "test"}
         )
 
-        assert success == True
+        assert success is True
         assert "doc_001" in faiss_cache._id_map
         assert faiss_cache._lru_cache["doc_001"] == ("Test document", {"type": "test"})
 
@@ -216,7 +215,7 @@ class TestFAISSHotCache:
         # Should only have 10 documents (max capacity)
         assert len(faiss_cache._id_map) == 10
         assert len(faiss_cache._lru_cache) == 10
-        
+
         # First 5 documents should have been evicted
         for i in range(5):
             assert f"doc_{i:03d}" not in faiss_cache._id_map
@@ -233,7 +232,7 @@ class TestFAISSHotCache:
         )
 
         success = await faiss_cache.remove("doc_001")
-        assert success == True
+        assert success is True
         assert "doc_001" not in faiss_cache._id_map
         assert "doc_001" not in faiss_cache._lru_cache
 
@@ -310,7 +309,7 @@ class TestRedisQueryCache:
             filters=None
         )
 
-        assert success == True
+        assert success is True
         assert redis_cache._redis.setex.called
 
     @pytest.mark.asyncio
@@ -333,7 +332,7 @@ class TestRedisQueryCache:
         assert len(results) == 1
         assert results[0].id == "doc_001"
         assert results[0].source_tier == "redis"
-        assert results[0].metadata['cached'] == True
+        assert results[0].metadata['cached'] is True
 
     @pytest.mark.asyncio
     async def test_search_cache_miss(self, redis_cache):
@@ -350,7 +349,7 @@ class TestRedisQueryCache:
         """Test getting cache statistics"""
         stats = await redis_cache.get_stats()
 
-        assert stats["redis_connected"] == True
+        assert stats["redis_connected"] is True
         # Metrics are included directly in stats
         assert "hits" in stats
         assert "misses" in stats
@@ -375,17 +374,17 @@ class TestHybridVectorStore:
         with patch('src.core.standards.hybrid_vector_store.get_redis_client') as mock_get_redis:
             mock_redis = MagicMock()
             mock_get_redis.return_value = mock_redis
-            
+
             # Mock ChromaDB availability
             with patch('src.core.standards.hybrid_vector_store.CHROMADB_AVAILABLE', True):
                 with patch('src.core.standards.hybrid_vector_store.ChromaDBTier') as MockChromaDB:
                     mock_chroma = AsyncMock()
                     MockChromaDB.return_value = mock_chroma
-                    
+
                     store = HybridVectorStore(config)
                     store.redis_tier._redis = mock_redis
                     store.chroma_tier = mock_chroma
-                    
+
                     return store
 
     def test_initialization(self, hybrid_store):
@@ -399,10 +398,10 @@ class TestHybridVectorStore:
     async def test_add_document(self, hybrid_store):
         """Test adding a document to hybrid store"""
         embedding = np.random.rand(384).astype(np.float32)
-        
+
         # Mock ChromaDB add
         hybrid_store.chroma_tier.add.return_value = True
-        
+
         success = await hybrid_store.add(
             id="doc_001",
             content="Test document",
@@ -410,14 +409,14 @@ class TestHybridVectorStore:
             metadata={"type": "test"}
         )
 
-        assert success == True
+        assert success is True
         assert hybrid_store.chroma_tier.add.called
 
     @pytest.mark.asyncio
     async def test_search_redis_hit(self, hybrid_store):
         """Test search with Redis cache hit"""
         query_embedding = np.random.rand(384).astype(np.float32)
-        
+
         # Mock Redis hit
         redis_result = SearchResult(
             id="doc_001",
@@ -426,9 +425,9 @@ class TestHybridVectorStore:
             metadata={},
             source_tier="redis"
         )
-        
+
         hybrid_store.redis_tier.search = AsyncMock(return_value=[redis_result])
-        
+
         results = await hybrid_store.search(
             query="test query",
             query_embedding=query_embedding,
@@ -442,10 +441,10 @@ class TestHybridVectorStore:
     async def test_search_fallback_to_faiss(self, hybrid_store):
         """Test search fallback from Redis to FAISS"""
         query_embedding = np.random.rand(384).astype(np.float32)
-        
+
         # Mock Redis miss
         hybrid_store.redis_tier.search = AsyncMock(return_value=[])
-        
+
         # Mock FAISS hit
         faiss_results = [
             SearchResult(
@@ -457,7 +456,7 @@ class TestHybridVectorStore:
             )
         ]
         hybrid_store.faiss_tier.search = AsyncMock(return_value=faiss_results)
-        
+
         results = await hybrid_store.search(
             query="test query",
             query_embedding=query_embedding,
@@ -471,11 +470,11 @@ class TestHybridVectorStore:
     async def test_search_fallback_to_chromadb(self, hybrid_store):
         """Test search fallback to ChromaDB"""
         query_embedding = np.random.rand(384).astype(np.float32)
-        
+
         # Mock Redis and FAISS miss
         hybrid_store.redis_tier.search = AsyncMock(return_value=[])
         hybrid_store.faiss_tier.search = AsyncMock(return_value=[])
-        
+
         # Mock ChromaDB hit
         chroma_results = [
             SearchResult(
@@ -487,7 +486,7 @@ class TestHybridVectorStore:
             )
         ]
         hybrid_store.chroma_tier.search = AsyncMock(return_value=chroma_results)
-        
+
         results = await hybrid_store.search(
             query="test query",
             query_embedding=query_embedding,
@@ -504,10 +503,10 @@ class TestHybridVectorStore:
         hybrid_store.redis_tier.remove = AsyncMock(return_value=True)
         hybrid_store.faiss_tier.remove = AsyncMock(return_value=True)
         hybrid_store.chroma_tier.remove = AsyncMock(return_value=True)
-        
+
         success = await hybrid_store.remove("doc_001")
-        
-        assert success == True
+
+        assert success is True
         assert hybrid_store.faiss_tier.remove.called
         assert hybrid_store.chroma_tier.remove.called
 
@@ -518,12 +517,12 @@ class TestHybridVectorStore:
         hybrid_store.faiss_tier.get_access_counts = MagicMock(
             return_value={"doc_001": 15, "doc_002": 5}
         )
-        
+
         # Mock ChromaDB get_by_ids
         hybrid_store.chroma_tier.get_by_ids = AsyncMock(return_value=[])
-        
+
         await hybrid_store.optimize()
-        
+
         # Should have analyzed access patterns
         assert hybrid_store.faiss_tier.get_access_counts.called
 
@@ -540,9 +539,9 @@ class TestHybridVectorStore:
         hybrid_store.chroma_tier.get_stats = AsyncMock(
             return_value={"total_documents": 100}
         )
-        
+
         stats = await hybrid_store.get_stats()
-        
+
         assert "tiers" in stats
         assert "redis" in stats["tiers"]
         assert "faiss" in stats["tiers"]

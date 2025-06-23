@@ -22,15 +22,15 @@ from src.core.tokenizer import BaseTokenizer
 
 class MockTokenizer(BaseTokenizer):
     """Mock tokenizer for testing"""
-    
+
     def encode(self, text: str) -> list[int]:
         # Simple word-based encoding for testing
         return list(range(len(text.split())))
-    
+
     def decode(self, tokens: list[int]) -> str:
         # Mock decode - just return a dummy string
         return " ".join(["word"] * len(tokens))
-    
+
     def count_tokens(self, text: str) -> int:
         # Simple word-based estimation for testing
         return len(text.split())
@@ -38,7 +38,7 @@ class MockTokenizer(BaseTokenizer):
     def truncate_to_tokens(self, text: str, max_tokens: int) -> str:
         words = text.split()
         return ' '.join(words[:max_tokens])
-    
+
     def split_to_chunks(self, text: str, chunk_size: int, overlap: int = 0) -> list[str]:
         # Simple word-based chunking for testing
         words = text.split()
@@ -560,7 +560,7 @@ The validation ensures secure authentication."""
         """Test creating topic chunks"""
         context = ChunkingContext(standard=sample_standard)
 
-        # The sections in sample_standard have less than 100 tokens, 
+        # The sections in sample_standard have less than 100 tokens,
         # so they might be skipped. Let's create a larger section
         large_section = StandardSection(
             id="large_section",

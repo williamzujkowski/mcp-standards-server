@@ -5,7 +5,6 @@ Comprehensive tests for oscal_handler module
 """
 
 import uuid
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest

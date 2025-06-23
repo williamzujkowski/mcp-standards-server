@@ -4,7 +4,6 @@ Comprehensive tests for semantic_search module
 @evidence: Semantic search engine testing
 """
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -230,10 +229,10 @@ class TestVectorIndex:
     def test_search_faiss(self):
         """Test searching with FAISS index"""
         index = VectorIndex()
-        
+
         if not index.use_faiss:
             pytest.skip("FAISS not available")
-            
+
         # Build a simple index
         embeddings = np.array([
             [1, 0, 0],
@@ -241,17 +240,17 @@ class TestVectorIndex:
             [0, 0, 1],
             [0.7, 0.7, 0]
         ], dtype=np.float32)
-        
+
         # Normalize
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        
+
         metadata = [{"id": i} for i in range(4)]
         index.build(embeddings, metadata)
-        
+
         # Search
         query = np.array([1, 0, 0], dtype=np.float32)
         results = index.search(query, k=3)
-        
+
         assert len(results) == 3
         # First result should be index 0 (exact match)
         assert results[0][0] == 0
@@ -296,10 +295,10 @@ class TestVectorIndex:
     def test_save_load_faiss(self, tmp_path):
         """Test saving and loading FAISS index"""
         index = VectorIndex()
-        
+
         if not index.use_faiss:
             pytest.skip("FAISS not available")
-            
+
         # Build index
         embeddings = np.random.rand(3, 128)
         metadata = [{"id": i} for i in range(3)]

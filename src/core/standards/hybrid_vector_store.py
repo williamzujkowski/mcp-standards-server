@@ -341,7 +341,7 @@ class RedisQueryCache(VectorStoreTier):
         """Redis doesn't store individual documents, only caches query results."""
         # Redis is only used for caching query results, not storing documents
         return True
-    
+
     async def cache_results(self, query_embedding: np.ndarray, results: list[SearchResult],
                            k: int, filters: dict[str, Any] | None = None) -> bool:
         """Cache query results in Redis."""

@@ -4,14 +4,15 @@ Secure API Endpoint Template
 @evidence: Comprehensive security controls for API endpoints
 @oscal-component: api-endpoint
 """
-from functools import wraps
-from typing import Any, Callable, Dict, Optional
 import hashlib
-import hmac
-import time
-import jwt
-from flask import Flask, request, jsonify
 import logging
+import time
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
+import jwt
+from flask import Flask, jsonify, request
 
 # Configure secure logging
 # @nist-controls: AU-2, AU-3, AU-9
@@ -26,7 +27,7 @@ app = Flask(__name__)
 
 # @nist-controls: IA-2, AC-3
 # @evidence: JWT-based authentication with role checking
-def authenticate_request(required_roles: Optional[list] = None) -> Callable:
+def authenticate_request(required_roles: list | None = None) -> Callable:
     """
     Authentication decorator with role-based access control
     """
@@ -41,17 +42,17 @@ def authenticate_request(required_roles: Optional[list] = None) -> Callable:
                     extra={"context": {"ip": request.remote_addr}}
                 )
                 return jsonify({"error": "Unauthorized"}), 401
-            
+
             token = auth_header.split(' ')[1]
-            
+
             try:
                 # Verify token
                 payload = jwt.decode(
-                    token, 
-                    app.config['JWT_SECRET'], 
+                    token,
+                    app.config['JWT_SECRET'],
                     algorithms=['HS256']
                 )
-                
+
                 # Check roles if required
                 if required_roles:
                     user_roles = payload.get('roles', [])
@@ -65,7 +66,7 @@ def authenticate_request(required_roles: Optional[list] = None) -> Callable:
                             }}
                         )
                         return jsonify({"error": "Forbidden"}), 403
-                
+
                 # Audit successful authentication
                 logger.info(
                     "Authentication successful",
@@ -75,22 +76,22 @@ def authenticate_request(required_roles: Optional[list] = None) -> Callable:
                         "path": request.path
                     }}
                 )
-                
+
                 # Add user context to request
                 request.user = payload
-                
+
             except jwt.ExpiredSignatureError:
                 return jsonify({"error": "Token expired"}), 401
             except jwt.InvalidTokenError:
                 return jsonify({"error": "Invalid token"}), 401
-            
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
 # @nist-controls: SI-10, SI-15
 # @evidence: Input validation with schema enforcement
-def validate_input(schema: Dict[str, Any]) -> Callable:
+def validate_input(schema: dict[str, Any]) -> Callable:
     """
     Input validation decorator
     """
@@ -98,14 +99,14 @@ def validate_input(schema: Dict[str, Any]) -> Callable:
         @wraps(f)
         def decorated_function(*args: Any, **kwargs: Any) -> Any:
             data = request.get_json()
-            
+
             # Validate required fields
             for field, rules in schema.items():
                 if rules.get('required', False) and field not in data:
                     return jsonify({
                         "error": f"Missing required field: {field}"
                     }), 400
-                
+
                 # Type validation
                 if field in data and 'type' in rules:
                     expected_type = rules['type']
@@ -113,7 +114,7 @@ def validate_input(schema: Dict[str, Any]) -> Callable:
                         return jsonify({
                             "error": f"Invalid type for {field}"
                         }), 400
-                
+
                 # Length validation for strings
                 if field in data and isinstance(data[field], str):
                     if 'min_length' in rules and len(data[field]) < rules['min_length']:
@@ -124,7 +125,7 @@ def validate_input(schema: Dict[str, Any]) -> Callable:
                         return jsonify({
                             "error": f"{field} too long"
                         }), 400
-            
+
             request.validated_data = data
             return f(*args, **kwargs)
         return decorated_function
@@ -136,8 +137,8 @@ def rate_limit(max_requests: int = 100, window: int = 3600) -> Callable:
     """
     Simple rate limiting decorator
     """
-    request_counts: Dict[str, list] = {}
-    
+    request_counts: dict[str, list] = {}
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args: Any, **kwargs: Any) -> Any:
@@ -145,19 +146,19 @@ def rate_limit(max_requests: int = 100, window: int = 3600) -> Callable:
             client_id = request.remote_addr
             if hasattr(request, 'user'):
                 client_id = request.user.get('sub', client_id)
-            
+
             current_time = time.time()
-            
+
             # Initialize or clean old requests
             if client_id not in request_counts:
                 request_counts[client_id] = []
-            
+
             # Remove old requests outside window
             request_counts[client_id] = [
                 req_time for req_time in request_counts[client_id]
                 if current_time - req_time < window
             ]
-            
+
             # Check rate limit
             if len(request_counts[client_id]) >= max_requests:
                 logger.warning(
@@ -165,10 +166,10 @@ def rate_limit(max_requests: int = 100, window: int = 3600) -> Callable:
                     extra={"context": {"client": client_id}}
                 )
                 return jsonify({"error": "Rate limit exceeded"}), 429
-            
+
             # Record request
             request_counts[client_id].append(current_time)
-            
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -189,14 +190,14 @@ def secure_endpoint():
     """
     data = request.validated_data
     user = request.user
-    
+
     # Process request (example)
     result = {
         'status': 'success',
         'user': user['sub'],
         'processed_data': process_secure_data(data)
     }
-    
+
     # Audit data access
     logger.info(
         "Secure data accessed",
@@ -206,10 +207,10 @@ def secure_endpoint():
             "ip": request.remote_addr
         }}
     )
-    
+
     return jsonify(result), 200
 
-def process_secure_data(data: Dict[str, Any]) -> Dict[str, Any]:
+def process_secure_data(data: dict[str, Any]) -> dict[str, Any]:
     """
     Process data with security controls
     @nist-controls: SC-13, SC-28
@@ -235,7 +236,7 @@ def handle_error(error):
             "method": request.method
         }}
     )
-    
+
     # Return generic error to client
     return jsonify({
         "error": "Internal server error",

@@ -7,7 +7,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import redis
 import yaml
@@ -164,7 +164,7 @@ class StandardsEngine:
         self.hybrid_store = None
         self.embedding_model = None
         self.storage_strategy = None
-        self.nl_mapper: Union[NaturalLanguageMapper, EnhancedNaturalLanguageMapper]
+        self.nl_mapper: NaturalLanguageMapper | EnhancedNaturalLanguageMapper
 
         if enable_hybrid_search:
             try:
@@ -976,7 +976,7 @@ class StandardsEngine:
 
     async def clear_cache(self, tier: str | None = None) -> dict[str, Any]:
         """Clear cache for specified tier or all tiers"""
-        results: Dict[str, Any] = {"cleared": []}
+        results: dict[str, Any] = {"cleared": []}
 
         if not self.enable_hybrid_search or not self.hybrid_store:
             return {"status": "not_enabled", "message": "Hybrid search not enabled"}
