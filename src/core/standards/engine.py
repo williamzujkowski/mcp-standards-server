@@ -985,7 +985,7 @@ class StandardsEngine:
             # Clear Redis cache
             if self.redis_client:
                 try:
-                    keys = self.redis_client.keys("mcp:*")
+                    keys = list(self.redis_client.keys("mcp:*"))
                     if keys:
                         self.redis_client.delete(*keys)
                     results["cleared"].append("redis")

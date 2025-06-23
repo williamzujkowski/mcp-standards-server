@@ -334,9 +334,9 @@ class TieredStorageStrategy:
         if access_counts:
             import numpy as np
             stats.update({
-                "access_count_mean": np.mean(access_counts),
-                "access_count_median": np.median(access_counts),
-                "access_count_p95": np.percentile(access_counts, 95),
+                "access_count_mean": float(np.mean(access_counts)),
+                "access_count_median": float(np.median(access_counts)),
+                "access_count_p95": float(np.percentile(access_counts, 95)),
                 "documents_above_threshold": sum(
                     1 for c in access_counts if c >= self.access_threshold
                 )

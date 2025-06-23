@@ -900,7 +900,7 @@ async def handle_semantic_search(arguments: dict[str, Any]) -> str:
 
         # Add performance info
         if results and results[0].get('source_tier'):
-            tier_counts = {}
+            tier_counts: dict[str, int] = {}
             for r in results:
                 tier = r.get('source_tier', 'unknown')
                 tier_counts[tier] = tier_counts.get(tier, 0) + 1
