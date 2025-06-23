@@ -4,462 +4,570 @@ Unit tests for token optimizer module
 @evidence: Token optimization testing
 """
 
+import asyncio
+from unittest.mock import MagicMock, patch
+
 import pytest
 
-from src.core.standards.models import StandardQuery, TokenOptimizationStrategy
+from src.core.standards.models import TokenOptimizationStrategy
 from src.core.standards.token_optimizer import (
-    TokenOptimizer,
+    ContentSection,
+    EssentialOnlyStrategy,
+    HierarchicalStrategy,
+    OptimizationLevel,
+    OptimizationMetrics,
+    SummarizationStrategy,
+    TokenOptimizationEngine,
 )
 
 
-class TestTokenOptimizer:
-    """Test TokenOptimizer class"""
+class TestOptimizationMetrics:
+    """Test OptimizationMetrics dataclass"""
+
+    def test_metrics_creation(self):
+        """Test creating optimization metrics"""
+        metrics = OptimizationMetrics(
+            original_tokens=1000,
+            optimized_tokens=100,
+            reduction_percentage=90.0,
+            information_retained=0.85,
+            processing_time=0.5
+        )
+
+        assert metrics.original_tokens == 1000
+        assert metrics.optimized_tokens == 100
+        assert metrics.reduction_percentage == 90.0
+        assert metrics.information_retained == 0.85
+        assert metrics.processing_time == 0.5
+
+
+class TestContentSection:
+    """Test ContentSection model"""
+
+    def test_content_section_creation(self):
+        """Test creating content section"""
+        section = ContentSection(
+            title="Test Section",
+            content="Test content",
+            importance=0.9,
+            keywords=["test", "section"],
+            concepts=["testing"],
+            requirements=["Must test"],
+            examples=["Example 1"],
+            token_count=10
+        )
+
+        assert section.title == "Test Section"
+        assert section.content == "Test content"
+        assert section.importance == 0.9
+        assert len(section.keywords) == 2
+        assert len(section.concepts) == 1
+        assert len(section.requirements) == 1
+        assert len(section.examples) == 1
+        assert section.token_count == 10
+
+
+class TestTokenOptimizationEngine:
+    """Test TokenOptimizationEngine class"""
 
     @pytest.fixture
-    def optimizer(self):
-        """Create token optimizer instance"""
-        return TokenOptimizer()
+    def engine(self):
+        """Create token optimization engine instance"""
+        return TokenOptimizationEngine()
 
-    def test_initialization(self, optimizer):
-        """Test optimizer initialization"""
-        assert optimizer.tokenizer is not None
-        assert hasattr(optimizer, 'optimize_tokens')
+    def test_initialization(self, engine):
+        """Test engine initialization"""
+        assert engine.tokenizer is not None
+        assert "summarize" in engine.strategies
+        assert "essential" in engine.strategies
+        assert "hierarchical" in engine.strategies
+        assert isinstance(engine._metrics_history, list)
 
-    def test_optimize_text_basic(self, optimizer):
-        """Test basic text optimization"""
-        text = "This is a test sentence with some words that could be optimized."
-
-        optimized = optimizer.optimize_text(text, max_tokens=10)
-
-        assert isinstance(optimized, str)
-        assert len(optimized) <= len(text)
-        # Should be shorter than original
-        assert optimizer.tokenizer.count_tokens(optimized) <= 10
-
-    def test_optimize_text_already_short(self, optimizer):
-        """Test optimization of already short text"""
-        text = "Short text"
-
-        optimized = optimizer.optimize_text(text, max_tokens=100)
-
-        # Should return original if already within limit
-        assert optimized == text
-
-    def test_optimize_text_empty(self, optimizer):
-        """Test optimization of empty text"""
-        optimized = optimizer.optimize_text("", max_tokens=10)
-        assert optimized == ""
-
-    def test_optimize_query_request(self, optimizer):
-        """Test optimizing a query request"""
-        request = StandardQuery(
-            query="Find all security controls related to authentication and access control",
-            filters={"category": ["security"]},
-            max_tokens=50
+    @pytest.mark.asyncio
+    async def test_optimize_with_summarize_strategy(self, engine):
+        """Test optimization with summarize strategy"""
+        content = " ".join(["This is a test sentence."] * 50)
+        
+        optimized, metrics = await engine.optimize(
+            content,
+            strategy="summarize",
+            max_tokens=50,
+            level=OptimizationLevel.MODERATE
         )
-
-        optimized = optimizer.optimize_query(request)
-
-        assert isinstance(optimized, StandardQuery)
-        # Query should be optimized
-        assert len(optimized.query) <= len(request.query)
-
-    def test_optimize_with_strategy_summarize(self, optimizer):
-        """Test optimization with SUMMARIZE strategy"""
-        long_text = " ".join(["This is a sentence."] * 20)
-
-        optimized = optimizer.optimize_with_strategy(
-            long_text,
-            TokenOptimizationStrategy.SUMMARIZE,
-            max_tokens=20
-        )
-
+        
         assert isinstance(optimized, str)
-        assert len(optimized) < len(long_text)
-        assert optimizer.tokenizer.count_tokens(optimized) <= 20
+        assert isinstance(metrics, OptimizationMetrics)
+        assert metrics.optimized_tokens <= 50
+        assert metrics.reduction_percentage > 0
+        assert len(optimized) < len(content)
 
-    def test_optimize_with_strategy_essential_only(self, optimizer):
-        """Test optimization with ESSENTIAL_ONLY strategy"""
-        text = """
-        The system MUST implement strong authentication.
+    @pytest.mark.asyncio
+    async def test_optimize_with_essential_strategy(self, engine):
+        """Test optimization with essential strategy"""
+        content = """
+        The system MUST implement authentication.
         The system SHALL use encryption.
         Consider using additional security measures.
-        The system MUST log all access attempts.
+        The system REQUIRED to log all access.
+        @nist-controls: AC-3, AU-2
         """
-
-        optimized = optimizer.optimize_with_strategy(
-            text,
-            TokenOptimizationStrategy.ESSENTIAL_ONLY,
-            max_tokens=50
+        
+        optimized, metrics = await engine.optimize(
+            content,
+            strategy="essential",
+            max_tokens=100,
+            level=OptimizationLevel.AGGRESSIVE
         )
-
+        
         assert isinstance(optimized, str)
-        # Should contain MUST/SHALL requirements
-        assert "MUST" in optimized or "SHALL" in optimized
-        # Should not contain optional text
-        assert "Consider" not in optimized
+        assert isinstance(metrics, OptimizationMetrics)
+        # Should contain essential requirements
+        assert "MUST" in optimized or "SHALL" in optimized or "Requirements" in optimized
+        assert metrics.reduction_percentage > 0
 
-    def test_optimize_with_strategy_hierarchical(self, optimizer):
-        """Test optimization with HIERARCHICAL strategy"""
-        text = """
+    @pytest.mark.asyncio
+    async def test_optimize_with_hierarchical_strategy(self, engine):
+        """Test optimization with hierarchical strategy"""
+        content = """
         # Main Topic
-
         ## Subtopic 1
         Details about subtopic 1
-
         ## Subtopic 2
         Details about subtopic 2
-
         ### Sub-subtopic
         More detailed information
         """
-
-        optimized = optimizer.optimize_with_strategy(
-            text,
-            TokenOptimizationStrategy.HIERARCHICAL,
-            max_tokens=30
+        
+        optimized, metrics = await engine.optimize(
+            content,
+            strategy="hierarchical",
+            max_tokens=50,
+            level=OptimizationLevel.MINIMAL
         )
-
+        
         assert isinstance(optimized, str)
+        assert isinstance(metrics, OptimizationMetrics)
         # Should preserve hierarchy
         assert "#" in optimized
-        assert len(optimized) < len(text)
+        assert len(optimized) < len(content)
 
-    def test_optimize_with_strategy_progressive(self, optimizer):
-        """Test optimization with PROGRESSIVE strategy"""
-        text = "First sentence. Second sentence. Third sentence. Fourth sentence."
+    @pytest.mark.asyncio
+    async def test_optimize_with_invalid_strategy(self, engine):
+        """Test optimization with invalid strategy"""
+        with pytest.raises(ValueError) as exc_info:
+            await engine.optimize(
+                "test content",
+                strategy="invalid_strategy",
+                max_tokens=50
+            )
+        
+        assert "Unknown strategy" in str(exc_info.value)
 
-        optimized = optimizer.optimize_with_strategy(
-            text,
-            TokenOptimizationStrategy.PROGRESSIVE,
-            max_tokens=10
+    def test_estimate_tokens(self, engine):
+        """Test token estimation"""
+        content = "This is a test sentence with several words."
+        
+        token_count = engine.estimate_tokens(content)
+        
+        assert isinstance(token_count, int)
+        assert token_count > 0
+        # Rough estimate: should be less than word count * 2
+        assert token_count < len(content.split()) * 2
+
+    def test_get_metrics_summary_empty(self, engine):
+        """Test getting metrics summary with no history"""
+        summary = engine.get_metrics_summary()
+        
+        assert isinstance(summary, dict)
+        assert len(summary) == 0
+
+    @pytest.mark.asyncio
+    async def test_get_metrics_summary_with_history(self, engine):
+        """Test getting metrics summary with history"""
+        # Run some optimizations to build history
+        await engine.optimize("Test content 1", strategy="summarize", max_tokens=10)
+        await engine.optimize("Test content 2", strategy="essential", max_tokens=10)
+        
+        summary = engine.get_metrics_summary()
+        
+        assert isinstance(summary, dict)
+        assert "average_reduction" in summary
+        assert "average_retention" in summary
+        assert "average_processing_time" in summary
+        assert summary["average_reduction"] > 0
+
+    def test_information_retention_estimation(self, engine):
+        """Test information retention estimation"""
+        original = "The system MUST implement authentication and authorization."
+        optimized = "System MUST implement authentication."
+        
+        # Access private method for testing
+        retention = engine._estimate_information_retention(original, optimized)
+        
+        assert isinstance(retention, float)
+        assert 0 <= retention <= 1
+        # Should retain important keywords
+        assert retention > 0.5
+
+    @pytest.mark.asyncio
+    async def test_optimization_levels(self, engine):
+        """Test different optimization levels"""
+        content = " ".join(["This is a test sentence."] * 20)
+        
+        # Minimal optimization
+        minimal_opt, minimal_metrics = await engine.optimize(
+            content,
+            strategy="summarize",
+            max_tokens=100,
+            level=OptimizationLevel.MINIMAL
         )
+        
+        # Aggressive optimization
+        aggressive_opt, aggressive_metrics = await engine.optimize(
+            content,
+            strategy="summarize",
+            max_tokens=100,
+            level=OptimizationLevel.AGGRESSIVE
+        )
+        
+        # Aggressive should reduce more
+        assert aggressive_metrics.reduction_percentage >= minimal_metrics.reduction_percentage
+        assert len(aggressive_opt) <= len(minimal_opt)
 
+    @pytest.mark.asyncio
+    async def test_context_passing(self, engine):
+        """Test passing context to optimization"""
+        content = "Test content for context passing"
+        context = {"preserve_keywords": ["test", "context"]}
+        
+        optimized, metrics = await engine.optimize(
+            content,
+            strategy="summarize",
+            max_tokens=10,
+            context=context
+        )
+        
         assert isinstance(optimized, str)
-        assert len(optimized) < len(text)
-        # Should include at least first sentence
-        assert "First" in optimized
+        assert isinstance(metrics, OptimizationMetrics)
 
-    def test_optimize_standards_content(self, optimizer):
-        """Test optimizing standards content"""
-        content = {
-            "title": "Security Standard",
-            "description": "A comprehensive security standard with many requirements",
-            "sections": [
-                {
-                    "title": "Authentication",
-                    "content": "The system MUST implement multi-factor authentication"
-                },
-                {
-                    "title": "Authorization",
-                    "content": "The system SHALL implement role-based access control"
-                }
-            ]
-        }
 
-        optimized = optimizer.optimize_standards_content(content, max_tokens=50)
+class TestSummarizationStrategy:
+    """Test SummarizationStrategy class"""
 
-        assert isinstance(optimized, dict)
-        assert "title" in optimized
-        assert "sections" in optimized
-        # Content should be reduced
-        total_text = str(optimized)
-        assert len(total_text) < len(str(content))
+    @pytest.fixture
+    def strategy(self):
+        """Create summarization strategy instance"""
+        return SummarizationStrategy()
 
-    def test_calculate_token_reduction(self, optimizer):
-        """Test calculating token reduction"""
-        original = "This is a long text with many words that will be optimized"
-        optimized = "This is optimized text"
+    @pytest.mark.asyncio
+    async def test_optimize_short_content(self, strategy):
+        """Test optimizing short content"""
+        content = "Short content."
+        
+        result = await strategy.optimize(content, max_tokens=100, context={})
+        
+        # Should return original if already short
+        assert result == content
 
-        reduction = optimizer.calculate_token_reduction(original, optimized)
+    @pytest.mark.asyncio
+    async def test_optimize_long_content(self, strategy):
+        """Test optimizing long content"""
+        content = " ".join([f"Sentence {i}." for i in range(50)])
+        
+        result = await strategy.optimize(content, max_tokens=50, context={})
+        
+        assert isinstance(result, str)
+        assert len(result) < len(content)
+        # Should create a summary
+        assert "Summary" in result or len(result.split('.')) < 50
 
-        assert isinstance(reduction, dict)
-        assert "original_tokens" in reduction
-        assert "optimized_tokens" in reduction
-        assert "reduction_percentage" in reduction
-        assert reduction["reduction_percentage"] > 0
+    def test_estimate_tokens(self, strategy):
+        """Test token estimation in strategy"""
+        content = "Test content for token estimation"
+        
+        tokens = strategy.estimate_tokens(content)
+        
+        assert isinstance(tokens, int)
+        assert tokens > 0
 
-    def test_extract_key_phrases(self, optimizer):
-        """Test extracting key phrases"""
-        text = """
+    def test_extract_sentences(self, strategy):
+        """Test sentence extraction"""
+        content = "First sentence. Second sentence? Third sentence! Fourth."
+        
+        sentences = strategy._extract_sentences(content)
+        
+        assert isinstance(sentences, list)
+        assert len(sentences) == 4
+        assert sentences[0] == "First sentence."
+        assert sentences[1] == "Second sentence?"
+
+
+class TestEssentialOnlyStrategy:
+    """Test EssentialOnlyStrategy class"""
+
+    @pytest.fixture
+    def strategy(self):
+        """Create essential only strategy instance"""
+        return EssentialOnlyStrategy()
+
+    @pytest.mark.asyncio
+    async def test_extract_requirements(self, strategy):
+        """Test extracting requirements"""
+        content = """
         The system MUST implement authentication.
         Users SHALL be verified.
-        Access control is REQUIRED.
+        The system REQUIRED to log access.
+        Consider using extra features.
         """
+        
+        result = await strategy.optimize(content, max_tokens=100, context={})
+        
+        assert isinstance(result, str)
+        # Should contain requirements section
+        assert "Requirements" in result or "MUST" in result or "SHALL" in result
+        # Should not contain optional content
+        assert "Consider" not in result
 
-        phrases = optimizer.extract_key_phrases(text)
-
-        assert isinstance(phrases, list)
-        assert len(phrases) > 0
-        # Should extract requirement keywords
-        assert any("MUST" in phrase for phrase in phrases)
-
-    def test_compress_whitespace(self, optimizer):
-        """Test whitespace compression"""
-        text = "This    has     extra    whitespace\n\n\nand newlines"
-
-        compressed = optimizer.compress_whitespace(text)
-
-        assert "    " not in compressed
-        assert "\n\n\n" not in compressed
-        assert len(compressed) < len(text)
-
-    def test_remove_redundant_words(self, optimizer):
-        """Test removing redundant words"""
-        text = "The the system shall shall implement the the security"
-
-        cleaned = optimizer.remove_redundant_words(text)
-
-        # Should remove duplicate words
-        assert "the the" not in cleaned.lower()
-        assert "shall shall" not in cleaned
-
-    def test_truncate_to_sentences(self, optimizer):
-        """Test truncating to complete sentences"""
-        text = "First sentence. Second sentence. Third sentence that is incomplete"
-
-        truncated = optimizer.truncate_to_sentences(text, max_tokens=5)
-
-        assert isinstance(truncated, str)
-        assert truncated.endswith(".")
-        assert "incomplete" not in truncated
-
-    def test_optimize_json_content(self, optimizer):
-        """Test optimizing JSON content"""
-        json_content = {
-            "key1": "value1",
-            "key2": "A very long value that contains lots of unnecessary information",
-            "nested": {
-                "subkey": "Another long value with redundant content"
-            }
-        }
-
-        optimized = optimizer.optimize_json_content(json_content, max_tokens=20)
-
-        assert isinstance(optimized, dict)
-        # Structure should be preserved
-        assert "key1" in optimized
-        # Long values should be shortened
-        if "key2" in optimized:
-            assert len(str(optimized["key2"])) < len(json_content["key2"])
-
-    def test_optimize_list_content(self, optimizer):
-        """Test optimizing list content"""
-        items = [
-            "First item with lots of detail",
-            "Second item with even more unnecessary detail",
-            "Third item",
-            "Fourth item with redundant information",
-            "Fifth item"
-        ]
-
-        optimized = optimizer.optimize_list_content(items, max_tokens=20)
-
-        assert isinstance(optimized, list)
-        assert len(optimized) <= len(items)
-        # Should preserve most important items
-        assert len(optimized) > 0
-
-    def test_create_summary(self, optimizer):
-        """Test creating a summary"""
-        text = """
-        This is a comprehensive document about security standards.
-        It contains multiple sections covering various aspects.
-        The main topics include authentication, authorization, and auditing.
-        Each section provides detailed requirements and guidelines.
-        Implementation examples are provided throughout.
+    @pytest.mark.asyncio
+    async def test_extract_nist_controls(self, strategy):
+        """Test extracting NIST controls"""
+        content = """
+        Some general text here.
+        @nist-controls: AC-3, AU-2, IA-2(1)
+        More general text.
+        @nist-control: SC-8
         """
+        
+        result = await strategy.optimize(content, max_tokens=100, context={})
+        
+        assert isinstance(result, str)
+        # Should contain NIST controls
+        assert "NIST Controls" in result or "AC-3" in result
 
-        summary = optimizer.create_summary(text, max_tokens=20)
-
-        assert isinstance(summary, str)
-        assert len(summary) < len(text)
-        # Should mention key topics
-        assert any(word in summary.lower() for word in ["security", "authentication", "authorization"])
-
-    def test_prioritize_content(self, optimizer):
-        """Test content prioritization"""
-        sections = [
-            {"priority": "high", "content": "Critical security requirement"},
-            {"priority": "low", "content": "Optional recommendation"},
-            {"priority": "medium", "content": "Standard requirement"},
-            {"priority": "high", "content": "Another critical requirement"}
-        ]
-
-        prioritized = optimizer.prioritize_content(sections, max_tokens=30)
-
-        assert isinstance(prioritized, list)
-        # High priority items should be included
-        high_priority_found = any(
-            "Critical" in item.get("content", "")
-            for item in prioritized
-        )
-        assert high_priority_found
-        # Low priority might be excluded
-        assert len(prioritized) <= len(sections)
-
-    def test_optimize_with_context_preservation(self, optimizer):
-        """Test optimization while preserving context"""
-        text = """
-        @context: security-standard-v2.0
-        @nist-controls: AC-3, AU-2
-
-        The system MUST implement access control.
-        Additional details about implementation...
+    @pytest.mark.asyncio
+    async def test_extract_configurations(self, strategy):
+        """Test extracting critical configurations"""
+        content = """
+        General setup instructions.
+        Default value: 30 seconds
+        Maximum setting: 100 connections
+        Minimum configuration: 2 replicas
         """
+        
+        result = await strategy.optimize(content, max_tokens=100, context={})
+        
+        assert isinstance(result, str)
+        # Should contain configurations
+        if "Configurations" in result:
+            assert "value" in result or "setting" in result
 
-        optimized = optimizer.optimize_with_context(text, max_tokens=30)
+    def test_extract_pattern_matches(self, strategy):
+        """Test pattern matching extraction"""
+        content = "The system MUST do X. The system SHALL do Y. Consider doing Z."
+        pattern = r'(?:MUST|SHALL)\s+[^.]+\.'
+        
+        matches = strategy._extract_pattern_matches(content, pattern)
+        
+        assert isinstance(matches, list)
+        assert len(matches) == 2
+        assert any("MUST" in match for match in matches)
+        assert any("SHALL" in match for match in matches)
 
-        assert isinstance(optimized, str)
-        # Should preserve metadata
-        assert "@context" in optimized
-        assert "@nist-controls" in optimized
-        # Should include key requirement
-        assert "MUST" in optimized
 
-    def test_batch_optimization(self, optimizer):
-        """Test batch optimization of multiple texts"""
-        texts = [
-            "First document with lots of content",
-            "Second document with even more content",
-            "Third short doc"
-        ]
+class TestHierarchicalStrategy:
+    """Test HierarchicalStrategy class"""
 
-        optimized_batch = optimizer.batch_optimize(texts, max_tokens=10)
+    @pytest.fixture
+    def strategy(self):
+        """Create hierarchical strategy instance"""
+        return HierarchicalStrategy()
 
-        assert isinstance(optimized_batch, list)
-        assert len(optimized_batch) == len(texts)
-        # Each should be optimized
-        for original, optimized in zip(texts, optimized_batch, strict=False):
-            assert len(optimized) <= len(original)
-
-    def test_adaptive_optimization(self, optimizer):
-        """Test adaptive optimization based on content type"""
-        # Code content
-        code_text = """
-        def authenticate(user, password):
-            # Check user credentials
-            if user and password:
-                return True
-            return False
-        """
-
-        optimized_code = optimizer.adaptive_optimize(code_text, "code", max_tokens=20)
-        assert isinstance(optimized_code, str)
-
-        # Prose content
-        prose_text = "This is a long narrative description of security requirements."
-        optimized_prose = optimizer.adaptive_optimize(prose_text, "prose", max_tokens=10)
-        assert isinstance(optimized_prose, str)
-        assert len(optimized_prose) < len(prose_text)
-
-    def test_optimize_with_importance_scores(self, optimizer):
-        """Test optimization using importance scores"""
-        sentences = [
-            ("The system MUST authenticate users.", 1.0),
-            ("Consider using biometric authentication.", 0.3),
-            ("The system SHALL log access attempts.", 0.9),
-            ("Additional options are available.", 0.2)
-        ]
-
-        optimized = optimizer.optimize_with_scores(sentences, max_tokens=20)
-
-        assert isinstance(optimized, str)
-        # High importance sentences should be included
-        assert "MUST" in optimized
-        # Low importance might be excluded
-        assert "Additional options" not in optimized
-
-    def test_progressive_detail_levels(self, optimizer):
-        """Test progressive detail level optimization"""
-        content = {
-            "overview": "Security standard overview",
-            "details": {
-                "level1": "Basic requirements",
-                "level2": "Detailed requirements with examples",
-                "level3": "Complete implementation guide with code samples"
-            }
-        }
-
-        # Minimal detail
-        minimal = optimizer.get_progressive_detail(content, "minimal", max_tokens=10)
-        assert isinstance(minimal, str)
-        assert len(minimal) < 50
-
-        # Medium detail
-        medium = optimizer.get_progressive_detail(content, "medium", max_tokens=30)
-        assert isinstance(medium, str)
-        assert len(medium) > len(minimal)
-
-        # Full detail
-        full = optimizer.get_progressive_detail(content, "full", max_tokens=100)
-        assert isinstance(full, str)
-        assert len(full) > len(medium)
-
-    def test_optimize_preserving_structure(self, optimizer):
-        """Test optimization while preserving document structure"""
-        structured_content = """
+    @pytest.mark.asyncio
+    async def test_preserve_hierarchy(self, strategy):
+        """Test preserving document hierarchy"""
+        content = """
         # Title
-
         ## Section 1
         Content for section 1
-
         ## Section 2
         Content for section 2
-
         ### Subsection 2.1
         Detailed content
         """
-
-        optimized = optimizer.optimize_preserving_structure(structured_content, max_tokens=30)
-
-        assert isinstance(optimized, str)
+        
+        result = await strategy.optimize(content, max_tokens=50, context={})
+        
+        assert isinstance(result, str)
         # Should preserve headers
-        assert "# Title" in optimized
-        assert "##" in optimized
-        # But content should be reduced
-        assert len(optimized) < len(structured_content)
+        assert "#" in result
+        # Should have some structure
+        assert result.count("#") >= 2
 
-    def test_intelligent_truncation(self, optimizer):
-        """Test intelligent truncation"""
-        text = """
-        The system MUST implement authentication. [CRITICAL]
-        Users should have unique identifiers. [RECOMMENDED]
-        The system MUST use encryption. [CRITICAL]
-        Consider implementing SSO. [OPTIONAL]
+    @pytest.mark.asyncio
+    async def test_optimize_sections(self, strategy):
+        """Test optimizing individual sections"""
+        content = """
+        # Main Title
+        
+        ## Very Long Section
+        """ + " ".join(["Long content."] * 50) + """
+        
+        ## Short Section
+        Brief content.
         """
+        
+        result = await strategy.optimize(content, max_tokens=100, context={})
+        
+        assert isinstance(result, str)
+        assert "Main Title" in result
+        assert "Long Section" in result or "..." in result
+        assert len(result) < len(content)
 
-        truncated = optimizer.intelligent_truncate(text, max_tokens=20)
+    def test_parse_sections(self, strategy):
+        """Test parsing sections from content"""
+        content = """# Title
+## Section 1
+Content 1
+## Section 2
+Content 2"""
+        
+        sections = strategy._parse_sections(content)
+        
+        assert isinstance(sections, list)
+        assert len(sections) >= 2
+        # Each section should have header and content
+        for section in sections:
+            assert "header" in section
+            assert "content" in section
+            assert "level" in section
 
-        assert isinstance(truncated, str)
-        # Should keep critical items
-        assert "[CRITICAL]" in truncated
-        # Might drop optional items
-        token_count = optimizer.tokenizer.count_tokens(truncated)
-        assert token_count <= 20
 
-    def test_optimize_with_fallback(self, optimizer):
-        """Test optimization with fallback strategies"""
-        text = "A" * 1000  # Very long repetitive text
+class TestOptimizationIntegration:
+    """Integration tests for token optimization"""
 
-        # Should try multiple strategies and not fail
-        optimized = optimizer.optimize_with_fallback(text, max_tokens=50)
+    @pytest.fixture
+    def engine(self):
+        """Create engine for integration tests"""
+        return TokenOptimizationEngine()
 
-        assert isinstance(optimized, str)
-        assert len(optimized) < len(text)
-        assert optimizer.tokenizer.count_tokens(optimized) <= 50
+    @pytest.mark.asyncio
+    async def test_progressive_optimization(self, engine):
+        """Test progressive optimization with increasing aggressiveness"""
+        content = " ".join([f"This is sentence number {i}." for i in range(100)])
+        
+        results = []
+        for level in [OptimizationLevel.MINIMAL, OptimizationLevel.MODERATE, OptimizationLevel.AGGRESSIVE]:
+            optimized, metrics = await engine.optimize(
+                content,
+                strategy="summarize",
+                max_tokens=200,
+                level=level
+            )
+            results.append((optimized, metrics))
+        
+        # Each level should be more aggressive
+        assert results[0][1].reduction_percentage <= results[1][1].reduction_percentage
+        assert results[1][1].reduction_percentage <= results[2][1].reduction_percentage
+        
+        # Content should get progressively shorter
+        assert len(results[0][0]) >= len(results[1][0])
+        assert len(results[1][0]) >= len(results[2][0])
 
-    def test_error_handling(self, optimizer):
+    @pytest.mark.asyncio
+    async def test_strategy_comparison(self, engine):
+        """Test different strategies on same content"""
+        content = """
+        # Security Standard
+        
+        The system MUST implement authentication.
+        The system SHALL use encryption.
+        
+        ## Details
+        Here are detailed implementation guidelines with examples.
+        Consider using OAuth 2.0 for authentication.
+        
+        @nist-controls: AC-3, AU-2, IA-2
+        """
+        
+        strategies = ["summarize", "essential", "hierarchical"]
+        results = {}
+        
+        for strategy in strategies:
+            optimized, metrics = await engine.optimize(
+                content,
+                strategy=strategy,
+                max_tokens=100
+            )
+            results[strategy] = (optimized, metrics)
+        
+        # Each strategy should produce different results
+        assert results["summarize"][0] != results["essential"][0]
+        assert results["essential"][0] != results["hierarchical"][0]
+        
+        # Essential should focus on requirements
+        assert "MUST" in results["essential"][0] or "Requirements" in results["essential"][0]
+        
+        # Hierarchical should preserve structure
+        assert "#" in results["hierarchical"][0]
+
+    @pytest.mark.asyncio
+    async def test_token_budget_enforcement(self, engine):
+        """Test that token budget is enforced"""
+        content = " ".join(["Word"] * 1000)
+        max_tokens = 50
+        
+        optimized, metrics = await engine.optimize(
+            content,
+            strategy="summarize",
+            max_tokens=max_tokens,
+            level=OptimizationLevel.AGGRESSIVE
+        )
+        
+        # Should not exceed token budget (with some tolerance for tokenizer differences)
+        assert metrics.optimized_tokens <= max_tokens * 1.1
+
+    @pytest.mark.asyncio
+    async def test_error_handling(self, engine):
         """Test error handling in optimization"""
-        # Invalid inputs
-        assert optimizer.optimize_text(None, 10) == ""
-        assert optimizer.optimize_text(123, 10) == "123"
+        # Empty content
+        optimized, metrics = await engine.optimize(
+            "",
+            strategy="summarize",
+            max_tokens=50
+        )
+        assert optimized == ""
+        assert metrics.reduction_percentage == 0
+        
+        # Very small token budget
+        content = "This is a test sentence that needs optimization."
+        optimized, metrics = await engine.optimize(
+            content,
+            strategy="summarize",
+            max_tokens=1
+        )
+        assert len(optimized) < len(content)
+        assert metrics.optimized_tokens <= 5  # Allow some flexibility
 
-        # Negative token limit
-        result = optimizer.optimize_text("test", -1)
-        assert result == "test"  # Should return original
-
-        # Empty strategies
-        result = optimizer.optimize_with_strategy("test", None, 10)
-        assert result == "test"  # Should return original
-
+    @pytest.mark.asyncio
+    async def test_metrics_tracking(self, engine):
+        """Test that metrics are properly tracked"""
+        # Clear history
+        engine._metrics_history.clear()
+        
+        # Run multiple optimizations
+        for i in range(3):
+            await engine.optimize(
+                f"Test content {i}" * 10,
+                strategy="summarize",
+                max_tokens=20
+            )
+        
+        # Check metrics history
+        assert len(engine._metrics_history) == 3
+        
+        # Get summary
+        summary = engine.get_metrics_summary()
+        assert summary["average_reduction"] > 0
+        assert summary["average_retention"] > 0
+        assert summary["average_processing_time"] > 0
+        assert summary["total_optimizations"] == 3
