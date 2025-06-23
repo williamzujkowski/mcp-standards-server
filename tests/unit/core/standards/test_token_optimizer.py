@@ -5,6 +5,7 @@ Unit tests for token optimizer module
 """
 
 import pytest
+
 from src.core.standards.token_optimizer import (
     ContentSection,
     EssentialOnlyStrategy,
