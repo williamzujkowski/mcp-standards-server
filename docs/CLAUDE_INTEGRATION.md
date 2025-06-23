@@ -1,5 +1,14 @@
 # Using MCP Standards Server with Claude CLI
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-06-23  
+**Status:** Active  
+**Standard Code:** CLI  
+
+**Summary:** Claude CLI setup guide with platform-specific instructions  
+**Tokens:** ~2600 (helps AI plan context usage)  
+**Priority:** medium  
+
 This guide provides detailed instructions for integrating the MCP Standards Server with Claude CLI to enable NIST compliance checking and secure code generation directly within your Claude conversations.
 
 ## Table of Contents

@@ -1,5 +1,14 @@
 # Contributing to MCP Standards Server
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-06-23  
+**Status:** Active  
+**Standard Code:** CTB  
+
+**Summary:** Guidelines for contributing to the project  
+**Tokens:** ~1500 (helps AI plan context usage)  
+**Priority:** medium  
+
 Thank you for your interest in contributing to MCP Standards Server! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
@@ -53,10 +62,11 @@ def authorize_request(user, resource):
 
 ### 3. Write Tests
 
-- Maintain test coverage above 80%
+- Maintain test coverage above 80% (currently at 77%)
 - Write unit tests for new functionality
 - Include integration tests for complex features
 - Test file naming: `test_<module_name>.py`
+- All tests should pass: currently 661 passing, 102 failing (mostly MCP integration tests)
 
 ### 4. Run Quality Checks
 
@@ -152,10 +162,10 @@ List any NIST controls implemented or affected
 ## Areas for Contribution
 
 ### High Priority
-- Import standards from williamzujkowski/standards repository
-- Implement remaining CLI commands (generate, validate)
-- Add MCP resource providers
-- Create MCP prompt templates
+- Fix remaining 102 failing tests (mostly MCP server integration)
+- Increase test coverage from 77% to 80% (3% more needed)
+- Optimize token reduction for 90% efficiency target
+- Improve performance of hybrid vector store queries
 
 ### Medium Priority
 - REST API implementation
@@ -170,10 +180,11 @@ List any NIST controls implemented or affected
 - Translate documentation
 
 ### Testing
-- Increase test coverage
-- Add performance tests
-- Create end-to-end tests
+- Fix failing MCP server integration tests
+- Add performance tests for hybrid vector store
+- Create end-to-end tests for complete workflows
 - Test on different platforms
+- Reach 80% test coverage target
 
 ## Architecture Decisions
 

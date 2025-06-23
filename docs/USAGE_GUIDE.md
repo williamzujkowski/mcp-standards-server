@@ -1,5 +1,14 @@
 # MCP Standards Server - Complete Usage Guide
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-06-23  
+**Status:** Active  
+**Standard Code:** USG  
+
+**Summary:** Comprehensive usage guide with all CLI commands and MCP tools  
+**Tokens:** ~4500 (helps AI plan context usage)  
+**Priority:** high  
+
 This guide provides comprehensive instructions for using the MCP Standards Server with Claude CLI and documents all available commands.
 
 ## 📋 Table of Contents
@@ -37,7 +46,7 @@ npm install -g @anthropic-ai/claude-cli
 
 3. **Install MCP Standards Server:**
 ```bash
-# Using pip (installs FAISS and ChromaDB automatically)
+# Using pip (automatically installs FAISS and ChromaDB as core dependencies)
 pip install mcp-standards-server
 
 # Or from source
@@ -703,7 +712,7 @@ redis-cli ping  # Must return: PONG
 # macOS: brew services start redis
 # Ubuntu: sudo systemctl start redis-server
 
-# Test vector stores
+# Test vector stores (auto-installed as core dependencies)
 python -c "import faiss; import chromadb; print('Vector stores OK')"
 
 # Clear corrupted caches

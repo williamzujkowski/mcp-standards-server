@@ -1,5 +1,14 @@
 # MCP Standards Server - Quick Reference Card
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-06-23  
+**Status:** Active  
+**Standard Code:** QRF  
+
+**Summary:** Command cheat sheet for quick lookup  
+**Tokens:** ~1400 (helps AI plan context usage)  
+**Priority:** high
+
 ## 🚀 Quick Setup with Claude CLI
 
 ```bash
@@ -184,11 +193,11 @@ mcp-standards version
 mcp-standards cache status
 # Should show Redis, FAISS, and ChromaDB status
 
-# Test Redis (required)
+# Test Redis (required - core dependency)
 redis-cli ping  # Must return: PONG
 
-# Test vector stores
-python -c "import faiss; import chromadb; print('OK')"
+# Test vector stores (auto-installed as core dependencies)
+python -c "import faiss; import chromadb; print('Vector stores OK')"
 
 # Debug MCP connection
 mcp-standards server --log-level DEBUG

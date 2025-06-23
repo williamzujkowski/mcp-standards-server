@@ -116,13 +116,45 @@
 
 ### Primary Documentation
 - **`README.md`** - Main project overview with architecture diagrams
-- **`docs/USAGE_GUIDE.md`** - Complete usage guide (767 lines)
-- **`docs/QUICK_REFERENCE.md`** - Command cheat sheet (230 lines)
-- **`docs/CLAUDE_INTEGRATION.md`** - Claude CLI setup guide (442 lines)
+- **`REPOSITORY_INDEX.md`** - This comprehensive file index
+- **`REPOSITORY_INDEX.json`** - LLM-optimized metadata for all files
 
-### LLM-Optimized
+### User Guides
+- **`docs/USAGE_GUIDE.md`** - Complete usage guide (767 lines) with all CLI commands
+- **`docs/QUICK_REFERENCE.md`** - Command cheat sheet (230 lines) for quick lookup
+- **`docs/CLAUDE_INTEGRATION.md`** - Claude CLI setup guide (442 lines) with platform-specific instructions
+- **`docs/guides/quickstart.md`** - Quick start guide for new users
+
+### Developer Documentation
 - **`CLAUDE.md`** - LLM logic router with decision trees and workflows
 - **`TODO_ANALYZERS.md`** - Status tracking and implementation guide
+- **`IMPLEMENTATION_SUMMARY.md`** - Technical implementation summary and architecture decisions
+- **`CONTRIBUTING.md`** - Guidelines for contributing to the project
+- **`docs/analyzers-implementation.md`** - Detailed analyzer implementation documentation
+- **`docs/enhanced-control-detection.md`** - Enhanced NIST control detection patterns
+
+### API Documentation
+- **`docs/api/mcp-tools.md`** - MCP tools API documentation and specifications
+- **`docs/nist/controls.md`** - NIST 800-53r5 controls reference and mapping
+
+### Project Documentation
+- **`CHANGELOG.md`** - Project changelog and version history
+- **`SECURITY.md`** - Security policy and vulnerability reporting
+- **`Project_plan.md`** - Original project planning and roadmap
+- **`docs/DOCUMENTATION_STATUS.md`** - Documentation status and completeness tracking
+
+### Specialized Documentation
+- **`docs/llm-optimization.md`** - LLM optimization strategies and token reduction techniques
+- **`docs/standards-versioning.md`** - Standards versioning and management documentation
+- **`docs/analyzers/iac-analyzer-specs.md`** - Infrastructure as Code analyzer specifications
+
+### Section Documentation
+- **`docs/README.md`** - Documentation directory index and navigation
+- **`tests/README.md`** - Testing framework and guidelines
+- **`examples/README.md`** - Examples directory overview and usage
+- **`examples/python-api/README.md`** - Python Flask API example with NIST compliance
+- **`examples/javascript-frontend/README.md`** - JavaScript frontend example with security patterns
+- **`examples/python-flask-api/README.md`** - Python Flask API example implementation
 
 ## 🔧 Configuration
 

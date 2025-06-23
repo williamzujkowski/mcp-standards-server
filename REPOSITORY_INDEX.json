@@ -221,56 +221,250 @@
       }
     },
     "documentation": {
-      "README.md": {
-        "type": "markdown",
-        "category": "primary-documentation",
-        "description": "Main project documentation with three-tier architecture overview",
-        "sections": ["features", "installation", "usage", "architecture", "mcp-tools", "configuration"],
-        "dependencies_documented": ["Redis", "FAISS", "ChromaDB"],
-        "related_files": ["docs/USAGE_GUIDE.md", "docs/QUICK_REFERENCE.md"],
-        "lines_of_code": 530,
-        "architecture_diagrams": 2,
-        "installation_platforms": ["macOS", "Linux", "Windows"]
+      "primary_docs": {
+        "README.md": {
+          "type": "markdown",
+          "category": "primary-documentation",
+          "description": "Main project documentation with three-tier architecture overview",
+          "sections": ["features", "installation", "usage", "architecture", "mcp-tools", "configuration"],
+          "dependencies_documented": ["Redis", "FAISS", "ChromaDB"],
+          "related_files": ["docs/USAGE_GUIDE.md", "docs/QUICK_REFERENCE.md"],
+          "lines_of_code": 530,
+          "architecture_diagrams": 2,
+          "installation_platforms": ["macOS", "Linux", "Windows"]
+        },
+        "REPOSITORY_INDEX.md": {
+          "type": "markdown",
+          "category": "repository-index",
+          "description": "Human-readable repository index with file descriptions and architecture overview",
+          "sections": ["overview", "components", "architecture", "nist-coverage", "testing", "documentation"],
+          "related_files": ["REPOSITORY_INDEX.json"],
+          "lines_of_code": 380,
+          "file_categories": 8
+        }
       },
-      "docs/USAGE_GUIDE.md": {
-        "type": "markdown",
-        "category": "comprehensive-guide",
-        "description": "Complete usage guide with all CLI commands and MCP tools",
-        "sections": ["prerequisites", "configuration", "cli-commands", "mcp-tools", "troubleshooting"],
-        "commands_documented": 9,
-        "mcp_tools_documented": 8,
-        "related_files": ["README.md", "docs/CLAUDE_INTEGRATION.md"],
-        "lines_of_code": 767,
-        "code_examples": 50
+      "user_guides": {
+        "docs/USAGE_GUIDE.md": {
+          "type": "markdown",
+          "category": "comprehensive-guide",
+          "description": "Complete usage guide with all CLI commands and MCP tools",
+          "sections": ["prerequisites", "configuration", "cli-commands", "mcp-tools", "troubleshooting"],
+          "commands_documented": 9,
+          "mcp_tools_documented": 8,
+          "related_files": ["README.md", "docs/CLAUDE_INTEGRATION.md"],
+          "lines_of_code": 767,
+          "code_examples": 50
+        },
+        "docs/QUICK_REFERENCE.md": {
+          "type": "markdown",
+          "category": "reference-card",
+          "description": "Quick reference card for common commands and workflows",
+          "sections": ["setup", "commands", "workflows", "troubleshooting"],
+          "related_files": ["docs/USAGE_GUIDE.md"],
+          "lines_of_code": 230,
+          "workflow_examples": 5
+        },
+        "docs/CLAUDE_INTEGRATION.md": {
+          "type": "markdown",
+          "category": "integration-guide",
+          "description": "Detailed Claude CLI integration setup and configuration",
+          "sections": ["installation", "configuration", "usage", "troubleshooting"],
+          "platforms_covered": ["macOS", "Linux", "Windows"],
+          "related_files": ["docs/USAGE_GUIDE.md"],
+          "lines_of_code": 442,
+          "configuration_examples": 5
+        },
+        "docs/guides/quickstart.md": {
+          "type": "markdown",
+          "category": "getting-started",
+          "description": "Quick start guide for new users",
+          "sections": ["installation", "first-steps", "examples"],
+          "related_files": ["README.md", "docs/USAGE_GUIDE.md"],
+          "target_audience": "new_users"
+        }
       },
-      "docs/QUICK_REFERENCE.md": {
-        "type": "markdown",
-        "category": "reference-card",
-        "description": "Quick reference card for common commands and workflows",
-        "sections": ["setup", "commands", "workflows", "troubleshooting"],
-        "related_files": ["docs/USAGE_GUIDE.md"],
-        "lines_of_code": 230,
-        "workflow_examples": 5
+      "developer_docs": {
+        "CLAUDE.md": {
+          "type": "markdown",
+          "category": "llm-instructions",
+          "description": "Comprehensive LLM logic router with project instructions and decision trees",
+          "sections": ["priorities", "status", "decision-trees", "workflows", "troubleshooting"],
+          "decision_trees": 4,
+          "related_files": ["README.md", "TODO_ANALYZERS.md"],
+          "lines_of_code": 400,
+          "optimization_strategies": 3
+        },
+        "TODO_ANALYZERS.md": {
+          "type": "markdown",
+          "category": "project-status",
+          "description": "Analyzer implementation status and test coverage tracking",
+          "sections": ["hybrid-architecture", "ci-cd-status", "test-coverage", "analyzer-status"],
+          "related_files": ["CLAUDE.md", "src/analyzers/"],
+          "coverage_tracking": true,
+          "implementation_status": "complete"
+        },
+        "IMPLEMENTATION_SUMMARY.md": {
+          "type": "markdown",
+          "category": "technical-summary",
+          "description": "Technical implementation summary and architecture decisions",
+          "sections": ["architecture", "implementation", "decisions"],
+          "related_files": ["README.md", "CLAUDE.md"],
+          "technical_depth": "high"
+        },
+        "CONTRIBUTING.md": {
+          "type": "markdown",
+          "category": "contributor-guide",
+          "description": "Guidelines for contributing to the project",
+          "sections": ["setup", "development", "testing", "submission"],
+          "related_files": ["README.md"],
+          "process_documentation": true
+        },
+        "docs/analyzers-implementation.md": {
+          "type": "markdown",
+          "category": "analyzer-documentation",
+          "description": "Detailed analyzer implementation documentation",
+          "sections": ["architecture", "patterns", "frameworks"],
+          "related_files": ["src/analyzers/", "docs/analyzers/iac-analyzer-specs.md"],
+          "technical_specifications": true
+        },
+        "docs/enhanced-control-detection.md": {
+          "type": "markdown",
+          "category": "nist-documentation",
+          "description": "Enhanced NIST control detection patterns and implementation",
+          "sections": ["patterns", "detection", "control-mapping"],
+          "related_files": ["src/analyzers/enhanced_patterns.py"],
+          "nist_families": 20
+        }
       },
-      "docs/CLAUDE_INTEGRATION.md": {
-        "type": "markdown",
-        "category": "integration-guide",
-        "description": "Detailed Claude CLI integration setup and configuration",
-        "sections": ["installation", "configuration", "usage", "troubleshooting"],
-        "platforms_covered": ["macOS", "Linux", "Windows"],
-        "related_files": ["docs/USAGE_GUIDE.md"],
-        "lines_of_code": 442,
-        "configuration_examples": 5
+      "api_docs": {
+        "docs/api/mcp-tools.md": {
+          "type": "markdown",
+          "category": "api-documentation",
+          "description": "MCP tools API documentation and specifications",
+          "sections": ["tools", "resources", "prompts", "schemas"],
+          "related_files": ["src/server.py"],
+          "mcp_tools_documented": 8,
+          "api_version": "1.0"
+        },
+        "docs/nist/controls.md": {
+          "type": "markdown",
+          "category": "nist-reference",
+          "description": "NIST 800-53r5 controls reference and mapping",
+          "sections": ["families", "controls", "mappings"],
+          "related_files": ["src/analyzers/enhanced_patterns.py"],
+          "control_families": 20
+        }
       },
-      "CLAUDE.md": {
-        "type": "markdown",
-        "category": "llm-instructions",
-        "description": "Comprehensive LLM logic router with project instructions and decision trees",
-        "sections": ["priorities", "status", "decision-trees", "workflows", "troubleshooting"],
-        "decision_trees": 4,
-        "related_files": ["README.md", "TODO_ANALYZERS.md"],
-        "lines_of_code": 400,
-        "optimization_strategies": 3
+      "project_docs": {
+        "CHANGELOG.md": {
+          "type": "markdown",
+          "category": "version-history",
+          "description": "Project changelog and version history",
+          "sections": ["releases", "changes", "fixes"],
+          "related_files": ["pyproject.toml"],
+          "version_tracking": true
+        },
+        "SECURITY.md": {
+          "type": "markdown",
+          "category": "security-policy",
+          "description": "Security policy and vulnerability reporting",
+          "sections": ["policy", "reporting", "response"],
+          "related_files": ["README.md"],
+          "security_focused": true
+        },
+        "Project_plan.md": {
+          "type": "markdown",
+          "category": "project-planning",
+          "description": "Original project planning and roadmap",
+          "sections": ["goals", "milestones", "architecture"],
+          "related_files": ["README.md", "IMPLEMENTATION_SUMMARY.md"],
+          "planning_document": true
+        },
+        "docs/DOCUMENTATION_STATUS.md": {
+          "type": "markdown",
+          "category": "doc-tracking",
+          "description": "Documentation status and completeness tracking",
+          "sections": ["status", "coverage", "todos"],
+          "related_files": ["docs/"],
+          "meta_documentation": true
+        }
+      },
+      "specialized_docs": {
+        "docs/llm-optimization.md": {
+          "type": "markdown",
+          "category": "llm-optimization",
+          "description": "LLM optimization strategies and token reduction techniques",
+          "sections": ["strategies", "implementation", "performance"],
+          "related_files": ["src/core/standards/token_optimizer.py"],
+          "optimization_focus": true
+        },
+        "docs/standards-versioning.md": {
+          "type": "markdown",
+          "category": "standards-management",
+          "description": "Standards versioning and management documentation",
+          "sections": ["versioning", "import", "management"],
+          "related_files": ["src/core/standards/versioning.py", "scripts/import_standards.py"],
+          "standards_focused": true
+        },
+        "docs/analyzers/iac-analyzer-specs.md": {
+          "type": "markdown",
+          "category": "analyzer-specs",
+          "description": "Infrastructure as Code analyzer specifications",
+          "sections": ["terraform", "docker", "kubernetes", "patterns"],
+          "related_files": ["src/analyzers/terraform_analyzer.py", "src/analyzers/dockerfile_analyzer.py", "src/analyzers/k8s_analyzer.py"],
+          "iac_focused": true
+        }
+      },
+      "section_docs": {
+        "docs/README.md": {
+          "type": "markdown",
+          "category": "docs-index",
+          "description": "Documentation directory index and navigation",
+          "sections": ["index", "navigation"],
+          "related_files": ["docs/"],
+          "directory_index": true
+        },
+        "tests/README.md": {
+          "type": "markdown",
+          "category": "testing-guide",
+          "description": "Testing framework and guidelines",
+          "sections": ["setup", "running", "coverage", "patterns"],
+          "related_files": ["tests/", "pyproject.toml"],
+          "testing_focused": true
+        },
+        "examples/README.md": {
+          "type": "markdown",
+          "category": "examples-index",
+          "description": "Examples directory overview and usage",
+          "sections": ["overview", "examples", "usage"],
+          "related_files": ["examples/"],
+          "examples_focused": true
+        },
+        "examples/python-api/README.md": {
+          "type": "markdown",
+          "category": "example-documentation",
+          "description": "Python Flask API example with NIST compliance",
+          "sections": ["setup", "usage", "compliance"],
+          "related_files": ["examples/python-api/app.py"],
+          "nist_controls": ["AC-3", "AU-2", "IA-2"],
+          "example_type": "python_api"
+        },
+        "examples/javascript-frontend/README.md": {
+          "type": "markdown",
+          "category": "example-documentation",
+          "description": "JavaScript frontend example with security patterns",
+          "sections": ["setup", "security", "compliance"],
+          "related_files": ["examples/javascript-frontend/"],
+          "example_type": "javascript_frontend"
+        },
+        "examples/python-flask-api/README.md": {
+          "type": "markdown",
+          "category": "example-documentation",
+          "description": "Python Flask API example implementation",
+          "sections": ["implementation", "security", "deployment"],
+          "related_files": ["examples/python-flask-api/"],
+          "example_type": "flask_api"
+        }
       }
     },
     "configuration": {

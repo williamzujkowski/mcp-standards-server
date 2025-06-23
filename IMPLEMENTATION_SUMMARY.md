@@ -93,9 +93,9 @@
 - MCP protocol support
 
 ## Testing Coverage
-- Achieved 70% test coverage with 523 tests
-- Comprehensive unit tests
-- Integration tests for workflows
+- Currently at 77% test coverage with 776 total tests (661 passing, 102 failing)
+- Comprehensive unit tests for all core modules
+- Integration tests for workflows (some need MCP server updates)
 - Mock implementations for external dependencies
 
 ## Recently Completed (Latest Session)
@@ -126,12 +126,16 @@
 
 ### Test Coverage Improvements ✅
 - Added 120+ new test methods across critical modules
-- `enhanced_mapper.py`: 100% coverage (was 0%)
-- `semantic_search.py`: 88% coverage (was 0%)
-- `oscal_handler.py`: 61% coverage (was 0%)
-- `micro_standards.py`: 23% coverage (was 0%, has import issues)
-- Fixed all MyPy type errors (reduced from 80 to 5 warnings)
-- Fixed all linting issues
+- `hybrid_vector_store.py`: 64% coverage (27 tests added)
+- `tiered_storage_strategy.py`: 98% coverage (31 tests added)
+- `chromadb_tier.py`: 93% coverage (30 tests added)
+- `micro_standards.py`: 95% coverage (36 tests added)
+- `semantic_search.py`: 88% coverage (tests improved)
+- `enhanced_mapper.py`: 80%+ coverage (already comprehensive)
+- `control_coverage_report.py`: 81% coverage (11 methods added)
+- `token_optimizer.py`: 63% coverage (2 methods added)
+- Fixed all critical MyPy type errors
+- Fixed all major linting issues
 
 ## Next Steps
 

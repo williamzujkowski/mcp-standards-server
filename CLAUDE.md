@@ -1,8 +1,18 @@
 # CLAUDE.md - MCP Standards Server
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-06-23  
+**Status:** Active  
+**Standard Code:** AI-RTR  
+
+**Summary:** Primary AI logic router with decision trees and optimization strategies  
+**Tokens:** ~2000 (helps AI plan context usage)  
+**Priority:** critical  
+
 This file serves as the primary logic router for LLMs working with the MCP Standards Server codebase. It provides comprehensive instructions, decision trees, and optimization strategies to ensure efficient and effective development.
 
 ## 🤖 LLM Quick Reference
+**Tokens:** ~300 | **Priority:** critical
 
 ### Priority Actions
 1. ✅ **CI/CD Fixes**: All mypy type errors and test failures RESOLVED
@@ -12,6 +22,7 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
 5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support (future enhancement)
 
 ### Key Metrics
+**Tokens:** ~200 | **Priority:** critical
 - **Current Test Coverage**: 77% (improved from 11%, target: 80%)
 - **Standards Imported**: 17/23 from williamzujkowski/standards
 - **Token Reduction**: Implementation complete with 95% test coverage

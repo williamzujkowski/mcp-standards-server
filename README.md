@@ -1,8 +1,18 @@
 # MCP Standards Server
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-06-23  
+**Status:** Active  
+**Standard Code:** MCP  
+
+**Summary:** NIST 800-53r5 compliance server with three-tier hybrid vector store architecture  
+**Tokens:** ~3500 (helps AI plan context usage)  
+**Priority:** critical  
+
 A comprehensive Model Context Protocol (MCP) server that provides intelligent NIST 800-53r5 compliance checking, automated code analysis, and standards enforcement for modern development workflows. Built using the official [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) with real standards content from [williamzujkowski/standards](https://github.com/williamzujkowski/standards).
 
 ## 🚀 Features
+**Tokens:** ~500 | **Priority:** critical
 
 ### Core Compliance
 - 🔒 **NIST 800-53r5 Compliance**: Detects 200+ controls across all 20 families
@@ -27,6 +37,7 @@ A comprehensive Model Context Protocol (MCP) server that provides intelligent NI
 - 🔄 **Standards Versioning**: Version control and rollback for imported standards
 
 ## Quick Start
+**Tokens:** ~800 | **Priority:** high
 
 ### Prerequisites
 
@@ -185,6 +196,7 @@ Add to your Claude Desktop configuration:
 ```
 
 ## 🛠️ MCP Tools
+**Tokens:** ~1200 | **Priority:** high
 
 The server provides comprehensive MCP tools for compliance workflows:
 
@@ -344,6 +356,7 @@ def authenticate_user(username: str, password: str) -> User:
 ```
 
 ## Architecture
+**Tokens:** ~600 | **Priority:** medium
 
 ### Core Architecture
 ```
@@ -554,7 +567,7 @@ The server now detects **200+ controls** across all 20 NIST families:
 - **MP-6**: Media Sanitization
 
 ### Security Features
-- **70% Test Coverage** - Comprehensive test suite with 523 tests
+- **77% Test Coverage** - Comprehensive test suite with 776 tests (targeting 80%)
 - **Real Standards Content** - Official williamzujkowski/standards repository
 - **OSCAL 1.0.0 Compliance** - Generate compliant SSPs
 - **Multi-Language Analysis** - AST-based security pattern detection

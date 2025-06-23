@@ -1,0 +1,218 @@
+project:
+  name: "MCP Standards Server"
+  version: "1.0.0"
+  description: "Model Context Protocol server for NIST 800-53r5 compliance checking and standards enforcement"
+  architecture: "three-tier-hybrid-vector-store"
+  last_updated: "2025-06-23"
+  
+# Knowledge Management Metadata
+knowledge_base:
+  total_documents: 31
+  total_tokens: ~45000
+  organization: "progressive-disclosure"
+  ai_optimized: true
+  
+# Core Documentation Structure
+documentation:
+  entry_points:
+    - id: "README"
+      file: "README.md"
+      type: "entry"
+      tokens: 3500
+      priority: "critical"
+      description: "Main project overview with architecture and quick start"
+      sections:
+        overview: { tokens: 400, priority: "critical" }
+        features: { tokens: 500, priority: "critical" }  
+        installation: { tokens: 800, priority: "high" }
+        usage: { tokens: 1200, priority: "high" }
+        architecture: { tokens: 600, priority: "medium" }
+        
+    - id: "CLAUDE"
+      file: "CLAUDE.md"
+      type: "ai-router"
+      tokens: 2000
+      priority: "critical"
+      description: "LLM logic router with decision trees and workflows"
+      sections:
+        quick_reference: { tokens: 300, priority: "critical" }
+        priorities: { tokens: 200, priority: "critical" }
+        status: { tokens: 400, priority: "high" }
+        decision_trees: { tokens: 600, priority: "medium" }
+        workflows: { tokens: 500, priority: "low" }
+
+  user_guides:
+    - id: "USAGE_GUIDE"
+      file: "docs/USAGE_GUIDE.md"
+      tokens: 4500
+      priority: "high"
+      description: "Complete usage guide with all CLI commands and MCP tools"
+      dependencies: ["README"]
+      sections:
+        prerequisites: { tokens: 400, priority: "high" }
+        cli_commands: { tokens: 1800, priority: "high" }
+        mcp_tools: { tokens: 1200, priority: "medium" }
+        troubleshooting: { tokens: 1100, priority: "medium" }
+        
+    - id: "QUICK_REFERENCE"
+      file: "docs/QUICK_REFERENCE.md"
+      tokens: 1400
+      priority: "high"
+      description: "Command cheat sheet for quick lookup"
+      dependencies: ["USAGE_GUIDE"]
+      
+    - id: "CLAUDE_INTEGRATION"
+      file: "docs/CLAUDE_INTEGRATION.md"
+      tokens: 2600
+      priority: "medium"
+      description: "Claude CLI setup guide with platform-specific instructions"
+      dependencies: ["README", "USAGE_GUIDE"]
+
+  developer_docs:
+    - id: "TODO_ANALYZERS"
+      file: "TODO_ANALYZERS.md"
+      tokens: 1800
+      priority: "medium"
+      description: "Status tracking and implementation guide"
+      dependencies: ["CLAUDE"]
+      
+    - id: "IMPLEMENTATION_SUMMARY"
+      file: "IMPLEMENTATION_SUMMARY.md"
+      tokens: 1200
+      priority: "medium"
+      description: "Technical implementation summary and architecture decisions"
+      dependencies: ["README"]
+      
+    - id: "CONTRIBUTING"
+      file: "CONTRIBUTING.md"
+      tokens: 1500
+      priority: "medium"
+      description: "Guidelines for contributing to the project"
+      dependencies: ["README"]
+
+  specialized_docs:
+    - id: "LLM_OPTIMIZATION"
+      file: "docs/llm-optimization.md"
+      tokens: 2200
+      priority: "low"
+      description: "LLM optimization strategies and token reduction techniques"
+      dependencies: ["CLAUDE"]
+      
+    - id: "STANDARDS_VERSIONING"
+      file: "docs/standards-versioning.md"
+      tokens: 1800
+      priority: "low"
+      description: "Standards versioning and management documentation"
+
+# Standards Content
+standards:
+  imported: 17
+  source: "williamzujkowski/standards"
+  location: "data/standards/"
+  format: "yaml"
+  total_tokens: ~25000
+  
+# AI/LLM Optimization Configuration
+ai_optimization:
+  loading_strategies:
+    small_context:  # < 4K tokens
+      load: ["overview", "quick_reference", "prerequisites"]
+      exclude: ["examples", "appendices", "troubleshooting"]
+      
+    medium_context:  # 4K-32K tokens
+      load: ["overview", "core_sections", "examples"]
+      lazy_load: ["advanced", "edge_cases", "detailed_examples"]
+      
+    large_context:  # > 32K tokens
+      load: ["*"]
+      optimize: ["remove_duplicates", "compress_examples"]
+      
+  progressive_disclosure:
+    levels:
+      quick_reference: { max_tokens: 100, priority: "critical" }
+      summary: { max_tokens: 500, priority: "high" }
+      detailed: { max_tokens: 2000, priority: "medium" }
+      comprehensive: { max_tokens: 5000, priority: "low" }
+      
+  natural_language_mappings:
+    "how to install": ["README:installation", "USAGE_GUIDE:prerequisites"]
+    "CLI commands": ["USAGE_GUIDE:cli_commands", "QUICK_REFERENCE"]
+    "MCP tools": ["README:mcp_tools", "USAGE_GUIDE:mcp_tools"]
+    "troubleshooting": ["USAGE_GUIDE:troubleshooting", "CLAUDE_INTEGRATION:troubleshooting"]
+    "architecture": ["README:architecture", "CLAUDE:status"]
+    "test coverage": ["TODO_ANALYZERS", "CLAUDE:priorities"]
+
+# Cross-Reference Architecture
+relationships:
+  README:
+    depends_on: []
+    required_by: ["USAGE_GUIDE", "CLAUDE_INTEGRATION", "CONTRIBUTING"]
+    related_to: ["QUICK_REFERENCE", "CLAUDE"]
+    conflicts_with: []
+    
+  CLAUDE:
+    depends_on: []
+    required_by: ["TODO_ANALYZERS", "LLM_OPTIMIZATION"]
+    related_to: ["README", "IMPLEMENTATION_SUMMARY"]
+    conflicts_with: []
+    
+  USAGE_GUIDE:
+    depends_on: ["README"]
+    required_by: ["QUICK_REFERENCE", "CLAUDE_INTEGRATION"]
+    related_to: ["CONTRIBUTING"]
+    conflicts_with: []
+    
+  TODO_ANALYZERS:
+    depends_on: ["CLAUDE"]
+    required_by: []
+    related_to: ["IMPLEMENTATION_SUMMARY"]
+    conflicts_with: []
+
+# Search & Discovery Configuration
+search_optimization:
+  keywords:
+    - "MCP server"
+    - "NIST compliance"
+    - "Claude CLI"
+    - "vector store"
+    - "standards enforcement"
+    - "token optimization"
+    
+  synonyms:
+    install: ["setup", "installation", "configure"]
+    CLI: ["command line", "commands", "terminal"]
+    MCP: ["Model Context Protocol", "server", "tools"]
+    test: ["testing", "coverage", "validation"]
+    
+# Validation Configuration
+validation:
+  required_headers:
+    - "Version"
+    - "Last Updated"
+    - "Status"
+    - "Standard Code"
+    
+  cross_reference_validation: true
+  token_count_validation: true
+  dependency_validation: true
+  
+# Version Management
+versioning:
+  scheme: "semantic"
+  current_version: "1.0.0"
+  changelog_required: true
+  migration_guides_required: true
+  
+# Maintenance Schedule
+maintenance:
+  review_frequency: "monthly"
+  update_triggers:
+    - "new features added"
+    - "breaking changes"
+    - "CLI commands change"
+    - "coverage targets change"
+  
+  auto_validation:
+    enabled: true
+    frequency: "on_commit"
+    tools: ["header_check", "cross_ref_check", "token_count"]
