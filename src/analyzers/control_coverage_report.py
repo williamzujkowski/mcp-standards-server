@@ -322,9 +322,9 @@ class ControlCoverageReporter:
         }
         return descriptions.get(control, "Security control implementation")
 
-    def _generate_control_summary(self) -> dict[str, dict]:
+    def _generate_control_summary(self) -> dict[str, dict[str, Any]]:
         """Generate control summary from annotations"""
-        summary = {}
+        summary: dict[str, dict[str, Any]] = {}
 
         for file_path, annotations in self.annotations_by_file.items():
             for ann in annotations:
@@ -347,9 +347,9 @@ class ControlCoverageReporter:
 
         return summary
 
-    def _generate_family_coverage(self, control_summary: dict[str, dict]) -> dict[str, int]:
+    def _generate_family_coverage(self, control_summary: dict[str, dict[str, Any]]) -> dict[str, int]:
         """Generate family coverage from control summary"""
-        families = defaultdict(int)
+        families: defaultdict[str, int] = defaultdict(int)
 
         for control_id in control_summary:
             family = control_id.split('-')[0]
@@ -361,7 +361,7 @@ class ControlCoverageReporter:
         """Suggest missing controls based on implemented ones"""
         return self.patterns.suggest_missing_controls(implemented_controls)
 
-    def _calculate_confidence_scores(self, control_summary: dict[str, dict]) -> set[str]:
+    def _calculate_confidence_scores(self, control_summary: dict[str, dict[str, Any]]) -> set[str]:
         """Calculate high confidence controls"""
         high_confidence = set()
 

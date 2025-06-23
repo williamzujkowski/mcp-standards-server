@@ -561,7 +561,7 @@ class HierarchicalStrategy(OptimizationStrategy):
                     "level": level
                 }
             elif current_section:
-                current_section["content"] += line + '\n'
+                current_section["content"] = str(current_section["content"]) + line + '\n'
 
         if current_section:
             sections.append(current_section)
