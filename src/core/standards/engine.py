@@ -989,7 +989,7 @@ class StandardsEngine:
                     all_keys = []
                     for key in self.redis_client.scan_iter(match="mcp:*"):
                         all_keys.append(key)
-                    
+
                     if all_keys:
                         self.redis_client.delete(*all_keys)
                     results["cleared"].append("redis")
