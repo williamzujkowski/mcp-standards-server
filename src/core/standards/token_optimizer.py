@@ -295,6 +295,14 @@ class SummarizationStrategy(OptimizationStrategy):
         """Truncate content to fit within token limit"""
         return self.tokenizer.truncate_to_tokens(content, max_tokens)
 
+    def _extract_sentences(self, content: str) -> list[str]:
+        """Extract sentences from content"""
+        # Simple sentence extraction based on punctuation
+        import re
+        # Split on sentence-ending punctuation while keeping the punctuation
+        sentences = re.split(r'(?<=[.!?])\s+', content)
+        return [s.strip() for s in sentences if s.strip()]
+
 
 class EssentialOnlyStrategy(OptimizationStrategy):
     """
@@ -529,6 +537,36 @@ class HierarchicalStrategy(OptimizationStrategy):
             return "\n".join(f"- {detail}" for detail in details[:5])
 
         return "No critical details identified."
+
+    def _parse_sections(self, content: str) -> list[dict[str, Any]]:
+        """Parse content into sections"""
+        sections = []
+        
+        # Split by headers
+        import re
+        lines = content.split('\n')
+        current_section = None
+        
+        for line in lines:
+            header_match = re.match(r'^(#{1,6})\s+(.+)$', line)
+            if header_match:
+                if current_section:
+                    sections.append(current_section)
+                
+                level = len(header_match.group(1))
+                header = header_match.group(2)
+                current_section = {
+                    "header": header,
+                    "content": "",
+                    "level": level
+                }
+            elif current_section:
+                current_section["content"] += line + '\n'
+        
+        if current_section:
+            sections.append(current_section)
+        
+        return sections
 
 
 
