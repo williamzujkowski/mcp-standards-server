@@ -541,18 +541,18 @@ class HierarchicalStrategy(OptimizationStrategy):
     def _parse_sections(self, content: str) -> list[dict[str, Any]]:
         """Parse content into sections"""
         sections = []
-        
+
         # Split by headers
         import re
         lines = content.split('\n')
         current_section = None
-        
+
         for line in lines:
             header_match = re.match(r'^(#{1,6})\s+(.+)$', line)
             if header_match:
                 if current_section:
                     sections.append(current_section)
-                
+
                 level = len(header_match.group(1))
                 header = header_match.group(2)
                 current_section = {
@@ -562,10 +562,10 @@ class HierarchicalStrategy(OptimizationStrategy):
                 }
             elif current_section:
                 current_section["content"] += line + '\n'
-        
+
         if current_section:
             sections.append(current_section)
-        
+
         return sections
 
 

@@ -325,7 +325,7 @@ class ControlCoverageReporter:
     def _generate_control_summary(self) -> dict[str, dict]:
         """Generate control summary from annotations"""
         summary = {}
-        
+
         for file_path, annotations in self.annotations_by_file.items():
             for ann in annotations:
                 for control_id in ann.control_ids:
@@ -335,7 +335,7 @@ class ControlCoverageReporter:
                             "files": [],
                             "confidence": 0.0
                         }
-                    
+
                     summary[control_id]["count"] += 1
                     if file_path not in summary[control_id]["files"]:
                         summary[control_id]["files"].append(file_path)
@@ -344,17 +344,17 @@ class ControlCoverageReporter:
                         summary[control_id]["confidence"],
                         ann.confidence
                     )
-        
+
         return summary
 
     def _generate_family_coverage(self, control_summary: dict[str, dict]) -> dict[str, int]:
         """Generate family coverage from control summary"""
         families = defaultdict(int)
-        
+
         for control_id in control_summary:
             family = control_id.split('-')[0]
             families[family] += 1
-        
+
         return dict(families)
 
     def _suggest_missing_controls(self, implemented_controls: set[str]) -> dict[str, list[str]]:
@@ -364,12 +364,12 @@ class ControlCoverageReporter:
     def _calculate_confidence_scores(self, control_summary: dict[str, dict]) -> set[str]:
         """Calculate high confidence controls"""
         high_confidence = set()
-        
+
         for control_id, info in control_summary.items():
             # High confidence if: high score AND multiple instances
             if info["confidence"] >= 0.8 and info["count"] >= 2:
                 high_confidence.add(control_id)
-        
+
         return high_confidence
 
     def _get_family_statistics(self, control_families: dict[str, int]) -> dict[str, Any]:
@@ -381,10 +381,10 @@ class ControlCoverageReporter:
                 "average_controls_per_family": 0,
                 "most_common_family": None
             }
-        
+
         total_controls = sum(control_families.values())
         most_common = max(control_families.items(), key=lambda x: x[1])
-        
+
         return {
             "total_families": len(control_families),
             "total_controls": total_controls,
@@ -395,7 +395,7 @@ class ControlCoverageReporter:
     def _generate_recommendations(self, metrics: ControlCoverageMetrics) -> list[str]:
         """Generate recommendations based on coverage metrics"""
         recommendations = []
-        
+
         # Check file coverage
         if metrics.files_analyzed > 0:
             coverage_pct = (metrics.files_with_controls / metrics.files_analyzed) * 100
@@ -404,7 +404,7 @@ class ControlCoverageReporter:
                     f"Only {coverage_pct:.0f}% of files have NIST control annotations. "
                     "Consider adding annotations to more files."
                 )
-        
+
         # Check for missing critical controls
         critical_controls = {"AC-2", "AC-3", "AU-2", "IA-2", "SC-8"}
         missing_critical = critical_controls - metrics.unique_controls
@@ -412,18 +412,18 @@ class ControlCoverageReporter:
             recommendations.append(
                 f"Missing critical controls: {', '.join(sorted(missing_critical))}"
             )
-        
+
         # Suggest controls based on what's implemented
         for family, suggestions in metrics.suggested_missing_controls.items():
             if suggestions:
                 recommendations.append(
                     f"Based on {family} controls, consider implementing: {', '.join(suggestions[:2])}"
                 )
-        
+
         # Check confidence scores
         if metrics.high_confidence_controls:
             low_confidence_pct = (
-                (len(metrics.unique_controls) - len(metrics.high_confidence_controls)) 
+                (len(metrics.unique_controls) - len(metrics.high_confidence_controls))
                 / len(metrics.unique_controls) * 100
             )
             if low_confidence_pct > 50:
@@ -431,7 +431,7 @@ class ControlCoverageReporter:
                     f"{low_confidence_pct:.0f}% of controls have low confidence scores. "
                     "Consider adding more evidence or implementation details."
                 )
-        
+
         return recommendations
 
     def _format_percentage(self, value: float) -> str:
@@ -445,6 +445,6 @@ class ControlCoverageReporter:
     async def export_report(self, metrics: ControlCoverageMetrics, file_path: str, format: str = "markdown") -> None:
         """Export report to file"""
         report = self.generate_report(metrics, format)
-        
+
         with open(file_path, 'w') as f:
             f.write(report)
