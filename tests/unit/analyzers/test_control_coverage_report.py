@@ -4,120 +4,60 @@ Unit tests for control coverage report analyzer
 @evidence: Control coverage report testing
 """
 
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from src.analyzers.control_coverage_report import (
-    ControlCoverageReport,
-    CoverageLevel,
-    CoverageStats,
-    ImplementationStatus,
+    ControlCoverageMetrics,
+    ControlCoverageReporter,
 )
-from src.core.nist_controls import NISTControl
 
 
-class TestCoverageLevel:
-    """Test CoverageLevel enum"""
+class TestControlCoverageMetrics:
+    """Test ControlCoverageMetrics dataclass"""
 
-    def test_coverage_levels(self):
-        """Test coverage level values"""
-        assert CoverageLevel.NONE.value == "none"
-        assert CoverageLevel.PARTIAL.value == "partial"
-        assert CoverageLevel.COMPLETE.value == "complete"
-
-
-class TestImplementationStatus:
-    """Test ImplementationStatus enum"""
-
-    def test_implementation_status_values(self):
-        """Test implementation status values"""
-        assert ImplementationStatus.NOT_IMPLEMENTED.value == "not_implemented"
-        assert ImplementationStatus.PLANNED.value == "planned"
-        assert ImplementationStatus.IN_PROGRESS.value == "in_progress"
-        assert ImplementationStatus.IMPLEMENTED.value == "implemented"
-        assert ImplementationStatus.NOT_APPLICABLE.value == "not_applicable"
-
-
-class TestCoverageStats:
-    """Test CoverageStats model"""
-
-    def test_coverage_stats_creation(self):
-        """Test creating coverage stats"""
-        stats = CoverageStats(
-            total_controls=100,
-            implemented_controls=75,
-            partial_controls=15,
-            missing_controls=10,
-            coverage_percentage=75.0,
-            by_family={"AC": 10, "AU": 5},
-            by_priority={"high": 20, "medium": 10}
+    def test_metrics_creation(self):
+        """Test creating coverage metrics"""
+        metrics = ControlCoverageMetrics(
+            total_controls_detected=100,
+            unique_controls={"AC-3", "AU-2", "IA-2"},
+            control_families={"AC": 1, "AU": 1, "IA": 1},
+            family_coverage_percentage={"AC": 33.3, "AU": 33.3, "IA": 33.3},
+            high_confidence_controls={"AC-3", "AU-2"},
+            suggested_missing_controls={"SC": ["SC-8", "SC-12"]},
+            files_analyzed=50,
+            files_with_controls=25
         )
 
-        assert stats.total_controls == 100
-        assert stats.implemented_controls == 75
-        assert stats.partial_controls == 15
-        assert stats.missing_controls == 10
-        assert stats.coverage_percentage == 75.0
-        assert stats.by_family["AC"] == 10
-        assert stats.by_priority["high"] == 20
-
-    def test_coverage_stats_defaults(self):
-        """Test coverage stats with defaults"""
-        stats = CoverageStats()
-
-        assert stats.total_controls == 0
-        assert stats.implemented_controls == 0
-        assert stats.partial_controls == 0
-        assert stats.missing_controls == 0
-        assert stats.coverage_percentage == 0.0
-        assert stats.by_family == {}
-        assert stats.by_priority == {}
+        assert metrics.total_controls_detected == 100
+        assert len(metrics.unique_controls) == 3
+        assert metrics.control_families["AC"] == 1
+        assert metrics.family_coverage_percentage["AC"] == 33.3
+        assert len(metrics.high_confidence_controls) == 2
+        assert len(metrics.suggested_missing_controls["SC"]) == 2
+        assert metrics.files_analyzed == 50
+        assert metrics.files_with_controls == 25
 
 
-class TestControlCoverageReport:
-    """Test ControlCoverageReport class"""
+class TestControlCoverageReporter:
+    """Test ControlCoverageReporter class"""
 
     @pytest.fixture
-    def mock_scanner(self):
-        """Create mock compliance scanner"""
-        scanner = MagicMock()
-        scanner.scan_directory.return_value = {
-            "controls_found": [
-                {
-                    "control_id": "AC-3",
-                    "control_name": "Access Enforcement",
-                    "evidence": ["RBAC implementation"],
-                    "files": ["auth.py"]
-                },
-                {
-                    "control_id": "AU-2",
-                    "control_name": "Audit Events",
-                    "evidence": ["Logging implementation"],
-                    "files": ["logger.py"]
-                }
-            ],
-            "scan_summary": {
-                "total_files": 10,
-                "files_with_controls": 2
-            }
-        }
-        return scanner
+    def reporter(self):
+        """Create reporter instance"""
+        return ControlCoverageReporter()
 
-    @pytest.fixture
-    def report(self, mock_scanner):
-        """Create report instance with mock scanner"""
-        with patch('src.analyzers.control_coverage_report.ComplianceScanner', return_value=mock_scanner):
-            return ControlCoverageReport()
+    def test_initialization(self, reporter):
+        """Test reporter initialization"""
+        assert reporter.patterns is not None
+        assert isinstance(reporter.annotations_by_file, dict)
+        assert isinstance(reporter.all_controls, set)
 
-    def test_initialization(self, report):
-        """Test report initialization"""
-        assert report.scanner is not None
-        assert hasattr(report, 'required_controls')
-        assert hasattr(report, 'priority_weights')
-
-    def test_analyze_coverage_basic(self, report, tmp_path):
-        """Test basic coverage analysis"""
+    @pytest.mark.asyncio
+    async def test_analyze_project_with_mocked_analyzers(self, reporter, tmp_path):
+        """Test analyzing project with mocked analyzers"""
         # Create test files
         test_file = tmp_path / "test.py"
         test_file.write_text("""
@@ -127,390 +67,310 @@ class TestControlCoverageReport:
             pass
         """)
 
-        results = report.analyze_coverage(str(tmp_path))
+        # Mock analyzer
+        mock_analyzer = MagicMock()
+        mock_analyzer.analyze_project = AsyncMock(return_value={
+            'files': {
+                str(test_file): {
+                    'annotations': [
+                        {
+                            'control_id': 'AC-3',
+                            'control_name': 'Access Enforcement',
+                            'evidence': 'RBAC implementation',
+                            'confidence': 0.9,
+                            'file': str(test_file),
+                            'line': 2
+                        }
+                    ]
+                }
+            }
+        })
 
-        assert isinstance(results, dict)
-        assert "coverage_stats" in results
-        assert "implemented_controls" in results
-        assert "missing_controls" in results
-        assert "recommendations" in results
+        analyzers = {"python": mock_analyzer}
+        
+        metrics = await reporter.analyze_project(tmp_path, analyzers)
+        
+        assert isinstance(metrics, ControlCoverageMetrics)
+        assert metrics.files_analyzed > 0
+        assert 'AC-3' in metrics.unique_controls
 
-    def test_calculate_coverage_stats(self, report):
-        """Test coverage statistics calculation"""
-        implemented = [
-            NISTControl(id="AC-3", name="Access Enforcement", description="", family="AC"),
-            NISTControl(id="AU-2", name="Audit Events", description="", family="AU")
-        ]
+    @pytest.mark.asyncio
+    async def test_analyze_project_different_result_format(self, reporter, tmp_path):
+        """Test analyzing project with different analyzer result formats"""
+        # Mock analyzer with different result format
+        mock_analyzer = MagicMock()
+        mock_analyzer.analyze_project = AsyncMock(return_value=[
+            {
+                'control_id': 'AU-2',
+                'control_name': 'Audit Events',
+                'evidence': 'Logging implementation',
+                'file': 'test.py',
+                'line': 10
+            }
+        ])
 
-        partial = [
-            NISTControl(id="IA-2", name="Authentication", description="", family="IA")
-        ]
+        analyzers = {"python": mock_analyzer}
+        
+        metrics = await reporter.analyze_project(tmp_path, analyzers)
+        
+        assert isinstance(metrics, ControlCoverageMetrics)
 
-        missing = [
-            NISTControl(id="SC-8", name="Transmission Confidentiality", description="", family="SC")
-        ]
-
-        stats = report._calculate_coverage_stats(implemented, partial, missing)
-
-        assert stats.total_controls == 4
-        assert stats.implemented_controls == 2
-        assert stats.partial_controls == 1
-        assert stats.missing_controls == 1
-        assert stats.coverage_percentage == 62.5  # (2 + 0.5) / 4 * 100
-        assert stats.by_family["AC"] == 1
-        assert stats.by_family["AU"] == 1
-
-    def test_categorize_controls(self, report):
-        """Test control categorization"""
-        scan_results = {
-            "controls_found": [
-                {"control_id": "AC-3", "evidence": ["Full implementation"]},
-                {"control_id": "AU-2", "evidence": ["Partial logging"]}
+    def test_generate_control_summary(self, reporter):
+        """Test generating control summary"""
+        # Add some test data
+        reporter.all_controls = {"AC-3", "AU-2", "IA-2", "SC-8"}
+        reporter.annotations_by_file = {
+            "file1.py": [
+                MagicMock(control_id="AC-3", confidence=0.9),
+                MagicMock(control_id="AU-2", confidence=0.8)
+            ],
+            "file2.py": [
+                MagicMock(control_id="IA-2", confidence=0.7)
             ]
         }
 
-        implemented, partial, missing = report._categorize_controls(scan_results)
+        summary = reporter._generate_control_summary()
+        
+        assert isinstance(summary, dict)
+        assert len(summary) == 4  # Should have all 4 controls
+        assert "AC-3" in summary
+        assert summary["AC-3"]["count"] == 1
+        assert summary["AC-3"]["files"] == ["file1.py"]
 
-        assert len(implemented) >= 1
-        assert any(c.id == "AC-3" for c in implemented)
-        # The actual categorization depends on evidence analysis
+    def test_generate_family_coverage(self, reporter):
+        """Test generating family coverage statistics"""
+        control_summary = {
+            "AC-3": {"count": 2, "confidence": 0.9},
+            "AC-4": {"count": 1, "confidence": 0.8},
+            "AU-2": {"count": 3, "confidence": 0.85},
+            "IA-2": {"count": 1, "confidence": 0.7}
+        }
 
-    def test_generate_recommendations(self, report):
-        """Test recommendation generation"""
-        missing_controls = [
-            NISTControl(
-                id="AC-3",
-                name="Access Enforcement",
-                description="Enforce access control",
-                family="AC",
-                priority="high"
-            ),
-            NISTControl(
-                id="AU-2",
-                name="Audit Events",
-                description="Log audit events",
-                family="AU",
-                priority="medium"
-            )
-        ]
+        families = reporter._generate_family_coverage(control_summary)
+        
+        assert isinstance(families, dict)
+        assert "AC" in families
+        assert "AU" in families
+        assert "IA" in families
+        assert families["AC"] == 2  # AC-3 and AC-4
+        assert families["AU"] == 1  # AU-2
+        assert families["IA"] == 1  # IA-2
 
-        recommendations = report._generate_recommendations(
-            missing_controls,
-            partial_controls=[]
+    def test_suggest_missing_controls(self, reporter):
+        """Test suggesting missing controls"""
+        implemented_controls = {"AC-3", "AU-2"}
+        
+        suggestions = reporter._suggest_missing_controls(implemented_controls)
+        
+        assert isinstance(suggestions, dict)
+        # Should suggest related controls
+        if "AC" in suggestions:
+            assert isinstance(suggestions["AC"], list)
+            # Might suggest AC-2, AC-4, etc.
+
+    def test_calculate_confidence_scores(self, reporter):
+        """Test calculating confidence scores"""
+        control_summary = {
+            "AC-3": {"count": 5, "confidence": 0.9, "files": ["a.py", "b.py"]},
+            "AU-2": {"count": 2, "confidence": 0.7, "files": ["c.py"]},
+            "IA-2": {"count": 1, "confidence": 0.5, "files": ["d.py"]}
+        }
+
+        high_confidence = reporter._calculate_confidence_scores(control_summary)
+        
+        assert isinstance(high_confidence, set)
+        assert "AC-3" in high_confidence  # High count and confidence
+        # AU-2 and IA-2 might not be in high confidence due to lower scores
+
+    def test_generate_html_report(self, reporter):
+        """Test generating HTML report"""
+        metrics = ControlCoverageMetrics(
+            total_controls_detected=50,
+            unique_controls={"AC-3", "AU-2"},
+            control_families={"AC": 1, "AU": 1},
+            family_coverage_percentage={"AC": 50.0, "AU": 50.0},
+            high_confidence_controls={"AC-3"},
+            suggested_missing_controls={},
+            files_analyzed=10,
+            files_with_controls=5
         )
 
+        html = reporter.generate_html_report(metrics)
+        
+        assert isinstance(html, str)
+        assert "<html>" in html
+        assert "Control Coverage Report" in html
+        assert "AC-3" in html
+        assert "50%" in html
+
+    def test_generate_markdown_report(self, reporter):
+        """Test generating Markdown report"""
+        metrics = ControlCoverageMetrics(
+            total_controls_detected=50,
+            unique_controls={"AC-3", "AU-2", "IA-2"},
+            control_families={"AC": 1, "AU": 1, "IA": 1},
+            family_coverage_percentage={"AC": 33.3, "AU": 33.3, "IA": 33.3},
+            high_confidence_controls={"AC-3", "AU-2"},
+            suggested_missing_controls={"SC": ["SC-8"]},
+            files_analyzed=20,
+            files_with_controls=10
+        )
+
+        markdown = reporter.generate_markdown_report(metrics)
+        
+        assert isinstance(markdown, str)
+        assert "# NIST Control Coverage Report" in markdown
+        assert "## Summary" in markdown
+        assert "## Control Families" in markdown
+        assert "AC-3" in markdown
+        assert "33.3%" in markdown
+        assert "SC-8" in markdown
+
+    def test_generate_json_report(self, reporter):
+        """Test generating JSON report"""
+        metrics = ControlCoverageMetrics(
+            total_controls_detected=10,
+            unique_controls={"AC-3"},
+            control_families={"AC": 1},
+            family_coverage_percentage={"AC": 100.0},
+            high_confidence_controls={"AC-3"},
+            suggested_missing_controls={},
+            files_analyzed=5,
+            files_with_controls=3
+        )
+
+        import json
+        json_report = reporter.generate_json_report(metrics)
+        
+        assert isinstance(json_report, str)
+        data = json.loads(json_report)
+        assert data["metrics"]["total_controls_detected"] == 10
+        assert data["metrics"]["unique_controls_count"] == 1
+        assert data["metrics"]["files_analyzed"] == 5
+
+    @pytest.mark.asyncio
+    async def test_export_report(self, reporter, tmp_path):
+        """Test exporting report to file"""
+        metrics = ControlCoverageMetrics(
+            total_controls_detected=5,
+            unique_controls={"AC-3"},
+            control_families={"AC": 1},
+            family_coverage_percentage={"AC": 100.0},
+            high_confidence_controls=set(),
+            suggested_missing_controls={},
+            files_analyzed=2,
+            files_with_controls=1
+        )
+
+        # Test HTML export
+        html_file = tmp_path / "report.html"
+        await reporter.export_report(metrics, str(html_file), "html")
+        assert html_file.exists()
+        assert "<html>" in html_file.read_text()
+
+        # Test Markdown export
+        md_file = tmp_path / "report.md"
+        await reporter.export_report(metrics, str(md_file), "markdown")
+        assert md_file.exists()
+        assert "# NIST Control Coverage Report" in md_file.read_text()
+
+        # Test JSON export
+        json_file = tmp_path / "report.json"
+        await reporter.export_report(metrics, str(json_file), "json")
+        assert json_file.exists()
+        import json
+        data = json.loads(json_file.read_text())
+        assert "metrics" in data
+
+    def test_get_family_statistics(self, reporter):
+        """Test getting family statistics"""
+        control_families = {"AC": 5, "AU": 3, "IA": 2, "SC": 1}
+        
+        stats = reporter._get_family_statistics(control_families)
+        
+        assert isinstance(stats, dict)
+        assert stats["total_families"] == 4
+        assert stats["total_controls"] == 11
+        assert stats["average_controls_per_family"] == 2.75
+        assert stats["most_common_family"] == "AC"
+
+    @pytest.mark.asyncio
+    async def test_analyze_empty_project(self, reporter, tmp_path):
+        """Test analyzing empty project"""
+        analyzers = {"python": MagicMock()}
+        analyzers["python"].analyze_project = AsyncMock(return_value={'files': {}})
+        
+        metrics = await reporter.analyze_project(tmp_path, analyzers)
+        
+        assert metrics.total_controls_detected == 0
+        assert len(metrics.unique_controls) == 0
+        assert metrics.files_analyzed == 0
+        assert metrics.files_with_controls == 0
+
+    def test_format_percentage(self, reporter):
+        """Test percentage formatting"""
+        # Test internal percentage calculation
+        assert reporter._format_percentage(0.5) == "50.0%"
+        assert reporter._format_percentage(0.333) == "33.3%"
+        assert reporter._format_percentage(1.0) == "100.0%"
+        assert reporter._format_percentage(0.0) == "0.0%"
+
+    def test_get_control_family(self, reporter):
+        """Test extracting control family from control ID"""
+        assert reporter._get_control_family("AC-3") == "AC"
+        assert reporter._get_control_family("AU-2(1)") == "AU"
+        assert reporter._get_control_family("IA-2") == "IA"
+        assert reporter._get_control_family("SC-8(1)(2)") == "SC"
+
+    @pytest.mark.asyncio
+    async def test_analyze_with_errors(self, reporter, tmp_path):
+        """Test handling analyzer errors"""
+        # Mock analyzer that raises exception
+        mock_analyzer = MagicMock()
+        mock_analyzer.analyze_project = AsyncMock(side_effect=Exception("Analyzer error"))
+        
+        analyzers = {"python": mock_analyzer}
+        
+        # Should handle error gracefully
+        metrics = await reporter.analyze_project(tmp_path, analyzers)
+        
+        assert isinstance(metrics, ControlCoverageMetrics)
+        assert metrics.files_analyzed == 0
+
+    def test_generate_recommendations(self, reporter):
+        """Test generating recommendations based on coverage"""
+        metrics = ControlCoverageMetrics(
+            total_controls_detected=10,
+            unique_controls={"AC-3", "AU-2"},
+            control_families={"AC": 1, "AU": 1},
+            family_coverage_percentage={"AC": 20.0, "AU": 20.0},
+            high_confidence_controls=set(),
+            suggested_missing_controls={"AC": ["AC-2", "AC-4"], "SC": ["SC-8"]},
+            files_analyzed=100,
+            files_with_controls=10
+        )
+
+        recommendations = reporter._generate_recommendations(metrics)
+        
         assert isinstance(recommendations, list)
         assert len(recommendations) > 0
-        assert any("AC-3" in rec for rec in recommendations)
-        # High priority should be mentioned first
-        assert "high" in recommendations[0].lower() or "AC-3" in recommendations[0]
+        # Should recommend implementing missing controls
+        assert any("AC-2" in rec or "AC-4" in rec for rec in recommendations)
+        # Should note low file coverage
+        assert any("10%" in rec or "coverage" in rec.lower() for rec in recommendations)
 
-    def test_format_report_json(self, report):
-        """Test JSON report formatting"""
-        results = {
-            "coverage_stats": CoverageStats(
-                total_controls=10,
-                implemented_controls=7,
-                partial_controls=2,
-                missing_controls=1,
-                coverage_percentage=80.0
-            ),
-            "implemented_controls": [
-                {"id": "AC-3", "name": "Access Enforcement"}
-            ],
-            "missing_controls": [
-                {"id": "SC-8", "name": "Transmission Confidentiality"}
-            ],
-            "recommendations": ["Implement SC-8"]
-        }
+    def test_enhanced_patterns_integration(self, reporter):
+        """Test integration with EnhancedNISTPatterns"""
+        assert reporter.patterns is not None
+        # Should be able to use pattern matching
+        assert hasattr(reporter.patterns, 'CONTROL_PATTERNS')
+        assert hasattr(reporter.patterns, 'EVIDENCE_PATTERNS')
 
-        json_report = report.format_report(results, "json")
+    # Helper methods for testing
+    def _format_percentage(self, value: float) -> str:
+        """Format percentage for display"""
+        return f"{value * 100:.1f}%"
 
-        assert isinstance(json_report, str)
-        import json
-        parsed = json.loads(json_report)
-        assert parsed["coverage_stats"]["total_controls"] == 10
-        assert parsed["coverage_stats"]["coverage_percentage"] == 80.0
-
-    def test_format_report_markdown(self, report):
-        """Test Markdown report formatting"""
-        results = {
-            "coverage_stats": CoverageStats(
-                total_controls=10,
-                implemented_controls=7,
-                partial_controls=2,
-                missing_controls=1,
-                coverage_percentage=80.0,
-                by_family={"AC": 3, "AU": 2}
-            ),
-            "implemented_controls": [
-                {"id": "AC-3", "name": "Access Enforcement", "evidence": ["RBAC"]}
-            ],
-            "missing_controls": [
-                {"id": "SC-8", "name": "Transmission Confidentiality"}
-            ],
-            "recommendations": ["Implement SC-8 for data in transit"]
-        }
-
-        md_report = report.format_report(results, "markdown")
-
-        assert isinstance(md_report, str)
-        assert "# NIST Control Coverage Report" in md_report
-        assert "## Coverage Summary" in md_report
-        assert "80.0%" in md_report
-        assert "AC-3" in md_report
-        assert "SC-8" in md_report
-
-    def test_format_report_html(self, report):
-        """Test HTML report formatting"""
-        results = {
-            "coverage_stats": CoverageStats(
-                total_controls=10,
-                implemented_controls=7,
-                partial_controls=2,
-                missing_controls=1,
-                coverage_percentage=80.0
-            ),
-            "implemented_controls": [],
-            "missing_controls": [],
-            "recommendations": []
-        }
-
-        html_report = report.format_report(results, "html")
-
-        assert isinstance(html_report, str)
-        assert "<html>" in html_report
-        assert "NIST Control Coverage Report" in html_report
-        assert "80.0%" in html_report
-
-    def test_format_report_text(self, report):
-        """Test text report formatting"""
-        results = {
-            "coverage_stats": CoverageStats(coverage_percentage=75.0),
-            "implemented_controls": [],
-            "missing_controls": [],
-            "recommendations": ["Test recommendation"]
-        }
-
-        text_report = report.format_report(results, "text")
-
-        assert isinstance(text_report, str)
-        assert "NIST Control Coverage Report" in text_report
-        assert "75.0%" in text_report
-        assert "Test recommendation" in text_report
-
-    def test_generate_gap_analysis(self, report):
-        """Test gap analysis generation"""
-        missing_controls = [
-            NISTControl(
-                id="AC-3",
-                name="Access Enforcement",
-                description="Test description",
-                family="AC",
-                implementation_guidance="Use RBAC"
-            )
-        ]
-
-        gaps = report._generate_gap_analysis(missing_controls)
-
-        assert isinstance(gaps, list)
-        assert len(gaps) > 0
-        gap = gaps[0]
-        assert gap["control_id"] == "AC-3"
-        assert gap["control_name"] == "Access Enforcement"
-        assert gap["implementation_status"] == ImplementationStatus.NOT_IMPLEMENTED.value
-        assert "suggested_implementation" in gap
-
-    def test_prioritize_controls(self, report):
-        """Test control prioritization"""
-        controls = [
-            NISTControl(id="AC-3", name="Access", description="", family="AC", priority="low"),
-            NISTControl(id="AU-2", name="Audit", description="", family="AU", priority="high"),
-            NISTControl(id="IA-2", name="Auth", description="", family="IA", priority="medium")
-        ]
-
-        prioritized = report._prioritize_controls(controls)
-
-        assert len(prioritized) == 3
-        # High priority should come first
-        assert prioritized[0].id == "AU-2"
-        assert prioritized[0].priority == "high"
-        # Low priority should come last
-        assert prioritized[2].id == "AC-3"
-        assert prioritized[2].priority == "low"
-
-    def test_get_implementation_examples(self, report):
-        """Test getting implementation examples"""
-        control = NISTControl(
-            id="AC-3",
-            name="Access Enforcement",
-            description="Enforce access control",
-            family="AC"
-        )
-
-        examples = report._get_implementation_examples(control)
-
-        assert isinstance(examples, list)
-        assert len(examples) > 0
-        # Should provide language-specific examples
-        assert any("python" in ex.lower() or "code" in ex.lower() for ex in examples)
-
-    def test_analyze_coverage_with_filters(self, report, tmp_path):
-        """Test coverage analysis with filters"""
-        results = report.analyze_coverage(
-            str(tmp_path),
-            control_families=["AC", "AU"],
-            min_priority="medium"
-        )
-
-        assert isinstance(results, dict)
-        assert "coverage_stats" in results
-        # Should only include specified families
-        if results["implemented_controls"]:
-            for control in results["implemented_controls"]:
-                assert control.get("family") in ["AC", "AU", None]
-
-    def test_export_results(self, report, tmp_path):
-        """Test exporting results to file"""
-        results = {
-            "coverage_stats": CoverageStats(coverage_percentage=80.0),
-            "implemented_controls": [],
-            "missing_controls": [],
-            "recommendations": []
-        }
-
-        # Export as JSON
-        json_file = tmp_path / "coverage.json"
-        report.export_results(results, str(json_file), "json")
-        assert json_file.exists()
-
-        # Export as Markdown
-        md_file = tmp_path / "coverage.md"
-        report.export_results(results, str(md_file), "markdown")
-        assert md_file.exists()
-
-    def test_compare_coverage(self, report):
-        """Test comparing coverage between scans"""
-        previous = {
-            "coverage_stats": CoverageStats(
-                implemented_controls=5,
-                coverage_percentage=50.0
-            ),
-            "implemented_controls": [{"id": "AC-3"}]
-        }
-
-        current = {
-            "coverage_stats": CoverageStats(
-                implemented_controls=7,
-                coverage_percentage=70.0
-            ),
-            "implemented_controls": [{"id": "AC-3"}, {"id": "AU-2"}]
-        }
-
-        comparison = report.compare_coverage(previous, current)
-
-        assert comparison["coverage_change"] == 20.0
-        assert comparison["new_controls"] == 2
-        assert len(comparison["newly_implemented"]) >= 1
-
-    def test_generate_executive_summary(self, report):
-        """Test executive summary generation"""
-        results = {
-            "coverage_stats": CoverageStats(
-                total_controls=100,
-                implemented_controls=75,
-                coverage_percentage=75.0,
-                by_family={"AC": 20, "AU": 15, "IA": 10}
-            ),
-            "recommendations": [
-                "Implement remaining AC controls",
-                "Enhance audit logging"
-            ]
-        }
-
-        summary = report.generate_executive_summary(results)
-
-        assert isinstance(summary, str)
-        assert "75.0%" in summary
-        assert "75 of 100" in summary
-        # Should mention top families
-        assert "AC" in summary
-
-    def test_error_handling(self, report):
-        """Test error handling"""
-        # Invalid directory
-        results = report.analyze_coverage("/nonexistent/path")
-        assert results is not None
-        assert "error" in results or "coverage_stats" in results
-
-        # Invalid format
-        formatted = report.format_report({}, "invalid_format")
-        assert isinstance(formatted, str)  # Should fallback to text
-
-    def test_custom_control_requirements(self, report):
-        """Test with custom control requirements"""
-        custom_controls = [
-            "AC-3", "AC-4", "AU-2", "IA-2", "SC-8"
-        ]
-
-        report.set_required_controls(custom_controls)
-
-        assert len(report.required_controls) == 5
-        assert all(c in report.required_controls for c in custom_controls)
-
-    def test_coverage_trends(self, report):
-        """Test coverage trend analysis"""
-        historical_data = [
-            {"date": "2024-01-01", "coverage": 50.0},
-            {"date": "2024-02-01", "coverage": 60.0},
-            {"date": "2024-03-01", "coverage": 75.0}
-        ]
-
-        trends = report.analyze_trends(historical_data)
-
-        assert "average_improvement" in trends
-        assert "projected_full_coverage" in trends
-        assert trends["average_improvement"] > 0
-
-    def test_control_mapping_validation(self, report):
-        """Test control mapping validation"""
-        mappings = {
-            "AC-3": ["auth.py", "rbac.py"],
-            "AU-2": ["logger.py"],
-            "INVALID-1": ["test.py"]  # Invalid control
-        }
-
-        valid_mappings = report.validate_control_mappings(mappings)
-
-        assert "AC-3" in valid_mappings
-        assert "AU-2" in valid_mappings
-        assert "INVALID-1" not in valid_mappings
-
-    def test_generate_remediation_plan(self, report):
-        """Test remediation plan generation"""
-        missing_controls = [
-            NISTControl(
-                id="AC-3",
-                name="Access Enforcement",
-                description="",
-                family="AC",
-                priority="high"
-            ),
-            NISTControl(
-                id="SC-8",
-                name="Transmission Confidentiality",
-                description="",
-                family="SC",
-                priority="medium"
-            )
-        ]
-
-        plan = report.generate_remediation_plan(missing_controls)
-
-        assert isinstance(plan, dict)
-        assert "phases" in plan
-        assert len(plan["phases"]) > 0
-        # High priority should be in early phases
-        phase1 = plan["phases"][0]
-        assert any("AC-3" in task["control_id"] for task in phase1["tasks"])
-
+    def _get_control_family(self, control_id: str) -> str:
+        """Extract control family from control ID"""
+        return control_id.split('-')[0]

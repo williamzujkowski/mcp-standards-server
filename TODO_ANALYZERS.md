@@ -69,12 +69,15 @@
    - Added tests for `hybrid_vector_store.py` ✅ (27 tests, 64% coverage)
    - Added tests for `tiered_storage_strategy.py` ✅ (31 tests, 98% coverage!)
    - Added tests for `chromadb_tier.py` ✅ (30 tests, 93% coverage!)
+   - Added tests for `token_optimizer.py` ✅ (comprehensive async tests)
+   - Added tests for `control_coverage_report.py` ✅ (coverage reporting tests)
    
 ### ✅ CI/CD Status - RESOLVED!
 1. **All mypy type errors fixed** ✅
 2. **All critical test failures fixed** ✅
 3. **Test coverage improved to 73%** (from 11%) ✅
-4. **Remaining work**: Reach 80% coverage (7% to go)
+4. **All ruff linting issues resolved** ✅
+5. **Remaining work**: Reach 80% coverage (7% to go)
 
 ---
 
