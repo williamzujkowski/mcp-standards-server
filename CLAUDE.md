@@ -6,13 +6,13 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
 
 ### Priority Actions
 1. ✅ **CI/CD Fixes**: All mypy type errors and test failures RESOLVED
-2. **Test Coverage**: 73% achieved (target: 80% - just 7% more needed!)
+2. **Test Coverage**: 77% achieved (target: 80% - just 3% more needed!)
 3. ✅ **Token Optimization**: micro_standards.py COMPLETE (95% coverage)
 4. ✅ **Hybrid Vector Store**: Three-tier architecture COMPLETED (FAISS + ChromaDB + Redis)
 5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support (future enhancement)
 
 ### Key Metrics
-- **Current Test Coverage**: 73% (improved from 11%, target: 80%)
+- **Current Test Coverage**: 77% (improved from 11%, target: 80%)
 - **Standards Imported**: 17/23 from williamzujkowski/standards
 - **Token Reduction**: Implementation complete with 95% test coverage
 - **Languages Supported**: 4 (Python, JS/TS, Go, Java)
@@ -30,6 +30,8 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
   - `chromadb_tier.py`: 93% ✅ (30 tests passing!)
   - `semantic_search.py`: 88% ✅ (tests fixed)
   - `enhanced_mapper.py`: 80%+ ✅ (already comprehensive)
+  - `control_coverage_report.py`: 81% ✅ (11 methods added!)
+  - `token_optimizer.py`: 63% ✅ (2 methods added!)
 
 ## Project Overview
 
@@ -59,7 +61,7 @@ This is a Model Context Protocol (MCP) server built with the official Python SDK
 - **Git Integration**: Automated hooks for pre-commit compliance checking
 - **VS Code Support**: Planned feature for integrated settings and workflow
 - **Example Projects**: Python API, JavaScript frontend with comprehensive documentation
-- **Test Coverage**: 73% (improved from 11%, targeting 80%)
+- **Test Coverage**: 77% (improved from 11%, targeting 80%)
 - **GitHub Workflows**: CI/CD pipelines with security scanning
 - **Three-Tier Hybrid Search**: FAISS hot cache + ChromaDB persistence + Redis query cache
 - **Semantic Search Integration**: EnhancedNaturalLanguageMapper with ML-based understanding
@@ -249,12 +251,14 @@ Before committing:
    - Added comprehensive tests for `tiered_storage_strategy.py` (31 tests, 98% coverage!)
    - Added comprehensive tests for `chromadb_tier.py` (30 tests, 93% coverage!)
    - Fixed and enhanced `semantic_search.py` tests (88% coverage)
-   - Overall coverage improved from 11% to 73%
+   - Added missing methods to `control_coverage_report.py` (11 methods added!)
+   - Added missing methods to `token_optimizer.py` (2 methods added!)
+   - Overall coverage improved from 11% to 77%
 
 ### 🔧 Remaining Work (Non-Critical)
 1. ✅ **micro_standards.py implementation** - COMPLETE (95% coverage)
 2. **Add more integration tests** for cross-module functionality
-3. **Reach 80% overall test coverage** (currently 73% - just 7% more needed!)
+3. **Reach 80% overall test coverage** (currently 77% - just 3% more needed!)
 
 ### Test Running Commands
 ```bash
