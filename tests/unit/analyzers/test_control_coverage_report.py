@@ -4,8 +4,7 @@ Unit tests for control coverage report analyzer
 @evidence: Control coverage report testing
 """
 
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -87,9 +86,9 @@ class TestControlCoverageReporter:
         })
 
         analyzers = {"python": mock_analyzer}
-        
+
         metrics = await reporter.analyze_project(tmp_path, analyzers)
-        
+
         assert isinstance(metrics, ControlCoverageMetrics)
         assert metrics.files_analyzed > 0
         assert 'AC-3' in metrics.unique_controls
@@ -110,9 +109,9 @@ class TestControlCoverageReporter:
         ])
 
         analyzers = {"python": mock_analyzer}
-        
+
         metrics = await reporter.analyze_project(tmp_path, analyzers)
-        
+
         assert isinstance(metrics, ControlCoverageMetrics)
 
     def test_generate_control_summary(self, reporter):
@@ -130,7 +129,7 @@ class TestControlCoverageReporter:
         }
 
         summary = reporter._generate_control_summary()
-        
+
         assert isinstance(summary, dict)
         assert len(summary) == 4  # Should have all 4 controls
         assert "AC-3" in summary
@@ -147,7 +146,7 @@ class TestControlCoverageReporter:
         }
 
         families = reporter._generate_family_coverage(control_summary)
-        
+
         assert isinstance(families, dict)
         assert "AC" in families
         assert "AU" in families
@@ -159,9 +158,9 @@ class TestControlCoverageReporter:
     def test_suggest_missing_controls(self, reporter):
         """Test suggesting missing controls"""
         implemented_controls = {"AC-3", "AU-2"}
-        
+
         suggestions = reporter._suggest_missing_controls(implemented_controls)
-        
+
         assert isinstance(suggestions, dict)
         # Should suggest related controls
         if "AC" in suggestions:
@@ -177,7 +176,7 @@ class TestControlCoverageReporter:
         }
 
         high_confidence = reporter._calculate_confidence_scores(control_summary)
-        
+
         assert isinstance(high_confidence, set)
         assert "AC-3" in high_confidence  # High count and confidence
         # AU-2 and IA-2 might not be in high confidence due to lower scores
@@ -196,7 +195,7 @@ class TestControlCoverageReporter:
         )
 
         html = reporter.generate_html_report(metrics)
-        
+
         assert isinstance(html, str)
         assert "<html>" in html
         assert "Control Coverage Report" in html
@@ -217,7 +216,7 @@ class TestControlCoverageReporter:
         )
 
         markdown = reporter.generate_markdown_report(metrics)
-        
+
         assert isinstance(markdown, str)
         assert "# NIST Control Coverage Report" in markdown
         assert "## Summary" in markdown
@@ -241,7 +240,7 @@ class TestControlCoverageReporter:
 
         import json
         json_report = reporter.generate_json_report(metrics)
-        
+
         assert isinstance(json_report, str)
         data = json.loads(json_report)
         assert data["metrics"]["total_controls_detected"] == 10
@@ -285,9 +284,9 @@ class TestControlCoverageReporter:
     def test_get_family_statistics(self, reporter):
         """Test getting family statistics"""
         control_families = {"AC": 5, "AU": 3, "IA": 2, "SC": 1}
-        
+
         stats = reporter._get_family_statistics(control_families)
-        
+
         assert isinstance(stats, dict)
         assert stats["total_families"] == 4
         assert stats["total_controls"] == 11
@@ -299,9 +298,9 @@ class TestControlCoverageReporter:
         """Test analyzing empty project"""
         analyzers = {"python": MagicMock()}
         analyzers["python"].analyze_project = AsyncMock(return_value={'files': {}})
-        
+
         metrics = await reporter.analyze_project(tmp_path, analyzers)
-        
+
         assert metrics.total_controls_detected == 0
         assert len(metrics.unique_controls) == 0
         assert metrics.files_analyzed == 0
@@ -328,12 +327,12 @@ class TestControlCoverageReporter:
         # Mock analyzer that raises exception
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_project = AsyncMock(side_effect=Exception("Analyzer error"))
-        
+
         analyzers = {"python": mock_analyzer}
-        
+
         # Should handle error gracefully
         metrics = await reporter.analyze_project(tmp_path, analyzers)
-        
+
         assert isinstance(metrics, ControlCoverageMetrics)
         assert metrics.files_analyzed == 0
 
@@ -351,7 +350,7 @@ class TestControlCoverageReporter:
         )
 
         recommendations = reporter._generate_recommendations(metrics)
-        
+
         assert isinstance(recommendations, list)
         assert len(recommendations) > 0
         # Should recommend implementing missing controls
