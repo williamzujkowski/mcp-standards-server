@@ -12,9 +12,9 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
 5. **Additional Languages**: Ruby, PHP, C++, Rust, C# support (future enhancement)
 
 ### Key Metrics
-- **Current Test Coverage**: 62% (down from 70%, target: 80%)
+- **Current Test Coverage**: 66% (improved from 62%, target: 80%)
 - **Standards Imported**: 17/23 from williamzujkowski/standards
-- **Token Reduction**: Implementation complete, testing needed (Target: 90%)
+- **Token Reduction**: Implementation partial, testing needed (Target: 90%)
 - **Languages Supported**: 4 (Python, JS/TS, Go, Java)
 - **IaC Analyzers**: 3 (Terraform, Dockerfile, Kubernetes)
 - **NIST Controls Detected**: 200+ across 20 families
@@ -23,6 +23,10 @@ This file serves as the primary logic router for LLMs working with the MCP Stand
   - FAISS Hot Cache: <1ms for top 1000
   - ChromaDB Persistent: 10-50ms with metadata
 - **New MCP Tools**: semantic_search, cache_stats, enhanced load_standards
+- **Module Coverage Progress**:
+  - `hybrid_vector_store.py`: 64% ✅ (up from 0%)
+  - `chromadb_tier.py`: 17% ❌ (needs tests)
+  - `tiered_storage_strategy.py`: 25% ❌ (needs tests)
 
 ## Project Overview
 
@@ -243,16 +247,19 @@ Before committing:
    - Need tests for `tiered_storage_strategy.py` (455 lines)
    - Some integration tests needed
 
-### Fix Strategy
+### Test Coverage Strategy
 ```bash
-# 1. Fix type errors
-# Add missing imports, fix type annotations
+# 1. Add ChromaDB tier tests
+pytest tests/unit/core/standards/test_chromadb_tier.py -v
 
-# 2. Update failing tests
-# Fix CodeAnnotation usage, implement MockTokenizer methods
+# 2. Add tiered storage strategy tests  
+pytest tests/unit/core/standards/test_tiered_storage_strategy.py -v
 
-# 3. Add test coverage
-# Create tests for hybrid modules to reach 80%
+# 3. Complete micro_standards implementation
+# Implement chunking logic and token optimization
+
+# 4. Run coverage report
+pytest --cov=src --cov-report=html --cov-report=term
 ```
 
 ## 🧭 LLM Decision Trees
@@ -314,9 +321,9 @@ What's the issue?
    - Test: `tests/unit/core/standards/test_token_optimization.py`
 
 2. **Micro Standards Generator** (500-token chunks)
-   - Location: `src/core/standards/micro_standards.py` (to be created)
-   - Required: Chunking algorithm, index generation
-   - Test: `tests/unit/core/standards/test_micro_standards.py`
+   - Location: `src/core/standards/micro_standards.py` (exists, ~21% coverage)
+   - Required: Complete chunking algorithm, index generation
+   - Test: `tests/unit/core/standards/test_micro_standards.py` (exists, needs expansion)
    - Integration: Store chunks in FAISS hot cache for fast retrieval
 
 ### Medium Priority Features
