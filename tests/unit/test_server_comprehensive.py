@@ -148,7 +148,7 @@ class TestMCPServer:
 
             result = await server.call_tool(
                 "load_standards",
-                {"standard": "nist-800-53", "version": "rev5"}
+                {"query": "nist-800-53", "version": "rev5"}
             )
 
             assert isinstance(result, list)
@@ -212,7 +212,7 @@ class TestMCPServer:
 
             result = await server.call_tool(
                 "validate_compliance",
-                {"project_path": "/path/to/project", "profile": "moderate"}
+                {"file_path": "/path/to/project", "profile": "moderate"}
             )
 
             assert isinstance(result, list)

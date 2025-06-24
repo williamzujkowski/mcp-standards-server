@@ -1218,112 +1218,112 @@ spec:
         """Test complex multi-resource file with various security issues"""
         test_file = tmp_path / "complex-manifest.yaml"
         manifest = '''---
-        apiVersion: v1
-        kind: Namespace
-        metadata:
-          name: production
-        ---
-        apiVersion: v1
-        kind: ServiceAccount
-        metadata:
-          name: app-sa
-          namespace: production
-        ---
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: ClusterRole
-        metadata:
-          name: dangerous-role
-        rules:
-        - apiGroups: ["*"]
-          resources: ["*"]
-          verbs: ["*"]
-        ---
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: ClusterRoleBinding
-        metadata:
-          name: dangerous-binding
-        roleRef:
-          apiGroup: rbac.authorization.k8s.io
-          kind: ClusterRole
-          name: cluster-admin
-        subjects:
-        - kind: ServiceAccount
-          name: app-sa
-          namespace: production
-        ---
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: insecure-app
-          namespace: production
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              app: insecure-app
-          template:
-            metadata:
-              labels:
-                app: insecure-app
-            spec:
-              serviceAccountName: app-sa
-              hostNetwork: true
-              hostPID: true
-              containers:
-              - name: app
-                image: myapp:latest
-                securityContext:
-                  privileged: true
-                  runAsUser: 0
-                  allowPrivilegeEscalation: true
-                  capabilities:
-                    add:
-                    - SYS_ADMIN
-                    - NET_ADMIN
-                env:
-                - name: DB_PASSWORD
-                  value: "supersecret123"
-                - name: API_KEY
-                  value: "sk-1234567890abcdef"
-                volumeMounts:
-                - name: host-root
-                  mountPath: /host
-              volumes:
-              - name: host-root
-                hostPath:
-                  path: /
-        ---
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: insecure-service
-          namespace: production
-        spec:
-          type: NodePort
-          selector:
-            app: insecure-app
-          ports:
-          - port: 80
-            targetPort: 8080
-            nodePort: 30080
-        ---
-        apiVersion: networking.k8s.io/v1
-        kind: Ingress
-        metadata:
-          name: insecure-ingress
-          namespace: production
-        spec:
-          rules:
-          - host: app.example.com
-            http:
-              paths:
-              - path: /
-                pathType: Prefix
-                backend:
-                  service:
-                    name: insecure-service
-                    port:
-                      number: 80
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-sa
+  namespace: production
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dangerous-role
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dangerous-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: app-sa
+  namespace: production
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-app
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-app
+  template:
+    metadata:
+      labels:
+        app: insecure-app
+    spec:
+      serviceAccountName: app-sa
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: app
+        image: myapp:latest
+        securityContext:
+          privileged: true
+          runAsUser: 0
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+            - NET_ADMIN
+        env:
+        - name: DB_PASSWORD
+          value: "supersecret123"
+        - name: API_KEY
+          value: "sk-1234567890abcdef"
+        volumeMounts:
+        - name: host-root
+          mountPath: /host
+      volumes:
+      - name: host-root
+        hostPath:
+          path: /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: insecure-service
+  namespace: production
+spec:
+  type: NodePort
+  selector:
+    app: insecure-app
+  ports:
+  - port: 80
+    targetPort: 8080
+    nodePort: 30080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: insecure-ingress
+  namespace: production
+spec:
+  rules:
+  - host: app.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: insecure-service
+            port:
+              number: 80
         '''
         test_file.write_text(manifest)
 
@@ -1418,25 +1418,25 @@ spec:
         """Test raw pattern analysis functionality"""
         test_file = tmp_path / "pattern-test.yaml"
         manifest = '''apiVersion: rbac.authorization.k8s.io/v1
-        kind: Role
-        metadata:
-          name: test-role
-        rules:
-        - apiGroups: ["*"]
-          resources: ["*"]
-          verbs: ["*"]
-        ---
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          name: test-pod
-        spec:
-          containers:
-          - name: app
-            image: nginx:latest
-            env:
-            - name: SECRET_KEY
-              value: "hardcoded-secret"
+kind: Role
+metadata:
+  name: test-role
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: app
+    image: nginx:latest
+    env:
+    - name: SECRET_KEY
+      value: "hardcoded-secret"
         '''
         test_file.write_text(manifest)
 
