@@ -161,10 +161,12 @@ def check_access():
         # Create test files
         (tmp_path / "file1.py").write_text('''"""
 @nist-controls: AC-2, AC-3
+@evidence: Test file for control coverage validation
 """
 ''')
         (tmp_path / "file2.py").write_text('''"""
 @nist-controls: AU-2, SC-13
+@evidence: Test file for control coverage validation
 """
 ''')
         
@@ -204,11 +206,13 @@ def check_access():
         # Create test files
         (tmp_path / "test.py").write_text('''"""
 @nist-controls: AC-3
+@evidence: Test file for exclude pattern validation
 """
 ''')
         (tmp_path / "node_modules").mkdir(parents=True, exist_ok=True)
         (tmp_path / "node_modules" / "lib.py").write_text('''"""
 @nist-controls: AU-2
+@evidence: Test file for exclude pattern validation
 """
 ''')
         

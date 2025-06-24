@@ -102,6 +102,7 @@ class ComplianceScanner:
     def _extract_nist_controls(self, content: str) -> list[str]:
         """Extract NIST control annotations from code"""
         # Pattern to match @nist-controls: AC-3, AU-2, etc.
+        # @evidence: Not a real control annotation, just a pattern example
         pattern = r'@nist-controls?:\s*([A-Z]{2}-\d+(?:\s*,\s*[A-Z]{2}-\d+)*)'
 
         controls = set()

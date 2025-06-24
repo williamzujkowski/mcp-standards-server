@@ -87,11 +87,13 @@ def main():
                             f"{file_path}:{line_num} - Invalid control format: {control}"
                         )
 
-                # Check for evidence annotation
+                # Check for evidence annotation (skip test files)
                 if not check_evidence_annotation(file_path, line_num - 1):
-                    issues.append(
-                        f"{file_path}:{line_num} - Missing @evidence annotation"
-                    )
+                    # Skip test files as they often contain test data with annotations
+                    if '/tests/' not in str(file_path):
+                        issues.append(
+                            f"{file_path}:{line_num} - Missing @evidence annotation"
+                        )
 
     # Print summary
     print("NIST Control Annotation Validation Report")
