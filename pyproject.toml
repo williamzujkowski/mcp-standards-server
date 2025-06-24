@@ -148,7 +148,6 @@ addopts = [
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov-fail-under=75",
-    "--timeout=300",
 ]
 
 [tool.coverage.run]

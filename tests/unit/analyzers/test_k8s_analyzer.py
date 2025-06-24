@@ -897,39 +897,39 @@ spec:
         """Test hostPath volume security analysis"""
         test_file = tmp_path / "hostpath-volumes.yaml"
         manifest = '''apiVersion: v1
-        kind: Pod
-        metadata:
-          name: hostpath-pod
-        spec:
-          containers:
-          - name: app
-            image: alpine:3.14
-            volumeMounts:
-            - name: host-root
-              mountPath: /host
-            - name: host-etc
-              mountPath: /host-etc
-            - name: host-var
-              mountPath: /host-var
-            - name: safe-tmp
-              mountPath: /tmp-mount
-          volumes:
-          - name: host-root
-            hostPath:
-              path: /
-              type: Directory
-          - name: host-etc
-            hostPath:
-              path: /etc
-              type: Directory
-          - name: host-var
-            hostPath:
-              path: /var/log
-              type: Directory
-          - name: safe-tmp
-            hostPath:
-              path: /tmp/safe
-              type: Directory
+kind: Pod
+metadata:
+  name: hostpath-pod
+spec:
+  containers:
+  - name: app
+    image: alpine:3.14
+    volumeMounts:
+    - name: host-root
+      mountPath: /host
+    - name: host-etc
+      mountPath: /host-etc
+    - name: host-var
+      mountPath: /host-var
+    - name: safe-tmp
+      mountPath: /tmp-mount
+  volumes:
+  - name: host-root
+    hostPath:
+      path: /
+      type: Directory
+  - name: host-etc
+    hostPath:
+      path: /etc
+      type: Directory
+  - name: host-var
+    hostPath:
+      path: /var/log
+      type: Directory
+  - name: safe-tmp
+    hostPath:
+      path: /tmp/safe
+      type: Directory
         '''
         test_file.write_text(manifest)
 
@@ -953,20 +953,20 @@ spec:
         """Test detection of anonymous user in RBAC bindings"""
         test_file = tmp_path / "anonymous-rbac.yaml"
         manifest = '''apiVersion: rbac.authorization.k8s.io/v1
-        kind: ClusterRoleBinding
-        metadata:
-          name: anonymous-binding
-        roleRef:
-          apiGroup: rbac.authorization.k8s.io
-          kind: ClusterRole
-          name: view
-        subjects:
-        - kind: User
-          name: system:anonymous
-          apiGroup: rbac.authorization.k8s.io
-        - kind: ServiceAccount
-          name: default
-          namespace: default
+kind: ClusterRoleBinding
+metadata:
+  name: anonymous-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+- kind: User
+  name: system:anonymous
+  apiGroup: rbac.authorization.k8s.io
+- kind: ServiceAccount
+  name: default
+  namespace: default
         '''
         test_file.write_text(manifest)
 
@@ -987,24 +987,24 @@ spec:
         """Test detection of overly permissive network policies"""
         test_file = tmp_path / "permissive-netpol.yaml"
         manifest = '''apiVersion: networking.k8s.io/v1
-        kind: NetworkPolicy
-        metadata:
-          name: allow-all-ingress
-        spec:
-          podSelector: {}
-          policyTypes:
-          - Ingress
-          # Empty ingress rules = allow all
-        ---
-        apiVersion: networking.k8s.io/v1
-        kind: NetworkPolicy
-        metadata:
-          name: allow-all-egress
-        spec:
-          podSelector: {}
-          policyTypes:
-          - Egress
-          # Empty egress rules = allow all
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  # Empty ingress rules = allow all
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  # Empty egress rules = allow all
         '''
         test_file.write_text(manifest)
 
@@ -1026,30 +1026,30 @@ spec:
         """Test secure ingress configuration analysis"""
         test_file = tmp_path / "secure-ingress.yaml"
         manifest = '''apiVersion: networking.k8s.io/v1
-        kind: Ingress
-        metadata:
-          name: secure-ingress
-          annotations:
-            nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-            nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
-            nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512"
-            nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-        spec:
-          tls:
-          - hosts:
-            - secure.example.com
-            secretName: tls-secret
-          rules:
-          - host: secure.example.com
-            http:
-              paths:
-              - path: /
-                pathType: Prefix
-                backend:
-                  service:
-                    name: web-service
-                    port:
-                      number: 443
+kind: Ingress
+metadata:
+  name: secure-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  tls:
+  - hosts:
+    - secure.example.com
+    secretName: tls-secret
+  rules:
+  - host: secure.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web-service
+            port:
+              number: 443
         '''
         test_file.write_text(manifest)
 
@@ -1068,33 +1068,33 @@ spec:
         """Test Job resource security analysis"""
         test_file = tmp_path / "job.yaml"
         manifest = '''apiVersion: batch/v1
-        kind: Job
-        metadata:
-          name: data-migration
-        spec:
-          template:
-            spec:
-              restartPolicy: Never
-              securityContext:
-                runAsUser: 0
-                runAsGroup: 0
-              containers:
-              - name: migration
-                image: migrate-tool:latest
-                securityContext:
-                  privileged: true
-                  allowPrivilegeEscalation: true
-                command: ["migrate.sh"]
-                env:
-                - name: DB_PASSWORD
-                  value: "admin123"
-                volumeMounts:
-                - name: host-data
-                  mountPath: /data
-              volumes:
-              - name: host-data
-                hostPath:
-                  path: /var/lib/mysql
+kind: Job
+metadata:
+  name: data-migration
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      containers:
+      - name: migration
+        image: migrate-tool:latest
+        securityContext:
+          privileged: true
+          allowPrivilegeEscalation: true
+        command: ["migrate.sh"]
+        env:
+        - name: DB_PASSWORD
+          value: "admin123"
+        volumeMounts:
+        - name: host-data
+          mountPath: /data
+      volumes:
+      - name: host-data
+        hostPath:
+          path: /var/lib/mysql
         '''
         test_file.write_text(manifest)
 
@@ -1121,40 +1121,40 @@ spec:
         """Test init container security analysis"""
         test_file = tmp_path / "init-containers.yaml"
         manifest = '''apiVersion: v1
-        kind: Pod
-        metadata:
-          name: app-with-init
-        spec:
-          initContainers:
-          - name: init-db
-            image: busybox:latest
-            securityContext:
-              runAsUser: 0
-              privileged: true
-            command: ['sh', '-c', 'echo Setting up database']
-          - name: init-files
-            image: alpine:3.14
-            command: ['sh', '-c', 'cp /config/* /shared/']
-            volumeMounts:
-            - name: config
-              mountPath: /config
-            - name: shared
-              mountPath: /shared
-          containers:
-          - name: app
-            image: myapp:v1.0.0
-            securityContext:
-              runAsNonRoot: true
-              runAsUser: 1000
-            volumeMounts:
-            - name: shared
-              mountPath: /app/config
-          volumes:
-          - name: config
-            configMap:
-              name: app-config
-          - name: shared
-            emptyDir: {}
+kind: Pod
+metadata:
+  name: app-with-init
+spec:
+  initContainers:
+  - name: init-db
+    image: busybox:latest
+    securityContext:
+      runAsUser: 0
+      privileged: true
+    command: ['sh', '-c', 'echo Setting up database']
+  - name: init-files
+    image: alpine:3.14
+    command: ['sh', '-c', 'cp /config/* /shared/']
+    volumeMounts:
+    - name: config
+      mountPath: /config
+    - name: shared
+      mountPath: /shared
+  containers:
+  - name: app
+    image: myapp:v1.0.0
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+    volumeMounts:
+    - name: shared
+      mountPath: /app/config
+  volumes:
+  - name: config
+    configMap:
+      name: app-config
+  - name: shared
+    emptyDir: {}
         '''
         test_file.write_text(manifest)
 
