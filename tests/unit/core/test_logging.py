@@ -4,7 +4,6 @@ Test Logging Module
 @evidence: Unit tests for logging functionality
 """
 
-import asyncio
 import json
 import logging
 from unittest.mock import MagicMock, patch
@@ -91,13 +90,13 @@ class TestLogging:
     def test_structured_formatter_with_exception(self):
         """Test StructuredFormatter with exception info"""
         formatter = StructuredFormatter()
-        
+
         try:
             raise ValueError("Test exception")
         except Exception:
             import sys
             exc_info = sys.exc_info()
-        
+
         record = logging.LogRecord(
             name="test.logger",
             level=logging.ERROR,
@@ -119,14 +118,14 @@ class TestLogging:
         """Test log_security_event function"""
         logger = MagicMock()
         context = ComplianceContext(user_id="test-user", roles=["admin"])
-        
+
         await log_security_event(
             logger,
             "test.event",
             context,
             {"action": "test_action"}
         )
-        
+
         logger.info.assert_called_once()
         call_args = logger.info.call_args
         assert "Security event: test.event" in call_args[0]
@@ -139,14 +138,14 @@ class TestLogging:
     async def test_log_security_event_no_context(self):
         """Test log_security_event without context"""
         logger = MagicMock()
-        
+
         await log_security_event(
             logger,
             "test.event",
             None,
             {"action": "test_action"}
         )
-        
+
         logger.info.assert_called_once()
         extra = logger.info.call_args[1]["extra"]
         assert extra["context"] == {}
@@ -157,21 +156,21 @@ class TestLogging:
         @audit_log(["AC-3", "AU-2"])
         async def test_function(value: int) -> int:
             return value * 2
-        
+
         with patch('src.core.logging.get_logger') as mock_get_logger:
             mock_logger = MagicMock()
             mock_get_logger.return_value = mock_logger
-            
+
             result = await test_function(5)
-            
+
             assert result == 10
             assert mock_logger.info.call_count == 2
-            
+
             # Check entry log
             entry_call = mock_logger.info.call_args_list[0]
             assert "Entering test_function" in entry_call[0]
             assert entry_call[1]["extra"]["event"] == "test_function.entry"
-            
+
             # Check success log
             success_call = mock_logger.info.call_args_list[1]
             assert "Completed test_function" in success_call[0]
@@ -183,14 +182,14 @@ class TestLogging:
         @audit_log(["AC-3", "AU-2"])
         async def test_function():
             raise ValueError("Test error")
-        
+
         with patch('src.core.logging.get_logger') as mock_get_logger:
             mock_logger = MagicMock()
             mock_get_logger.return_value = mock_logger
-            
+
             with pytest.raises(ValueError):
                 await test_function()
-            
+
             # Check that error was logged
             mock_logger.error.assert_called_once()
             error_call = mock_logger.error.call_args
@@ -202,13 +201,13 @@ class TestLogging:
         @audit_log(["AC-3", "AU-2"])
         def test_function(value: int) -> int:
             return value * 2
-        
+
         with patch('src.core.logging.get_logger') as mock_get_logger:
             mock_logger = MagicMock()
             mock_get_logger.return_value = mock_logger
-            
+
             result = test_function(5)
-            
+
             assert result == 10
             assert mock_logger.info.call_count == 2
 
@@ -217,14 +216,14 @@ class TestLogging:
         @audit_log(["AC-3", "AU-2"])
         def test_function():
             raise ValueError("Test error")
-        
+
         with patch('src.core.logging.get_logger') as mock_get_logger:
             mock_logger = MagicMock()
             mock_get_logger.return_value = mock_logger
-            
+
             with pytest.raises(ValueError):
                 test_function()
-            
+
             mock_logger.error.assert_called_once()
 
     def test_audit_log_decorator_with_context(self):
@@ -232,16 +231,16 @@ class TestLogging:
         @audit_log(["AC-3", "AU-2"])
         def test_function(context: ComplianceContext, value: int) -> int:
             return value * 2
-        
+
         with patch('src.core.logging.get_logger') as mock_get_logger:
             mock_logger = MagicMock()
             mock_get_logger.return_value = mock_logger
-            
+
             context = ComplianceContext(user_id="test-user", roles=["admin"])
             result = test_function(context, 5)
-            
+
             assert result == 10
-            
+
             # Check that context was included in logs
             entry_call = mock_logger.info.call_args_list[0]
             assert entry_call[1]["extra"]["context"]["user_id"] == "test-user"
@@ -255,7 +254,7 @@ class TestSecurityEventLogger:
         """Test logging successful authentication"""
         mock_logger = MagicMock()
         event_logger = SecurityEventLogger(mock_logger)
-        
+
         with patch('src.core.logging.log_security_event') as mock_log_event:
             await event_logger.log_authentication_attempt(
                 user_id="test-user",
@@ -263,7 +262,7 @@ class TestSecurityEventLogger:
                 method="password",
                 ip_address="192.168.1.1"
             )
-            
+
             mock_log_event.assert_called_once_with(
                 mock_logger,
                 "authentication.success",
@@ -280,7 +279,7 @@ class TestSecurityEventLogger:
         """Test logging failed authentication"""
         mock_logger = MagicMock()
         event_logger = SecurityEventLogger(mock_logger)
-        
+
         with patch('src.core.logging.log_security_event') as mock_log_event:
             await event_logger.log_authentication_attempt(
                 user_id="test-user",
@@ -288,7 +287,7 @@ class TestSecurityEventLogger:
                 method="password",
                 ip_address="192.168.1.1"
             )
-            
+
             mock_log_event.assert_called_once()
             call_args = mock_log_event.call_args[0]
             assert call_args[1] == "authentication.failure"
@@ -299,7 +298,7 @@ class TestSecurityEventLogger:
         mock_logger = MagicMock()
         event_logger = SecurityEventLogger(mock_logger)
         context = ComplianceContext(user_id="test-user", roles=["admin"])
-        
+
         with patch('src.core.logging.log_security_event') as mock_log_event:
             await event_logger.log_authorization_decision(
                 context=context,
@@ -307,7 +306,7 @@ class TestSecurityEventLogger:
                 action="DELETE",
                 granted=True
             )
-            
+
             mock_log_event.assert_called_once_with(
                 mock_logger,
                 "authorization.granted",
@@ -324,7 +323,7 @@ class TestSecurityEventLogger:
         mock_logger = MagicMock()
         event_logger = SecurityEventLogger(mock_logger)
         context = ComplianceContext(user_id="test-user", roles=["user"])
-        
+
         with patch('src.core.logging.log_security_event') as mock_log_event:
             await event_logger.log_authorization_decision(
                 context=context,
@@ -332,7 +331,7 @@ class TestSecurityEventLogger:
                 action="GET",
                 granted=False
             )
-            
+
             call_args = mock_log_event.call_args[0]
             assert call_args[1] == "authorization.denied"
 
@@ -342,7 +341,7 @@ class TestSecurityEventLogger:
         mock_logger = MagicMock()
         event_logger = SecurityEventLogger(mock_logger)
         context = ComplianceContext(user_id="test-user", roles=["analyst"])
-        
+
         with patch('src.core.logging.log_security_event') as mock_log_event:
             await event_logger.log_data_access(
                 context=context,
@@ -350,7 +349,7 @@ class TestSecurityEventLogger:
                 operation="READ",
                 record_count=100
             )
-            
+
             mock_log_event.assert_called_once_with(
                 mock_logger,
                 "data.access",
