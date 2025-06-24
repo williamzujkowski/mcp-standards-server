@@ -4,7 +4,7 @@ Welcome to the comprehensive documentation for the MCP Standards Server - a prod
 
 ## 🚀 Current Status: Production Ready
 
-**91.56% Test Coverage** | **17 Standards Imported** | **All CLI Commands Functional** | **Complete MCP Integration**
+**80% Test Coverage** | **17 Standards Imported** | **All CLI Commands Functional** | **Complete MCP Integration**
 
 ## Documentation Structure
 
