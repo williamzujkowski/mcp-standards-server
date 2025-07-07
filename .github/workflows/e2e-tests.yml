@@ -12,7 +12,6 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '20'
   COVERAGE_THRESHOLD: 80
 
 jobs:
@@ -37,21 +36,17 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
 
-    - name: Set up Node.js (for MCP)
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
 
-    - name: Install system dependencies
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
       run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          sudo apt-get update
-          sudo apt-get install -y redis-server
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          brew install redis
-        fi
-      shell: bash
+        sudo apt-get update
+        sudo apt-get install -y redis-server
+
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install redis
 
     - name: Install Python dependencies
       run: |
@@ -61,10 +56,6 @@ jobs:
         pip install memory-profiler psutil
         pip install coverage pytest-cov
 
-    - name: Install MCP dependencies
-      run: |
-        npm install -g @modelcontextprotocol/sdk
-        npm install -g tsx
 
     - name: Start Redis (Linux/macOS)
       if: matrix.os != 'windows-latest'
@@ -76,19 +67,14 @@ jobs:
     - name: Start Redis (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        choco install redis-64
+        choco install redis-64 -y
         redis-server --service-install
         redis-server --service-start
+      shell: pwsh
 
     - name: Run E2E tests with coverage
       run: |
-        pytest tests/e2e/ \
-          --cov=src \
-          --cov-report=term-missing \
-          --cov-report=xml \
-          --cov-report=html \
-          --timeout=300 \
-          -v
+        pytest tests/e2e/ --cov=src --cov-report=term-missing --cov-report=xml --cov-report=html --timeout=300 -v
       env:
         PYTHONPATH: ${{ github.workspace }}
         MCP_TEST_MODE: "true"
@@ -133,10 +119,7 @@ jobs:
 
     - name: Run performance tests
       run: |
-        pytest tests/e2e/test_performance.py \
-          -v \
-          --benchmark-only \
-          --benchmark-json=benchmark_results.json
+        pytest tests/e2e/test_performance.py -v --benchmark-only --benchmark-json=benchmark_results.json
 
     - name: Store benchmark results
       uses: benchmark-action/github-action-benchmark@v1
@@ -177,16 +160,23 @@ jobs:
 
     - name: Run memory leak tests
       run: |
-        python -m pytest tests/e2e/test_performance.py::TestMemoryPerformance \
-          -v \
-          --memprof \
-          --memprof-top-n=10
+        python -m pytest tests/e2e/test_performance.py::TestMemoryPerformance -v --memprof --memprof-top-n=10
 
-    - name: Analyze memory profile
+    - name: Analyze memory profile (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
         if [ -f memory_profile.txt ]; then
           python scripts/analyze_memory_profile.py memory_profile.txt
         fi
+      shell: bash
+
+    - name: Analyze memory profile (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        if (Test-Path memory_profile.txt) {
+          python scripts/analyze_memory_profile.py memory_profile.txt
+        }
+      shell: pwsh
 
   security-scan:
     name: Security Scan
@@ -233,7 +223,13 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
     - name: Generate test report
+      shell: bash
       run: |
         echo "# E2E Test Report" > test_report.md
         echo "## Summary" >> test_report.md
