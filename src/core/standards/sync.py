@@ -236,7 +236,7 @@ class StandardsSynchronizer:
         Returns:
             SyncResult with operation details
         """
-        result = SyncResult()
+        result = SyncResult(status=SyncStatus.SUCCESS)
         
         try:
             async with aiohttp.ClientSession() as session:
@@ -477,7 +477,9 @@ class StandardsSynchronizer:
         """Check which files need updates without downloading."""
         outdated = []
         current = []
-        cache_ttl = timedelta(hours=self.config['cache'].get('ttl_hours', 24))
+        # Safely get cache config with defaults
+        cache_config = self.config.get('cache', {})
+        cache_ttl = timedelta(hours=cache_config.get('ttl_hours', 24))
         now = datetime.now()
         
         for path, metadata in self.file_metadata.items():
@@ -496,7 +498,7 @@ class StandardsSynchronizer:
             'outdated_files': outdated,
             'current_files': current,
             'total_cached': len(self.file_metadata),
-            'cache_ttl_hours': self.config['cache'].get('ttl_hours', 24)
+            'cache_ttl_hours': cache_config.get('ttl_hours', 24)
         }
     
     def get_cached_standards(self) -> List[Path]:

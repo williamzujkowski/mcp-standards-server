@@ -446,11 +446,23 @@ class MCPStandardsServer:
         # Generate suggestions based on standards
         for standard_id in applicable_standards:
             # This is a placeholder - actual implementation would analyze code
-            if "react" in standard_id.lower() and "javascript" in context.get("language", "").lower():
+            if "javascript" in context.get("language", "").lower():
                 if "var " in code:
                     suggestions.append({
                         "description": "Use const/let instead of var",
                         "priority": "high",
+                        "standard_reference": standard_id
+                    })
+                if "function" in code and not "async" in code:
+                    suggestions.append({
+                        "description": "Consider using async/await for asynchronous operations",
+                        "priority": "medium",
+                        "standard_reference": standard_id
+                    })
+                if ".then(" in code:
+                    suggestions.append({
+                        "description": "Consider using async/await instead of promise chains",
+                        "priority": "medium",
                         "standard_reference": standard_id
                     })
                     
@@ -674,10 +686,17 @@ class MCPStandardsServer:
         status = self.synchronizer.get_sync_status()
         updates = self.synchronizer.check_updates()
         
+        # Get the most recent sync time from all files
+        last_sync = None
+        if status.get("last_sync_times"):
+            sync_times = [t for t in status["last_sync_times"].values() if t]
+            if sync_times:
+                last_sync = max(sync_times)
+        
         return {
-            "last_sync": status.get("last_sync_time"),
+            "last_sync": last_sync,
             "total_standards": status["total_files"],
-            "outdated_standards": len(updates["outdated_files"]),
+            "outdated_standards": len(updates.get("outdated_files", [])),
             "cache_size_mb": status["total_size_mb"],
             "rate_limit": status["rate_limit"]
         }
