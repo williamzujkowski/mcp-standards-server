@@ -1,5 +1,7 @@
 # MCP Standards Server - LLM Context Management System
 
+**Last Updated:** 2025-07-07
+
 ## Project Overview
 
 This project transforms the williamzujkowski/standards repository into a comprehensive LLM context management system by implementing a Model Context Protocol (MCP) server. The server provides intelligent, context-aware access to development standards, enabling LLMs to automatically select and apply appropriate standards based on project requirements.

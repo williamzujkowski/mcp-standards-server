@@ -201,6 +201,38 @@ def mock_github_api(monkeypatch):
     return mock_api
 
 
+@pytest.fixture(autouse=True)
+def mock_ml_dependencies(monkeypatch):
+    """Mock ML dependencies for tests."""
+    import sys
+    from tests.mocks import MockSentenceTransformer, MockNearestNeighbors
+    
+    # Mock sentence-transformers
+    class MockSentenceTransformersModule:
+        SentenceTransformer = MockSentenceTransformer
+    
+    # Mock sklearn.neighbors
+    class MockNeighborsModule:
+        NearestNeighbors = MockNearestNeighbors
+    
+    class MockSklearnModule:
+        neighbors = MockNeighborsModule()
+    
+    # Patch the imports
+    sys.modules['sentence_transformers'] = MockSentenceTransformersModule()
+    sys.modules['sklearn'] = MockSklearnModule()
+    sys.modules['sklearn.neighbors'] = MockNeighborsModule()
+    
+    monkeypatch.setattr("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+    
+    yield
+    
+    # Cleanup
+    for module in ['sentence_transformers', 'sklearn', 'sklearn.neighbors']:
+        if module in sys.modules:
+            del sys.modules[module]
+
+
 # Pytest plugins configuration
 def pytest_configure(config):
     """Configure pytest with custom settings."""
