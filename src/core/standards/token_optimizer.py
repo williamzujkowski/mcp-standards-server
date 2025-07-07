@@ -1,689 +1,918 @@
 """
-Token optimization engine for achieving 90% token reduction
-@nist-controls: SI-10, SI-12, AC-4
-@evidence: Intelligent content optimization and filtering
-@oscal-component: standards-engine
+Token Usage Optimization for MCP Standards Server.
+
+This module provides comprehensive token optimization strategies including:
+- Multiple format variants (full, condensed, reference, summary)
+- Dynamic loading with progressive disclosure
+- Token counting and budgeting for different models
+- Advanced compression techniques
+- Context-aware section selection
 """
 
+import hashlib
+import json
+import logging
 import re
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from collections import defaultdict
+import tiktoken
+import zlib
+import base64
 
-from pydantic import BaseModel
-
-from ..tokenizer import BaseTokenizer, get_default_tokenizer
+logger = logging.getLogger(__name__)
 
 
-class OptimizationLevel(str, Enum):
-    """Optimization levels for content reduction"""
-    MINIMAL = "minimal"      # ~30% reduction
-    MODERATE = "moderate"    # ~60% reduction
-    AGGRESSIVE = "aggressive"  # ~90% reduction
+class StandardFormat(Enum):
+    """Available format variants for standards."""
+    FULL = "full"  # Complete documentation with examples
+    CONDENSED = "condensed"  # Key points and essential information
+    REFERENCE = "reference"  # Quick lookup with minimal tokens
+    SUMMARY = "summary"  # One-paragraph executive summary
+    CUSTOM = "custom"  # User-defined format
+
+
+class ModelType(Enum):
+    """Supported model types for token counting."""
+    GPT4 = "gpt-4"
+    GPT35_TURBO = "gpt-3.5-turbo"
+    CLAUDE = "claude"
+    CLAUDE_INSTANT = "claude-instant"
+    CUSTOM = "custom"
 
 
 @dataclass
-class OptimizationMetrics:
-    """Metrics for optimization effectiveness"""
+class TokenBudget:
+    """Token budget configuration."""
+    total: int
+    reserved_for_context: int = 1000
+    reserved_for_response: int = 2000
+    warning_threshold: float = 0.8  # Warn when 80% of budget used
+    
+    @property
+    def available(self) -> int:
+        """Calculate available tokens for content."""
+        return self.total - self.reserved_for_context - self.reserved_for_response
+    
+    @property
+    def warning_limit(self) -> int:
+        """Calculate warning threshold."""
+        return int(self.available * self.warning_threshold)
+
+
+@dataclass
+class CompressionResult:
+    """Result of a compression operation."""
     original_tokens: int
-    optimized_tokens: int
-    reduction_percentage: float
-    information_retained: float
-    processing_time: float
+    compressed_tokens: int
+    compression_ratio: float
+    format_used: StandardFormat
+    sections_included: List[str]
+    sections_excluded: List[str]
+    warnings: List[str] = field(default_factory=list)
 
 
-class ContentSection(BaseModel):
-    """Represents a section of content with metadata"""
+@dataclass
+class StandardSection:
+    """Represents a section of a standard."""
+    id: str
     title: str
     content: str
-    importance: float  # 0.0 to 1.0
-    keywords: list[str]
-    concepts: list[str]
-    requirements: list[str]
-    examples: list[str]
-    token_count: int
+    priority: int = 5  # 1-10, higher is more important
+    token_count: int = 0
+    dependencies: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
+    
+    def __post_init__(self):
+        """Calculate token count if not provided."""
+        if self.token_count == 0:
+            # Simple approximation: 1 token ≈ 4 characters
+            self.token_count = len(self.content) // 4
 
 
-class OptimizationStrategy(ABC):
-    """Base class for optimization strategies"""
-
-    def __init__(self, tokenizer: BaseTokenizer | None = None):
-        self.tokenizer = tokenizer or get_default_tokenizer()
-
-    @abstractmethod
-    async def optimize(self, content: str, max_tokens: int, context: dict[str, Any]) -> str:
-        """Optimize content to fit within token limit"""
-        pass
-
-    def estimate_tokens(self, content: str) -> int:
-        """Estimate token count for content"""
-        return self.tokenizer.count_tokens(content)
-
-
-class SummarizationStrategy(OptimizationStrategy):
-    """
-    Intelligent summarization using extraction and abstraction
-    @nist-controls: SI-10
-    @evidence: Content summarization with information preservation
-    """
-
-    def __init__(self, tokenizer: BaseTokenizer | None = None):
-        super().__init__(tokenizer)
-        self.requirement_keywords = {
-            "MUST", "SHALL", "REQUIRED", "MUST NOT", "SHALL NOT",
-            "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", "OPTIONAL"
-        }
-        self.security_keywords = {
-            "authentication", "authorization", "encryption", "security",
-            "compliance", "audit", "logging", "access control", "validation"
-        }
-
-    async def optimize(self, content: str, max_tokens: int, context: dict[str, Any]) -> str:
-        """Create intelligent summary preserving critical information"""
-        sections = self._parse_content(content)
-        prioritized = self._prioritize_sections(sections, context)
-
-        result = []
-        token_budget = max_tokens
-
-        # Always include requirements
-        requirements = self._extract_requirements(content)
-        if requirements:
-            req_summary = self._summarize_requirements(requirements)
-            result.append("## Key Requirements\n" + req_summary)
-            token_budget -= self.estimate_tokens(req_summary)
-
-        # Add sections by priority
-        for section in prioritized:
-            if token_budget <= 0:
-                break
-
-            if section.importance >= 0.8:
-                # High importance - include more detail
-                summarized = self._detailed_summary(section)
-            elif section.importance >= 0.5:
-                # Medium importance - moderate summary
-                summarized = self._moderate_summary(section)
+class TokenCounter:
+    """Accurate token counting for different models."""
+    
+    def __init__(self, model_type: ModelType = ModelType.GPT4):
+        self.model_type = model_type
+        self._encoders = {}
+        self._init_encoders()
+    
+    def _init_encoders(self):
+        """Initialize token encoders for different models."""
+        try:
+            # GPT models use tiktoken
+            if self.model_type in [ModelType.GPT4, ModelType.GPT35_TURBO]:
+                encoding_name = "cl100k_base" if self.model_type == ModelType.GPT4 else "cl100k_base"
+                self._encoders['default'] = tiktoken.get_encoding(encoding_name)
             else:
-                # Low importance - brief mention
-                summarized = self._brief_summary(section)
+                # For Claude and others, use approximation
+                self._encoders['default'] = None
+        except Exception as e:
+            logger.warning(f"Failed to initialize tiktoken encoder: {e}")
+            self._encoders['default'] = None
+    
+    def count_tokens(self, text: str) -> int:
+        """Count tokens in text for the configured model."""
+        if self._encoders.get('default'):
+            try:
+                return len(self._encoders['default'].encode(text))
+            except Exception as e:
+                logger.warning(f"Token counting failed: {e}")
+        
+        # Fallback approximation
+        if self.model_type in [ModelType.CLAUDE, ModelType.CLAUDE_INSTANT]:
+            # Claude typically uses ~1 token per 3.5 characters
+            return len(text) // 3
+        else:
+            # Default approximation: 1 token ≈ 4 characters
+            return len(text) // 4
+    
+    def count_tokens_batch(self, texts: List[str]) -> List[int]:
+        """Count tokens for multiple texts efficiently."""
+        return [self.count_tokens(text) for text in texts]
 
-            section_tokens = self.estimate_tokens(summarized)
-            if section_tokens <= token_budget:
-                result.append(summarized)
-                token_budget -= section_tokens
 
-        return "\n\n".join(result)
+class CompressionTechniques:
+    """Collection of compression techniques."""
+    
+    @staticmethod
+    def remove_redundancy(text: str) -> str:
+        """Remove redundant information from text."""
+        # Remove multiple spaces
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Remove redundant newlines
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        
+        # Remove trailing spaces
+        lines = [line.rstrip() for line in text.split('\n')]
+        text = '\n'.join(lines)
+        
+        return text.strip()
+    
+    @staticmethod
+    def use_abbreviations(text: str) -> str:
+        """Replace common terms with abbreviations."""
+        abbreviations = {
+            'implementation': 'impl',
+            'configuration': 'config',
+            'documentation': 'docs',
+            'application': 'app',
+            'development': 'dev',
+            'production': 'prod',
+            'environment': 'env',
+            'repository': 'repo',
+            'authentication': 'auth',
+            'authorization': 'authz',
+            'administrator': 'admin',
+            'database': 'db',
+            'infrastructure': 'infra',
+            'kubernetes': 'k8s',
+            'javascript': 'js',
+            'typescript': 'ts',
+            'python': 'py',
+            'requirements': 'reqs',
+            'dependencies': 'deps',
+            'performance': 'perf',
+            'optimization': 'opt',
+            'security': 'sec',
+            'vulnerability': 'vuln',
+            'compliance': 'compl',
+            'standard': 'std',
+            'reference': 'ref',
+            'example': 'ex',
+            'information': 'info',
+            'management': 'mgmt',
+            'monitoring': 'mon',
+            'observability': 'o11y',
+            'continuous integration': 'CI',
+            'continuous deployment': 'CD',
+            'pull request': 'PR',
+            'merge request': 'MR',
+            'quality assurance': 'QA',
+            'user interface': 'UI',
+            'user experience': 'UX',
+            'application programming interface': 'API',
+            'software development kit': 'SDK',
+            'command line interface': 'CLI',
+            'graphical user interface': 'GUI',
+        }
+        
+        # Case-insensitive replacement
+        for full, abbr in abbreviations.items():
+            text = re.sub(rf'\b{full}\b', abbr, text, flags=re.IGNORECASE)
+        
+        return text
+    
+    @staticmethod
+    def compress_code_examples(text: str) -> str:
+        """Compress code examples while maintaining readability."""
+        # Find code blocks
+        code_pattern = r'```[\s\S]*?```'
+        
+        def compress_code(match):
+            code = match.group(0)
+            lines = code.split('\n')
+            
+            # Keep language identifier
+            if len(lines) > 2:
+                compressed = [lines[0]]  # ```language
+                
+                # Remove empty lines and excessive whitespace
+                for line in lines[1:-1]:
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith('//') and not stripped.startswith('#'):
+                        # Reduce indentation to 2 spaces
+                        indent_level = (len(line) - len(line.lstrip())) // 4
+                        compressed.append('  ' * indent_level + stripped)
+                
+                compressed.append(lines[-1])  # ```
+                return '\n'.join(compressed)
+            return code
+        
+        return re.sub(code_pattern, compress_code, text)
+    
+    @staticmethod
+    def create_lookup_table(text: str, patterns: List[str]) -> Tuple[str, Dict[str, str]]:
+        """Create lookup tables for repeated patterns."""
+        lookup_table = {}
+        compressed_text = text
+        
+        # Find repeated long phrases (>20 chars appearing 3+ times)
+        words = text.split()
+        phrase_counts = defaultdict(int)
+        
+        # Count 3-word phrases
+        for i in range(len(words) - 2):
+            phrase = ' '.join(words[i:i+3])
+            if len(phrase) > 20:
+                phrase_counts[phrase] += 1
+        
+        # Create lookup entries for frequent phrases
+        lookup_id = 1
+        for phrase, count in phrase_counts.items():
+            if count >= 3:
+                key = f"[L{lookup_id}]"
+                lookup_table[key] = phrase
+                compressed_text = compressed_text.replace(phrase, key)
+                lookup_id += 1
+        
+        return compressed_text, lookup_table
+    
+    @staticmethod
+    def extract_essential_only(text: str) -> str:
+        """Extract only essential information."""
+        lines = text.split('\n')
+        essential_lines = []
+        
+        # Keywords that indicate essential information
+        essential_keywords = [
+            'must', 'should', 'required', 'critical', 'important',
+            'warning', 'error', 'security', 'performance', 'best practice',
+            'do not', "don't", 'avoid', 'never', 'always'
+        ]
+        
+        for line in lines:
+            lower_line = line.lower()
+            # Keep headers
+            if line.strip().startswith('#'):
+                essential_lines.append(line)
+            # Keep lines with essential keywords
+            elif any(keyword in lower_line for keyword in essential_keywords):
+                essential_lines.append(line)
+            # Keep bullet points with key information
+            elif line.strip().startswith(('- ', '* ', '1.', '2.', '3.')):
+                if len(line.strip()) > 10:  # Avoid trivial bullets
+                    essential_lines.append(line)
+        
+        return '\n'.join(essential_lines)
 
-    def _parse_content(self, content: str) -> list[ContentSection]:
-        """Parse content into structured sections"""
+
+class TokenOptimizer:
+    """Main token optimization engine."""
+    
+    def __init__(self, 
+                 model_type: ModelType = ModelType.GPT4,
+                 default_budget: Optional[TokenBudget] = None):
+        self.model_type = model_type
+        self.token_counter = TokenCounter(model_type)
+        self.compression = CompressionTechniques()
+        self.default_budget = default_budget or TokenBudget(total=8000)
+        
+        # Cache for formatted content
+        self._format_cache = {}
+        self._cache_ttl = 3600  # 1 hour
+        
+        # Lookup tables for compression
+        self._global_lookup_table = {}
+    
+    def optimize_standard(self,
+                         standard: Dict[str, Any],
+                         format_type: StandardFormat = StandardFormat.CONDENSED,
+                         budget: Optional[TokenBudget] = None,
+                         required_sections: Optional[List[str]] = None,
+                         context: Optional[Dict[str, Any]] = None) -> Tuple[str, CompressionResult]:
+        """Optimize a standard for token usage."""
+        budget = budget or self.default_budget
+        
+        # Check cache
+        cache_key = self._get_cache_key(standard, format_type, required_sections)
+        if cache_key in self._format_cache:
+            cached_time, cached_content, cached_result = self._format_cache[cache_key]
+            if time.time() - cached_time < self._cache_ttl:
+                return cached_content, cached_result
+        
+        # Parse standard into sections
+        sections = self._parse_standard_sections(standard)
+        
+        # Select format strategy
+        if format_type == StandardFormat.FULL:
+            content, result = self._format_full(sections, budget, required_sections)
+        elif format_type == StandardFormat.CONDENSED:
+            content, result = self._format_condensed(sections, budget, required_sections)
+        elif format_type == StandardFormat.REFERENCE:
+            content, result = self._format_reference(sections, budget, required_sections)
+        elif format_type == StandardFormat.SUMMARY:
+            content, result = self._format_summary(sections, budget)
+        else:
+            content, result = self._format_custom(sections, budget, required_sections, context)
+        
+        # Cache result
+        self._format_cache[cache_key] = (time.time(), content, result)
+        
+        return content, result
+    
+    def _parse_standard_sections(self, standard: Dict[str, Any]) -> List[StandardSection]:
+        """Parse standard into sections."""
         sections = []
-
-        # Split by headers
-        header_pattern = r'^(#{1,6})\s+(.+)$'
-        parts = re.split(header_pattern, content, flags=re.MULTILINE)
-
-        for i in range(1, len(parts), 3):
-            if i + 2 < len(parts):
-                len(parts[i])
-                title = parts[i + 1].strip()
-                section_content = parts[i + 2].strip()
-
-                section = ContentSection(
-                    title=title,
+        
+        # Common section patterns
+        section_patterns = [
+            ('overview', r'#{1,3}\s*Overview.*?(?=#{1,3}|\Z)', 8),
+            ('requirements', r'#{1,3}\s*Requirements.*?(?=#{1,3}|\Z)', 9),
+            ('implementation', r'#{1,3}\s*Implementation.*?(?=#{1,3}|\Z)', 7),
+            ('examples', r'#{1,3}\s*Examples?.*?(?=#{1,3}|\Z)', 5),
+            ('best_practices', r'#{1,3}\s*Best Practices.*?(?=#{1,3}|\Z)', 8),
+            ('security', r'#{1,3}\s*Security.*?(?=#{1,3}|\Z)', 9),
+            ('performance', r'#{1,3}\s*Performance.*?(?=#{1,3}|\Z)', 7),
+            ('testing', r'#{1,3}\s*Testing.*?(?=#{1,3}|\Z)', 6),
+            ('references', r'#{1,3}\s*References.*?(?=#{1,3}|\Z)', 3),
+        ]
+        
+        content = standard.get('content', '')
+        
+        for section_id, pattern, priority in section_patterns:
+            matches = re.finditer(pattern, content, re.IGNORECASE | re.DOTALL)
+            for match in matches:
+                section_content = match.group(0)
+                sections.append(StandardSection(
+                    id=section_id,
+                    title=section_id.replace('_', ' ').title(),
                     content=section_content,
-                    importance=self._calculate_importance(title, section_content),
-                    keywords=self._extract_keywords(section_content),
-                    concepts=self._extract_concepts(section_content),
-                    requirements=self._extract_requirements(section_content),
-                    examples=self._extract_examples(section_content),
-                    token_count=self.estimate_tokens(section_content)
-                )
-                sections.append(section)
-
+                    priority=priority,
+                    token_count=self.token_counter.count_tokens(section_content)
+                ))
+        
+        # Add any remaining content as "other"
+        covered_content = ''.join(s.content for s in sections)
+        if len(covered_content) < len(content):
+            remaining = content[len(covered_content):]
+            if remaining.strip():
+                sections.append(StandardSection(
+                    id='other',
+                    title='Additional Information',
+                    content=remaining,
+                    priority=4,
+                    token_count=self.token_counter.count_tokens(remaining)
+                ))
+        
         return sections
-
-    def _calculate_importance(self, title: str, content: str) -> float:
-        """Calculate section importance based on content analysis"""
-        score = 0.5  # Base score
-
-        # Title analysis
-        title_lower = title.lower()
-        if any(keyword in title_lower for keyword in ["requirement", "security", "compliance"]):
-            score += 0.2
-        if any(keyword in title_lower for keyword in ["example", "optional", "additional"]):
-            score -= 0.2
-
-        # Content analysis
-        content_lower = content.lower()
-        requirement_count = sum(1 for kw in self.requirement_keywords if kw in content)
-        security_count = sum(1 for kw in self.security_keywords if kw in content_lower)
-
-        score += min(0.3, requirement_count * 0.05)
-        score += min(0.2, security_count * 0.03)
-
-        return max(0.0, min(1.0, score))
-
-    def _extract_requirements(self, content: str) -> list[str]:
-        """Extract requirement statements"""
-        requirements = []
-        sentences = content.split('.')
-
-        for sentence in sentences:
-            if any(keyword in sentence.upper() for keyword in self.requirement_keywords):
-                requirements.append(sentence.strip() + '.')
-
-        return requirements
-
-    def _extract_keywords(self, content: str) -> list[str]:
-        """Extract important keywords from content"""
-        # Simple keyword extraction - can be enhanced with NLP
-        words = re.findall(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)*\b', content)
-        return list(set(words))[:10]
-
-    def _extract_concepts(self, content: str) -> list[str]:
-        """Extract high-level concepts"""
-        concepts = []
-
-        # Look for definition patterns
-        definition_patterns = [
-            r'(\w+)\s+is\s+(?:a|an|the)\s+(\w+)',
-            r'(\w+)\s+refers\s+to\s+(\w+)',
-            r'(\w+)\s+means\s+(\w+)'
-        ]
-
-        for pattern in definition_patterns:
-            matches = re.findall(pattern, content, re.IGNORECASE)
-            concepts.extend([match[0] for match in matches])
-
-        return list(set(concepts))[:5]
-
-    def _extract_examples(self, content: str) -> list[str]:
-        """Extract example code or configurations"""
-        examples = []
-
-        # Code block pattern
-        code_blocks = re.findall(r'```[\s\S]*?```', content)
-        examples.extend(code_blocks)
-
-        # Example patterns
-        example_pattern = r'(?:Example|e\.g\.|For example)[:\s]+([^.]+\.)'
-        example_matches = re.findall(example_pattern, content, re.IGNORECASE)
-        examples.extend(example_matches)
-
-        return examples[:3]
-
-    def _prioritize_sections(self, sections: list[ContentSection], context: dict[str, Any]) -> list[ContentSection]:
-        """Prioritize sections based on context and importance"""
-        # Adjust importance based on context
-        if context.get("focus_area"):
-            focus = context["focus_area"].lower()
-            for section in sections:
-                if focus in section.title.lower() or focus in section.content.lower():
-                    section.importance = min(1.0, section.importance + 0.2)
-
-        # Sort by importance
-        return sorted(sections, key=lambda s: s.importance, reverse=True)
-
-    def _summarize_requirements(self, requirements: list[str]) -> str:
-        """Create concise summary of requirements"""
-        if not requirements:
-            return ""
-
-        # Group similar requirements
-        grouped: dict[str, list[str]] = {}
-        for req in requirements:
-            key = self._get_requirement_key(req)
-            if key not in grouped:
-                grouped[key] = []
-            grouped[key].append(req)
-
-        summary_parts = []
-        for key, reqs in grouped.items():
-            if len(reqs) == 1:
-                summary_parts.append(f"- {reqs[0]}")
+    
+    def _format_full(self, 
+                     sections: List[StandardSection],
+                     budget: TokenBudget,
+                     required_sections: Optional[List[str]]) -> Tuple[str, CompressionResult]:
+        """Format standard in full format."""
+        original_tokens = sum(s.token_count for s in sections)
+        
+        # If under budget, return everything
+        if original_tokens <= budget.available:
+            content = '\n\n'.join(s.content for s in sections)
+            return content, CompressionResult(
+                original_tokens=original_tokens,
+                compressed_tokens=original_tokens,
+                compression_ratio=1.0,
+                format_used=StandardFormat.FULL,
+                sections_included=[s.id for s in sections],
+                sections_excluded=[]
+            )
+        
+        # Otherwise, apply light compression
+        compressed_sections = []
+        total_tokens = 0
+        included = []
+        excluded = []
+        
+        # Sort by priority
+        sorted_sections = sorted(sections, key=lambda s: s.priority, reverse=True)
+        
+        for section in sorted_sections:
+            # Apply light compression
+            compressed_content = self.compression.remove_redundancy(section.content)
+            compressed_tokens = self.token_counter.count_tokens(compressed_content)
+            
+            if total_tokens + compressed_tokens <= budget.available:
+                compressed_sections.append(compressed_content)
+                total_tokens += compressed_tokens
+                included.append(section.id)
             else:
-                summary_parts.append(f"- {key}: {len(reqs)} requirements")
-
-        return "\n".join(summary_parts)
-
-    def _get_requirement_key(self, requirement: str) -> str:
-        """Extract key concept from requirement"""
-        for keyword in self.security_keywords:
-            if keyword in requirement.lower():
-                return keyword.capitalize()
-        return "General"
-
-    def _detailed_summary(self, section: ContentSection) -> str:
-        """Create detailed summary for high-importance sections"""
-        summary_parts = [f"### {section.title}"]
-
-        if section.requirements:
-            summary_parts.append("\n**Requirements:**")
-            for req in section.requirements[:5]:
-                summary_parts.append(f"- {req}")
-
-        if section.concepts:
-            summary_parts.append("\n**Key Concepts:** " + ", ".join(section.concepts))
-
-        # Include first paragraph
-        first_para = section.content.split('\n\n')[0]
-        if len(first_para) > 200:
-            first_para = first_para[:200] + "..."
-        summary_parts.append(f"\n{first_para}")
-
-        return "\n".join(summary_parts)
-
-    def _moderate_summary(self, section: ContentSection) -> str:
-        """Create moderate summary for medium-importance sections"""
-        summary_parts = [f"### {section.title}"]
-
-        if section.requirements:
-            summary_parts.append(f"\n{len(section.requirements)} requirements defined.")
-
-        if section.keywords:
-            summary_parts.append("**Topics:** " + ", ".join(section.keywords[:5]))
-
-        return "\n".join(summary_parts)
-
-    def _brief_summary(self, section: ContentSection) -> str:
-        """Create brief summary for low-importance sections"""
-        return f"- **{section.title}**: {section.token_count} tokens, {len(section.requirements)} requirements"
-
-    def _truncate_to_fit(self, content: str, max_tokens: int) -> str:
-        """Truncate content to fit within token limit"""
-        return self.tokenizer.truncate_to_tokens(content, max_tokens)
-
-    def _extract_sentences(self, content: str) -> list[str]:
-        """Extract sentences from content"""
-        # Simple sentence extraction based on punctuation
-        import re
-        # Split on sentence-ending punctuation while keeping the punctuation
-        sentences = re.split(r'(?<=[.!?])\s+', content)
-        return [s.strip() for s in sentences if s.strip()]
-
-
-class EssentialOnlyStrategy(OptimizationStrategy):
-    """
-    Extract only essential requirements and compliance information
-    @nist-controls: CM-2, CM-6
-    @evidence: Configuration baseline extraction
-    """
-
-    def __init__(self, tokenizer: BaseTokenizer | None = None):
-        super().__init__(tokenizer)
-        self.essential_patterns = [
-            # Requirements
-            r'(?:MUST|SHALL|REQUIRED)\s+[^.]+\.',
-            # Security controls
-            r'@nist-controls?:\s*[A-Z]{2}-\d+(?:\(\d+\))?(?:,\s*[A-Z]{2}-\d+(?:\(\d+\))?)*',
-            # Compliance statements
-            r'(?:compliant?|compliance)\s+with\s+[^.]+\.',
-            # Critical configurations
-            r'(?:default|minimum|maximum)\s+(?:value|setting|configuration):\s*[^.]+\.',
-        ]
-
-    async def optimize(self, content: str, max_tokens: int, context: dict[str, Any]) -> str:
-        """Extract only essential information"""
-        essentials = []
-
-        # Extract requirements
-        requirements = self._extract_pattern_matches(content, self.essential_patterns[0])
-        if requirements:
-            essentials.append("## Requirements\n" + "\n".join(f"- {req}" for req in requirements))
-
-        # Extract NIST controls
-        controls = self._extract_pattern_matches(content, self.essential_patterns[1])
-        if controls:
-            essentials.append("## NIST Controls\n" + "\n".join(f"- {control}" for control in controls))
-
-        # Extract compliance statements
-        compliance = self._extract_pattern_matches(content, self.essential_patterns[2])
-        if compliance:
-            essentials.append("## Compliance\n" + "\n".join(f"- {comp}" for comp in compliance))
-
-        # Extract configurations
-        configs = self._extract_pattern_matches(content, self.essential_patterns[3])
-        if configs:
-            essentials.append("## Critical Configurations\n" + "\n".join(f"- {config}" for config in configs))
-
-        result = "\n\n".join(essentials)
-
-        # Ensure we fit within token budget
-        if self.estimate_tokens(result) > max_tokens:
-            result = self._truncate_to_fit(result, max_tokens)
-
-        return result
-
-    def _extract_pattern_matches(self, content: str, pattern: str) -> list[str]:
-        """Extract all matches for a pattern"""
-        matches = re.findall(pattern, content, re.IGNORECASE | re.MULTILINE)
-        return [match.strip() for match in matches]
-
-    def _truncate_to_fit(self, content: str, max_tokens: int) -> str:
-        """Truncate content to fit token budget while preserving structure"""
-        lines = content.split('\n')
-        result: list[str] = []
-        current_tokens = 0
-
-        for line in lines:
-            line_tokens = self.estimate_tokens(line)
-            if current_tokens + line_tokens > max_tokens:
-                if result:
-                    result.append("... (truncated for token limit)")
-                break
-            result.append(line)
-            current_tokens += line_tokens
-
-        return '\n'.join(result)
-
-
-class HierarchicalStrategy(OptimizationStrategy):
-    """
-    Create hierarchical content structure for progressive disclosure
-    @nist-controls: SI-12
-    @evidence: Information organization and presentation
-    """
-
-    def __init__(self, tokenizer: BaseTokenizer | None = None):
-        super().__init__(tokenizer)
-        self.max_depth = 3
-        self.tokens_per_level = {
-            1: 0.4,  # 40% for top level
-            2: 0.4,  # 40% for second level
-            3: 0.2   # 20% for details
-        }
-
-    async def optimize(self, content: str, max_tokens: int, context: dict[str, Any]) -> str:
-        """Create hierarchical summary with expandable sections"""
-        hierarchy = self._build_hierarchy(content)
-
-        # Allocate tokens per level
-        level_budgets = {
-            level: int(max_tokens * ratio)
-            for level, ratio in self.tokens_per_level.items()
-        }
-
-        result = []
-
-        # Level 1: Overview
-        overview = self._create_overview(hierarchy)
-        result.append(overview)
-
-        # Level 2: Main sections
-        for section in hierarchy.get("sections", [])[:5]:  # Top 5 sections
-            section_summary = self._create_section_summary(section, level_budgets[2] // 5)
-            result.append(section_summary)
-
-        # Level 3: Key details (if budget allows)
-        if level_budgets[3] > 100:
-            details = self._extract_key_details(hierarchy)
-            result.append("\n## Key Details\n" + details)
-
-        return "\n\n".join(result)
-
-    def _build_hierarchy(self, content: str) -> dict[str, Any]:
-        """Build hierarchical structure from content"""
-        hierarchy: dict[str, Any] = {
-            "title": "Document Summary",
-            "overview": "",
-            "sections": [],
-            "details": []
-        }
-
-        # Parse sections
-        sections = re.split(r'^#{1,3}\s+', content, flags=re.MULTILINE)
-
-        for section in sections[1:]:  # Skip first empty split
-            lines = section.strip().split('\n')
-            if lines:
-                title = lines[0]
-                content = '\n'.join(lines[1:])
-
-                hierarchy["sections"].append({
-                    "title": title,
-                    "content": content,
-                    "subsections": self._parse_subsections(content)
-                })
-
-        # Create overview from first paragraph or section
-        hierarchy["overview"] = self._extract_overview(content)
-
-        return hierarchy
-
-    def _parse_subsections(self, content: str) -> list[dict[str, str]]:
-        """Parse subsections from content"""
-        subsections = []
-
-        # Look for bullet points or numbered lists
-        list_items = re.findall(r'^\s*[-*\d]+\.\s+(.+)$', content, re.MULTILINE)
-        for item in list_items[:5]:  # Top 5 items
-            subsections.append({
-                "title": item[:50] + "..." if len(item) > 50 else item,
-                "content": item
-            })
-
-        return subsections
-
-    def _create_overview(self, hierarchy: dict[str, Any]) -> str:
-        """Create top-level overview"""
-        overview_parts = ["# Document Overview\n"]
-
-        if hierarchy["overview"]:
-            overview_parts.append(hierarchy["overview"])
-
-        overview_parts.append("\n## Table of Contents")
-        for i, section in enumerate(hierarchy["sections"][:10], 1):
-            overview_parts.append(f"{i}. {section['title']}")
-
-        return "\n".join(overview_parts)
-
-    def _create_section_summary(self, section: dict[str, Any], token_budget: int) -> str:
-        """Create summary for a section"""
-        summary_parts = [f"## {section['title']}"]
-
-        # First paragraph
-        paragraphs = section["content"].split('\n\n')
-        if paragraphs:
-            first_para = paragraphs[0][:200]
-            if len(paragraphs[0]) > 200:
-                first_para += "..."
-            summary_parts.append(first_para)
-
-        # Key points from subsections
-        if section["subsections"]:
-            summary_parts.append("\n**Key Points:**")
-            for sub in section["subsections"][:3]:
-                summary_parts.append(f"- {sub['title']}")
-
-        return "\n".join(summary_parts)
-
-    def _extract_overview(self, content: str) -> str:
-        """Extract overview from content"""
-        # Try to find an explicit overview or introduction
-        overview_match = re.search(
-            r'(?:overview|introduction|abstract|summary)[:\s]*([^#]+)',
-            content,
-            re.IGNORECASE
-        )
-
-        if overview_match:
-            return overview_match.group(1).strip()[:300]
-
-        # Fall back to first paragraph
-        paragraphs = content.split('\n\n')
-        if paragraphs:
-            return paragraphs[0][:300]
-
-        return "No overview available."
-
-    def _extract_key_details(self, hierarchy: dict[str, Any]) -> str:
-        """Extract important details across all sections"""
-        details = []
-
-        for section in hierarchy["sections"]:
-            # Look for important patterns
-            important_patterns = [
-                r'(?:important|critical|essential|key):\s*([^.]+\.)',
-                r'(?:note|warning|caution):\s*([^.]+\.)'
-            ]
-
-            for pattern in important_patterns:
-                matches = re.findall(pattern, section["content"], re.IGNORECASE)
-                details.extend(matches)
-
-        if details:
-            return "\n".join(f"- {detail}" for detail in details[:5])
-
-        return "No critical details identified."
-
-    def _parse_sections(self, content: str) -> list[dict[str, Any]]:
-        """Parse content into sections"""
-        sections = []
-
-        # Split by headers
-        import re
-        lines = content.split('\n')
-        current_section = None
-
-        for line in lines:
-            header_match = re.match(r'^(#{1,6})\s+(.+)$', line)
-            if header_match:
-                if current_section:
-                    sections.append(current_section)
-
-                level = len(header_match.group(1))
-                header = header_match.group(2)
-                current_section = {
-                    "header": header,
-                    "content": "",
-                    "level": level
-                }
-            elif current_section:
-                current_section["content"] = str(current_section["content"]) + line + '\n'
-
-        if current_section:
-            sections.append(current_section)
-
-        return sections
-
-
-
-class TokenOptimizationEngine:
-    """
-    Main engine for token optimization
-    @nist-controls: SI-10, SI-12, AC-4
-    @evidence: Comprehensive content optimization system
-    """
-
-    def __init__(self, tokenizer: BaseTokenizer | None = None):
-        self.tokenizer = tokenizer or get_default_tokenizer()
-        self.strategies = {
-            "summarize": SummarizationStrategy(self.tokenizer),
-            "essential": EssentialOnlyStrategy(self.tokenizer),
-            "hierarchical": HierarchicalStrategy(self.tokenizer)
-        }
-        self._metrics_history: list[OptimizationMetrics] = []
-
-    async def optimize(
-        self,
-        content: str,
-        strategy: str = "summarize",
-        max_tokens: int = 1000,
-        context: dict[str, Any] | None = None,
-        level: OptimizationLevel = OptimizationLevel.MODERATE
-    ) -> tuple[str, OptimizationMetrics]:
-        """
-        Optimize content using specified strategy
-
-        Returns:
-            Tuple of (optimized_content, metrics)
-        """
-        if strategy not in self.strategies:
-            raise ValueError(f"Unknown strategy: {strategy}")
-
-        if context is None:
-            context = {}
-
-        # Add optimization level to context
-        context["optimization_level"] = level
-
-        # Measure performance
-        import time
-        start_time = time.time()
-
-        # Get original metrics
-        original_tokens = self.estimate_tokens(content)
-
-        # Apply strategy
-        optimizer = self.strategies[strategy]
-        optimized = await optimizer.optimize(content, max_tokens, context)
-
-        # Calculate metrics
-        optimized_tokens = self.estimate_tokens(optimized)
-        reduction = 1 - (optimized_tokens / original_tokens) if original_tokens > 0 else 0
-
-        metrics = OptimizationMetrics(
+                excluded.append(section.id)
+        
+        content = '\n\n'.join(compressed_sections)
+        
+        return content, CompressionResult(
             original_tokens=original_tokens,
-            optimized_tokens=optimized_tokens,
-            reduction_percentage=reduction * 100,
-            information_retained=self._estimate_information_retention(content, optimized),
-            processing_time=time.time() - start_time
+            compressed_tokens=total_tokens,
+            compression_ratio=total_tokens / original_tokens if original_tokens > 0 else 0,
+            format_used=StandardFormat.FULL,
+            sections_included=included,
+            sections_excluded=excluded,
+            warnings=["Some sections excluded due to token budget"] if excluded else []
         )
-
-        self._metrics_history.append(metrics)
-
-        return optimized, metrics
-
-    def estimate_tokens(self, content: str) -> int:
-        """Estimate token count"""
-        return self.tokenizer.count_tokens(content)
-
-    def _estimate_information_retention(self, original: str, optimized: str) -> float:
-        """Estimate how much information was retained"""
-        # Simple estimation based on keyword preservation
-        original_words = set(original.lower().split())
-        optimized_words = set(optimized.lower().split())
-
-        # Important keywords to check
-        important_keywords = {
-            "must", "shall", "required", "security", "compliance",
-            "authentication", "authorization", "encryption", "audit"
-        }
-
-        original_important = original_words & important_keywords
-        optimized_important = optimized_words & important_keywords
-
-        if not original_important:
-            return 1.0
-
-        return len(optimized_important) / len(original_important)
-
-    def get_metrics_summary(self) -> dict[str, Any]:
-        """Get summary of optimization metrics"""
-        if not self._metrics_history:
-            return {}
-
-        avg_reduction = sum(m.reduction_percentage for m in self._metrics_history) / len(self._metrics_history)
-        avg_retention = sum(m.information_retained for m in self._metrics_history) / len(self._metrics_history)
-        avg_time = sum(m.processing_time for m in self._metrics_history) / len(self._metrics_history)
-
+    
+    def _format_condensed(self,
+                         sections: List[StandardSection],
+                         budget: TokenBudget,
+                         required_sections: Optional[List[str]]) -> Tuple[str, CompressionResult]:
+        """Format standard in condensed format."""
+        original_tokens = sum(s.token_count for s in sections)
+        
+        compressed_sections = []
+        total_tokens = 0
+        included = []
+        excluded = []
+        
+        # Prioritize required sections
+        if required_sections:
+            priority_sections = [s for s in sections if s.id in required_sections]
+            other_sections = [s for s in sections if s.id not in required_sections]
+            sorted_sections = priority_sections + sorted(other_sections, key=lambda s: s.priority, reverse=True)
+        else:
+            sorted_sections = sorted(sections, key=lambda s: s.priority, reverse=True)
+        
+        for section in sorted_sections:
+            # Apply multiple compression techniques
+            compressed_content = section.content
+            compressed_content = self.compression.remove_redundancy(compressed_content)
+            compressed_content = self.compression.use_abbreviations(compressed_content)
+            compressed_content = self.compression.compress_code_examples(compressed_content)
+            compressed_content = self.compression.extract_essential_only(compressed_content)
+            
+            compressed_tokens = self.token_counter.count_tokens(compressed_content)
+            
+            if total_tokens + compressed_tokens <= budget.available:
+                compressed_sections.append(f"## {section.title}\n{compressed_content}")
+                total_tokens += compressed_tokens
+                included.append(section.id)
+            else:
+                excluded.append(section.id)
+        
+        content = '\n\n'.join(compressed_sections)
+        
+        return content, CompressionResult(
+            original_tokens=original_tokens,
+            compressed_tokens=total_tokens,
+            compression_ratio=total_tokens / original_tokens if original_tokens > 0 else 0,
+            format_used=StandardFormat.CONDENSED,
+            sections_included=included,
+            sections_excluded=excluded,
+            warnings=["Required sections may be compressed"] if required_sections else []
+        )
+    
+    def _format_reference(self,
+                         sections: List[StandardSection],
+                         budget: TokenBudget,
+                         required_sections: Optional[List[str]]) -> Tuple[str, CompressionResult]:
+        """Format standard as quick reference."""
+        original_tokens = sum(s.token_count for s in sections)
+        
+        reference_parts = []
+        
+        # Extract key points from each section
+        for section in sections:
+            if required_sections and section.id not in required_sections:
+                continue
+            
+            # Extract bullet points and key information
+            lines = section.content.split('\n')
+            key_points = []
+            
+            for line in lines:
+                stripped = line.strip()
+                # Headers
+                if stripped.startswith('#'):
+                    key_points.append(stripped)
+                # Bullet points
+                elif stripped.startswith(('- ', '* ', '• ')):
+                    # Compress the bullet point
+                    compressed = self.compression.use_abbreviations(stripped)
+                    if len(compressed) > 80:
+                        compressed = compressed[:77] + '...'
+                    key_points.append(compressed)
+                # Numbered items
+                elif re.match(r'^\d+\.', stripped):
+                    compressed = self.compression.use_abbreviations(stripped)
+                    if len(compressed) > 80:
+                        compressed = compressed[:77] + '...'
+                    key_points.append(compressed)
+            
+            if key_points:
+                reference_parts.append(f"## {section.title}\n" + '\n'.join(key_points[:5]))
+        
+        content = '\n\n'.join(reference_parts)
+        compressed_tokens = self.token_counter.count_tokens(content)
+        
+        # If still over budget, truncate
+        if compressed_tokens > budget.available:
+            # Calculate how much to keep
+            keep_ratio = budget.available / compressed_tokens
+            keep_chars = int(len(content) * keep_ratio * 0.9)  # 90% to be safe
+            content = content[:keep_chars] + "\n\n[Content truncated due to token limit]"
+            compressed_tokens = self.token_counter.count_tokens(content)
+        
+        return content, CompressionResult(
+            original_tokens=original_tokens,
+            compressed_tokens=compressed_tokens,
+            compression_ratio=compressed_tokens / original_tokens if original_tokens > 0 else 0,
+            format_used=StandardFormat.REFERENCE,
+            sections_included=[s.id for s in sections if not required_sections or s.id in required_sections],
+            sections_excluded=[s.id for s in sections if required_sections and s.id not in required_sections],
+            warnings=["Reference format shows key points only"]
+        )
+    
+    def _format_summary(self,
+                       sections: List[StandardSection],
+                       budget: TokenBudget) -> Tuple[str, CompressionResult]:
+        """Format standard as executive summary."""
+        original_tokens = sum(s.token_count for s in sections)
+        
+        # Create a one-paragraph summary
+        summary_parts = []
+        
+        # Find the most important content
+        priority_sections = sorted(sections, key=lambda s: s.priority, reverse=True)[:3]
+        
+        for section in priority_sections:
+            # Extract first substantial paragraph or key points
+            lines = section.content.split('\n')
+            for line in lines:
+                stripped = line.strip()
+                if len(stripped) > 50 and not stripped.startswith('#'):
+                    # Compress and add
+                    compressed = self.compression.use_abbreviations(stripped)
+                    compressed = self.compression.remove_redundancy(compressed)
+                    summary_parts.append(compressed)
+                    break
+        
+        # Combine into a single paragraph
+        summary = ' '.join(summary_parts)
+        
+        # Ensure it fits in budget
+        if self.token_counter.count_tokens(summary) > budget.available:
+            # Truncate to fit
+            keep_chars = int(budget.available * 3.5)  # Approximate chars from tokens
+            summary = summary[:keep_chars-3] + '...'
+        
+        # Add metadata
+        content = f"**Summary**: {summary}\n\n**Sections covered**: {', '.join(s.title for s in priority_sections)}"
+        
+        compressed_tokens = self.token_counter.count_tokens(content)
+        
+        return content, CompressionResult(
+            original_tokens=original_tokens,
+            compressed_tokens=compressed_tokens,
+            compression_ratio=compressed_tokens / original_tokens if original_tokens > 0 else 0,
+            format_used=StandardFormat.SUMMARY,
+            sections_included=[s.id for s in priority_sections],
+            sections_excluded=[s.id for s in sections if s not in priority_sections],
+            warnings=["Summary format provides high-level overview only"]
+        )
+    
+    def _format_custom(self,
+                      sections: List[StandardSection],
+                      budget: TokenBudget,
+                      required_sections: Optional[List[str]],
+                      context: Optional[Dict[str, Any]]) -> Tuple[str, CompressionResult]:
+        """Format standard with custom rules based on context."""
+        # Default to condensed if no context
+        if not context:
+            return self._format_condensed(sections, budget, required_sections)
+        
+        # Analyze context to determine best approach
+        query_type = context.get('query_type', 'general')
+        user_expertise = context.get('user_expertise', 'intermediate')
+        focus_areas = context.get('focus_areas', [])
+        
+        # Adjust section priorities based on context
+        for section in sections:
+            # Boost sections related to focus areas
+            if any(area.lower() in section.content.lower() for area in focus_areas):
+                section.priority += 2
+            
+            # Adjust based on expertise
+            if user_expertise == 'beginner' and section.id == 'examples':
+                section.priority += 3
+            elif user_expertise == 'expert' and section.id in ['overview', 'examples']:
+                section.priority -= 2
+        
+        # Use appropriate format based on query type
+        if query_type == 'quick_lookup':
+            return self._format_reference(sections, budget, required_sections)
+        elif query_type == 'detailed_explanation':
+            return self._format_full(sections, budget, required_sections)
+        else:
+            return self._format_condensed(sections, budget, required_sections)
+    
+    def progressive_load(self,
+                        standard: Dict[str, Any],
+                        initial_sections: List[str],
+                        max_depth: int = 3) -> List[Tuple[str, int]]:
+        """Generate progressive loading plan for standard."""
+        sections = self._parse_standard_sections(standard)
+        
+        # Build dependency graph
+        dependency_graph = {}
+        for section in sections:
+            dependency_graph[section.id] = {
+                'section': section,
+                'dependencies': section.dependencies,
+                'dependents': []
+            }
+        
+        # Find dependents
+        for section_id, data in dependency_graph.items():
+            for dep in data['dependencies']:
+                if dep in dependency_graph:
+                    dependency_graph[dep]['dependents'].append(section_id)
+        
+        # Generate loading order
+        loading_plan = []
+        loaded = set()
+        to_load = set(initial_sections)
+        depth = 0
+        
+        while to_load and depth < max_depth:
+            current_batch = []
+            
+            for section_id in to_load:
+                if section_id in dependency_graph and section_id not in loaded:
+                    section = dependency_graph[section_id]['section']
+                    current_batch.append((section_id, section.token_count))
+                    loaded.add(section_id)
+            
+            if current_batch:
+                loading_plan.append(current_batch)
+            
+            # Find next batch (dependencies and high-priority dependents)
+            next_batch = set()
+            for section_id in to_load:
+                if section_id in dependency_graph:
+                    # Add dependencies
+                    next_batch.update(dependency_graph[section_id]['dependencies'])
+                    # Add high-priority dependents
+                    for dep in dependency_graph[section_id]['dependents']:
+                        if dependency_graph[dep]['section'].priority >= 7:
+                            next_batch.add(dep)
+            
+            to_load = next_batch - loaded
+            depth += 1
+        
+        return loading_plan
+    
+    def estimate_tokens(self, 
+                       standards: List[Dict[str, Any]],
+                       format_type: StandardFormat = StandardFormat.CONDENSED) -> Dict[str, Any]:
+        """Estimate token usage for multiple standards."""
+        estimates = []
+        total_original = 0
+        total_compressed = 0
+        
+        for standard in standards:
+            sections = self._parse_standard_sections(standard)
+            original = sum(s.token_count for s in sections)
+            
+            # Estimate compressed size based on format
+            compression_factors = {
+                StandardFormat.FULL: 0.9,
+                StandardFormat.CONDENSED: 0.5,
+                StandardFormat.REFERENCE: 0.2,
+                StandardFormat.SUMMARY: 0.05
+            }
+            
+            factor = compression_factors.get(format_type, 0.5)
+            compressed = int(original * factor)
+            
+            estimates.append({
+                'standard_id': standard.get('id', 'unknown'),
+                'original_tokens': original,
+                'estimated_compressed': compressed,
+                'compression_ratio': factor
+            })
+            
+            total_original += original
+            total_compressed += compressed
+        
         return {
-            "average_reduction": f"{avg_reduction:.1f}%",
-            "average_retention": f"{avg_retention:.1%}",
-            "average_processing_time": f"{avg_time:.3f}s",
-            "total_optimizations": len(self._metrics_history)
+            'standards': estimates,
+            'total_original': total_original,
+            'total_compressed': total_compressed,
+            'overall_compression': total_compressed / total_original if total_original > 0 else 0,
+            'format_used': format_type.value
+        }
+    
+    def auto_select_format(self,
+                          standard: Dict[str, Any],
+                          budget: TokenBudget,
+                          context: Optional[Dict[str, Any]] = None) -> StandardFormat:
+        """Automatically select best format based on budget and context."""
+        sections = self._parse_standard_sections(standard)
+        total_tokens = sum(s.token_count for s in sections)
+        
+        # Calculate available token ratio
+        token_ratio = budget.available / total_tokens if total_tokens > 0 else 1.0
+        
+        # Context hints
+        if context:
+            if context.get('query_type') == 'quick_lookup':
+                return StandardFormat.REFERENCE
+            elif context.get('need_examples') and token_ratio > 0.7:
+                return StandardFormat.FULL
+        
+        # Select based on token ratio
+        if token_ratio >= 0.8:
+            return StandardFormat.FULL
+        elif token_ratio >= 0.4:
+            return StandardFormat.CONDENSED
+        elif token_ratio >= 0.15:
+            return StandardFormat.REFERENCE
+        else:
+            return StandardFormat.SUMMARY
+    
+    def get_compression_stats(self) -> Dict[str, Any]:
+        """Get statistics about compression performance."""
+        cache_stats = {
+            'cache_size': len(self._format_cache),
+            'cache_hits': getattr(self, '_cache_hits', 0),
+            'cache_misses': getattr(self, '_cache_misses', 0)
+        }
+        
+        if self._format_cache:
+            # Analyze cached results
+            compression_ratios = []
+            format_usage = defaultdict(int)
+            
+            for _, (_, _, result) in self._format_cache.items():
+                compression_ratios.append(result.compression_ratio)
+                format_usage[result.format_used.value] += 1
+            
+            cache_stats.update({
+                'average_compression_ratio': sum(compression_ratios) / len(compression_ratios),
+                'format_usage': dict(format_usage)
+            })
+        
+        return cache_stats
+    
+    def _get_cache_key(self, 
+                      standard: Dict[str, Any],
+                      format_type: StandardFormat,
+                      required_sections: Optional[List[str]]) -> str:
+        """Generate cache key for formatted content."""
+        key_parts = [
+            standard.get('id', 'unknown'),
+            format_type.value,
+            ','.join(sorted(required_sections)) if required_sections else 'all'
+        ]
+        
+        key_string = '|'.join(key_parts)
+        return hashlib.md5(key_string.encode()).hexdigest()
+
+
+class DynamicLoader:
+    """Handles dynamic loading of standard sections."""
+    
+    def __init__(self, optimizer: TokenOptimizer):
+        self.optimizer = optimizer
+        self._loaded_sections = defaultdict(set)
+        self._loading_history = defaultdict(list)
+    
+    def load_section(self,
+                    standard_id: str,
+                    section_id: str,
+                    budget: TokenBudget) -> Tuple[str, int]:
+        """Load a specific section dynamically."""
+        # Track loading
+        self._loaded_sections[standard_id].add(section_id)
+        self._loading_history[standard_id].append({
+            'section_id': section_id,
+            'timestamp': time.time(),
+            'budget_used': 0  # Will be updated
+        })
+        
+        # In practice, this would fetch from storage
+        # For now, return placeholder
+        content = f"[Section {section_id} content for {standard_id}]"
+        tokens = self.optimizer.token_counter.count_tokens(content)
+        
+        # Update history
+        self._loading_history[standard_id][-1]['budget_used'] = tokens
+        
+        return content, tokens
+    
+    def get_loading_suggestions(self,
+                               standard_id: str,
+                               context: Dict[str, Any]) -> List[str]:
+        """Suggest next sections to load based on context."""
+        loaded = self._loaded_sections.get(standard_id, set())
+        
+        # Analyze context to suggest sections
+        suggestions = []
+        
+        # Based on recent queries
+        if 'recent_queries' in context:
+            for query in context['recent_queries']:
+                if 'security' in query.lower() and 'security' not in loaded:
+                    suggestions.append('security')
+                elif 'example' in query.lower() and 'examples' not in loaded:
+                    suggestions.append('examples')
+                elif 'performance' in query.lower() and 'performance' not in loaded:
+                    suggestions.append('performance')
+        
+        # Based on user expertise
+        expertise = context.get('user_expertise', 'intermediate')
+        if expertise == 'beginner' and 'examples' not in loaded:
+            suggestions.append('examples')
+        elif expertise == 'expert' and 'implementation' not in loaded:
+            suggestions.append('implementation')
+        
+        return list(set(suggestions))  # Remove duplicates
+    
+    def get_loading_stats(self, standard_id: str) -> Dict[str, Any]:
+        """Get statistics about dynamic loading for a standard."""
+        loaded = self._loaded_sections.get(standard_id, set())
+        history = self._loading_history.get(standard_id, [])
+        
+        total_tokens = sum(h['budget_used'] for h in history)
+        
+        return {
+            'sections_loaded': list(loaded),
+            'total_sections': len(loaded),
+            'total_tokens_used': total_tokens,
+            'loading_events': len(history),
+            'average_tokens_per_section': total_tokens / len(loaded) if loaded else 0
         }
 
 
-# Convenience function for standalone use
-async def optimize_content(
-    content: str,
-    strategy: str = "summarize",
-    max_tokens: int = 1000,
-    level: OptimizationLevel = OptimizationLevel.MODERATE
-) -> tuple[str, OptimizationMetrics]:
-    """Convenience function to optimize content"""
-    engine = TokenOptimizationEngine()
-    return await engine.optimize(content, strategy, max_tokens, level=level)
+# Utility functions
+def create_token_optimizer(model_type: Union[str, ModelType] = ModelType.GPT4,
+                          default_budget: Optional[int] = None) -> TokenOptimizer:
+    """Create a token optimizer instance."""
+    if isinstance(model_type, str):
+        model_type = ModelType(model_type)
+    
+    budget = None
+    if default_budget:
+        budget = TokenBudget(total=default_budget)
+    
+    return TokenOptimizer(model_type=model_type, default_budget=budget)
+
+
+def estimate_token_savings(original_text: str,
+                          optimizer: TokenOptimizer,
+                          formats: List[StandardFormat]) -> Dict[str, Any]:
+    """Estimate token savings across different formats."""
+    original_tokens = optimizer.token_counter.count_tokens(original_text)
+    
+    savings = {}
+    for format_type in formats:
+        # Create mock standard
+        mock_standard = {'content': original_text}
+        
+        # Optimize
+        _, result = optimizer.optimize_standard(
+            mock_standard,
+            format_type=format_type
+        )
+        
+        savings[format_type.value] = {
+            'tokens': result.compressed_tokens,
+            'reduction': original_tokens - result.compressed_tokens,
+            'percentage': ((original_tokens - result.compressed_tokens) / original_tokens * 100) if original_tokens > 0 else 0
+        }
+    
+    return {
+        'original_tokens': original_tokens,
+        'format_savings': savings
+    }

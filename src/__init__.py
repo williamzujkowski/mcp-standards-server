@@ -1,0 +1,1 @@
+"""MCP Standards Server - Main package."""

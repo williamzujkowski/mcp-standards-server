@@ -1,1 +1,1 @@
-"""Test package"""
+"""Unit tests for standards components."""

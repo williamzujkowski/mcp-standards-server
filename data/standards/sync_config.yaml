@@ -1,0 +1,117 @@
+# Standards Synchronization Configuration
+# This file defines how standards are synced from the GitHub repository
+
+repository:
+  owner: williamzujkowski
+  repo: standards
+  branch: master
+  path: docs/standards
+  
+sync:
+  # Cron-style schedule for automatic sync (every 6 hours)
+  schedule: "0 */6 * * *"
+  
+  # File patterns to include in sync
+  file_patterns:
+    - "*.md"
+    - "*.yaml"
+    - "*.yml"
+    - "*.json"
+  
+  # Patterns to exclude from sync
+  exclude_patterns:
+    - "*test*"
+    - "*draft*"
+    - "*example*"
+    - ".*"  # Hidden files
+  
+  # Maximum file size to sync (in bytes)
+  max_file_size: 1048576  # 1MB
+  
+  # Retry configuration for failed downloads
+  retry_attempts: 3
+  retry_delay: 5  # seconds
+  
+  # Incremental sync settings
+  incremental:
+    enabled: true
+    check_sha: true  # Use SHA to detect changes
+    check_modified_time: false  # GitHub API doesn't provide reliable modification times
+  
+cache:
+  # Time-to-live for cached files (in hours)
+  ttl_hours: 24
+  
+  # Maximum cache size (in MB)
+  max_size_mb: 100
+  
+  # Cache directory (relative to project root)
+  directory: data/standards/cache
+  
+  # Cleanup settings
+  cleanup:
+    enabled: true
+    max_age_days: 7
+    run_on_startup: false
+
+# Rate limiting configuration
+rate_limit:
+  # Use authenticated requests if GITHUB_TOKEN env var is set
+  use_auth: true
+  
+  # Respect rate limit headers
+  respect_limits: true
+  
+  # Minimum delay between requests (milliseconds)
+  min_delay_ms: 100
+  
+  # Maximum concurrent downloads
+  max_concurrent: 3
+
+# Logging configuration
+logging:
+  # Log sync operations
+  log_syncs: true
+  
+  # Log individual file operations
+  log_files: true
+  
+  # Log rate limit information
+  log_rate_limits: true
+  
+  # Log level (DEBUG, INFO, WARNING, ERROR)
+  level: INFO
+
+# Notification settings (optional)
+notifications:
+  # Send notifications on sync completion
+  enabled: false
+  
+  # Notification channels
+  channels:
+    - type: webhook
+      url: "${SYNC_WEBHOOK_URL}"
+      events:
+        - sync_complete
+        - sync_failed
+        - rate_limit_exceeded
+
+# Advanced settings
+advanced:
+  # Use conditional requests with ETags
+  use_etags: true
+  
+  # Verify SSL certificates
+  verify_ssl: true
+  
+  # Request timeout (seconds)
+  timeout: 30
+  
+  # User agent for API requests
+  user_agent: "MCP-Standards-Server/1.0"
+  
+  # Parse and validate standards files after sync
+  validate_after_sync: true
+  
+  # Update rule engine after successful sync
+  update_rules: true

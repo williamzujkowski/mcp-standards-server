@@ -1,0 +1,287 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better blame info
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Set up Node.js (for MCP)
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install system dependencies
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt-get update
+          sudo apt-get install -y redis-server
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install redis
+        fi
+      shell: bash
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev,test]"
+        pip install pytest-asyncio pytest-benchmark pytest-timeout
+        pip install memory-profiler psutil
+        pip install coverage pytest-cov
+
+    - name: Install MCP dependencies
+      run: |
+        npm install -g @modelcontextprotocol/sdk
+        npm install -g tsx
+
+    - name: Start Redis (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        redis-server --daemonize yes
+        sleep 2
+        redis-cli ping
+
+    - name: Start Redis (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install redis-64
+        redis-server --service-install
+        redis-server --service-start
+
+    - name: Run E2E tests with coverage
+      run: |
+        pytest tests/e2e/ \
+          --cov=src \
+          --cov-report=term-missing \
+          --cov-report=xml \
+          --cov-report=html \
+          --timeout=300 \
+          -v
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+        MCP_TEST_MODE: "true"
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: e2e
+        name: e2e-${{ matrix.os }}-py${{ matrix.python-version }}
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: |
+          coverage.xml
+          htmlcov/
+          .coverage
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev,test,performance]"
+        pip install pytest-benchmark memory-profiler psutil
+
+    - name: Run performance tests
+      run: |
+        pytest tests/e2e/test_performance.py \
+          -v \
+          --benchmark-only \
+          --benchmark-json=benchmark_results.json
+
+    - name: Store benchmark results
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'pytest'
+        output-file-path: benchmark_results.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true
+        comment-on-alert: true
+        alert-threshold: '150%'
+        fail-on-alert: true
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: benchmark_results.json
+
+  memory-leak-detection:
+    name: Memory Leak Detection
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev,test]"
+        pip install memory-profiler pympler tracemalloc-ng
+
+    - name: Run memory leak tests
+      run: |
+        python -m pytest tests/e2e/test_performance.py::TestMemoryPerformance \
+          -v \
+          --memprof \
+          --memprof-top-n=10
+
+    - name: Analyze memory profile
+      run: |
+        if [ -f memory_profile.txt ]; then
+          python scripts/analyze_memory_profile.py memory_profile.txt
+        fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run Bandit security scan
+      run: |
+        pip install bandit
+        bandit -r src/ -f json -o bandit-results.json || true
+
+    - name: Upload Bandit results
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-results
+        path: |
+          trivy-results.sarif
+          bandit-results.json
+
+  integration-test-report:
+    name: Integration Test Report
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, performance-tests, memory-leak-detection]
+    if: always()
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Generate test report
+      run: |
+        echo "# E2E Test Report" > test_report.md
+        echo "## Summary" >> test_report.md
+        echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> test_report.md
+        echo "- Performance Tests: ${{ needs.performance-tests.result }}" >> test_report.md
+        echo "- Memory Tests: ${{ needs.memory-leak-detection.result }}" >> test_report.md
+        
+        # Add coverage summary if available
+        if [ -f coverage.xml ]; then
+          echo "## Coverage" >> test_report.md
+          python -c "
+import xml.etree.ElementTree as ET
+tree = ET.parse('coverage.xml')
+root = tree.getroot()
+coverage = float(root.get('line-rate', 0)) * 100
+print(f'Overall Coverage: {coverage:.2f}%')
+" >> test_report.md
+        fi
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('test_report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: report
+          })
+
+  deploy-test-results:
+    name: Deploy Test Results
+    runs-on: ubuntu-latest
+    needs: [integration-test-report]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Download coverage artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*coverage*'
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./htmlcov
+        destination_dir: coverage/e2e

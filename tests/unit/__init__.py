@@ -1,1 +1,1 @@
-"""Test package"""
+"""Unit tests for MCP Standards Server."""

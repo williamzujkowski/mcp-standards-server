@@ -1,0 +1,581 @@
+{
+  "version": "1.0.0",
+  "description": "Rule definitions for automatic standard selection based on project context",
+  "rules": [
+    {
+      "id": "react-web-app",
+      "name": "React Web Application Standards",
+      "description": "Standards for React-based web applications",
+      "priority": 10,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "equals",
+            "value": "web_application"
+          },
+          {
+            "field": "framework",
+            "operator": "in",
+            "value": ["react", "next.js", "gatsby"]
+          }
+        ]
+      },
+      "standards": [
+        "react-18-patterns",
+        "javascript-es2025",
+        "frontend-accessibility",
+        "web-performance-core-vitals",
+        "css-modern-architecture"
+      ],
+      "tags": ["frontend", "react", "web"]
+    },
+    {
+      "id": "react-with-accessibility",
+      "name": "React with Accessibility Requirements",
+      "description": "Enhanced standards when accessibility is required",
+      "priority": 5,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "equals",
+            "value": "web_application"
+          },
+          {
+            "field": "framework",
+            "operator": "in",
+            "value": ["react", "next.js", "gatsby"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "accessibility"
+          }
+        ]
+      },
+      "standards": [
+        "react-18-patterns",
+        "javascript-es2025",
+        "wcag-2.2-accessibility",
+        "aria-patterns",
+        "web-performance-core-vitals",
+        "css-modern-architecture",
+        "accessibility-testing"
+      ],
+      "tags": ["frontend", "react", "accessibility", "web"]
+    },
+    {
+      "id": "vue-web-app",
+      "name": "Vue.js Web Application Standards",
+      "description": "Standards for Vue.js applications",
+      "priority": 10,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "equals",
+            "value": "web_application"
+          },
+          {
+            "field": "framework",
+            "operator": "in",
+            "value": ["vue", "nuxt"]
+          }
+        ]
+      },
+      "standards": [
+        "vue-3-composition-api",
+        "javascript-es2025",
+        "frontend-accessibility",
+        "web-performance-core-vitals",
+        "css-modern-architecture"
+      ],
+      "tags": ["frontend", "vue", "web"]
+    },
+    {
+      "id": "python-api",
+      "name": "Python API Standards",
+      "description": "Standards for Python-based APIs",
+      "priority": 10,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["api", "rest_api", "backend"]
+          },
+          {
+            "field": "language",
+            "operator": "equals",
+            "value": "python"
+          }
+        ]
+      },
+      "standards": [
+        "python-pep8",
+        "python-type-hints",
+        "rest-api-design",
+        "api-security-patterns",
+        "python-testing-pytest",
+        "api-documentation-openapi"
+      ],
+      "tags": ["backend", "python", "api"]
+    },
+    {
+      "id": "python-fastapi",
+      "name": "Python FastAPI Standards",
+      "description": "Specific standards for FastAPI projects",
+      "priority": 8,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["api", "rest_api", "backend"]
+          },
+          {
+            "field": "language",
+            "operator": "equals",
+            "value": "python"
+          },
+          {
+            "field": "framework",
+            "operator": "equals",
+            "value": "fastapi"
+          }
+        ]
+      },
+      "standards": [
+        "python-pep8",
+        "python-type-hints",
+        "fastapi-patterns",
+        "rest-api-design",
+        "api-security-patterns",
+        "python-testing-pytest",
+        "api-documentation-openapi",
+        "async-python-patterns"
+      ],
+      "tags": ["backend", "python", "api", "fastapi"]
+    },
+    {
+      "id": "nodejs-api",
+      "name": "Node.js API Standards",
+      "description": "Standards for Node.js APIs",
+      "priority": 10,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["api", "rest_api", "backend"]
+          },
+          {
+            "field": "language",
+            "operator": "equals",
+            "value": "javascript"
+          },
+          {
+            "field": "runtime",
+            "operator": "equals",
+            "value": "node"
+          }
+        ]
+      },
+      "standards": [
+        "javascript-es2025",
+        "nodejs-patterns",
+        "rest-api-design",
+        "api-security-patterns",
+        "javascript-testing-jest",
+        "api-documentation-openapi"
+      ],
+      "tags": ["backend", "javascript", "nodejs", "api"]
+    },
+    {
+      "id": "microservices",
+      "name": "Microservices Architecture Standards",
+      "description": "Standards for microservices projects",
+      "priority": 15,
+      "conditions": {
+        "field": "architecture",
+        "operator": "equals",
+        "value": "microservices"
+      },
+      "standards": [
+        "microservices-patterns",
+        "docker-best-practices",
+        "kubernetes-patterns",
+        "api-gateway-patterns",
+        "service-mesh-patterns",
+        "distributed-tracing"
+      ],
+      "tags": ["architecture", "microservices", "cloud-native"]
+    },
+    {
+      "id": "cloud-native",
+      "name": "Cloud Native Application Standards",
+      "description": "Standards for cloud-native applications",
+      "priority": 20,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "deployment_target",
+            "operator": "in",
+            "value": ["kubernetes", "k8s", "cloud"]
+          },
+          {
+            "field": "containerized",
+            "operator": "equals",
+            "value": true
+          }
+        ]
+      },
+      "standards": [
+        "cloud-native-patterns",
+        "docker-best-practices",
+        "kubernetes-patterns",
+        "observability-standards",
+        "security-container-scanning"
+      ],
+      "tags": ["cloud-native", "kubernetes", "docker"]
+    },
+    {
+      "id": "database-required",
+      "name": "Database Standards",
+      "description": "Standards when database is used",
+      "priority": 25,
+      "conditions": {
+        "field": "database",
+        "operator": "exists"
+      },
+      "standards": [
+        "database-design-patterns",
+        "sql-best-practices",
+        "data-migration-patterns",
+        "database-security"
+      ],
+      "tags": ["database", "data"]
+    },
+    {
+      "id": "postgresql-specific",
+      "name": "PostgreSQL Specific Standards",
+      "description": "Standards specific to PostgreSQL",
+      "priority": 22,
+      "conditions": {
+        "field": "database",
+        "operator": "equals",
+        "value": "postgresql",
+        "case_sensitive": false
+      },
+      "standards": [
+        "postgresql-best-practices",
+        "database-design-patterns",
+        "sql-best-practices",
+        "postgresql-performance",
+        "database-security"
+      ],
+      "tags": ["database", "postgresql"]
+    },
+    {
+      "id": "security-critical",
+      "name": "Security Critical Application",
+      "description": "Enhanced security standards for critical applications",
+      "priority": 1,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "security"
+          },
+          {
+            "field": "compliance",
+            "operator": "exists"
+          },
+          {
+            "field": "security_level",
+            "operator": "in",
+            "value": ["high", "critical"]
+          }
+        ]
+      },
+      "standards": [
+        "security-owasp-top10",
+        "security-authentication",
+        "security-authorization",
+        "security-encryption",
+        "security-audit-logging",
+        "nist-800-53-controls"
+      ],
+      "tags": ["security", "compliance"]
+    },
+    {
+      "id": "ci-cd-pipeline",
+      "name": "CI/CD Pipeline Standards",
+      "description": "Standards for continuous integration and deployment",
+      "priority": 30,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "ci_cd",
+            "operator": "equals",
+            "value": true
+          },
+          {
+            "field": "tools",
+            "operator": "contains",
+            "value": "github-actions"
+          },
+          {
+            "field": "tools",
+            "operator": "contains",
+            "value": "jenkins"
+          }
+        ]
+      },
+      "standards": [
+        "ci-cd-best-practices",
+        "automated-testing-standards",
+        "deployment-strategies",
+        "infrastructure-as-code"
+      ],
+      "tags": ["devops", "ci-cd"]
+    },
+    {
+      "id": "mcp-server",
+      "name": "MCP Server Development",
+      "description": "Standards for Model Context Protocol servers",
+      "priority": 5,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "equals",
+            "value": "mcp_server"
+          },
+          {
+            "field": "framework",
+            "operator": "equals",
+            "value": "mcp"
+          }
+        ]
+      },
+      "standards": [
+        "mcp-server-patterns",
+        "mcp-tool-definitions",
+        "mcp-security-standards",
+        "api-design-patterns",
+        "error-handling-patterns"
+      ],
+      "tags": ["mcp", "server"]
+    },
+    {
+      "id": "mobile-app",
+      "name": "Mobile Application Standards",
+      "description": "Standards for mobile app development",
+      "priority": 10,
+      "conditions": {
+        "field": "project_type",
+        "operator": "in",
+        "value": ["mobile_app", "mobile_application"]
+      },
+      "standards": [
+        "mobile-ui-patterns",
+        "mobile-performance",
+        "mobile-security",
+        "offline-first-patterns",
+        "mobile-testing"
+      ],
+      "tags": ["mobile"]
+    },
+    {
+      "id": "react-native",
+      "name": "React Native Standards",
+      "description": "Specific standards for React Native apps",
+      "priority": 8,
+      "conditions": {
+        "logic": "AND",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["mobile_app", "mobile_application"]
+          },
+          {
+            "field": "framework",
+            "operator": "equals",
+            "value": "react-native"
+          }
+        ]
+      },
+      "standards": [
+        "react-native-patterns",
+        "mobile-ui-patterns",
+        "mobile-performance",
+        "mobile-security",
+        "react-patterns-mobile",
+        "mobile-testing"
+      ],
+      "tags": ["mobile", "react-native"]
+    },
+    {
+      "id": "data-pipeline",
+      "name": "Data Pipeline Standards",
+      "description": "Standards for data processing pipelines",
+      "priority": 15,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["data_pipeline", "etl", "data_processing"]
+          },
+          {
+            "field": "components",
+            "operator": "contains",
+            "value": "data_pipeline"
+          }
+        ]
+      },
+      "standards": [
+        "data-pipeline-patterns",
+        "data-quality-standards",
+        "data-transformation-patterns",
+        "data-governance",
+        "batch-processing-patterns"
+      ],
+      "tags": ["data-engineering", "etl"]
+    },
+    {
+      "id": "machine-learning",
+      "name": "Machine Learning Project Standards",
+      "description": "Standards for ML projects",
+      "priority": 12,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "equals",
+            "value": "machine_learning"
+          },
+          {
+            "field": "components",
+            "operator": "contains",
+            "value": "ml_model"
+          }
+        ]
+      },
+      "standards": [
+        "ml-project-structure",
+        "ml-experiment-tracking",
+        "ml-model-versioning",
+        "ml-data-validation",
+        "ml-deployment-patterns"
+      ],
+      "tags": ["machine-learning", "ai"]
+    },
+    {
+      "id": "documentation-project",
+      "name": "Documentation Standards",
+      "description": "Standards for documentation projects",
+      "priority": 35,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "equals",
+            "value": "documentation"
+          },
+          {
+            "field": "primary_purpose",
+            "operator": "equals",
+            "value": "documentation"
+          }
+        ]
+      },
+      "standards": [
+        "technical-writing-standards",
+        "markdown-conventions",
+        "documentation-structure",
+        "api-documentation-standards"
+      ],
+      "tags": ["documentation", "writing"]
+    },
+    {
+      "id": "performance-critical",
+      "name": "Performance Critical Application",
+      "description": "Standards for performance-critical applications",
+      "priority": 8,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "performance"
+          },
+          {
+            "field": "performance_critical",
+            "operator": "equals",
+            "value": true
+          },
+          {
+            "field": "sla.response_time_ms",
+            "operator": "less_than",
+            "value": 100
+          }
+        ]
+      },
+      "standards": [
+        "performance-optimization",
+        "caching-strategies",
+        "database-optimization",
+        "load-testing-standards",
+        "performance-monitoring"
+      ],
+      "tags": ["performance", "optimization"]
+    },
+    {
+      "id": "team-size-large",
+      "name": "Large Team Standards",
+      "description": "Additional standards for large teams",
+      "priority": 40,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "team_size",
+            "operator": "greater_than",
+            "value": 10
+          },
+          {
+            "field": "team_size",
+            "operator": "equals",
+            "value": "large"
+          }
+        ]
+      },
+      "standards": [
+        "code-review-standards",
+        "branching-strategies",
+        "documentation-standards",
+        "team-collaboration-patterns"
+      ],
+      "tags": ["team", "collaboration"]
+    }
+  ]
+}
