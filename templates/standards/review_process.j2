@@ -1,0 +1,211 @@
+{# Review Process Template - For code review, security review standards #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** {{ standard.domain }}
+**Type:** Review Process
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.scope %}
+### Scope
+{{ standard.scope }}
+{% endif %}
+
+## Review Process Workflow
+
+{% if standard.workflow %}
+### Process Diagram
+```mermaid
+graph LR
+{% for step in standard.workflow.steps %}
+    {{ step.id }}[{{ step.name }}]
+    {%- if step.next %}
+    {{ step.id }} --> {{ step.next }}
+    {%- endif %}
+{% endfor %}
+```
+
+### Process Steps
+{% for step in standard.workflow.steps %}
+#### {{ loop.index }}. {{ step.name }}
+- **Owner**: {{ step.owner }}
+- **Duration**: {{ step.duration }}
+- **Description**: {{ step.description }}
+{%- if step.entry_criteria %}
+- **Entry Criteria**:
+  {% for criteria in step.entry_criteria %}
+  - {{ criteria }}
+  {% endfor %}
+{%- endif %}
+{%- if step.exit_criteria %}
+- **Exit Criteria**:
+  {% for criteria in step.exit_criteria %}
+  - {{ criteria }}
+  {% endfor %}
+{%- endif %}
+{% endfor %}
+{% endif %}
+
+## Review Checklists
+
+{% if standard.checklists %}
+{% for checklist in standard.checklists %}
+### {{ checklist.name }}
+**When to use:** {{ checklist.when_to_use }}
+
+{% for section in checklist.sections %}
+#### {{ section.title }}
+{% for item in section.items %}
+- [ ] {{ item.check }}
+  {%- if item.details %}
+  - *{{ item.details }}*
+  {%- endif %}
+  {%- if item.automation %}
+  - Automated: `{{ item.automation }}`
+  {%- endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Review Criteria
+
+{% if standard.criteria %}
+### Mandatory Criteria
+{% for criterion in standard.criteria.mandatory %}
+- **{{ criterion.name }}**: {{ criterion.description }}
+  - How to verify: {{ criterion.verification }}
+{% endfor %}
+
+### Recommended Criteria
+{% for criterion in standard.criteria.recommended %}
+- **{{ criterion.name }}**: {{ criterion.description }}
+  - Why important: {{ criterion.rationale }}
+{% endfor %}
+{% endif %}
+
+## Roles and Responsibilities
+
+{% if standard.roles %}
+{% for role in standard.roles %}
+### {{ role.name }}
+- **Responsibilities**: {{ role.responsibilities | join(', ') }}
+- **Required Skills**: {{ role.required_skills | join(', ') }}
+- **Authority**: {{ role.authority }}
+{% endfor %}
+{% endif %}
+
+## Review Tools
+
+{% if standard.tools %}
+### Required Tools
+{% for tool in standard.tools.required %}
+- **{{ tool.name }}**
+  - Purpose: {{ tool.purpose }}
+  - Configuration: [Link to setup]({{ tool.setup_guide }})
+{% endfor %}
+
+### Optional Tools
+{% for tool in standard.tools.optional %}
+- **{{ tool.name }}**: {{ tool.benefit }}
+{% endfor %}
+{% endif %}
+
+## Automation
+
+{% if standard.automation %}
+### Automated Checks
+{% for check in standard.automation.checks %}
+- **{{ check.name }}**
+  - Tool: {{ check.tool }}
+  - Configuration: `{{ check.config }}`
+  - Blocking: {{ check.blocking | default('Yes') }}
+{% endfor %}
+
+### CI/CD Integration
+```yaml
+{{ standard.automation.ci_config | indent(2) }}
+```
+{% endif %}
+
+## Metrics and KPIs
+
+{% if standard.metrics %}
+### Key Metrics
+{% for metric in standard.metrics %}
+- **{{ metric.name }}**
+  - Formula: {{ metric.formula }}
+  - Target: {{ metric.target }}
+  - Frequency: {{ metric.measurement_frequency }}
+{% endfor %}
+
+### Dashboards
+{% for dashboard in standard.dashboards %}
+- [{{ dashboard.name }}]({{ dashboard.url }})
+  - Metrics shown: {{ dashboard.metrics | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## Escalation Process
+
+{% if standard.escalation %}
+### When to Escalate
+{% for trigger in standard.escalation.triggers %}
+- {{ trigger }}
+{% endfor %}
+
+### Escalation Path
+{% for level in standard.escalation.levels %}
+{{ loop.index }}. **{{ level.name }}**
+   - Contact: {{ level.contact }}
+   - Response Time: {{ level.sla }}
+{% endfor %}
+{% endif %}
+
+## Common Issues and Solutions
+
+{% if standard.common_issues %}
+{% for issue in standard.common_issues %}
+### {{ issue.title }}
+**Symptoms:** {{ issue.symptoms }}
+**Solution:** {{ issue.solution }}
+{%- if issue.prevention %}
+**Prevention:** {{ issue.prevention }}
+{%- endif %}
+{% endfor %}
+{% endif %}
+
+## Training and Documentation
+
+{% if standard.training %}
+### Required Training
+{% for training in standard.training.required %}
+- [{{ training.name }}]({{ training.link }})
+  - Duration: {{ training.duration }}
+  - Format: {{ training.format }}
+{% endfor %}
+
+### Resources
+{% for resource in standard.training.resources %}
+- [{{ resource.title }}]({{ resource.url }})
+{% endfor %}
+{% endif %}
+
+## Compliance
+
+{% if standard.compliance %}
+### Standards Compliance
+{% for comp in standard.compliance %}
+- **{{ comp.standard }}**: {{ comp.requirement }}
+  - Evidence: {{ comp.evidence }}
+{% endfor %}
+{% endif %}
+
+---
+*Effective Date: {{ standard.effective_date | default('Immediate') }}*
+*Review Frequency: {{ standard.review_frequency | default('Quarterly') }}*
+*Owner: {{ standard.owner | default('Engineering Team') }}*

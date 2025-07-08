@@ -1,0 +1,313 @@
+{# Enhanced Base Template with Extended Metadata Support #}
+# {{ title }}
+
+**Version:** {{ version | format_version }}  
+**Domain:** {{ domain }}  
+**Type:** {{ type | title }}  
+**Risk Level:** {{ risk_level | format_risk_level }}  
+**Maturity Level:** {{ maturity_level | title }}  
+**Author:** {{ author }}  
+**Created:** {{ created_date }}  
+**Last Updated:** {{ updated_date }}  
+{% if standard.tags %}
+**Tags:** {{ standard.tags | join(', ') }}  
+{% endif %}
+
+## Purpose
+
+{{ description }}
+
+{% block purpose %}
+This standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It serves as a comprehensive framework to ensure consistency, security, and compliance across all implementations.
+{% endblock %}
+
+## Scope
+
+{% block scope %}
+This standard applies to:
+- All {{ domain }} systems and applications
+- Development, testing, and production environments
+- Third-party integrations and vendor solutions
+- Compliance and audit requirements
+{% endblock %}
+
+{% if standard.workflow_diagram %}
+## Process Overview
+
+### Workflow Diagram
+```mermaid
+{{ standard.workflow_diagram }}
+```
+{% endif %}
+
+## Implementation
+
+{% block implementation %}
+### Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+{% if compliance_frameworks %}
+**Compliance Frameworks:** {{ compliance_frameworks | join(', ') }}
+{% endif %}
+
+### Guidelines
+
+1. **Planning Phase**
+   - Define scope and objectives
+   - Identify stakeholders and responsibilities
+   - Establish success criteria
+
+2. **Implementation Phase**
+   - Follow established procedures
+   - Implement security controls
+   - Document all configurations
+
+3. **Validation Phase**
+   - Conduct testing and validation
+   - Perform security assessments
+   - Review compliance requirements
+
+4. **Maintenance Phase**
+   - Monitor and maintain systems
+   - Update documentation
+   - Conduct regular reviews
+{% endblock %}
+
+{% if standard.checklists %}
+## Checklists
+
+{% for checklist in standard.checklists %}
+### {{ checklist.name }}
+**Purpose:** {{ checklist.purpose }}
+
+{% for item in checklist.items %}
+- [ ] {{ item.task }}
+  {%- if item.details %}
+  - *{{ item.details }}*
+  {%- endif %}
+  {%- if item.verification %}
+  - Verification: {{ item.verification }}
+  {%- endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if standard.tool_recommendations %}
+## Tool Recommendations
+
+### Required Tools
+{% for tool in standard.tool_recommendations.required %}
+- **{{ tool.name }}** ({{ tool.version }})
+  - Purpose: {{ tool.purpose }}
+  - License: {{ tool.license }}
+  - Documentation: [{{ tool.name }} Docs]({{ tool.docs_url }})
+{% endfor %}
+
+### Optional Tools
+{% for tool in standard.tool_recommendations.optional %}
+- **{{ tool.name }}**: {{ tool.benefit }}
+{% endfor %}
+{% endif %}
+
+## Compliance
+
+{% block compliance %}
+### Regulatory Requirements
+
+{% if compliance_frameworks %}
+{% for framework in compliance_frameworks %}
+- **{{ framework }}**: Compliance with {{ framework }} requirements
+{% endfor %}
+{% endif %}
+
+### Risk Management
+
+- **Risk Level**: {{ risk_level | format_compliance_level }}
+- **Risk Assessment**: Regular risk assessments required
+- **Mitigation Strategies**: Implement appropriate controls
+
+### Audit Requirements
+
+- Regular compliance audits
+- Documentation review
+- Control effectiveness testing
+{% endblock %}
+
+{% if standard.metrics_kpis %}
+## Metrics and KPIs
+
+### Key Performance Indicators
+{% for kpi in standard.metrics_kpis.kpis %}
+- **{{ kpi.name }}**
+  - Target: {{ kpi.target }}
+  - Measurement: {{ kpi.measurement }}
+  - Frequency: {{ kpi.frequency }}
+{% endfor %}
+
+### Success Metrics
+{% for metric in standard.metrics_kpis.success_metrics %}
+- **{{ metric.name }}**: {{ metric.formula }}
+  - Threshold: {{ metric.threshold }}
+{% endfor %}
+
+### Dashboards
+{% if standard.metrics_kpis.dashboards %}
+{% for dashboard in standard.metrics_kpis.dashboards %}
+- [{{ dashboard.name }}]({{ dashboard.url }})
+  - Update Frequency: {{ dashboard.update_frequency }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Monitoring and Measurement
+
+{% block monitoring %}
+### Key Performance Indicators
+
+- Implementation coverage
+- Compliance adherence
+- Security incident metrics
+- System performance metrics
+
+### Reporting
+
+- Monthly compliance reports
+- Quarterly risk assessments
+- Annual standard reviews
+{% endblock %}
+
+{% if standard.automation %}
+## Automation
+
+### Automated Processes
+{% for process in standard.automation.processes %}
+- **{{ process.name }}**
+  - Trigger: {{ process.trigger }}
+  - Tool: {{ process.tool }}
+  - Schedule: {{ process.schedule }}
+{% endfor %}
+
+### CI/CD Integration
+{% if standard.automation.cicd %}
+```yaml
+{{ standard.automation.cicd.config }}
+```
+{% endif %}
+{% endif %}
+
+## Responsibilities
+
+{% block responsibilities %}
+### Standard Owner
+- Maintain standard documentation
+- Approve changes and updates
+- Ensure compliance monitoring
+
+### Implementation Teams
+- Follow standard requirements
+- Report compliance issues
+- Maintain documentation
+
+### Audit Teams
+- Conduct compliance reviews
+- Validate implementation
+- Report findings and recommendations
+{% endblock %}
+
+{% if standard.training %}
+## Training and Certification
+
+### Required Training
+{% for training in standard.training.required %}
+- **{{ training.name }}**
+  - Duration: {{ training.duration }}
+  - Frequency: {{ training.frequency }}
+  - Provider: {{ training.provider }}
+{% endfor %}
+
+### Certification Requirements
+{% if standard.training.certifications %}
+{% for cert in standard.training.certifications %}
+- **{{ cert.name }}**: {{ cert.requirement }}
+  - Validity: {{ cert.validity }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## References
+
+{% block references %}
+### Standards and Frameworks
+{% if nist_controls %}
+- NIST SP 800-53: Security and Privacy Controls for Federal Information Systems
+{% endif %}
+{% if compliance_frameworks %}
+{% for framework in compliance_frameworks %}
+- {{ framework }} Framework Documentation
+{% endfor %}
+{% endif %}
+
+### Implementation Guides
+{% if implementation_guides %}
+{% for guide in implementation_guides %}
+- {{ guide }}
+{% endfor %}
+{% endif %}
+
+### Dependencies
+{% if dependencies %}
+{% for dependency in dependencies %}
+- {{ dependency }}
+{% endfor %}
+{% endif %}
+
+### External Resources
+{% if standard.external_resources %}
+{% for resource in standard.external_resources %}
+- [{{ resource.title }}]({{ resource.url }})
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+## Appendix
+
+{% block appendix %}
+### Glossary
+
+**Standard**: A documented agreement containing technical specifications or criteria to be used consistently.
+
+**Compliance**: The act of conforming to rules, regulations, or standards.
+
+**Risk**: The potential for loss, damage, or destruction of an asset as a result of a threat.
+
+{% if standard.glossary %}
+{% for term in standard.glossary %}
+**{{ term.term }}**: {{ term.definition }}
+{% endfor %}
+{% endif %}
+
+### Change History
+
+| Version | Date | Changes | Author |
+|---------|------|---------|---------|
+| {{ version }} | {{ updated_date }} | Initial version | {{ author }} |
+{% if standard.change_history %}
+{% for change in standard.change_history %}
+| {{ change.version }} | {{ change.date }} | {{ change.changes }} | {{ change.author }} |
+{% endfor %}
+{% endif %}
+
+### Review and Approval
+
+- **Review Status**: {{ review_status | title }}
+- **Reviewers**: {{ reviewers | join(', ') }}
+- **Approval Date**: {{ approval_date or 'Pending' }}
+- **Next Review Date**: {{ standard.next_review_date | default('TBD') }}
+{% endblock %}
+
+---
+
+*This document is part of the {{ domain }} standards framework and is subject to regular review and updates.*

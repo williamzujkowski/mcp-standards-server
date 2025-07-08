@@ -1,0 +1,325 @@
+{# Operations Template - For production operations standards #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** Operations
+**Operations Type:** {{ standard.operations_type | default('Production Operations') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.objectives %}
+### Operational Objectives
+{% for objective in standard.objectives %}
+- {{ objective }}
+{% endfor %}
+{% endif %}
+
+## Service Definition
+
+{% if standard.service %}
+### Service Overview
+- **Service Name**: {{ standard.service.name }}
+- **Criticality**: {{ standard.service.criticality }}
+- **Business Impact**: {{ standard.service.business_impact }}
+- **Dependencies**: {{ standard.service.dependencies | join(', ') }}
+
+### Service Level Agreements (SLAs)
+{% for sla in standard.service.slas %}
+- **{{ sla.metric }}**: {{ sla.target }}
+  - Measurement: {{ sla.measurement }}
+  - Reporting: {{ sla.reporting }}
+{% endfor %}
+
+### Service Level Objectives (SLOs)
+{% for slo in standard.service.slos %}
+- **{{ slo.metric }}**: {{ slo.target }}
+  - Window: {{ slo.window }}
+  - Budget: {{ slo.error_budget }}
+{% endfor %}
+{% endif %}
+
+## Infrastructure Management
+
+{% if standard.infrastructure %}
+### Infrastructure Components
+{% for component in standard.infrastructure.components %}
+#### {{ component.name }}
+- **Type**: {{ component.type }}
+- **Provider**: {{ component.provider }}
+- **Configuration**: {{ component.configuration }}
+- **Scaling**: {{ component.scaling_policy }}
+- **Backup**: {{ component.backup_policy }}
+{% endfor %}
+
+### Capacity Planning
+- **Review Frequency**: {{ standard.infrastructure.capacity.review_frequency }}
+- **Growth Model**: {{ standard.infrastructure.capacity.growth_model }}
+- **Buffer**: {{ standard.infrastructure.capacity.buffer_percentage }}%
+
+### Resource Limits
+{% for resource in standard.infrastructure.limits %}
+- **{{ resource.name }}**: {{ resource.limit }}
+  - Current Usage: {{ resource.current }}
+  - Alert Threshold: {{ resource.alert_threshold }}
+{% endfor %}
+{% endif %}
+
+## Deployment Operations
+
+{% if standard.deployment %}
+### Deployment Strategy
+- **Type**: {{ standard.deployment.strategy }}
+- **Frequency**: {{ standard.deployment.frequency }}
+- **Window**: {{ standard.deployment.window }}
+
+### Deployment Process
+```mermaid
+graph TD
+    A[Code Merge] --> B[Build]
+    B --> C[Test]
+    C --> D{Quality Gate}
+    D -->|Pass| E[Stage Deploy]
+    D -->|Fail| F[Fix Issues]
+    F --> B
+    E --> G[Smoke Test]
+    G --> H{Approve?}
+    H -->|Yes| I[Production Deploy]
+    H -->|No| J[Rollback]
+    I --> K[Verify]
+    K --> L[Monitor]
+```
+
+### Rollback Procedures
+{% for procedure in standard.deployment.rollback %}
+{{ loop.index }}. {{ procedure.step }}
+   - Time Limit: {{ procedure.time_limit }}
+   - Verification: {{ procedure.verification }}
+{% endfor %}
+
+### Feature Flags
+- **System**: {{ standard.deployment.feature_flags.system }}
+- **Default State**: {{ standard.deployment.feature_flags.default_state }}
+- **Rollout Strategy**: {{ standard.deployment.feature_flags.rollout_strategy }}
+{% endif %}
+
+## Monitoring and Observability
+
+{% if standard.monitoring %}
+### Monitoring Stack
+{% for component in standard.monitoring.stack %}
+- **{{ component.layer }}**: {{ component.tool }}
+  - Purpose: {{ component.purpose }}
+  - Retention: {{ component.retention }}
+{% endfor %}
+
+### Key Metrics
+{% for metric in standard.monitoring.metrics %}
+#### {{ metric.name }}
+- **Type**: {{ metric.type }}
+- **Collection**: {{ metric.collection_method }}
+- **Threshold**: {{ metric.threshold }}
+- **Dashboard**: [{{ metric.dashboard }}]({{ metric.dashboard_url }})
+{% endfor %}
+
+### Alerting Rules
+{% for alert in standard.monitoring.alerts %}
+#### {{ alert.name }}
+- **Condition**: `{{ alert.condition }}`
+- **Severity**: {{ alert.severity }}
+- **Channel**: {{ alert.channel }}
+- **Runbook**: [{{ alert.runbook }}]({{ alert.runbook_url }})
+- **Auto-remediation**: {{ alert.auto_remediation | default('No') }}
+{% endfor %}
+
+### Distributed Tracing
+- **Platform**: {{ standard.monitoring.tracing.platform }}
+- **Sampling Rate**: {{ standard.monitoring.tracing.sampling_rate }}
+- **Retention**: {{ standard.monitoring.tracing.retention }}
+{% endif %}
+
+## Incident Management
+
+{% if standard.incidents %}
+### Incident Classification
+| Severity | Impact | Response Time | Resolution Time | Example |
+|----------|--------|---------------|-----------------|---------|
+{% for class in standard.incidents.classification %}
+| {{ class.severity }} | {{ class.impact }} | {{ class.response }} | {{ class.resolution }} | {{ class.example }} |
+{% endfor %}
+
+### Incident Response Process
+{% for phase in standard.incidents.response_process %}
+#### {{ phase.name }}
+{% for step in phase.steps %}
+{{ loop.index }}. {{ step.action }}
+   - Owner: {{ step.owner }}
+   - Time: {{ step.time_limit }}
+{% endfor %}
+{% endfor %}
+
+### On-Call Rotation
+- **Schedule**: {{ standard.incidents.oncall.schedule }}
+- **Escalation**: {{ standard.incidents.oncall.escalation_time }}
+- **Handoff Process**: {{ standard.incidents.oncall.handoff }}
+
+### Post-Incident Review
+- **Required for**: {{ standard.incidents.review.required_for }}
+- **Timeline**: {{ standard.incidents.review.timeline }}
+- **Template**: [PIR Template]({{ standard.incidents.review.template_url }})
+{% endif %}
+
+## Performance Management
+
+{% if standard.performance %}
+### Performance Baselines
+{% for baseline in standard.performance.baselines %}
+- **{{ baseline.metric }}**: {{ baseline.value }}
+  - Conditions: {{ baseline.conditions }}
+  - Last Updated: {{ baseline.last_updated }}
+{% endfor %}
+
+### Performance Testing
+- **Frequency**: {{ standard.performance.testing.frequency }}
+- **Environment**: {{ standard.performance.testing.environment }}
+- **Load Profile**: {{ standard.performance.testing.load_profile }}
+
+### Optimization Targets
+{% for target in standard.performance.optimization_targets %}
+- **{{ target.area }}**: {{ target.goal }}
+  - Current: {{ target.current }}
+  - Strategy: {{ target.strategy }}
+{% endfor %}
+{% endif %}
+
+## Security Operations
+
+{% if standard.security_ops %}
+### Security Monitoring
+{% for monitor in standard.security_ops.monitoring %}
+- **{{ monitor.type }}**: {{ monitor.tool }}
+  - Scope: {{ monitor.scope }}
+  - Alert Threshold: {{ monitor.threshold }}
+{% endfor %}
+
+### Patch Management
+- **Frequency**: {{ standard.security_ops.patching.frequency }}
+- **Window**: {{ standard.security_ops.patching.window }}
+- **Testing**: {{ standard.security_ops.patching.testing }}
+- **Rollback Time**: {{ standard.security_ops.patching.rollback_time }}
+
+### Access Control
+{% for control in standard.security_ops.access %}
+- **{{ control.level }}**: {{ control.policy }}
+  - Review Frequency: {{ control.review_frequency }}
+{% endfor %}
+{% endif %}
+
+## Backup and Recovery
+
+{% if standard.backup %}
+### Backup Strategy
+- **Type**: {{ standard.backup.strategy.type }}
+- **Frequency**: {{ standard.backup.strategy.frequency }}
+- **Retention**: {{ standard.backup.strategy.retention }}
+- **Encryption**: {{ standard.backup.strategy.encryption }}
+
+### Backup Targets
+{% for target in standard.backup.targets %}
+- **{{ target.name }}**
+  - Type: {{ target.type }}
+  - RPO: {{ target.rpo }}
+  - Method: {{ target.method }}
+{% endfor %}
+
+### Recovery Procedures
+{% for procedure in standard.backup.recovery %}
+#### {{ procedure.scenario }}
+{% for step in procedure.steps %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+- **RTO**: {{ procedure.rto }}
+- **Test Frequency**: {{ procedure.test_frequency }}
+{% endfor %}
+{% endif %}
+
+## Cost Management
+
+{% if standard.cost %}
+### Cost Tracking
+- **Tool**: {{ standard.cost.tracking.tool }}
+- **Granularity**: {{ standard.cost.tracking.granularity }}
+- **Tags**: {{ standard.cost.tracking.tags | join(', ') }}
+
+### Budget Alerts
+{% for alert in standard.cost.alerts %}
+- **{{ alert.name }}**: {{ alert.threshold }}
+  - Action: {{ alert.action }}
+{% endfor %}
+
+### Optimization Strategies
+{% for strategy in standard.cost.optimization %}
+- **{{ strategy.area }}**: {{ strategy.approach }}
+  - Potential Savings: {{ strategy.savings }}
+  - Implementation: {{ strategy.implementation }}
+{% endfor %}
+{% endif %}
+
+## Automation
+
+{% if standard.automation %}
+### Automated Operations
+{% for operation in standard.automation.operations %}
+#### {{ operation.name }}
+- **Trigger**: {{ operation.trigger }}
+- **Action**: {{ operation.action }}
+- **Validation**: {{ operation.validation }}
+- **Rollback**: {{ operation.rollback }}
+{% endfor %}
+
+### Self-Healing
+{% for scenario in standard.automation.self_healing %}
+- **{{ scenario.condition }}**: {{ scenario.action }}
+  - Max Attempts: {{ scenario.max_attempts }}
+  - Cool Down: {{ scenario.cooldown }}
+{% endfor %}
+{% endif %}
+
+## Documentation
+
+{% if standard.documentation %}
+### Operational Documentation
+{% for doc in standard.documentation.operational %}
+- **{{ doc.type }}**: [{{ doc.name }}]({{ doc.url }})
+  - Update Frequency: {{ doc.update_frequency }}
+  - Owner: {{ doc.owner }}
+{% endfor %}
+
+### Runbooks
+{% for runbook in standard.documentation.runbooks %}
+- **{{ runbook.scenario }}**: [Runbook]({{ runbook.url }})
+  - Last Tested: {{ runbook.last_tested }}
+{% endfor %}
+{% endif %}
+
+## Compliance
+
+{% if standard.compliance %}
+### Compliance Requirements
+{% for req in standard.compliance.requirements %}
+- **{{ req.standard }}**: {{ req.requirement }}
+  - Evidence: {{ req.evidence }}
+  - Audit Frequency: {{ req.audit_frequency }}
+{% endfor %}
+
+### Audit Trail
+- **Events Logged**: {{ standard.compliance.audit.events | join(', ') }}
+- **Retention**: {{ standard.compliance.audit.retention }}
+- **Access**: {{ standard.compliance.audit.access }}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Operations Owner: {{ standard.ops_owner | default('Operations Team') }}*

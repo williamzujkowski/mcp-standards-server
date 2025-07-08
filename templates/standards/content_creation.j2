@@ -1,0 +1,225 @@
+{# Content Creation Template - For documentation, blog posts, tutorials #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** {{ standard.domain }}
+**Content Type:** {{ standard.content_type | default('Documentation') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.audience %}
+### Target Audience
+{% for audience in standard.audience %}
+- **{{ audience.type }}**: {{ audience.description }}
+  - Technical Level: {{ audience.technical_level }}
+  - Prerequisites: {{ audience.prerequisites | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## Content Guidelines
+
+{% if standard.guidelines %}
+### Writing Style
+- **Tone**: {{ standard.guidelines.tone }}
+- **Voice**: {{ standard.guidelines.voice }}
+- **Person**: {{ standard.guidelines.person }}
+- **Tense**: {{ standard.guidelines.tense }}
+
+### Structure Requirements
+{% for req in standard.guidelines.structure %}
+- {{ req }}
+{% endfor %}
+{% endif %}
+
+## Content Templates
+
+{% if standard.templates %}
+{% for template in standard.templates %}
+### {{ template.name }}
+**Use Case:** {{ template.use_case }}
+
+```markdown
+{{ template.structure }}
+```
+
+**Required Sections:**
+{% for section in template.required_sections %}
+- {{ section.name }}: {{ section.description }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## SEO and Discoverability
+
+{% if standard.seo %}
+### SEO Requirements
+- **Title Length**: {{ standard.seo.title_length }}
+- **Meta Description**: {{ standard.seo.meta_length }}
+- **Keywords**: {{ standard.seo.keyword_density }}
+
+### Required Metadata
+{% for meta in standard.seo.required_metadata %}
+- **{{ meta.field }}**: {{ meta.description }}
+  - Example: `{{ meta.example }}`
+{% endfor %}
+{% endif %}
+
+## Content Creation Process
+
+{% if standard.process %}
+### Workflow
+```mermaid
+graph TD
+{% for step in standard.process.workflow %}
+    {{ step.id }}[{{ step.name }}]
+    {%- if step.next %}
+    {{ step.id }} --> {{ step.next }}
+    {%- endif %}
+{% endfor %}
+```
+
+### Process Steps
+{% for step in standard.process.steps %}
+#### {{ loop.index }}. {{ step.name }}
+- **Duration**: {{ step.estimated_time }}
+- **Owner**: {{ step.owner }}
+- **Deliverables**: {{ step.deliverables | join(', ') }}
+{%- if step.tools %}
+- **Tools**: {{ step.tools | join(', ') }}
+{%- endif %}
+{% endfor %}
+{% endif %}
+
+## Quality Checklist
+
+{% if standard.quality_checklist %}
+### Pre-Publication Checklist
+{% for item in standard.quality_checklist %}
+- [ ] {{ item.check }}
+  {%- if item.how_to_verify %}
+  - Verify: {{ item.how_to_verify }}
+  {%- endif %}
+{% endfor %}
+{% endif %}
+
+## Content Types and Formats
+
+{% if standard.content_types %}
+{% for type in standard.content_types %}
+### {{ type.name }}
+- **Purpose**: {{ type.purpose }}
+- **Length**: {{ type.length }}
+- **Format**: {{ type.format }}
+- **Examples**: {{ type.examples | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## Media Guidelines
+
+{% if standard.media %}
+### Images
+- **Format**: {{ standard.media.images.formats | join(', ') }}
+- **Max Size**: {{ standard.media.images.max_size }}
+- **Alt Text**: {{ standard.media.images.alt_text_required }}
+- **Naming Convention**: {{ standard.media.images.naming }}
+
+### Videos
+- **Format**: {{ standard.media.videos.formats | join(', ') }}
+- **Resolution**: {{ standard.media.videos.resolution }}
+- **Max Duration**: {{ standard.media.videos.max_duration }}
+- **Captions**: {{ standard.media.videos.captions_required }}
+
+### Code Samples
+- **Languages**: {{ standard.media.code.languages | join(', ') }}
+- **Style Guide**: {{ standard.media.code.style_guide }}
+- **Testing**: {{ standard.media.code.must_be_tested }}
+{% endif %}
+
+## Localization
+
+{% if standard.localization %}
+### Supported Languages
+{% for lang in standard.localization.languages %}
+- **{{ lang.code }}**: {{ lang.name }}
+  - RTL: {{ lang.rtl | default('No') }}
+  - Special Requirements: {{ lang.requirements | default('None') }}
+{% endfor %}
+
+### Translation Process
+{{ standard.localization.process }}
+{% endif %}
+
+## Publishing and Distribution
+
+{% if standard.publishing %}
+### Publishing Platforms
+{% for platform in standard.publishing.platforms %}
+- **{{ platform.name }}**
+  - Format: {{ platform.format }}
+  - Requirements: {{ platform.requirements | join(', ') }}
+{% endfor %}
+
+### Publishing Schedule
+- **Frequency**: {{ standard.publishing.frequency }}
+- **Best Times**: {{ standard.publishing.best_times | join(', ') }}
+- **Review Period**: {{ standard.publishing.review_period }}
+{% endif %}
+
+## Metrics and Analytics
+
+{% if standard.metrics %}
+### Success Metrics
+{% for metric in standard.metrics.success %}
+- **{{ metric.name }}**: {{ metric.description }}
+  - Target: {{ metric.target }}
+  - Tool: {{ metric.measurement_tool }}
+{% endfor %}
+
+### Engagement Metrics
+{% for metric in standard.metrics.engagement %}
+- {{ metric }}
+{% endfor %}
+{% endif %}
+
+## Legal and Compliance
+
+{% if standard.legal %}
+### Copyright and Licensing
+- **License**: {{ standard.legal.license }}
+- **Copyright Notice**: {{ standard.legal.copyright }}
+
+### Required Disclaimers
+{% for disclaimer in standard.legal.disclaimers %}
+- {{ disclaimer }}
+{% endfor %}
+{% endif %}
+
+## Tools and Resources
+
+{% if standard.tools %}
+### Writing Tools
+{% for tool in standard.tools.writing %}
+- **{{ tool.name }}**: {{ tool.purpose }}
+  - Link: [{{ tool.name }}]({{ tool.url }})
+{% endfor %}
+
+### Review Tools
+{% for tool in standard.tools.review %}
+- **{{ tool.name }}**: {{ tool.purpose }}
+{% endfor %}
+{% endif %}
+
+## References and Style Guides
+
+{% if standard.references %}
+{% for ref in standard.references %}
+- [{{ ref.title }}]({{ ref.url }})
+{% endfor %}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Content Owner: {{ standard.content_owner | default('Content Team') }}*

@@ -1,0 +1,249 @@
+# Example Code Review Process Standard
+title: "Code Review Process Standard"
+version: "2.0.0"
+category: "Development"
+domain: "Engineering"
+description: "Standardizes the code review process to ensure quality, security, and knowledge sharing"
+
+scope: "All code changes to production systems, including application code, infrastructure as code, and configuration changes"
+
+workflow:
+  steps:
+    - id: "A"
+      name: "Submit PR"
+      owner: "Developer"
+      duration: "5 minutes"
+      description: "Create pull request with description and tests"
+      next: "B"
+    - id: "B"
+      name: "Automated Checks"
+      owner: "CI System"
+      duration: "10-15 minutes"
+      description: "Run tests, linting, security scans"
+      next: "C"
+    - id: "C"
+      name: "Peer Review"
+      owner: "Team Members"
+      duration: "1-4 hours"
+      description: "Code review by team members"
+      entry_criteria:
+        - "All automated checks pass"
+        - "PR description is complete"
+      exit_criteria:
+        - "At least 2 approvals"
+        - "All comments resolved"
+      next: "D"
+    - id: "D"
+      name: "Security Review"
+      owner: "Security Team"
+      duration: "2-8 hours"
+      description: "Security review for sensitive changes"
+      entry_criteria:
+        - "Changes affect security-sensitive code"
+        - "Peer review complete"
+      exit_criteria:
+        - "Security approval received"
+        - "Security findings addressed"
+      next: "E"
+    - id: "E"
+      name: "Merge"
+      owner: "Developer/Maintainer"
+      duration: "5 minutes"
+      description: "Merge to main branch"
+
+checklists:
+  - name: "General Code Review Checklist"
+    when_to_use: "For all code reviews"
+    sections:
+      - title: "Code Quality"
+        items:
+          - check: "Code follows style guide"
+            automation: "eslint/pylint"
+          - check: "Functions are small and focused"
+            details: "Functions should do one thing well"
+          - check: "Variable names are descriptive"
+          - check: "No code duplication"
+            details: "DRY principle is followed"
+      - title: "Testing"
+        items:
+          - check: "Unit tests cover new functionality"
+            details: "Minimum 80% coverage for new code"
+            automation: "coverage report"
+          - check: "Integration tests for API changes"
+          - check: "Edge cases are tested"
+      - title: "Security"
+        items:
+          - check: "No hardcoded secrets"
+            automation: "secret scanner"
+          - check: "Input validation is present"
+          - check: "Authentication/authorization checked"
+          - check: "SQL injection prevention"
+            details: "Use parameterized queries"
+
+  - name: "Infrastructure Code Review"
+    when_to_use: "For Terraform, CloudFormation, or Kubernetes changes"
+    sections:
+      - title: "Security"
+        items:
+          - check: "No public access unless required"
+          - check: "Encryption at rest enabled"
+          - check: "Least privilege IAM policies"
+      - title: "Cost"
+        items:
+          - check: "Resource sizing is appropriate"
+          - check: "Auto-scaling configured"
+          - check: "Cost tags applied"
+
+criteria:
+  mandatory:
+    - name: "Functionality"
+      description: "Code works as intended"
+      verification: "Run the code, check against requirements"
+    - name: "Tests Pass"
+      description: "All tests pass in CI"
+      verification: "Check CI status"
+    - name: "No Security Issues"
+      description: "No security vulnerabilities introduced"
+      verification: "Security scan results, manual review"
+  recommended:
+    - name: "Performance"
+      description: "No performance regressions"
+      rationale: "Maintains system responsiveness"
+    - name: "Documentation"
+      description: "Code is well-documented"
+      rationale: "Helps future maintainers"
+
+roles:
+  - name: "Author"
+    responsibilities: ["Write code", "Write tests", "Address feedback", "Update PR description"]
+    required_skills: ["Language proficiency", "Testing knowledge"]
+    authority: "Merge after approvals"
+  - name: "Reviewer"
+    responsibilities: ["Review code quality", "Suggest improvements", "Approve/Request changes"]
+    required_skills: ["Code review experience", "Domain knowledge"]
+    authority: "Block merge if issues found"
+  - name: "Security Reviewer"
+    responsibilities: ["Review security implications", "Run security tools", "Provide guidance"]
+    required_skills: ["Security expertise", "Threat modeling"]
+    authority: "Block merge for security issues"
+
+tools:
+  required:
+    - name: "GitHub/GitLab"
+      purpose: "Code review platform"
+      setup_guide: "https://wiki.company.com/github-setup"
+    - name: "SonarQube"
+      purpose: "Code quality analysis"
+      setup_guide: "https://wiki.company.com/sonarqube"
+  optional:
+    - name: "CodeClimate"
+      benefit: "Additional code quality metrics"
+    - name: "ReviewBot"
+      benefit: "Automated initial review"
+
+automation:
+  checks:
+    - name: "Linting"
+      tool: "ESLint/Pylint"
+      config: ".eslintrc.json"
+      blocking: true
+    - name: "Unit Tests"
+      tool: "Jest/Pytest"
+      config: "jest.config.js"
+      blocking: true
+    - name: "Security Scan"
+      tool: "Snyk"
+      config: ".snyk"
+      blocking: true
+    - name: "Code Coverage"
+      tool: "Codecov"
+      config: "codecov.yml"
+      blocking: false
+  ci_config: |
+    name: Code Review Checks
+    on: [pull_request]
+    jobs:
+      lint:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - name: Run linter
+            run: npm run lint
+      test:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - name: Run tests
+            run: npm test
+      security:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - name: Run security scan
+            uses: snyk/actions@master
+
+metrics:
+  - name: "Review Turnaround Time"
+    formula: "Time from PR open to first review"
+    target: "< 4 hours"
+    measurement_frequency: "Weekly"
+  - name: "Review Effectiveness"
+    formula: "Bugs caught in review / Total bugs found"
+    target: "> 70%"
+    measurement_frequency: "Monthly"
+  - name: "PR Size"
+    formula: "Lines of code changed per PR"
+    target: "< 400 lines"
+    measurement_frequency: "Weekly"
+
+dashboards:
+  - name: "Code Review Metrics"
+    url: "https://dashboard.company.com/code-review"
+    metrics: ["Review Time", "PR Size", "Review Coverage"]
+
+escalation:
+  triggers:
+    - "No review after 24 hours"
+    - "Blocking feedback not addressed after 48 hours"
+    - "Disagreement on approach"
+  levels:
+    - name: "Team Lead"
+      contact: "@team-lead"
+      sla: "4 hours"
+    - name: "Engineering Manager"
+      contact: "@eng-manager"
+      sla: "8 hours"
+
+common_issues:
+  - title: "Large PR"
+    symptoms: "PR has > 1000 lines changed"
+    solution: "Break into smaller, logical PRs"
+    prevention: "Plan work in smaller increments"
+  - title: "Merge Conflicts"
+    symptoms: "Cannot merge due to conflicts"
+    solution: "Rebase on latest main branch"
+    prevention: "Merge main frequently during development"
+
+training:
+  required:
+    - name: "Effective Code Reviews"
+      link: "https://learning.company.com/code-reviews"
+      duration: "2 hours"
+      format: "Online course"
+  resources:
+    - title: "Google's Code Review Guidelines"
+      url: "https://google.github.io/eng-practices/review/"
+    - title: "Best Practices for Code Review"
+      url: "https://smartbear.com/learn/code-review/best-practices-for-peer-code-review/"
+
+compliance:
+  - standard: "SOC 2"
+    requirement: "Code changes must be reviewed"
+    evidence: "PR approval history"
+  - standard: "ISO 27001"
+    requirement: "Segregation of duties"
+    evidence: "Author cannot approve own PR"
+
+effective_date: "2024-02-01"
+review_frequency: "Quarterly"
+owner: "Engineering Excellence Team"
