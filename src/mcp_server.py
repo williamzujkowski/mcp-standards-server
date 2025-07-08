@@ -341,8 +341,9 @@ class MCPStandardsServer:
             ]
         
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+        async def call_tool(name: str, arguments: Dict[str, Any]):
             """Handle tool calls."""
+            logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
             try:
                 if name == "get_applicable_standards":
                     result = await self._get_applicable_standards(
@@ -454,19 +455,31 @@ class MCPStandardsServer:
                 else:
                     raise ValueError(f"Unknown tool: {name}")
                 
-                return [TextContent(
-                    type="text",
-                    text=json.dumps(result, indent=2)
-                )]
+                # Log the result before creating response
+                logger.debug(f"Tool {name} result: {result}")
+                
+                # Create the response
+                response_text = json.dumps(result, indent=2)
+                logger.debug(f"Response text type: {type(response_text)}, length: {len(response_text)}")
+                
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=response_text
+                    )]
+                )
             except Exception as e:
-                logger.error(f"Error in tool {name}: {e}")
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "error": str(e),
-                        "tool": name
-                    })
-                )]
+                logger.error(f"Error in tool {name}: {e}", exc_info=True)
+                error_text = json.dumps({
+                    "error": str(e),
+                    "tool": name
+                })
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=error_text
+                    )]
+                )
     
     async def _get_applicable_standards(
         self,
@@ -527,17 +540,23 @@ class MCPStandardsServer:
             # Fallback to simple keyword search
             return {"results": [], "warning": "Semantic search is disabled"}
         
-        results = await self.search.search(
+        results = self.search.search(
             query, 
-            limit=limit,
+            top_k=limit,
             filters=filters
         )
         
-        # Filter by minimum relevance
-        filtered_results = [
-            r for r in results 
-            if r.get("relevance_score", 0) >= min_relevance
-        ]
+        # Filter by minimum relevance and convert to dict format
+        filtered_results = []
+        for result in results:
+            if result.score >= min_relevance:
+                filtered_results.append({
+                    "standard": result.id,
+                    "relevance_score": result.score,
+                    "content": result.content,
+                    "metadata": result.metadata,
+                    "highlights": result.highlights
+                })
         
         return {"results": filtered_results}
         
