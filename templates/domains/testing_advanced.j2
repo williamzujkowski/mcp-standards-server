@@ -1,0 +1,293 @@
+{# Advanced Testing Methodologies Template #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** Testing
+**Testing Type:** {{ standard.testing_type | default('Advanced Testing') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.scope %}
+### Testing Scope
+{{ standard.scope }}
+
+### Out of Scope
+{% for item in standard.out_of_scope %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
+## Testing Strategy
+
+{% if standard.strategy %}
+### Testing Pyramid
+```
+         /\
+        /  \    {{ standard.strategy.pyramid.e2e }}% E2E Tests
+       /    \
+      /------\  {{ standard.strategy.pyramid.integration }}% Integration Tests
+     /        \
+    /----------\ {{ standard.strategy.pyramid.unit }}% Unit Tests
+```
+
+### Testing Approaches
+{% for approach in standard.strategy.approaches %}
+#### {{ approach.name }}
+- **When to use**: {{ approach.when_to_use }}
+- **Coverage target**: {{ approach.coverage_target }}
+- **Tools**: {{ approach.tools | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## Test Categories
+
+{% if standard.categories %}
+{% for category in standard.categories %}
+### {{ category.name }}
+
+**Purpose**: {{ category.purpose }}
+**Automation Level**: {{ category.automation_level }}
+
+#### Test Types
+{% for test_type in category.test_types %}
+- **{{ test_type.name }}**
+  - Frequency: {{ test_type.frequency }}
+  - Duration: {{ test_type.duration }}
+  - Environment: {{ test_type.environment }}
+{% endfor %}
+
+#### Success Criteria
+{% for criterion in category.success_criteria %}
+- {{ criterion }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Advanced Testing Techniques
+
+{% if standard.techniques %}
+{% for technique in standard.techniques %}
+### {{ technique.name }}
+
+**Description**: {{ technique.description }}
+**Complexity**: {{ technique.complexity }}
+
+#### Implementation
+```{{ technique.language | default('python') }}
+{{ technique.example_code }}
+```
+
+#### Best Practices
+{% for practice in technique.best_practices %}
+- {{ practice }}
+{% endfor %}
+
+#### Common Pitfalls
+{% for pitfall in technique.pitfalls %}
+- {{ pitfall }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Test Data Management
+
+{% if standard.test_data %}
+### Data Strategy
+- **Approach**: {{ standard.test_data.approach }}
+- **Generation Method**: {{ standard.test_data.generation_method }}
+- **Storage**: {{ standard.test_data.storage }}
+
+### Data Categories
+{% for category in standard.test_data.categories %}
+#### {{ category.name }}
+- **Type**: {{ category.type }}
+- **Source**: {{ category.source }}
+- **Refresh Frequency**: {{ category.refresh_frequency }}
+- **Privacy Level**: {{ category.privacy_level }}
+{% endfor %}
+
+### Data Generation Rules
+```yaml
+{{ standard.test_data.generation_rules | indent(2) }}
+```
+{% endif %}
+
+## Performance Testing
+
+{% if standard.performance %}
+### Load Testing Scenarios
+{% for scenario in standard.performance.scenarios %}
+#### {{ scenario.name }}
+- **User Load**: {{ scenario.user_load }}
+- **Ramp Up**: {{ scenario.ramp_up }}
+- **Duration**: {{ scenario.duration }}
+- **Think Time**: {{ scenario.think_time }}
+
+**Success Criteria**:
+- Response Time (p95): < {{ scenario.response_time_p95 }}
+- Error Rate: < {{ scenario.error_rate }}
+- Throughput: > {{ scenario.throughput }}
+{% endfor %}
+
+### Performance Baselines
+{% for baseline in standard.performance.baselines %}
+- **{{ baseline.metric }}**: {{ baseline.value }} ({{ baseline.conditions }})
+{% endfor %}
+{% endif %}
+
+## Security Testing
+
+{% if standard.security %}
+### Security Test Categories
+{% for category in standard.security.categories %}
+#### {{ category.name }}
+- **OWASP Mapping**: {{ category.owasp_mapping | join(', ') }}
+- **Tools**: {{ category.tools | join(', ') }}
+- **Frequency**: {{ category.frequency }}
+
+**Test Cases**:
+{% for test_case in category.test_cases %}
+- {{ test_case }}
+{% endfor %}
+{% endfor %}
+
+### Vulnerability Scanning
+- **Schedule**: {{ standard.security.scanning.schedule }}
+- **Scope**: {{ standard.security.scanning.scope }}
+- **Severity Thresholds**: {{ standard.security.scanning.thresholds | join(', ') }}
+{% endif %}
+
+## Chaos Engineering
+
+{% if standard.chaos %}
+### Chaos Experiments
+{% for experiment in standard.chaos.experiments %}
+#### {{ experiment.name }}
+- **Hypothesis**: {{ experiment.hypothesis }}
+- **Method**: {{ experiment.method }}
+- **Blast Radius**: {{ experiment.blast_radius }}
+- **Rollback Time**: {{ experiment.rollback_time }}
+
+**Monitoring**:
+{% for monitor in experiment.monitoring %}
+- {{ monitor }}
+{% endfor %}
+{% endfor %}
+
+### Failure Scenarios
+{% for scenario in standard.chaos.scenarios %}
+- **{{ scenario.name }}**: {{ scenario.description }}
+  - Impact: {{ scenario.impact }}
+  - Recovery: {{ scenario.recovery_time }}
+{% endfor %}
+{% endif %}
+
+## Test Automation Framework
+
+{% if standard.automation %}
+### Framework Architecture
+```
+{{ standard.automation.architecture }}
+```
+
+### Framework Components
+{% for component in standard.automation.components %}
+#### {{ component.name }}
+- **Purpose**: {{ component.purpose }}
+- **Technology**: {{ component.technology }}
+- **Maintainer**: {{ component.maintainer }}
+{% endfor %}
+
+### Automation Guidelines
+{% for guideline in standard.automation.guidelines %}
+- {{ guideline }}
+{% endfor %}
+{% endif %}
+
+## CI/CD Integration
+
+{% if standard.cicd %}
+### Pipeline Stages
+{% for stage in standard.cicd.stages %}
+#### {{ stage.name }}
+- **Trigger**: {{ stage.trigger }}
+- **Tests**: {{ stage.tests | join(', ') }}
+- **Duration**: {{ stage.max_duration }}
+- **Failure Action**: {{ stage.failure_action }}
+{% endfor %}
+
+### Quality Gates
+{% for gate in standard.cicd.quality_gates %}
+- **{{ gate.name }}**: {{ gate.condition }}
+  - Action on failure: {{ gate.failure_action }}
+{% endfor %}
+{% endif %}
+
+## Test Reporting
+
+{% if standard.reporting %}
+### Report Types
+{% for report in standard.reporting.types %}
+#### {{ report.name }}
+- **Audience**: {{ report.audience }}
+- **Frequency**: {{ report.frequency }}
+- **Format**: {{ report.format }}
+- **Metrics**: {{ report.metrics | join(', ') }}
+{% endfor %}
+
+### Dashboards
+{% for dashboard in standard.reporting.dashboards %}
+- **{{ dashboard.name }}**: [Link]({{ dashboard.url }})
+  - Update frequency: {{ dashboard.update_frequency }}
+{% endfor %}
+{% endif %}
+
+## Test Environment Management
+
+{% if standard.environments %}
+### Environment Types
+{% for env in standard.environments %}
+#### {{ env.name }}
+- **Purpose**: {{ env.purpose }}
+- **Configuration**: {{ env.configuration }}
+- **Data**: {{ env.data_type }}
+- **Access**: {{ env.access_control }}
+- **Refresh Schedule**: {{ env.refresh_schedule }}
+{% endfor %}
+
+### Environment Provisioning
+```yaml
+{{ standard.environments.provisioning_config | indent(2) }}
+```
+{% endif %}
+
+## Metrics and KPIs
+
+{% if standard.metrics %}
+### Testing Metrics
+{% for metric in standard.metrics %}
+- **{{ metric.name }}**
+  - Formula: {{ metric.formula }}
+  - Target: {{ metric.target }}
+  - Collection: {{ metric.collection_method }}
+  - Reporting: {{ metric.reporting_frequency }}
+{% endfor %}
+{% endif %}
+
+## Tools and Technologies
+
+{% if standard.tools %}
+### Testing Tools Matrix
+| Category | Tool | Version | Purpose | License |
+|----------|------|---------|---------|---------|
+{% for tool in standard.tools %}
+| {{ tool.category }} | {{ tool.name }} | {{ tool.version }} | {{ tool.purpose }} | {{ tool.license }} |
+{% endfor %}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Maintained by: {{ standard.maintainer | default('QA Team') }}*

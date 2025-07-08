@@ -1,0 +1,16 @@
+gap_thresholds:
+  coverage_minimum: 0.7
+  low_usage: 10
+  quality_minimum: 0.6
+popularity_factors:
+  growth_trend: 0.1
+  recency: 0.2
+  unique_users: 0.3
+  usage_frequency: 0.4
+quality_weights:
+  actionability: 0.15
+  clarity: 0.2
+  completeness: 0.25
+  consistency: 0.2
+  coverage: 0.1
+  maintenance: 0.1

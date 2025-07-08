@@ -1,335 +1,267 @@
 """
-Pytest Configuration and Shared Fixtures
-@nist-controls: SA-11, CA-7
-@evidence: Test infrastructure for compliance validation
+Global pytest configuration and fixtures for all tests.
 """
 
-import time
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock
+import asyncio
+import os
+import sys
+from pathlib import Path
+from typing import Generator
 
-import jwt  # This is from the pyjwt package
 import pytest
-from cryptography.fernet import Fernet
+import pytest_asyncio
 
-from src.compliance.scanner import ComplianceScanner
-from src.core.mcp.models import (
-    AuthenticationLevel,
-    ComplianceContext,
-    MCPMessage,
-    SessionInfo,
-)
-from src.core.standards.engine import StandardsEngine
-from src.core.standards.models import StandardLoadResult
-
-# Configure pytest-asyncio
-pytest_plugins = ["pytest_asyncio"]
+# Add project root to Python path
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 
-# Using pytest-asyncio default event loop implementation
+# Configure asyncio for tests
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Set event loop policy for tests."""
+    if sys.platform == "win32":
+        # Windows requires special handling
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    return asyncio.get_event_loop_policy()
 
 
+@pytest.fixture(scope="session")
+def event_loop(event_loop_policy):
+    """Create event loop for session."""
+    loop = event_loop_policy.new_event_loop()
+    yield loop
+    loop.close()
+
+
+# Environment setup
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Setup test environment variables."""
+    os.environ["MCP_TEST_MODE"] = "true"
+    os.environ["MCP_LOG_LEVEL"] = "DEBUG"
+    os.environ["MCP_DISABLE_TELEMETRY"] = "true"
+    
+    yield
+    
+    # Cleanup
+    os.environ.pop("MCP_TEST_MODE", None)
+    os.environ.pop("MCP_LOG_LEVEL", None)
+    os.environ.pop("MCP_DISABLE_TELEMETRY", None)
+
+
+# Test data directories
+@pytest.fixture(scope="session")
+def test_data_dir() -> Path:
+    """Path to test data directory."""
+    return PROJECT_ROOT / "tests" / "data"
+
+
+@pytest.fixture(scope="session")
+def fixtures_dir() -> Path:
+    """Path to fixtures directory."""
+    return PROJECT_ROOT / "tests" / "fixtures"
+
+
+# Benchmark fixtures
 @pytest.fixture
-def test_config():
-    """Standard test configuration"""
+def benchmark_data():
+    """Provide data for benchmark tests."""
     return {
-        "cors_origins": ["http://localhost:3000"],
-        "jwt_secret": "test-secret-key-for-testing",
-        "encryption_key": Fernet.generate_key(),
-        "redis_url": None,  # No Redis in tests
-        "log_level": "DEBUG"
+        "small_context": {
+            "project_type": "api",
+            "language": "python"
+        },
+        "medium_context": {
+            "project_type": "web_application",
+            "framework": "react",
+            "language": "javascript",
+            "requirements": ["accessibility", "performance"]
+        },
+        "large_context": {
+            "project_type": "microservice",
+            "framework": "spring-boot",
+            "language": "java",
+            "requirements": ["security", "scalability", "monitoring"],
+            "deployment": "kubernetes",
+            "database": ["postgresql", "redis"],
+            "messaging": "kafka",
+            "team_size": "large"
+        }
     }
 
 
+# Skip markers for conditional tests
+@pytest.fixture(autouse=True)
+def skip_on_ci(request):
+    """Skip tests marked with 'skip_on_ci' when running in CI."""
+    if request.node.get_closest_marker("skip_on_ci"):
+        if os.environ.get("CI"):
+            pytest.skip("Skipping test in CI environment")
+
+
+@pytest.fixture(autouse=True)
+def skip_without_mcp(request):
+    """Skip tests that require MCP when it's not available."""
+    if request.node.get_closest_marker("mcp"):
+        try:
+            import mcp
+        except ImportError:
+            pytest.skip("MCP not installed")
+
+
+# Performance tracking
 @pytest.fixture
-def compliance_context():
-    """Standard compliance context for testing"""
-    return ComplianceContext(
-        user_id="test-user",
-        organization_id="test-org",
-        session_id="test-session-123",
-        request_id="test-request-456",
-        timestamp=time.time(),
-        ip_address="127.0.0.1",
-        user_agent="test-client/1.0",
-        auth_method="jwt",
-        risk_score=0.1
-    )
+def track_performance(request):
+    """Track test performance metrics."""
+    import time
+    import psutil
+    
+    process = psutil.Process()
+    
+    # Before test
+    start_time = time.time()
+    start_memory = process.memory_info().rss / 1024 / 1024  # MB
+    
+    yield
+    
+    # After test
+    end_time = time.time()
+    end_memory = process.memory_info().rss / 1024 / 1024  # MB
+    
+    duration = end_time - start_time
+    memory_delta = end_memory - start_memory
+    
+    # Add metrics to test report
+    if hasattr(request.node, "user_properties"):
+        request.node.user_properties.append(("duration", duration))
+        request.node.user_properties.append(("memory_delta_mb", memory_delta))
 
 
-@pytest.fixture
-def mcp_message():
-    """Standard MCP message for testing"""
-    return MCPMessage(
-        id="test-msg-789",
-        method="test.method",
-        params={"test": "value"},
-        timestamp=time.time()
-    )
+# Cleanup fixtures
+@pytest.fixture(autouse=True)
+def cleanup_after_test():
+    """Cleanup after each test."""
+    yield
+    
+    # Force garbage collection
+    import gc
+    gc.collect()
+    
+    # Clear any test caches
+    if hasattr(asyncio, "_test_cache"):
+        asyncio._test_cache.clear()
 
 
-@pytest.fixture
-def session_info():
-    """Standard session info for testing"""
-    return SessionInfo(
-        session_id="test-session-123",
-        user_id="test-user",
-        created_at=datetime.now(),
-        last_activity=datetime.now(),
-        expires_at=datetime.now() + timedelta(hours=1),
-        auth_level=AuthenticationLevel.BASIC,
-        permissions=["read", "write"],
-        metadata={"client": "test"}
-    )
-
-
-@pytest.fixture
-def valid_jwt_token(test_config):
-    """Generate valid JWT token"""
-    payload = {
-        "sub": "test-user",
-        "org": "test-org",
-        "session_id": "test-session-123",
-        "permissions": ["read", "write"],
-        "exp": datetime.utcnow() + timedelta(hours=1)
-    }
-    return jwt.encode(
-        payload,
-        test_config["jwt_secret"],
-        algorithm="HS256"
-    )
-
-
-@pytest.fixture
-def expired_jwt_token(test_config):
-    """Generate expired JWT token"""
-    payload = {
-        "sub": "test-user",
-        "org": "test-org",
-        "session_id": "test-session-123",
-        "exp": datetime.utcnow() - timedelta(hours=1)
-    }
-    return jwt.encode(
-        payload,
-        test_config["jwt_secret"],
-        algorithm="HS256"
-    )
-
-
-@pytest.fixture
-def mock_standards_engine():
-    """Mock standards engine for testing"""
-    engine = MagicMock(spec=StandardsEngine)
-
-    # Default response
-    engine.load_standards = AsyncMock(
-        return_value=StandardLoadResult(
-            standards=[
-                {"id": "CS.api", "content": "API design standards..."},
-                {"id": "SEC.auth", "content": "Authentication standards..."},
-                {"id": "TS.types", "content": "Type system standards..."}
-            ],
-            metadata={
-                "query": "test query",
-                "token_count": 1500,
-                "version": "latest",
-                "timestamp": time.time()
-            }
+# Custom assertions
+class CustomAssertions:
+    """Custom assertion helpers for tests."""
+    
+    @staticmethod
+    def assert_performance(duration: float, max_duration: float, operation: str = "Operation"):
+        """Assert that an operation completed within time limit."""
+        assert duration <= max_duration, (
+            f"{operation} took {duration:.3f}s, "
+            f"exceeding limit of {max_duration:.3f}s"
         )
-    )
-
-    engine.get_catalog = MagicMock(
-        return_value=["CS", "SEC", "TS", "FE", "DE", "CN", "OBS"]
-    )
-
-    return engine
-
-
-@pytest.fixture
-def mock_compliance_scanner():
-    """Mock compliance scanner for testing"""
-    scanner = MagicMock(spec=ComplianceScanner)
-
-    # Default scan result
-    scanner.scan = AsyncMock(
-        return_value={
-            "findings": [
-                {
-                    "control": "AC-3",
-                    "status": "implemented",
-                    "evidence": "Role-based access control found"
-                },
-                {
-                    "control": "AU-2",
-                    "status": "partial",
-                    "evidence": "Some audit events missing"
-                }
-            ],
-            "summary": {
-                "total_controls": 10,
-                "implemented": 5,
-                "partial": 3,
-                "missing": 2
-            }
-        }
-    )
-
-    return scanner
+        
+    @staticmethod
+    def assert_memory_usage(memory_mb: float, max_memory_mb: float):
+        """Assert that memory usage is within limits."""
+        assert memory_mb <= max_memory_mb, (
+            f"Memory usage {memory_mb:.2f}MB "
+            f"exceeds limit of {max_memory_mb:.2f}MB"
+        )
 
 
 @pytest.fixture
-def test_data_dir(tmp_path):
-    """Create temporary data directory structure"""
-    data_dir = tmp_path / "data"
-    standards_dir = data_dir / "standards"
-    standards_dir.mkdir(parents=True)
-
-    # Create sample standards files
-    cs_dir = standards_dir / "CS"
-    cs_dir.mkdir()
-
-    api_file = cs_dir / "api.yaml"
-    api_file.write_text("""
-id: CS.api
-title: API Design Standards
-content: |
-  API design best practices for RESTful services.
-tags:
-  - api
-  - rest
-  - design
-""")
-
-    return data_dir
+def custom_assertions():
+    """Provide custom assertion helpers."""
+    return CustomAssertions()
 
 
+# Test doubles and mocks
 @pytest.fixture
-def sample_code_snippets():
-    """Sample code snippets for testing"""
-    return {
-        "python_auth": """
-def authenticate_user(username: str, password: str) -> dict:
-    \"\"\"
-    Authenticate user and return JWT token
-    @nist-controls: IA-2, IA-5
-    @evidence: Multi-factor authentication with strong passwords
-    \"\"\"
-    user = db.get_user(username)
-    if user and verify_password(password, user.password_hash):
-        # Log successful authentication
-        audit_log('auth.success', user_id=user.id)
-
-        # Generate MFA challenge
-        if user.mfa_enabled:
-            return {"status": "mfa_required", "challenge": generate_mfa_challenge(user)}
-
-        # Generate JWT token
-        token = generate_jwt(user)
-        return {"status": "success", "token": token}
-
-    # Log failed authentication
-    audit_log('auth.failed', username=username)
-    return {"status": "failed"}
-""",
-        "javascript_api": """
-// @nist-controls: AC-3, AC-4
-// @evidence: Role-based access control for API endpoints
-router.post('/api/users', authenticate, authorize(['admin']), async (req, res) => {
-    try {
-        // Validate input
-        const { error } = userSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ error: error.details[0].message });
-        }
-
-        // Create user
-        const user = await createUser(req.body);
-
-        // Audit log
-        await auditLog({
-            action: 'user.created',
-            userId: req.user.id,
-            targetUserId: user.id,
-            ip: req.ip
-        });
-
-        res.status(201).json(user);
-    } catch (err) {
-        logger.error('Failed to create user', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-""",
-        "go_encryption": """
-// EncryptData encrypts sensitive data at rest
-// @nist-controls: SC-8, SC-13, SC-28
-// @evidence: AES-256-GCM encryption for data at rest
-func EncryptData(plaintext []byte, key []byte) ([]byte, error) {
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create cipher: %w", err)
-    }
-
-    gcm, err := cipher.NewGCM(block)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create GCM: %w", err)
-    }
-
-    nonce := make([]byte, gcm.NonceSize())
-    if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-        return nil, fmt.Errorf("failed to generate nonce: %w", err)
-    }
-
-    ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
-
-    // Log encryption operation
-    log.Info("Data encrypted", "size", len(plaintext))
-
-    return ciphertext, nil
-}
-"""
-    }
+def mock_github_api(monkeypatch):
+    """Mock GitHub API calls."""
+    class MockGitHubAPI:
+        def __init__(self):
+            self.calls = []
+            
+        def get_file(self, path):
+            self.calls.append(("get_file", path))
+            return {"content": "mocked content", "sha": "abc123"}
+            
+        def list_files(self, path):
+            self.calls.append(("list_files", path))
+            return ["file1.md", "file2.yaml"]
+            
+    mock_api = MockGitHubAPI()
+    monkeypatch.setattr("src.core.standards.sync.github_api", mock_api)
+    return mock_api
 
 
-@pytest.fixture
-def mock_redis_client():
-    """Mock Redis client for testing"""
-    client = MagicMock()
-    client.get = MagicMock(return_value=None)
-    client.set = MagicMock(return_value=True)
-    client.setex = MagicMock(return_value=True)
-    client.delete = MagicMock(return_value=1)
-    client.exists = MagicMock(return_value=0)
-    client.expire = MagicMock(return_value=True)
-    return client
+@pytest.fixture(autouse=True)
+def mock_ml_dependencies(monkeypatch):
+    """Mock ML dependencies for tests."""
+    import sys
+    from tests.mocks import MockSentenceTransformer, MockNearestNeighbors
+    
+    # Mock sentence-transformers
+    class MockSentenceTransformersModule:
+        SentenceTransformer = MockSentenceTransformer
+    
+    # Mock sklearn.neighbors
+    class MockNeighborsModule:
+        NearestNeighbors = MockNearestNeighbors
+    
+    class MockSklearnModule:
+        neighbors = MockNeighborsModule()
+    
+    # Patch the imports
+    sys.modules['sentence_transformers'] = MockSentenceTransformersModule()
+    sys.modules['sklearn'] = MockSklearnModule()
+    sys.modules['sklearn.neighbors'] = MockNeighborsModule()
+    
+    monkeypatch.setattr("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+    
+    yield
+    
+    # Cleanup
+    for module in ['sentence_transformers', 'sklearn', 'sklearn.neighbors']:
+        if module in sys.modules:
+            del sys.modules[module]
 
 
-@pytest.fixture
-def mock_logger():
-    """Mock logger for testing"""
-    logger = MagicMock()
-    logger.info = MagicMock()
-    logger.warning = MagicMock()
-    logger.error = MagicMock()
-    logger.debug = MagicMock()
-    return logger
-
-
-# Markers for test categorization
+# Pytest plugins configuration
 def pytest_configure(config):
-    """Configure custom markers"""
+    """Configure pytest with custom settings."""
+    # Register custom markers
     config.addinivalue_line(
-        "markers", "unit: Unit tests"
+        "markers", "skip_on_ci: skip test when running in CI"
     )
     config.addinivalue_line(
-        "markers", "integration: Integration tests"
+        "markers", "requires_redis: test requires Redis server"
     )
     config.addinivalue_line(
-        "markers", "e2e: End-to-end tests"
+        "markers", "requires_docker: test requires Docker"
     )
-    config.addinivalue_line(
-        "markers", "slow: Tests that take more than 1 second"
-    )
-    config.addinivalue_line(
-        "markers", "security: Security-related tests"
-    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Modify test collection."""
+    # Add markers based on test location
+    for item in items:
+        # Add markers based on path
+        if "e2e" in str(item.fspath):
+            item.add_marker(pytest.mark.e2e)
+        elif "integration" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
+        elif "unit" in str(item.fspath):
+            item.add_marker(pytest.mark.unit)
+            
+        # Add markers based on test name
+        if "performance" in item.name:
+            item.add_marker(pytest.mark.performance)
+        if "benchmark" in item.name:
+            item.add_marker(pytest.mark.benchmark)

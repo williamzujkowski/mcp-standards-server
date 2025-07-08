@@ -1,0 +1,474 @@
+"""
+Performance tests for MCP Standards Server.
+
+Tests cover:
+- Load testing for concurrent requests
+- Memory usage monitoring
+- Response time benchmarks
+"""
+
+import asyncio
+import gc
+import statistics
+import time
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, List, Tuple
+
+import psutil
+import pytest
+from memory_profiler import profile
+
+from tests.e2e.fixtures import SAMPLE_CONTEXTS, create_test_mcp_config
+from tests.e2e.conftest import MCPTestClient, mcp_server, mcp_client
+
+
+class PerformanceMetrics:
+    """Track and analyze performance metrics."""
+    
+    def __init__(self):
+        self.response_times: List[float] = []
+        self.memory_usage: List[float] = []
+        self.cpu_usage: List[float] = []
+        self.error_count: int = 0
+        self.start_time: float = time.time()
+        
+    def record_response_time(self, duration: float):
+        """Record a response time."""
+        self.response_times.append(duration)
+        
+    def record_memory_usage(self):
+        """Record current memory usage."""
+        process = psutil.Process()
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        self.memory_usage.append(memory_mb)
+        
+    def record_cpu_usage(self):
+        """Record current CPU usage."""
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        self.cpu_usage.append(cpu_percent)
+        
+    def record_error(self):
+        """Record an error occurrence."""
+        self.error_count += 1
+        
+    def get_summary(self) -> Dict[str, float]:
+        """Get performance summary statistics."""
+        total_duration = time.time() - self.start_time
+        
+        return {
+            "total_duration": total_duration,
+            "total_requests": len(self.response_times),
+            "error_count": self.error_count,
+            "error_rate": self.error_count / max(len(self.response_times), 1),
+            "response_times": {
+                "min": min(self.response_times) if self.response_times else 0,
+                "max": max(self.response_times) if self.response_times else 0,
+                "mean": statistics.mean(self.response_times) if self.response_times else 0,
+                "median": statistics.median(self.response_times) if self.response_times else 0,
+                "p95": self._percentile(self.response_times, 95) if self.response_times else 0,
+                "p99": self._percentile(self.response_times, 99) if self.response_times else 0
+            },
+            "memory_usage": {
+                "min": min(self.memory_usage) if self.memory_usage else 0,
+                "max": max(self.memory_usage) if self.memory_usage else 0,
+                "mean": statistics.mean(self.memory_usage) if self.memory_usage else 0
+            },
+            "cpu_usage": {
+                "min": min(self.cpu_usage) if self.cpu_usage else 0,
+                "max": max(self.cpu_usage) if self.cpu_usage else 0,
+                "mean": statistics.mean(self.cpu_usage) if self.cpu_usage else 0
+            },
+            "throughput": len(self.response_times) / total_duration if total_duration > 0 else 0
+        }
+        
+    @staticmethod
+    def _percentile(data: List[float], percentile: float) -> float:
+        """Calculate percentile value."""
+        if not data:
+            return 0
+        sorted_data = sorted(data)
+        index = int(len(sorted_data) * percentile / 100)
+        return sorted_data[min(index, len(sorted_data) - 1)]
+
+
+class TestLoadPerformance:
+    """Test server performance under load."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    async def test_concurrent_standard_requests(self, mcp_client):
+        """Test performance with concurrent get_applicable_standards requests."""
+        metrics = PerformanceMetrics()
+        num_requests = 100
+        concurrent_limit = 10
+        
+        async def make_request(context: Dict) -> float:
+            """Make a single request and measure response time."""
+            start = time.time()
+            try:
+                await mcp_client.call_tool(
+                    "get_applicable_standards",
+                    {"context": context}
+                )
+                duration = time.time() - start
+                metrics.record_response_time(duration)
+                return duration
+            except Exception as e:
+                metrics.record_error()
+                raise e
+                
+        # Create varied contexts
+        contexts = []
+        for i in range(num_requests):
+            context_type = list(SAMPLE_CONTEXTS.keys())[i % len(SAMPLE_CONTEXTS)]
+            context = SAMPLE_CONTEXTS[context_type].copy()
+            context["request_id"] = f"perf_test_{i}"
+            contexts.append(context)
+            
+        # Run requests with concurrency limit
+        semaphore = asyncio.Semaphore(concurrent_limit)
+        
+        async def bounded_request(context):
+            async with semaphore:
+                return await make_request(context)
+                
+        # Execute all requests
+        start_time = time.time()
+        tasks = [bounded_request(ctx) for ctx in contexts]
+        await asyncio.gather(*tasks, return_exceptions=True)
+        total_time = time.time() - start_time
+        
+        # Analyze results
+        summary = metrics.get_summary()
+        
+        # Performance assertions
+        assert summary["error_rate"] < 0.01  # Less than 1% error rate
+        assert summary["response_times"]["p95"] < 1.0  # 95% under 1 second
+        assert summary["response_times"]["p99"] < 2.0  # 99% under 2 seconds
+        assert summary["throughput"] > 10  # At least 10 requests per second
+        
+        print(f"\nLoad Test Results:")
+        print(f"Total requests: {summary['total_requests']}")
+        print(f"Total duration: {summary['total_duration']:.2f}s")
+        print(f"Throughput: {summary['throughput']:.2f} req/s")
+        print(f"Response times - p50: {summary['response_times']['median']:.3f}s, "
+              f"p95: {summary['response_times']['p95']:.3f}s, "
+              f"p99: {summary['response_times']['p99']:.3f}s")
+              
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    async def test_search_performance(self, mcp_client):
+        """Test semantic search performance."""
+        metrics = PerformanceMetrics()
+        queries = [
+            "React component performance optimization",
+            "Python async programming patterns",
+            "API security best practices",
+            "Mobile app accessibility guidelines",
+            "Microservice communication patterns",
+            "Database query optimization",
+            "Frontend testing strategies",
+            "Cloud deployment best practices",
+            "Error handling in distributed systems",
+            "Authentication and authorization"
+        ]
+        
+        # Run searches multiple times
+        num_iterations = 5
+        
+        for iteration in range(num_iterations):
+            for query in queries:
+                start = time.time()
+                try:
+                    await mcp_client.call_tool(
+                        "search_standards",
+                        {"query": query, "limit": 5}
+                    )
+                    duration = time.time() - start
+                    metrics.record_response_time(duration)
+                except Exception:
+                    metrics.record_error()
+                    
+        summary = metrics.get_summary()
+        
+        # Search should be fast
+        assert summary["response_times"]["mean"] < 0.5  # Average under 500ms
+        assert summary["response_times"]["p95"] < 1.0  # 95% under 1 second
+        
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    async def test_mixed_workload_performance(self, mcp_client):
+        """Test performance with mixed workload types."""
+        metrics = PerformanceMetrics()
+        
+        # Define different operation types
+        async def get_standards(context):
+            start = time.time()
+            result = await mcp_client.call_tool(
+                "get_applicable_standards",
+                {"context": context}
+            )
+            metrics.record_response_time(time.time() - start)
+            return result
+            
+        async def search_standards(query):
+            start = time.time()
+            result = await mcp_client.call_tool(
+                "search_standards",
+                {"query": query, "limit": 3}
+            )
+            metrics.record_response_time(time.time() - start)
+            return result
+            
+        async def validate_code(code, standard):
+            start = time.time()
+            result = await mcp_client.call_tool(
+                "validate_against_standard",
+                {"code": code, "standard": standard}
+            )
+            metrics.record_response_time(time.time() - start)
+            return result
+            
+        # Create mixed workload
+        tasks = []
+        
+        # 50% get standards requests
+        for i in range(50):
+            context = SAMPLE_CONTEXTS["react_web_app"].copy()
+            context["request_id"] = f"mixed_{i}"
+            tasks.append(get_standards(context))
+            
+        # 30% search requests
+        search_queries = [
+            "performance optimization",
+            "security best practices",
+            "testing strategies"
+        ]
+        for i in range(30):
+            query = search_queries[i % len(search_queries)]
+            tasks.append(search_standards(query))
+            
+        # 20% validation requests
+        sample_code = "const Component = () => <div>Hello</div>;"
+        for i in range(20):
+            tasks.append(validate_code(sample_code, "react-18-patterns"))
+            
+        # Execute mixed workload
+        start_time = time.time()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        total_time = time.time() - start_time
+        
+        # Count errors
+        error_count = sum(1 for r in results if isinstance(r, Exception))
+        metrics.error_count = error_count
+        
+        summary = metrics.get_summary()
+        
+        # Mixed workload should maintain good performance
+        assert summary["error_rate"] < 0.02  # Less than 2% errors
+        assert summary["throughput"] > 20  # At least 20 req/s
+        
+
+class TestMemoryPerformance:
+    """Test memory usage and leak detection."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    async def test_memory_usage_under_load(self, mcp_client):
+        """Test memory usage remains stable under load."""
+        process = psutil.Process()
+        initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+        
+        # Perform many operations
+        for i in range(100):
+            context = SAMPLE_CONTEXTS["react_web_app"].copy()
+            context["iteration"] = i
+            
+            await mcp_client.call_tool(
+                "get_applicable_standards",
+                {"context": context}
+            )
+            
+            # Check memory periodically
+            if i % 20 == 0:
+                gc.collect()  # Force garbage collection
+                current_memory = process.memory_info().rss / 1024 / 1024
+                memory_increase = current_memory - initial_memory
+                
+                # Memory increase should be reasonable
+                assert memory_increase < 100  # Less than 100MB increase
+                
+        # Final memory check
+        gc.collect()
+        final_memory = process.memory_info().rss / 1024 / 1024
+        total_increase = final_memory - initial_memory
+        
+        print(f"\nMemory Usage:")
+        print(f"Initial: {initial_memory:.2f} MB")
+        print(f"Final: {final_memory:.2f} MB")
+        print(f"Increase: {total_increase:.2f} MB")
+        
+        # Total memory increase should be minimal
+        assert total_increase < 50  # Less than 50MB total increase
+        
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    async def test_cache_memory_management(self, mcp_client):
+        """Test that caching doesn't cause memory issues."""
+        metrics = PerformanceMetrics()
+        
+        # Access many different standards
+        standard_ids = [
+            f"standard_{i}" for i in range(50)
+        ]
+        
+        # First pass - populate cache
+        for std_id in standard_ids:
+            try:
+                await mcp_client.call_tool(
+                    "get_standard_details",
+                    {"standard_id": std_id}
+                )
+            except Exception:
+                pass  # Some standards may not exist
+                
+            metrics.record_memory_usage()
+            
+        # Check memory growth
+        memory_growth = max(metrics.memory_usage) - min(metrics.memory_usage)
+        assert memory_growth < 200  # Less than 200MB growth
+        
+        # Second pass - should use cache
+        cache_memory_start = metrics.memory_usage[-1]
+        
+        for std_id in standard_ids:
+            try:
+                await mcp_client.call_tool(
+                    "get_standard_details",
+                    {"standard_id": std_id}
+                )
+            except Exception:
+                pass
+                
+        # Memory should not grow significantly when using cache
+        cache_memory_end = process.memory_info().rss / 1024 / 1024
+        cache_growth = cache_memory_end - cache_memory_start
+        assert cache_growth < 10  # Less than 10MB growth when using cache
+
+
+class TestResponseTimeBenchmarks:
+    """Benchmark response times for different operations."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    async def test_standard_selection_benchmark(self, mcp_client, benchmark):
+        """Benchmark get_applicable_standards operation."""
+        context = SAMPLE_CONTEXTS["react_web_app"]
+        
+        async def operation():
+            return await mcp_client.call_tool(
+                "get_applicable_standards",
+                {"context": context}
+            )
+            
+        # Run benchmark
+        result = await benchmark(operation)
+        
+        # Verify result is valid
+        assert "standards" in result
+        assert len(result["standards"]) > 0
+        
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    async def test_search_benchmark(self, mcp_client, benchmark):
+        """Benchmark search_standards operation."""
+        query = "React performance optimization techniques"
+        
+        async def operation():
+            return await mcp_client.call_tool(
+                "search_standards",
+                {"query": query, "limit": 5}
+            )
+            
+        result = await benchmark(operation)
+        
+        assert "results" in result
+        assert len(result["results"]) <= 5
+        
+    @pytest.mark.asyncio
+    @pytest.mark.benchmark
+    async def test_validation_benchmark(self, mcp_client, benchmark):
+        """Benchmark validate_against_standard operation."""
+        code = """
+        import React from 'react';
+        const MyComponent = ({ data }) => {
+            return <div>{data.map(item => <p key={item.id}>{item.name}</p>)}</div>;
+        };
+        export default MyComponent;
+        """
+        
+        async def operation():
+            return await mcp_client.call_tool(
+                "validate_against_standard",
+                {
+                    "code": code,
+                    "standard": "react-18-patterns",
+                    "language": "javascript"
+                }
+            )
+            
+        result = await benchmark(operation)
+        
+        assert "violations" in result
+        assert "passed" in result
+
+
+class TestScalabilityLimits:
+    """Test server scalability limits."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    @pytest.mark.slow
+    async def test_max_concurrent_connections(self, mcp_server):
+        """Test maximum concurrent client connections."""
+        max_clients = 50
+        clients = []
+        
+        # Try to create many clients
+        for i in range(max_clients):
+            try:
+                client = MCPTestClient(mcp_server)
+                await client.connect()
+                clients.append(client)
+            except Exception as e:
+                print(f"Failed to create client {i}: {e}")
+                break
+                
+        # Should handle at least 20 concurrent clients
+        assert len(clients) >= 20
+        
+        # Clean up
+        for client in clients:
+            await client.disconnect()
+            
+    @pytest.mark.asyncio
+    @pytest.mark.performance
+    async def test_large_response_handling(self, mcp_client):
+        """Test handling of large responses."""
+        # Request many standards at once
+        result = await mcp_client.call_tool(
+            "list_available_standards",
+            {"limit": 1000}  # Request many standards
+        )
+        
+        assert "standards" in result
+        
+        # Measure serialization time
+        start = time.time()
+        import json
+        serialized = json.dumps(result)
+        serialization_time = time.time() - start
+        
+        # Should handle large responses efficiently
+        assert serialization_time < 1.0  # Under 1 second
+        assert len(serialized) > 1000  # Substantial response size

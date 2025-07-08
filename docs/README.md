@@ -1,126 +1,153 @@
 # MCP Standards Server Documentation
 
-Welcome to the comprehensive documentation for the MCP Standards Server - a production-ready Model Context Protocol server that provides intelligent NIST 800-53r5 compliance checking, automated code analysis, and standards enforcement with real standards content from the official [williamzujkowski/standards](https://github.com/williamzujkowski/standards) repository.
+Welcome to the comprehensive documentation for the MCP Standards Server. This documentation is organized to help different types of users find the information they need quickly.
 
-## 🚀 Current Status: Production Ready
+## 📚 Documentation Structure
 
-**80% Test Coverage** | **17 Standards Imported** | **All CLI Commands Functional** | **Complete MCP Integration**
+### [CLI Documentation](./cli/)
+Command-line interface documentation for end users.
 
-## Documentation Structure
+- **[CLI Overview](./cli/README.md)** - Introduction to the CLI
+- **[Command Reference](./cli/commands/)** - Detailed documentation for each command
+- **[Configuration Guide](./cli/configuration.md)** - How to configure the server
+- **[Troubleshooting](./cli/troubleshooting.md)** - Common issues and solutions
+- **[Examples](./cli/examples/)** - Practical usage examples
 
-### 📐 [Architecture](./architecture/)
-- System design and architecture decisions
-- [Architecture Decision Records (ADRs)](./architecture/decisions/)
-- Component diagrams and data flow
-- Standards engine architecture
+#### Tutorials
+- **[Getting Started](./cli/tutorials/getting-started.md)** - Quick start guide
+- **[Common Workflows](./cli/tutorials/common-workflows.md)** - Typical usage patterns
+- **[IDE Integration](./cli/tutorials/ide-integration.md)** - Editor setup guides
+- **[CI/CD Integration](./cli/tutorials/cicd-integration.md)** - Pipeline integration
 
-### 🔌 [API Reference](./api/)
-- [MCP Tools Documentation](./api/mcp-tools.md) - 6 comprehensive tools
-- [MCP Resources Guide](./api/mcp-resources.md) - 20+ dynamic endpoints
-- [MCP Prompts Reference](./api/mcp-prompts.md) - 5 specialized templates
-- REST API endpoints (future)
+### [Man Pages](./man/)
+Traditional Unix manual pages for system-wide installation.
 
-### 🛡️ [NIST Compliance](./nist/)
-- [NIST 800-53r5 Control Mappings](./nist/controls.md)
-- [Control Implementation Guides](./nist/implementation.md)
-- [OSCAL 1.0.0 Documentation](./nist/oscal.md)
-- Evidence generation and SSP creation
+- **[Installation Instructions](./man/README.md)** - How to install man pages
+- **Manual Pages** - Formatted documentation for each command
 
-### 📚 [User Guides](./guides/)
-- [Getting Started Guide](./guides/installation.md)
-- [CLI Usage Guide](./guides/cli.md)
-- [Quick Start Tutorial](./guides/quickstart.md)
-- [Integration Examples](./guides/integration.md)
+### [Documentation Website](./site/)
+Web-based documentation with search and navigation.
 
-### 🔧 [Advanced Features](./advanced/)
-- [Enhanced Control Detection](./enhanced-control-detection.md)
-- [Standards Versioning](./standards-versioning.md)
-- [Analyzer Implementation](./analyzers-implementation.md)
-- [IaC Analyzer Specifications](./analyzers/iac-analyzer-specs.md)
+- **[Home](./site/index.md)** - Documentation homepage
+- **[Installation Guide](./site/guides/installation.md)** - Detailed installation instructions
+- **[API Reference](./site/api/)** - Programmatic interface documentation
+  - **[MCP Tools](./site/api/mcp-tools.md)** - Model Context Protocol tools
+  - **[Configuration Schema](./site/api/config-schema.md)** - Configuration file format
+  - **[Standards Format](./site/api/standards-format.md)** - Standards file specification
+- **[Architecture](./site/architecture/)** - System design documentation
 
-## 🎯 Key Features
+### [Internal Documentation](./internal/)
+Technical documentation for developers and contributors.
 
-### 🔍 **Enhanced Multi-Language Analysis**
-- Complete AST-based analysis for Python, JavaScript/TypeScript, Go, and Java
-- **Infrastructure as Code analysis** for Terraform, Dockerfile, and Kubernetes
-- **200+ NIST control patterns** across all 20 families
-- Advanced security pattern detection with confidence scoring
-- Control relationship suggestions and gap analysis
+- **[Token Optimization](./token-optimization.md)** - Token management system
+- **[Cache Design](./cache/)** - Caching architecture
 
-### 📊 **Complete Standards Library**
-- **17 imported standards** from official repository
-- **Real-time YAML loading** with JSON indexing
-- **Natural language queries** for standards content
-- **Token-aware loading** for LLM optimization
-- **Standards versioning** and update management
+## 🎯 Quick Links by Role
 
-### 📋 **OSCAL 1.0.0 Compliance**
-- Generate complete System Security Plans (SSPs)
-- Component-based architecture modeling
-- SHA256 integrity checking for exports
-- NIST profile support (low/moderate/high)
+### For Users
+1. Start with [Getting Started](./cli/tutorials/getting-started.md)
+2. Learn [Common Workflows](./cli/tutorials/common-workflows.md)
+3. Reference [Command Documentation](./cli/commands/)
+4. Troubleshoot with [Troubleshooting Guide](./cli/troubleshooting.md)
 
-### 📈 **Control Coverage Analysis**
-- Comprehensive coverage reports in markdown/JSON/HTML
-- Family-level coverage percentages
-- Control relationship mapping
-- Missing control suggestions
-- High-confidence control identification
+### For Developers
+1. Read [Installation Guide](./site/guides/installation.md)
+2. Integrate using [MCP Tools Reference](./site/api/mcp-tools.md)
+3. Configure with [Configuration Guide](./cli/configuration.md)
+4. Automate with [CI/CD Integration](./cli/tutorials/cicd-integration.md)
 
-### 🤖 **Complete MCP Integration**
-- **6 MCP Tools**: load_standards, analyze_code, suggest_controls, generate_template, validate_compliance, scan_with_llm
-- **20+ MCP Resources**: Dynamic standards access by category and document
-- **5 MCP Prompts**: Specialized templates for compliance scenarios
+### For Contributors
+1. Understand [Architecture](./site/architecture/)
+2. Review [API Documentation](./site/api/)
+3. Follow [Contributing Guidelines](../CONTRIBUTING.md)
+4. Run [Tests](../tests/README.md)
 
-### 🛠️ **Production CLI**
-- **init**: Project initialization with Git hooks and VS Code integration
-- **scan**: Comprehensive codebase analysis with multiple output formats
-- **generate**: NIST-compliant code template generation
-- **validate**: Standards validation with detailed reporting
-- **ssp**: OSCAL System Security Plan generation
-- **server**: MCP server with full protocol support
+## 📖 Documentation Formats
 
-### 🔧 **Developer Integration**
-- **Git Hooks**: Automated pre-commit and pre-push compliance checking
-- **VS Code Support**: Integrated settings and workflow configuration
-- **Template System**: 5 template types (API, auth, logging, encryption, database)
-- **Example Projects**: Production-ready Python API and JavaScript frontend
+### Online Documentation
+- **Searchable website** - Full documentation with search
+- **GitHub Pages** - Hosted documentation site
+- **In-editor help** - Context-sensitive help in IDEs
 
-## 📖 Quick Start Links
+### Offline Documentation
+- **Man pages** - Traditional Unix manual pages
+- **PDF export** - Printable documentation
+- **Markdown files** - Version-controlled docs
 
-- **[Installation Guide](./guides/installation.md)** - Complete setup instructions
-- **[Quick Start Tutorial](./guides/quickstart.md)** - 5-minute getting started
-- **[CLI Commands Guide](./guides/cli.md)** - All command documentation
-- **[MCP Tools Reference](./api/mcp-tools.md)** - Tool usage examples
-- **[NIST Control Reference](./nist/controls.md)** - Implementation guidance
-- **[Example Projects](../examples/)** - Real-world implementations
+### Interactive Documentation
+- **CLI help** - Built-in `--help` for all commands
+- **Shell completion** - Tab completion with descriptions
+- **Example scripts** - Runnable examples
 
-## 🏆 Implementation Highlights
+## 🔍 Finding Information
 
-### ✅ **Core Compliance (Phase 1 - Complete)**
-- NIST control mapping engine with 91.56% test coverage
-- Multi-language analyzers with deep AST analysis
-- OSCAL 1.0.0 integration with integrity checking
-- Real standards content with natural language queries
+### By Topic
+- **Installation** → [Installation Guide](./site/guides/installation.md)
+- **Configuration** → [Configuration Guide](./cli/configuration.md)
+- **Commands** → [Command Reference](./cli/commands/)
+- **Integration** → [IDE](./cli/tutorials/ide-integration.md) / [CI/CD](./cli/tutorials/cicd-integration.md)
+- **API** → [MCP Tools](./site/api/mcp-tools.md)
+- **Troubleshooting** → [Troubleshooting Guide](./cli/troubleshooting.md)
 
-### ✅ **CLI & Integration (Phase 2 - Complete)**
-- Complete CLI with all commands functional
-- Git hooks integration for automated compliance
-- VS Code settings and workflow configuration
-- Template generation with NIST compliance
+### By Task
+- **"How do I install?"** → [Installation Guide](./site/guides/installation.md)
+- **"How do I validate code?"** → [validate command](./cli/commands/validate.md)
+- **"How do I integrate with VS Code?"** → [IDE Integration](./cli/tutorials/ide-integration.md)
+- **"How do I use in CI/CD?"** → [CI/CD Integration](./cli/tutorials/cicd-integration.md)
+- **"How do I query standards?"** → [query command](./cli/commands/query.md)
 
-### ✅ **MCP Protocol (Phase 3 - Complete)**
-- Full MCP server implementation with official SDK
-- Dynamic resource providers with real-time loading
-- Specialized prompt templates for compliance scenarios
-- Production-ready with comprehensive error handling
+### By User Type
+- **New users** → [Getting Started](./cli/tutorials/getting-started.md)
+- **CLI users** → [CLI Documentation](./cli/)
+- **API users** → [API Reference](./site/api/)
+- **DevOps** → [CI/CD Integration](./cli/tutorials/cicd-integration.md)
+- **Contributors** → [Contributing Guidelines](../CONTRIBUTING.md)
 
-## Getting Help
+## 🛠️ Building Documentation
 
-- **Issues**: [GitHub Issues](https://github.com/williamzujkowski/mcp-standards-server/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/williamzujkowski/mcp-standards-server/discussions)
-- **Security**: See [SECURITY.md](../SECURITY.md)
+### Prerequisites
+```bash
+# For building the website
+npm install -g @docusaurus/core
 
-## Contributing
+# For building man pages
+apt-get install pandoc  # or brew install pandoc
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on contributing to this project.
+# For PDF generation
+apt-get install texlive  # or brew install --cask mactex
+```
+
+### Build Commands
+```bash
+# Build website
+cd docs/site && npm run build
+
+# Build man pages
+make -C docs/man
+
+# Generate PDF
+pandoc docs/cli/README.md -o mcp-standards-manual.pdf
+```
+
+## 📝 Contributing to Documentation
+
+We welcome documentation contributions! Please:
+
+1. Follow the existing structure and style
+2. Include examples for new features
+3. Update the table of contents
+4. Test all code examples
+5. Check for broken links
+6. Submit a pull request
+
+See [Contributing Guidelines](../CONTRIBUTING.md) for more details.
+
+## 📞 Getting Help
+
+- **Documentation issues** → [GitHub Issues](https://github.com/williamzujkowski/mcp-standards-server/issues)
+- **Questions** → [GitHub Discussions](https://github.com/williamzujkowski/mcp-standards-server/discussions)
+- **Live chat** → [Discord Server](https://discord.gg/mcp-standards)
+
+---
+
+Last updated: January 2025 | Version: 1.0.0

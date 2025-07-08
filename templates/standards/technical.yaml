@@ -1,0 +1,48 @@
+name: "Technical Implementation Standard Template"
+description: "Template for technical standards with implementation details, code examples, and architecture guidance"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "technical"
+tags:
+  - "technical"
+  - "implementation"
+  - "development"
+  - "architecture"
+extends: "standards/base.j2"
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+optional_variables:
+  - programming_languages
+  - frameworks
+  - tools
+  - platforms
+  - performance_requirements
+  - security_requirements
+  - nist_controls
+  - compliance_frameworks
+  - implementation_guides
+  - code_examples
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - architecture_guidelines
+  - development_standards
+  - configuration_management
+  - deployment_standards
+  - performance_requirements
+  - security_requirements
+  - technical_monitoring

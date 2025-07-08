@@ -1,0 +1,172 @@
+.\" Manpage for mcp-standards validate
+.TH MCP-STANDARDS-VALIDATE 1 "January 2025" "1.0.0" "MCP Standards Server Manual"
+
+.SH NAME
+mcp-standards-validate \- Validate code against MCP standards
+
+.SH SYNOPSIS
+.B mcp-standards validate
+[\fIOPTIONS\fR]
+\fIPATH\fR...
+
+.SH DESCRIPTION
+The
+.B validate
+command checks code files against applicable standards, providing detailed feedback on compliance issues, suggestions for improvement, and automated fixes where possible.
+
+.SH OPTIONS
+.TP
+.BR \-\-standards " " \fIFILE\fR
+Use specific standards file or query result instead of auto-detection.
+
+.TP
+.BR \-\-auto\-detect
+Automatically detect applicable standards based on project context (default).
+
+.TP
+.BR \-\-fix
+Automatically fix issues where possible. Modifies files in place.
+
+.TP
+.BR \-\-dry\-run
+Show what would be fixed without making actual changes. Implies \-\-fix.
+
+.TP
+.BR \-\-format " " \fIFORMAT\fR
+Output format. Options: text (default), json, junit, sarif.
+
+.TP
+.BR \-\-severity " " \fILEVEL\fR
+Minimum severity level to report. Options: error, warning, info.
+
+.TP
+.BR \-\-ignore " " \fIPATTERN\fR
+Ignore files matching pattern. Can be specified multiple times.
+
+.TP
+.BR \-\-config " " \fIFILE\fR
+Use custom validation configuration file.
+
+.TP
+.BR \-\-parallel " " \fIN\fR
+Number of parallel validation workers. Default: CPU count.
+
+.TP
+.BR \-\-fail\-on " " \fILEVEL\fR
+Exit with error code if issues found at specified level.
+
+.TP
+.BR \-\-output " " \fIFILE\fR
+Write results to file instead of stdout.
+
+.TP
+.BR \-q ", " \-\-quiet
+Suppress normal output. Only show errors.
+
+.TP
+.BR \-v ", " \-\-verbose
+Show detailed validation progress.
+
+.SH ARGUMENTS
+.TP
+.I PATH
+One or more paths to validate. Can be files or directories. If no path is specified, validates current directory.
+
+.SH OUTPUT FORMATS
+.SS text
+Human-readable format with file locations, line numbers, and issue descriptions.
+
+.SS json
+Structured JSON output containing all validation results and metadata.
+
+.SS junit
+JUnit XML format for CI/CD integration.
+
+.SS sarif
+Static Analysis Results Interchange Format for GitHub and other tools.
+
+.SH EXAMPLES
+.TP
+Validate current directory:
+.B mcp-standards validate .
+
+.TP
+Validate and auto-fix:
+.B mcp-standards validate --fix src/
+
+.TP
+Dry run to preview fixes:
+.B mcp-standards validate --fix --dry-run file.js
+
+.TP
+Validate with specific standards:
+.B mcp-standards validate --standards react-standards.yaml src/
+
+.TP
+Generate CI report:
+.B mcp-standards validate --format junit --output test-results.xml
+
+.TP
+Ignore test files:
+.B mcp-standards validate --ignore "*.test.js" --ignore "*.spec.js" src/
+
+.SH EXIT STATUS
+.TP
+.B 0
+Validation passed, no issues found
+
+.TP
+.B 1
+Validation failed, issues found at fail-on level
+
+.TP
+.B 2
+Command line error
+
+.TP
+.B 3
+Configuration error
+
+.TP
+.B 4
+Standards loading error
+
+.TP
+.B 5
+File access error
+
+.SH CONFIGURATION
+Validation behavior can be configured in
+.I .mcp-standards.yaml
+file:
+
+.nf
+validation:
+  severity: warning
+  fail_on: error
+  ignore:
+    - "*.test.*"
+    - "dist/**"
+  rules:
+    max-line-length:
+      severity: warning
+      options:
+        limit: 100
+.fi
+
+.SH ENVIRONMENT
+.TP
+.B MCP_VALIDATION_PARALLEL
+Override number of parallel workers
+
+.TP
+.B MCP_VALIDATION_TIMEOUT
+Timeout for validation operations in seconds
+
+.SH SEE ALSO
+.BR mcp-standards (1),
+.BR mcp-standards-query (1),
+.BR mcp-standards-serve (1)
+
+.SH BUGS
+Report bugs at: https://github.com/williamzujkowski/mcp-standards-server/issues

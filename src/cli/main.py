@@ -1,714 +1,699 @@
+#!/usr/bin/env python3
 """
-MCP Standards CLI - Command-line interface
-@nist-controls: AC-3, AU-2, SI-10
-@evidence: Secure CLI with audit logging
+MCP Standards Server CLI
+
+Main command-line interface for managing, syncing, and generating standards.
 """
+
+import argparse
 import asyncio
 import json
+import logging
+import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
-import typer
-import yaml
-from rich import print
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.syntax import Syntax
-from rich.table import Table
-
-from ..analyzers import GoAnalyzer, JavaAnalyzer, JavaScriptAnalyzer, PythonAnalyzer
-from ..compliance.scanner import ComplianceScanner
-from ..core.compliance.oscal_handler import OSCALHandler
-from .commands import standards as standards_cmd
-
-app = typer.Typer(
-    name="mcp-standards",
-    help="MCP Standards Server - NIST compliance for modern development",
-    add_completion=False
-)
-console = Console()
-
-# Add standards sub-command
-app.add_typer(standards_cmd.app, name="standards", help="Standards version management")
+from ..core.standards.sync import StandardsSynchronizer, sync_standards, check_for_updates
 
 
-@app.command()
-def init(
-    project_path: Path = typer.Argument(Path.cwd(), help="Project path to initialize"),
-    profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
-    language: str = typer.Option(None, help="Primary language (auto-detect if not specified)"),
-    setup_hooks: bool = typer.Option(True, help="Setup Git hooks for compliance")
-) -> None:
-    """
-    Initialize MCP standards for a project
-    @nist-controls: CM-2, CM-3
-    @evidence: Configuration management
-    """
-    console.print(f"[bold green]Initializing MCP Standards for {project_path}[/bold green]")
-
-    # Create project directory if it doesn't exist
-    project_path.mkdir(parents=True, exist_ok=True)
-
-    # Create config directory
-    config_dir = project_path / ".mcp-standards"
-    config_dir.mkdir(exist_ok=True)
-
-    # Create compliance directory
-    compliance_dir = project_path / "compliance"
-    compliance_dir.mkdir(exist_ok=True)
-
-    # Create enhanced config
-    config = {
-        "version": "1.0.0",
-        "profile": profile,
-        "language": language or "python",
-        "initialized": True,
-        "scanning": {
-            "include_patterns": ["*.py", "*.js", "*.ts", "*.go", "*.java"],
-            "exclude_patterns": ["node_modules/**", "venv/**", ".git/**", "dist/**"]
-        },
-        "compliance": {
-            "required_controls": ["AC-3", "AU-2", "IA-2", "SC-8", "SI-10"],
-            "nist_profile": profile
-        }
-    }
-
-    config_file = config_dir / "config.yaml"
-    with open(config_file, 'w') as f:
-        yaml.dump(config, f, default_flow_style=False)
-
-    console.print(f"[bold green]✓[/bold green] Created configuration at {config_file}")
-
-    # Create compliance documentation
-    compliance_readme = compliance_dir / "README.md"
-    if not compliance_readme.exists():
-        readme_content = f"""# Compliance Documentation
-
-This project follows NIST 800-53r5 {profile} profile.
-
-## Getting Started
-
-1. Run `mcp-standards scan` to analyze your code
-2. Generate SSP with `mcp-standards ssp`
-3. Review and update control implementations
-
-## Required Controls
-
-{chr(10).join(f"- {control}" for control in config["compliance"]["required_controls"])}
-
-"""
-        compliance_readme.write_text(readme_content)
-        console.print("[bold green]✓[/bold green] Created compliance documentation")
-
-    # Setup Git hooks if requested
-    if setup_hooks and (project_path / ".git").exists():
-        _setup_git_hooks(project_path)
-        console.print("[bold green]✓[/bold green] Git hooks configured")
-    elif setup_hooks:
-        console.print("[yellow]Warning: Not a Git repository, skipping hooks setup[/yellow]")
-
-    console.print("\n[bold green]Initialization complete![/bold green]")
-    console.print("Next steps:")
-    console.print("  1. Review configuration in .mcp-standards/config.yaml")
-    console.print("  2. Run 'mcp-standards scan' to analyze your code")
-    console.print("  3. Generate SSP with 'mcp-standards ssp'")
-
-
-def _setup_git_hooks(project_path: Path) -> None:
-    """
-    Setup Git hooks for compliance checking
-    @nist-controls: CM-3, SA-15
-    @evidence: Automated compliance verification
-    """
-    hooks_dir = project_path / ".git" / "hooks"
-
-    # Pre-commit hook
-    pre_commit_hook = hooks_dir / "pre-commit"
-    hook_content = """#!/bin/bash
-# Pre-commit hook for NIST compliance checking
-echo "Running NIST compliance validation..."
-
-if command -v mcp-standards &> /dev/null; then
-    mcp-standards validate --output-format json > /tmp/compliance-check.json
-    if [ $? -ne 0 ]; then
-        echo "❌ Compliance validation failed!"
-        exit 1
-    fi
-    echo "✅ Compliance validation passed!"
-else
-    echo "Warning: mcp-standards not found"
-fi
-"""
-    pre_commit_hook.write_text(hook_content)
-    pre_commit_hook.chmod(0o755)
-
-
-@app.command()
-def server(
-    host: str = typer.Option("127.0.0.1", help="Server host"),
-    port: int = typer.Option(8000, help="Server port"),
-    reload: bool = typer.Option(False, help="Enable auto-reload for development")
-) -> None:
-    """
-    Start the MCP Standards Server
-    @nist-controls: AC-3, SC-8, AU-2
-    @evidence: Secure server with access control and encryption
-    """
-    console.print("[bold green]Starting MCP Standards Server[/bold green]")
-    console.print(f"Host: [cyan]{host}:{port}[/cyan]")
-
-    # Start server
-    import uvicorn
-    uvicorn.run(
-        "src.core.mcp.server:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level="info"
+def setup_logging(verbose: bool = False) -> None:
+    """Configure logging for CLI."""
+    level = logging.DEBUG if verbose else logging.INFO
+    format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    
+    logging.basicConfig(
+        level=level,
+        format=format_str,
+        handlers=[
+            logging.StreamHandler(sys.stdout)
+        ]
     )
 
 
-@app.command()
-def scan(
-    path: Path = typer.Argument(Path.cwd(), help="Path to scan"),
-    output_format: str = typer.Option("table", help="Output format (table/json/yaml/oscal)"),
-    output_file: Path | None = typer.Option(None, help="Output file"),
-    deep: bool = typer.Option(False, help="Perform deep analysis")  # noqa: ARG001
-) -> None:
-    """
-    Scan codebase for NIST control implementations
-    @nist-controls: CA-7, RA-5, SA-11
-    @evidence: Continuous monitoring and vulnerability scanning
-    """
-    # Validate path exists
-    if not path.exists():
-        console.print(f"[red]Error: Path '{path}' does not exist[/red]")
-        raise typer.Exit(1)
-
-    # Create scanner instance
-    scanner = ComplianceScanner()
-
-    # Run the scan with progress indicator
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        transient=True,
-        console=console
-    ) as progress:
-        task = progress.add_task(f"Scanning {path}...", total=None)
-
-        # Run async scan
-        scan_results = asyncio.run(scanner.scan_directory(path))
-
-        progress.update(task, completed=True)
-
-    # Generate report
-    report = scanner.generate_report(scan_results, output_format)
-
-    # Output results
-    if output_format == "table":
-        # Table format is handled by the formatter
-        scanner.format_output(report, output_format)
-    else:
-        # Format as requested
-        formatted_output = scanner.format_output(report, output_format)
-
-        if output_file:
-            with open(output_file, 'w') as f:
-                f.write(formatted_output)
-            console.print(f"[green]✓[/green] Report saved to {output_file}")
-        else:
-            print(formatted_output)
-
-    # Show summary for non-table formats
-    if output_format != "table":
-        summary = report["summary"]
-        console.print("\n[bold]Scan Summary:[/bold]")
-        console.print(f"  • Files scanned: {summary['total_files']}")
-        console.print(f"  • Files with controls: {summary['files_with_controls']}")
-        console.print(f"  • Coverage: {summary['coverage_percentage']}%")
-        console.print(f"  • Issues found: {summary['total_issues']}")
-
-        if summary['critical_issues'] > 0:
-            console.print(f"  • [red]Critical issues: {summary['critical_issues']}[/red]")
-
-
-@app.command()
-def ssp(
-    output: Path = typer.Option(Path("ssp.json"), help="Output file for SSP"),
-    format: str = typer.Option("oscal", help="Output format (oscal/json)"),
-    profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
-    path: Path = typer.Argument(Path.cwd(), help="Path to analyze")
-) -> None:
-    """
-    Generate System Security Plan (SSP) from code
-    @nist-controls: CA-2, PM-31
-    @evidence: Automated SSP generation
-    """
-    console.print("[bold]Generating System Security Plan...[/bold]")
-
-    # Check if path exists
-    if not path.exists():
-        console.print(f"[red]Error: Path '{path}' does not exist[/red]")
-        raise typer.Exit(1)
-
-    # Initialize components
-    oscal_handler = OSCALHandler()
-
-    # Initialize analyzers
-    analyzers = {
-        '.py': PythonAnalyzer(),
-        '.js': JavaScriptAnalyzer(),
-        '.jsx': JavaScriptAnalyzer(),
-        '.ts': JavaScriptAnalyzer(),
-        '.tsx': JavaScriptAnalyzer(),
-        '.go': GoAnalyzer(),
-        '.java': JavaAnalyzer()
-    }
-
-    # Analyze code
-    all_annotations = {}
-    components = []
-
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        transient=True,
-        console=console
-    ) as progress:
-        task = progress.add_task("Analyzing codebase...", total=None)
-
-        # Scan for files
-        for file_path in path.rglob('*'):
-            if file_path.is_file() and file_path.suffix in analyzers:
-                # Skip common directories
-                skip_dirs = {'node_modules', 'venv', '.git', 'dist', 'build', '__pycache__'}
-                if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
-                    continue
-
-                analyzer = analyzers[file_path.suffix]
-                annotations = analyzer.analyze_file(file_path)
-
-                if annotations:
-                    all_annotations[str(file_path)] = annotations
-                    progress.update(task, description=f"Analyzed {file_path.name}")
-
-        progress.update(task, description="Creating OSCAL components...")
-
-        # Create OSCAL components from annotations
-        for file_path, annotations in all_annotations.items():
-            component_name = Path(file_path).stem
-            component = oscal_handler.create_component_from_annotations(
-                component_name,
-                annotations,
-                {
-                    "version": "1.0.0",
-                    "description": f"Component from {Path(file_path).name}",
-                    "component_type": "software"
-                }
-            )
-            components.append(component)
-
-        progress.update(task, description="Generating SSP...")
-
-        # Generate SSP
-        system_name = path.name or "System"
-        ssp_metadata = {
-            "version": "1.0.0",
-            "description": f"System Security Plan for {system_name}",
-            "sensitivity": profile,
-            "system_id": system_name.lower().replace(" ", "-"),
-            "status": "operational",
-            "confidentiality_impact": profile,
-            "integrity_impact": profile,
-            "availability_impact": profile
-        }
-
-        ssp_content = oscal_handler.generate_ssp_content(
-            system_name,
-            components,
-            f"NIST_SP-800-53_rev5_{profile.upper()}",
-            ssp_metadata
-        )
-
-        # Export
-        if format == "oscal":
-            output_path, checksum_path = oscal_handler.export_to_file(ssp_content, output, "json")
-            console.print(f"[green]✓[/green] SSP generated: {output_path}")
-            console.print(f"[green]✓[/green] Checksum: {checksum_path}")
-        else:
-            with open(output, 'w') as f:
-                json.dump(ssp_content, f, indent=2)
-            console.print(f"[green]✓[/green] SSP generated: {output}")
-
-        progress.update(task, completed=True)
-
-    # Show summary
-    console.print("\n[bold]SSP Generation Summary:[/bold]")
-    console.print(f"  • Files analyzed: {len(all_annotations)}")
-    console.print(f"  • Components created: {len(components)}")
-    console.print(f"  • Profile: {profile}")
-
-    # Show control coverage
-    all_controls = set()
-    for annotations in all_annotations.values():
-        for ann in annotations:
-            all_controls.update(ann.control_ids)
-
-    console.print(f"  • Unique controls found: {len(all_controls)}")
-    if all_controls:
-        console.print(f"  • Control families: {', '.join(sorted({c.split('-')[0] for c in all_controls}))}")
-
-
-@app.command()
-def generate(
-    template_type: str = typer.Argument(
-        ...,
-        help="Type of template to generate (api, auth, logging, encryption, database)"
-    ),
-    language: str = typer.Option(
-        "python",
-        help="Programming language",
-        show_choices=True
-    ),
-    output: Path = typer.Option(
-        None,
-        help="Output file path (defaults to stdout)"
-    ),
-    controls: str = typer.Option(
-        "",
-        help="Comma-separated NIST controls to implement"
+def create_parser() -> argparse.ArgumentParser:
+    """Create the argument parser for CLI."""
+    parser = argparse.ArgumentParser(
+        prog='mcp-standards',
+        description='MCP Standards Server - Manage and sync development standards',
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
-) -> None:
-    """
-    Generate NIST-compliant code templates
-    @nist-controls: SA-11, SA-15
-    @evidence: Secure code generation
-    """
-    from ..core.templates import TemplateGenerator
+    
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output'
+    )
+    
+    parser.add_argument(
+        '-c', '--config',
+        type=Path,
+        help='Path to sync configuration file'
+    )
+    
+    # Create subparsers for commands
+    subparsers = parser.add_subparsers(
+        dest='command',
+        help='Available commands'
+    )
+    
+    # Sync command
+    sync_parser = subparsers.add_parser(
+        'sync',
+        help='Synchronize standards from GitHub repository'
+    )
+    sync_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Force sync even if files are up to date'
+    )
+    sync_parser.add_argument(
+        '--check',
+        action='store_true',
+        help='Check for updates without downloading'
+    )
+    
+    # Status command
+    status_parser = subparsers.add_parser(
+        'status',
+        help='Show sync status and statistics'
+    )
+    status_parser.add_argument(
+        '--json',
+        action='store_true',
+        help='Output status in JSON format'
+    )
+    
+    # Cache command
+    cache_parser = subparsers.add_parser(
+        'cache',
+        help='Manage local cache'
+    )
+    cache_parser.add_argument(
+        '--clear',
+        action='store_true',
+        help='Clear all cached files'
+    )
+    cache_parser.add_argument(
+        '--list',
+        action='store_true',
+        help='List cached files'
+    )
+    
+    # Config command
+    config_parser = subparsers.add_parser(
+        'config',
+        help='Show or validate configuration'
+    )
+    config_parser.add_argument(
+        '--validate',
+        action='store_true',
+        help='Validate configuration file'
+    )
+    config_parser.add_argument(
+        '--show',
+        action='store_true',
+        help='Show current configuration'
+    )
+    
+    # Generate command
+    generate_parser = subparsers.add_parser(
+        'generate',
+        help='Generate standards from templates'
+    )
+    generate_parser.add_argument(
+        '--template', '-t',
+        help='Template name to use'
+    )
+    generate_parser.add_argument(
+        '--domain', '-d',
+        help='Domain-specific template'
+    )
+    generate_parser.add_argument(
+        '--output', '-o',
+        help='Output file path'
+    )
+    generate_parser.add_argument(
+        '--title',
+        help='Standard title'
+    )
+    generate_parser.add_argument(
+        '--version',
+        default='1.0.0',
+        help='Standard version'
+    )
+    generate_parser.add_argument(
+        '--author',
+        help='Standard author'
+    )
+    generate_parser.add_argument(
+        '--description',
+        help='Standard description'
+    )
+    generate_parser.add_argument(
+        '--interactive', '-i',
+        action='store_true',
+        help='Interactive mode'
+    )
+    generate_parser.add_argument(
+        '--preview', '-p',
+        action='store_true',
+        help='Preview mode (no file output)'
+    )
+    generate_parser.add_argument(
+        '--validate',
+        action='store_true',
+        default=True,
+        help='Validate generated standard'
+    )
+    generate_parser.add_argument(
+        '--config-file',
+        help='Configuration file path'
+    )
+    
+    # Generate subcommands
+    generate_subparsers = generate_parser.add_subparsers(
+        dest='generate_command',
+        help='Generate subcommands'
+    )
+    
+    # List templates
+    generate_subparsers.add_parser(
+        'list-templates',
+        help='List available templates'
+    )
+    
+    # Template info
+    template_info_parser = generate_subparsers.add_parser(
+        'template-info',
+        help='Get template information'
+    )
+    template_info_parser.add_argument(
+        'template_name',
+        help='Template name'
+    )
+    
+    # Customize template
+    customize_parser = generate_subparsers.add_parser(
+        'customize',
+        help='Create custom template'
+    )
+    customize_parser.add_argument(
+        '--template', '-t',
+        required=True,
+        help='Base template'
+    )
+    customize_parser.add_argument(
+        '--name', '-n',
+        required=True,
+        help='Custom template name'
+    )
+    customize_parser.add_argument(
+        '--config',
+        help='Customization config file'
+    )
+    customize_parser.add_argument(
+        '--interactive', '-i',
+        action='store_true',
+        help='Interactive customization'
+    )
+    
+    # Validate standard
+    validate_parser = generate_subparsers.add_parser(
+        'validate',
+        help='Validate existing standard'
+    )
+    validate_parser.add_argument(
+        'standard_file',
+        help='Standard file to validate'
+    )
+    validate_parser.add_argument(
+        '--report', '-r',
+        help='Output report file'
+    )
+    
+    return parser
 
-    console.print(f"[bold]Generating {template_type} template...[/bold]")
 
-    # Parse controls
-    control_list = [c.strip() for c in controls.split(",") if c.strip()] if controls else []
-
-    # Initialize generator
-    generator = TemplateGenerator()
-
+def cmd_sync(args: argparse.Namespace) -> int:
+    """Handle sync command."""
+    synchronizer = StandardsSynchronizer(config_path=args.config)
+    
+    if args.check:
+        # Check for updates
+        print("Checking for updates...")
+        updates = synchronizer.check_updates()
+        
+        if updates['outdated_files']:
+            print(f"\nOutdated files ({len(updates['outdated_files'])}):")
+            for file in updates['outdated_files']:
+                age_hours = file['age_hours']
+                print(f"  - {file['path']} (last synced {age_hours:.1f} hours ago)")
+        else:
+            print("\nAll files are up to date!")
+        
+        print(f"\nTotal cached files: {updates['total_cached']}")
+        print(f"Cache TTL: {updates['cache_ttl_hours']} hours")
+        
+        return 0
+    
+    # Perform sync
+    print("Starting standards synchronization...")
+    if args.force:
+        print("Force sync enabled - all files will be re-downloaded")
+    
     try:
-        # Generate template
-        template_content = generator.generate(
-            template_type=template_type,
-            language=language,
-            controls=control_list
-        )
+        result = sync_standards(force=args.force, config_path=args.config)
+        
+        # Display results
+        print(f"\nSync completed with status: {result.status.value}")
+        print(f"Duration: {result.duration.total_seconds():.2f} seconds")
+        print(f"Files synced: {len(result.synced_files)}/{result.total_files}")
+        
+        if result.synced_files:
+            print("\nSynced files:")
+            for file in result.synced_files:
+                print(f"  - {file.path} ({file.size} bytes)")
+        
+        if result.failed_files:
+            print(f"\nFailed files ({len(result.failed_files)}):")
+            for path, error in result.failed_files:
+                print(f"  - {path}: {error}")
+        
+        if result.message:
+            print(f"\n{result.message}")
+        
+        return 0 if result.status.value in ['success', 'partial'] else 1
+        
+    except Exception as e:
+        print(f"Error during sync: {e}", file=sys.stderr)
+        return 1
 
-        # Output
-        if output:
-            output.write_text(template_content)
-            console.print(f"[green]✓[/green] Template written to: {output}")
+
+def cmd_status(args: argparse.Namespace) -> int:
+    """Handle status command."""
+    synchronizer = StandardsSynchronizer(config_path=args.config)
+    status = synchronizer.get_sync_status()
+    
+    if args.json:
+        # JSON output
+        print(json.dumps(status, indent=2, default=str))
+    else:
+        # Human-readable output
+        print("MCP Standards Server - Sync Status\n")
+        print(f"Total files cached: {status['total_files']}")
+        print(f"Total cache size: {status['total_size_mb']:.2f} MB")
+        
+        # Rate limit info
+        rate_limit = status['rate_limit']
+        print(f"\nGitHub API Rate Limit:")
+        print(f"  Remaining: {rate_limit['remaining']}/{rate_limit['limit']}")
+        if rate_limit['reset_time']:
+            print(f"  Resets at: {rate_limit['reset_time']}")
+        
+        # Recent syncs
+        if status['last_sync_times']:
+            print("\nRecent syncs:")
+            recent = sorted(
+                [(p, t) for p, t in status['last_sync_times'].items() if t],
+                key=lambda x: x[1],
+                reverse=True
+            )[:5]
+            
+            for path, sync_time in recent:
+                print(f"  - {path}: {sync_time}")
+        
+        # Configuration summary
+        config = status['config']
+        repo = config.get('repository', {})
+        print(f"\nRepository: {repo.get('owner')}/{repo.get('repo')}")
+        print(f"Branch: {repo.get('branch')}")
+        print(f"Path: {repo.get('path')}")
+    
+    return 0
+
+
+def cmd_cache(args: argparse.Namespace) -> int:
+    """Handle cache command."""
+    synchronizer = StandardsSynchronizer(config_path=args.config)
+    
+    if args.clear:
+        print("Clearing cache...")
+        synchronizer.clear_cache()
+        print("Cache cleared successfully!")
+        return 0
+    
+    if args.list:
+        cached_files = synchronizer.get_cached_standards()
+        
+        if cached_files:
+            print(f"Cached files ({len(cached_files)}):\n")
+            for file_path in sorted(cached_files):
+                size = file_path.stat().st_size / 1024  # KB
+                print(f"  - {file_path.name} ({size:.1f} KB)")
         else:
-            console.print("\n[dim]--- Generated Template ---[/dim]\n")
-            console.print(Syntax(template_content, language, theme="monokai"))
+            print("No cached files found.")
+        
+        return 0
+    
+    # Default: show cache info
+    status = synchronizer.get_sync_status()
+    print(f"Cache location: {synchronizer.cache_dir}")
+    print(f"Total files: {status['total_files']}")
+    print(f"Total size: {status['total_size_mb']:.2f} MB")
+    
+    return 0
 
-        # Show implemented controls
-        if control_list:
-            console.print(f"\n[bold]Implemented controls:[/bold] {', '.join(control_list)}")
 
-    except ValueError as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1) from e
-
-
-@app.command()
-def validate(
-    path: Path = typer.Argument(Path.cwd(), help="File or directory to validate"),
-    profile: str = typer.Option("moderate", help="NIST profile (low/moderate/high)"),
-    controls: str = typer.Option("", help="Specific controls to check (comma-separated)"),
-    output_format: str = typer.Option("table", help="Output format (table/json/yaml)")
-) -> None:
-    """
-    Validate code against NIST compliance requirements
-    @nist-controls: CA-2, CA-7
-    @evidence: Continuous monitoring and assessment
-    """
-    from ..analyzers import get_analyzer_for_file
-
-    console.print(f"[bold]Validating {path} against {profile} profile...[/bold]\n")
-
-    # Parse controls
-    control_list = [c.strip() for c in controls.split(",") if c.strip()] if controls else []
-
-    results = {"files": {}, "summary": {"total_files": 0, "compliant_files": 0, "controls_found": set()}}
-
-    # Scan files
-    files_to_scan = []
-    if path.is_file():
-        files_to_scan = [path]
-    else:
-        files_to_scan = list(path.rglob("*.py")) + list(path.rglob("*.js")) + list(path.rglob("*.go")) + list(path.rglob("*.java"))
-
-    with Progress() as progress:
-        task = progress.add_task("Validating...", total=len(files_to_scan))
-
-        for file_path in files_to_scan:
-            progress.update(task, description=f"Validating {file_path.name}")
-
-            # Skip common directories
-            skip_dirs = {'node_modules', 'venv', '.git', 'dist', 'build', '__pycache__'}
-            if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
-                continue
-
-            analyzer = get_analyzer_for_file(file_path)
-            if analyzer:
-                annotations = analyzer.analyze_file(file_path)
-                file_controls = set()
-                for ann in annotations:
-                    file_controls.update(ann.control_ids)
-
-                results["files"][str(file_path)] = {
-                    "controls": list(file_controls),
-                    "annotations": len(annotations),
-                    "compliant": bool(file_controls)
-                }
-                results["summary"]["controls_found"].update(file_controls)
-                if file_controls:
-                    results["summary"]["compliant_files"] += 1
-                results["summary"]["total_files"] += 1
-
-            progress.advance(task)
-
-    # Convert set to list for JSON serialization
-    results["summary"]["controls_found"] = sorted(results["summary"]["controls_found"])
-
-    # Output results
-    if output_format == "json":
-        console.print_json(data=results)
-    elif output_format == "yaml":
-        import yaml
-        console.print(yaml.dump(results, default_flow_style=False))
-    else:
-        # Table format
-        table = Table(title="Validation Results")
-        table.add_column("File", style="cyan")
-        table.add_column("Controls", style="green")
-        table.add_column("Annotations", style="yellow")
-        table.add_column("Status", style="bold")
-
-        for file_path, file_data in results["files"].items():
-            status = "[green]✓[/green]" if file_data["compliant"] else "[red]✗[/red]"
-            table.add_row(
-                Path(file_path).name,
-                ", ".join(file_data["controls"][:3]) + ("..." if len(file_data["controls"]) > 3 else ""),
-                str(file_data["annotations"]),
-                status
-            )
-
-        console.print(table)
-
-        # Summary
-        console.print("\n[bold]Summary:[/bold]")
-        console.print(f"  • Total files: {results['summary']['total_files']}")
-        console.print(f"  • Compliant files: {results['summary']['compliant_files']}")
-        console.print(f"  • Unique controls: {len(results['summary']['controls_found'])}")
-
-        if control_list:
-            missing = set(control_list) - set(results['summary']['controls_found'])
+def cmd_config(args: argparse.Namespace) -> int:
+    """Handle config command."""
+    synchronizer = StandardsSynchronizer(config_path=args.config)
+    
+    if args.validate:
+        # Validate configuration
+        try:
+            # Check required fields
+            required = ['repository', 'sync', 'cache']
+            missing = [field for field in required if field not in synchronizer.config]
+            
             if missing:
-                console.print(f"  • [red]Missing controls:[/red] {', '.join(sorted(missing))}")
-
-
-@app.command()
-def coverage(
-    path: Path = typer.Argument(Path.cwd(), help="Path to analyze"),
-    output_format: str = typer.Option("markdown", help="Output format (markdown/json/html)"),
-    output_file: Path | None = typer.Option(None, help="Output file (stdout if not specified)"),
-    detailed: bool = typer.Option(False, help="Include detailed file-level analysis")
-) -> None:
-    """
-    Generate NIST control coverage report
-    @nist-controls: CA-7, AU-6, PM-31
-    @evidence: Automated coverage analysis and reporting
-    """
-    from ..analyzers.control_coverage_report import ControlCoverageReporter
-
-    console.print(f"[bold]Analyzing NIST control coverage for {path}[/bold]\n")
-
-    # Initialize reporter
-    reporter = ControlCoverageReporter()
-
-    # Initialize analyzers
-    analyzers = {
-        'python': PythonAnalyzer(),
-        'javascript': JavaScriptAnalyzer(),
-        'go': GoAnalyzer(),
-        'java': JavaAnalyzer()
-    }
-
-    # Analyze project
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        transient=True,
-        console=console
-    ) as progress:
-        task = progress.add_task("Analyzing project...", total=None)
-        metrics = reporter.analyze_project(path, analyzers)
-        progress.update(task, completed=True)
-
-    # Generate report
-    report = reporter.generate_report(metrics, output_format)
-
-    # Output report
-    if output_file:
-        output_file.write_text(report)
-        console.print(f"[green]✓[/green] Coverage report saved to {output_file}")
+                print(f"Invalid configuration: missing fields {missing}")
+                return 1
+            
+            # Validate repository config
+            repo = synchronizer.config['repository']
+            repo_required = ['owner', 'repo', 'branch', 'path']
+            repo_missing = [field for field in repo_required if field not in repo]
+            
+            if repo_missing:
+                print(f"Invalid repository configuration: missing {repo_missing}")
+                return 1
+            
+            print("Configuration is valid!")
+            return 0
+            
+        except Exception as e:
+            print(f"Configuration validation failed: {e}")
+            return 1
+    
+    if args.show:
+        # Show configuration
+        import yaml
+        print("Current configuration:\n")
+        print(yaml.dump(synchronizer.config, default_flow_style=False))
+        return 0
+    
+    # Default: show config file path
+    print(f"Configuration file: {synchronizer.config_path}")
+    if synchronizer.config_path.exists():
+        print("Status: Found")
     else:
-        if output_format == "markdown":
-            # Pretty print markdown to console
-            from rich.markdown import Markdown
-            console.print(Markdown(report))
-        else:
-            print(report)
-
-    # Summary statistics
-    if output_file or output_format != "markdown":
-        console.print("\n[bold]Summary:[/bold]")
-        console.print(f"  • Total controls: [cyan]{metrics.total_controls_detected}[/cyan]")
-        console.print(f"  • Control families: [cyan]{len(metrics.control_families)}[/cyan]")
-        console.print(f"  • High confidence: [green]{len(metrics.high_confidence_controls)}[/green]")
-
-        if metrics.suggested_missing_controls:
-            console.print(f"  • [yellow]Suggested additions: {sum(len(v) for v in metrics.suggested_missing_controls.values())}[/yellow]")
+        print("Status: Using default configuration")
+    
+    return 0
 
 
-@app.command()
-def version() -> None:
-    """Show version information"""
-    console.print("[bold]MCP Standards Server[/bold]")
-    console.print("Version: 0.1.0")
-    console.print("NIST 800-53r5 compliant")
-
-
-@app.command()
-def cache(
-    action: str = typer.Argument(..., help="Action: status, clear, optimize"),
-    tier: str = typer.Option(None, "--tier", "-t", help="Specific tier: redis, faiss, stats, or all"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force action without confirmation")
-) -> None:
-    """
-    Manage hybrid vector store cache
-    @nist-controls: SI-12, AU-12
-    @evidence: Cache management with audit logging
-    """
-    from ..core.redis_client import get_redis_client
-    from ..core.standards.engine import StandardsEngine
-
-    async def run_cache_command() -> None:
-        # Initialize engine with hybrid search
-        engine = StandardsEngine(
-            standards_path=Path("data/standards"),
-            redis_client=get_redis_client(),
-            enable_hybrid_search=True
-        )
-
-        if action == "status":
-            # Get tier statistics
-            stats = await engine.get_tier_stats()
-
-            console.print("[bold]Hybrid Vector Store Status[/bold]")
-            console.print(f"Enabled: {stats['hybrid_search_enabled']}")
-
-            if stats['hybrid_search_enabled'] and 'storage_tiers' in stats:
-                tiers = stats['storage_tiers'].get('tiers', {})
-
-                # FAISS tier
-                if 'faiss' in tiers:
-                    faiss = tiers['faiss']
-                    console.print("\n[bold cyan]FAISS Hot Cache:[/bold cyan]")
-                    console.print(f"  Items: {faiss.get('size', 0)}/{faiss.get('capacity', 1000)}")
-                    console.print(f"  Utilization: {faiss.get('utilization', 0):.1%}")
-                    console.print(f"  Hit Rate: {faiss.get('hit_rate', 0):.1%}")
-                    console.print(f"  Avg Latency: {faiss.get('avg_latency_ms', 0):.2f}ms")
-
-                # Redis tier
-                if 'redis' in tiers:
-                    redis = tiers['redis']
-                    console.print("\n[bold red]Redis Query Cache:[/bold red]")
-                    console.print(f"  Connected: {redis.get('redis_connected', False)}")
-                    console.print(f"  Hit Rate: {redis.get('hit_rate', 0):.1%}")
-                    console.print(f"  Avg Latency: {redis.get('avg_latency_ms', 0):.2f}ms")
-
-                # ChromaDB tier
-                if 'chromadb' in tiers:
-                    chroma = tiers['chromadb']
-                    console.print("\n[bold green]ChromaDB Persistent Storage:[/bold green]")
-                    console.print(f"  Status: {chroma.get('status', 'unknown')}")
-                    console.print(f"  Documents: {chroma.get('total_documents', 0)}")
-                    console.print(f"  Hit Rate: {chroma.get('hit_rate', 0):.1%}")
-
-                # Access patterns
-                if 'access_patterns' in stats:
-                    patterns = stats['access_patterns']
-                    console.print("\n[bold]Access Patterns:[/bold]")
-                    console.print(f"  Documents Tracked: {patterns.get('total_documents_tracked', 0)}")
-                    console.print(f"  Above Threshold: {patterns.get('documents_above_threshold', 0)}")
-
-        elif action == "clear":
-            if not force:
-                confirm = typer.confirm(f"Clear cache for tier '{tier or 'all'}'?")
-                if not confirm:
-                    console.print("[yellow]Cancelled[/yellow]")
-                    return
-
-            results = await engine.clear_cache(tier)
-
-            if 'status' in results and results['status'] == 'not_enabled':
-                console.print("[red]Hybrid search not enabled[/red]")
+def cmd_generate(args: argparse.Namespace) -> int:
+    """Handle generate command."""
+    try:
+        # Import generate commands
+        from .commands.generate import StandardsGenerator, StandardMetadata
+        from .commands.generate import _interactive_standard_creation, _interactive_template_customization
+        from ..generators.validator import StandardsValidator
+        from ..generators.quality_assurance import QualityAssuranceSystem
+        
+        generator = StandardsGenerator()
+        
+        # Handle subcommands
+        if args.generate_command == 'list-templates':
+            templates = generator.list_templates()
+            
+            print("Available Templates:")
+            print("=" * 50)
+            
+            # Group by category
+            categories = {}
+            for template in templates:
+                category = template['category']
+                if category not in categories:
+                    categories[category] = []
+                categories[category].append(template)
+            
+            for category, category_templates in categories.items():
+                print(f"\n{category.upper()}:")
+                for template in category_templates:
+                    print(f"  {template['name']}")
+                    if template['description']:
+                        print(f"    Description: {template['description']}")
+                    if template['tags']:
+                        print(f"    Tags: {', '.join(template['tags'])}")
+                    print()
+            
+            return 0
+        
+        elif args.generate_command == 'template-info':
+            # Get template schema
+            schema = generator.get_template_schema(args.template_name)
+            
+            # Validate template
+            validation = generator.validate_template(args.template_name)
+            
+            print(f"Template: {args.template_name}")
+            print("=" * 50)
+            
+            print(f"Valid: {'✓' if validation['valid'] else '✗'}")
+            if not validation['valid']:
+                print(f"Error: {validation.get('error', 'Unknown error')}")
+                print(f"Message: {validation.get('message', '')}")
+            
+            if 'variables' in validation:
+                print(f"\nRequired Variables:")
+                for var in validation['variables']:
+                    print(f"  - {var}")
+            
+            if schema:
+                import yaml
+                print(f"\nSchema:")
+                print(yaml.dump(schema, default_flow_style=False))
+            
+            return 0
+        
+        elif args.generate_command == 'customize':
+            if args.interactive:
+                customizations = _interactive_template_customization()
+            elif args.config:
+                import yaml
+                with open(args.config, 'r') as f:
+                    if args.config.endswith('.yaml') or args.config.endswith('.yml'):
+                        customizations = yaml.safe_load(f)
+                    else:
+                        customizations = json.load(f)
             else:
-                for cleared_tier in results.get('cleared', []):
-                    console.print(f"[green]✓[/green] Cleared {cleared_tier} cache")
-
-        elif action == "optimize":
-            console.print("[bold]Running tier optimization...[/bold]")
-
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console
-            ) as progress:
-                task = progress.add_task("Optimizing...", total=None)
-
-                results = await engine.optimize_tiers()
-
-                progress.update(task, completed=True)
-
-            if 'status' in results and results['status'] == 'not_enabled':
-                console.print("[red]Hybrid search not enabled[/red]")
+                print("Error: Either --config or --interactive must be specified", file=sys.stderr)
+                return 1
+            
+            # Create custom template
+            custom_path = generator.create_custom_template(args.name, args.template, customizations)
+            
+            print(f"Custom template created: {custom_path}")
+            return 0
+        
+        elif args.generate_command == 'validate':
+            # Read the standard file
+            with open(args.standard_file, 'r') as f:
+                content = f.read()
+            
+            # Try to find corresponding metadata file
+            metadata_file = args.standard_file.replace('.md', '.yaml')
+            if Path(metadata_file).exists():
+                import yaml
+                with open(metadata_file, 'r') as f:
+                    metadata_dict = yaml.safe_load(f)
+                metadata = StandardMetadata.from_dict(metadata_dict)
             else:
-                console.print("\n[bold]Optimization Results:[/bold]")
-                console.print(f"Cache utilization before: {results.get('cache_utilization_before', 0):.1%}")
-                console.print(f"Cache utilization after: {results.get('cache_utilization_after', 0):.1%}")
-                console.print(f"Evictions: {len(results.get('evictions', []))}")
-                console.print(f"Promotions: {len(results.get('promotions', []))}")
-                console.print(f"Duration: {results.get('duration_ms', 0):.1f}ms")
-
-                # Show top evictions/promotions
-                if results.get('evictions'):
-                    console.print("\n[yellow]Top Evictions:[/yellow]")
-                    for eviction in results['evictions'][:5]:
-                        console.print(f"  - {eviction['document_id']} (score: {eviction['score']:.3f})")
-
-                if results.get('promotions'):
-                    console.print("\n[green]Top Promotions:[/green]")
-                    for promotion in results['promotions'][:5]:
-                        console.print(f"  + {promotion['document_id']} (score: {promotion['score']:.3f})")
+                # Create minimal metadata for validation
+                metadata = StandardMetadata(
+                    title=Path(args.standard_file).stem,
+                    version="1.0.0",
+                    domain="general",
+                    type="technical"
+                )
+            
+            # Validate
+            validator = StandardsValidator()
+            qa_system = QualityAssuranceSystem()
+            
+            validation_results = validator.validate_standard(content, metadata)
+            qa_results = qa_system.assess_standard(content, metadata)
+            
+            # Display results
+            print(f"Validation Results for: {args.standard_file}")
+            print("=" * 50)
+            
+            if validation_results['valid']:
+                print("✓ Validation passed")
+            else:
+                print("✗ Validation failed")
+                for error in validation_results['errors']:
+                    print(f"  Error: {error}")
+            
+            if validation_results['warnings']:
+                print("Warnings:")
+                for warning in validation_results['warnings']:
+                    print(f"  - {warning}")
+            
+            print(f"\nQuality Score: {qa_results['overall_score']}/100")
+            print("\nScore Breakdown:")
+            for metric, score in qa_results['scores'].items():
+                print(f"  {metric}: {score:.1f}")
+            
+            if qa_results['recommendations']:
+                print("\nRecommendations:")
+                for rec in qa_results['recommendations'][:10]:
+                    print(f"  - {rec}")
+            
+            # Save report if requested
+            if args.report:
+                report_data = {
+                    'standard_file': args.standard_file,
+                    'validation_results': validation_results,
+                    'quality_assessment': qa_results,
+                    'generated_at': datetime.now().isoformat()
+                }
+                
+                import yaml
+                with open(args.report, 'w') as f:
+                    if args.report.endswith('.yaml') or args.report.endswith('.yml'):
+                        yaml.dump(report_data, f, default_flow_style=False)
+                    else:
+                        json.dump(report_data, f, indent=2)
+                
+                print(f"\nReport saved to: {args.report}")
+            
+            return 0
+        
         else:
-            console.print(f"[red]Unknown action: {action}[/red]")
-            console.print("Available actions: status, clear, optimize")
+            # Main generate command
+            # Load configuration if provided
+            if args.config_file:
+                import yaml
+                with open(args.config_file, 'r') as f:
+                    if args.config_file.endswith('.yaml') or args.config_file.endswith('.yml'):
+                        config_data = yaml.safe_load(f)
+                    else:
+                        config_data = json.load(f)
+            else:
+                config_data = {}
+            
+            # Interactive mode
+            if args.interactive:
+                metadata = _interactive_standard_creation(generator, args.domain)
+            else:
+                # Build metadata from parameters and config
+                metadata = {
+                    'title': args.title or config_data.get('title'),
+                    'version': args.version or config_data.get('version', '1.0.0'),
+                    'author': args.author or config_data.get('author'),
+                    'description': args.description or config_data.get('description'),
+                    'domain': args.domain or config_data.get('domain', 'general'),
+                    'type': config_data.get('type', 'technical'),
+                    'created_date': datetime.now().isoformat(),
+                    'updated_date': datetime.now().isoformat(),
+                    **config_data
+                }
+            
+            # Validate required fields
+            if not metadata.get('title'):
+                print("Error: Title is required", file=sys.stderr)
+                return 1
+            
+            # Determine template
+            template = args.template
+            if not template:
+                if args.domain:
+                    template = f"domains/{args.domain}.j2"
+                else:
+                    template = f"standards/{metadata.get('type', 'base')}.j2"
+            
+            # Determine output path
+            output = args.output
+            if not output and not args.preview:
+                safe_title = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in metadata['title'])
+                output = f"{safe_title.lower()}_standard.md"
+            
+            # Generate standard
+            result = generator.generate_standard(
+                template_name=template,
+                metadata=metadata,
+                output_path=output or "",
+                validate=args.validate,
+                preview=args.preview
+            )
+            
+            if args.preview:
+                print("=== PREVIEW ===")
+                print(result['content'])
+                print("\n=== METADATA ===")
+                import yaml
+                print(yaml.dump(result['metadata'], default_flow_style=False))
+            else:
+                print(f"Standard generated successfully: {result['output_path']}")
+            
+            # Show validation results
+            if args.validate and 'validation' in result:
+                validation = result['validation']
+                if validation['valid']:
+                    print("✓ Validation passed")
+                else:
+                    print("✗ Validation failed:")
+                    for error in validation['errors']:
+                        print(f"  - {error}")
+                
+                if validation['warnings']:
+                    print("Warnings:")
+                    for warning in validation['warnings']:
+                        print(f"  - {warning}")
+            
+            # Show quality assessment
+            if 'quality_assessment' in result:
+                qa = result['quality_assessment']
+                print(f"Quality Score: {qa['overall_score']}/100")
+                
+                if qa['recommendations']:
+                    print("Recommendations:")
+                    for rec in qa['recommendations'][:5]:  # Show top 5
+                        print(f"  - {rec}")
+            
+            return 0
+    
+    except Exception as e:
+        print(f"Error in generate command: {e}", file=sys.stderr)
+        return 1
 
-    # Run async command
-    asyncio.run(run_cache_command())
+
+def main() -> int:
+    """Main entry point for CLI."""
+    parser = create_parser()
+    args = parser.parse_args()
+    
+    # Setup logging
+    setup_logging(args.verbose)
+    
+    # Handle commands
+    if args.command == 'sync':
+        return cmd_sync(args)
+    elif args.command == 'status':
+        return cmd_status(args)
+    elif args.command == 'cache':
+        return cmd_cache(args)
+    elif args.command == 'config':
+        return cmd_config(args)
+    elif args.command == 'generate':
+        return cmd_generate(args)
+    else:
+        parser.print_help()
+        return 1
 
 
-if __name__ == "__main__":
-    app()
+if __name__ == '__main__':
+    sys.exit(main())

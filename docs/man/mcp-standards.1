@@ -1,0 +1,213 @@
+.\" Manpage for mcp-standards
+.\" Contact support@mcp-standards.dev to correct errors or typos.
+.TH MCP-STANDARDS 1 "January 2025" "1.0.0" "MCP Standards Server Manual"
+
+.SH NAME
+mcp-standards \- Model Context Protocol Standards Server command-line interface
+
+.SH SYNOPSIS
+.B mcp-standards
+[\fB\-v\fR|\fB\-\-verbose\fR]
+[\fB\-c\fR|\fB\-\-config\fR \fIFILE\fR]
+[\fB\-\-no\-color\fR]
+[\fB\-\-json\fR]
+\fICOMMAND\fR
+[\fIARGS\fR]...
+
+.SH DESCRIPTION
+.B mcp-standards
+is a command-line tool for managing, syncing, and validating code against development standards using the Model Context Protocol (MCP). It provides a comprehensive interface for integrating coding standards into development workflows, CI/CD pipelines, and IDE environments.
+
+.SH GLOBAL OPTIONS
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output for debugging. Shows detailed information about operations being performed.
+
+.TP
+.BR \-c ", " \-\-config " " \fIFILE\fR
+Specify a custom configuration file. Default locations are searched if not specified.
+
+.TP
+.BR \-\-no\-color
+Disable colored output. Useful for CI/CD environments or when piping output.
+
+.TP
+.BR \-\-json
+Output results in JSON format where applicable. Useful for scripting and automation.
+
+.TP
+.BR \-h ", " \-\-help
+Show help message and exit.
+
+.TP
+.BR \-\-version
+Show program version and exit.
+
+.SH COMMANDS
+.SS sync
+Synchronize standards from the configured GitHub repository.
+
+.B mcp-standards sync
+[\fB\-f\fR|\fB\-\-force\fR]
+[\fB\-\-check\fR]
+[\fB\-\-include\fR \fIPATTERN\fR]
+[\fB\-\-exclude\fR \fIPATTERN\fR]
+
+.SS status
+Show synchronization status and statistics.
+
+.B mcp-standards status
+[\fB\-\-json\fR]
+[\fB\-\-detailed\fR]
+[\fB\-\-check\-health\fR]
+
+.SS cache
+Manage the local standards cache.
+
+.B mcp-standards cache
+[\fB\-\-list\fR]
+[\fB\-\-clear\fR]
+[\fB\-\-clear\-outdated\fR]
+[\fB\-\-analyze\fR]
+
+.SS config
+Show, validate, or manage configuration.
+
+.B mcp-standards config
+[\fB\-\-show\fR]
+[\fB\-\-validate\fR]
+[\fB\-\-init\fR]
+[\fB\-\-set\fR \fIKEY\fR \fIVALUE\fR]
+
+.SS query
+Query standards based on project context.
+
+.B mcp-standards query
+[\fB\-\-project\-type\fR \fITYPE\fR]
+[\fB\-\-framework\fR \fINAME\fR]
+[\fB\-\-language\fR \fINAME\fR]
+[\fB\-\-format\fR \fIFORMAT\fR]
+
+.SS validate
+Validate code against standards.
+
+.B mcp-standards validate
+[\fB\-\-fix\fR]
+[\fB\-\-dry\-run\fR]
+[\fB\-\-severity\fR \fILEVEL\fR]
+[\fB\-\-fail\-on\fR \fILEVEL\fR]
+\fIPATH\fR...
+
+.SS serve
+Start the MCP Standards Server.
+
+.B mcp-standards serve
+[\fB\-\-host\fR \fIADDRESS\fR]
+[\fB\-\-port\fR \fIPORT\fR]
+[\fB\-\-stdio\fR]
+[\fB\-\-daemon\fR]
+
+.SH ENVIRONMENT
+.TP
+.B MCP_STANDARDS_CONFIG
+Default configuration file path.
+
+.TP
+.B MCP_STANDARDS_DATA_DIR
+Data directory location for standards storage.
+
+.TP
+.B MCP_STANDARDS_CACHE_DIR
+Cache directory location.
+
+.TP
+.B MCP_STANDARDS_REPOSITORY_AUTH_TOKEN
+GitHub authentication token for API access.
+
+.TP
+.B MCP_LOG_LEVEL
+Set logging level (DEBUG, INFO, WARNING, ERROR).
+
+.TP
+.B NO_COLOR
+Disable colored output (same as \-\-no\-color).
+
+.SH FILES
+.TP
+.I ~/.config/mcp-standards/config.yaml
+User configuration file.
+
+.TP
+.I ./.mcp-standards.yaml
+Project-specific configuration file.
+
+.TP
+.I ~/.cache/mcp-standards/
+Default cache directory for standards files.
+
+.TP
+.I /etc/mcp-standards/config.yaml
+System-wide configuration file.
+
+.SH EXAMPLES
+.TP
+Initialize configuration:
+.B mcp-standards config --init
+
+.TP
+Sync standards:
+.B mcp-standards sync
+
+.TP
+Validate current directory:
+.B mcp-standards validate .
+
+.TP
+Query standards for a React project:
+.B mcp-standards query --project-type web-application --framework react
+
+.TP
+Start server:
+.B mcp-standards serve --port 8080
+
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+
+.TP
+.B 1
+General error
+
+.TP
+.B 2
+Command line syntax error
+
+.TP
+.B 3
+Configuration error
+
+.TP
+.B 4
+Network/sync error
+
+.TP
+.B 5
+Validation error
+
+.SH BUGS
+Report bugs at: https://github.com/williamzujkowski/mcp-standards-server/issues
+
+.SH AUTHOR
+Written by the MCP Standards Server contributors.
+
+.SH COPYRIGHT
+Copyright © 2025 MCP Standards Server Project.
+License: MIT
+
+.SH SEE ALSO
+.BR mcp-standards-sync (1),
+.BR mcp-standards-validate (1),
+.BR mcp-standards-serve (1)
+
+Full documentation at: https://mcp-standards.dev/docs

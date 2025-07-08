@@ -1,560 +1,826 @@
 """
-Semantic search engine for standards using embeddings
-@nist-controls: SI-10, AC-4
-@evidence: ML-based query understanding and content matching
-@oscal-component: standards-engine
+Enhanced semantic search implementation for MCP standards.
+
+This module provides advanced search capabilities including:
+- Query preprocessing with synonyms and stemming
+- Embedding generation with caching
+- Query expansion techniques
+- Re-ranking based on relevance scores
+- Boolean operator support
+- Fuzzy matching for typos
+- Search analytics and performance tracking
 """
 
 import json
+import time
+import hashlib
 import logging
-from dataclasses import dataclass
+from typing import List, Dict, Any, Optional, Tuple, Set
+from dataclasses import dataclass, field
+from collections import defaultdict, Counter
+from datetime import datetime, timedelta
+import re
 from pathlib import Path
-from typing import Any
-
+import pickle
 import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import nltk
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+from fuzzywuzzy import fuzz, process
+import redis
+from functools import lru_cache
+import threading
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+# Download required NLTK data
+try:
+    nltk.download('punkt', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('wordnet', quiet=True)
+except:
+    pass
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class SearchResult:
-    """Result from semantic search"""
+    """Represents a search result with metadata."""
+    id: str
     content: str
     score: float
-    metadata: dict[str, Any]
-    chunk_id: str | None = None
-    standard_id: str | None = None
-    section_id: str | None = None
-
-
-class EmbeddingModel:
-    """
-    Wrapper for embedding model
-    @nist-controls: SI-10
-    @evidence: Secure model loading and inference
-    """
-
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        self.model_name = model_name
-        self.model = None
-        self._initialize_model()
-
-    def _initialize_model(self):
-        """Initialize the embedding model"""
-        try:
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(self.model_name)
-            logger.info(f"Initialized embedding model: {self.model_name}")
-        except ImportError:
-            logger.error("sentence-transformers not installed. Install with: pip install sentence-transformers")
-            raise ImportError("sentence-transformers is required for semantic search")
-        except Exception as e:
-            logger.error(f"Failed to initialize embedding model: {e}")
-            raise
-
-    def encode(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
-        """Encode texts to embeddings"""
-        if not self.model:
-            raise RuntimeError("Embedding model not initialized")
-
-        return self.model.encode(
-            texts,
-            batch_size=batch_size,
-            show_progress_bar=False,
-            convert_to_numpy=True
-        )
-
-    def encode_single(self, text: str) -> np.ndarray:
-        """Encode single text to embedding"""
-        return self.encode([text])[0]
-
-
-class VectorIndex:
-    """
-    Vector index for similarity search
-    @nist-controls: AC-4, SC-8
-    @evidence: Secure vector storage and retrieval
-    """
-
-    def __init__(self, dimension: int | None = None):
-        self.dimension = dimension
-        self.index: Any = None  # FAISS index or None
-        self.embeddings: np.ndarray | None = None  # Numpy embeddings for fallback
-        self.metadata: list[dict[str, Any]] = []
-        self.use_faiss = self._try_import_faiss()
-        self.faiss: Any = None  # FAISS module
-
-    def _try_import_faiss(self) -> bool:
-        """Try to import FAISS for optimized search"""
-        try:
-            import faiss
-            self.faiss = faiss
-            logger.info("Using FAISS for optimized vector search")
-            return True
-        except ImportError:
-            logger.warning("FAISS not available, using numpy for search (slower)")
-            return False
-
-    def build(self, embeddings: np.ndarray, metadata: list[dict[str, Any]]):
-        """Build index from embeddings"""
-        if len(embeddings) != len(metadata):
-            raise ValueError("Embeddings and metadata must have same length")
-
-        self.dimension = embeddings.shape[1]
-        self.metadata = metadata
-
-        if self.use_faiss:
-            # Use FAISS for fast similarity search
-            self.index = self.faiss.IndexFlatIP(self.dimension)  # Inner product
-            # Normalize embeddings for cosine similarity
-            normalized = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-            self.index.add(normalized.astype('float32'))
-        else:
-            # Store embeddings directly for numpy search
-            self.embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-
-    def search(self, query_embedding: np.ndarray, k: int = 10) -> list[tuple[int, float]]:
-        """Search for k nearest neighbors"""
-        if self.index is None and not hasattr(self, 'embeddings'):
-            raise RuntimeError("Index not built")
-
-        # Normalize query
-        query_norm = query_embedding / np.linalg.norm(query_embedding)
-
-        if self.use_faiss and self.index is not None:
-            # FAISS search
-            scores, indices = self.index.search(
-                query_norm.reshape(1, -1).astype('float32'), k
-            )
-            return list(zip(indices[0], scores[0], strict=False))
-        else:
-            # Numpy cosine similarity
-            if self.embeddings is None:
-                return []
-            similarities = np.dot(self.embeddings, query_norm)
-            top_k_indices = np.argsort(similarities)[-k:][::-1]
-            return [(int(idx), float(similarities[idx])) for idx in top_k_indices]
-
-    def save(self, path: Path):
-        """Save index to disk"""
-        path.mkdir(parents=True, exist_ok=True)
-
-        # Save metadata
-        with open(path / "metadata.json", 'w') as f:
-            json.dump(self.metadata, f)
-
-        # Save index
-        if self.use_faiss:
-            self.faiss.write_index(self.index, str(path / "index.faiss"))
-        else:
-            if self.embeddings is not None:
-                np.save(path / "embeddings.npy", self.embeddings)
-
-    def load(self, path: Path):
-        """Load index from disk"""
-        # Load metadata
-        with open(path / "metadata.json") as f:
-            self.metadata = json.load(f)
-
-        # Load index
-        if self.use_faiss and (path / "index.faiss").exists():
-            self.index = self.faiss.read_index(str(path / "index.faiss"))
-            if hasattr(self.index, 'd'):
-                self.dimension = self.index.d
-            else:
-                self.dimension = None
-        elif (path / "embeddings.npy").exists():
-            self.embeddings = np.load(path / "embeddings.npy")
-            self.dimension = self.embeddings.shape[1]
-        else:
-            raise ValueError("No valid index found")
-
-
-class SemanticSearchEngine:
-    """
-    Main semantic search engine
-    @nist-controls: SI-10, AC-4, AU-2
-    @evidence: ML-based search with audit logging
-    """
-
-    def __init__(
-        self,
-        embedding_model: EmbeddingModel | None = None,
-        index_path: Path | None = None
-    ):
-        self.embedding_model = embedding_model or EmbeddingModel()
-        self.index = VectorIndex()
-        self.index_path = index_path
-        self._is_indexed = False
-
-        # Try to load existing index
-        if index_path and index_path.exists():
-            try:
-                self.load_index()
-            except Exception as e:
-                logger.warning(f"Failed to load index: {e}")
-
-    def index_standards(self, standards: list[dict[str, Any]], chunk_size: int = 500):
-        """
-        Index standards content for semantic search
-
-        Args:
-            standards: List of standards with content
-            chunk_size: Size of text chunks to index
-        """
-        logger.info(f"Indexing {len(standards)} standards")
-
-        # Prepare texts and metadata for indexing
-        texts = []
-        metadata = []
-
-        for standard in standards:
-            # Index different parts of the standard
-            standard_id = standard.get('id', 'unknown')
-
-            # Index title and description
-            if 'title' in standard:
-                texts.append(standard['title'])
-                metadata.append({
-                    'standard_id': standard_id,
-                    'type': 'title',
-                    'content': standard['title']
-                })
-
-            if 'description' in standard:
-                texts.append(standard['description'])
-                metadata.append({
-                    'standard_id': standard_id,
-                    'type': 'description',
-                    'content': standard['description']
-                })
-
-            # Index sections
-            for section in standard.get('sections', []):
-                section_text = f"{section.get('title', '')}\n{section.get('content', '')}"
-
-                # Split into chunks if too large
-                if len(section_text) > chunk_size * 4:  # Approximate chars
-                    chunks = self._chunk_text(section_text, chunk_size)
-                    for i, chunk in enumerate(chunks):
-                        texts.append(chunk)
-                        metadata.append({
-                            'standard_id': standard_id,
-                            'section_id': section.get('id'),
-                            'type': 'section',
-                            'chunk': i,
-                            'content': chunk
-                        })
-                else:
-                    texts.append(section_text)
-                    metadata.append({
-                        'standard_id': standard_id,
-                        'section_id': section.get('id'),
-                        'type': 'section',
-                        'content': section_text
-                    })
-
-        # Generate embeddings
-        logger.info(f"Generating embeddings for {len(texts)} text chunks")
-        embeddings = self.embedding_model.encode(texts)
-
-        # Build index
-        self.index.build(embeddings, metadata)
-        self._is_indexed = True
-
-        # Save index if path specified
-        if self.index_path:
-            self.save_index()
-
-        logger.info("Indexing complete")
-
-    def search(
-        self,
-        query: str,
-        k: int = 10,
-        filters: dict[str, Any] | None = None,
-        min_score: float = 0.3
-    ) -> list[SearchResult]:
-        """
-        Search for relevant content
-
-        Args:
-            query: Search query
-            k: Number of results to return
-            filters: Optional filters (e.g., standard_id, type)
-            min_score: Minimum similarity score
-
-        Returns:
-            List of search results
-        """
-        if not self._is_indexed:
-            raise RuntimeError("No content indexed yet")
-
-        # Encode query
-        query_embedding = self.embedding_model.encode_single(query)
-
-        # Search index
-        results = self.index.search(query_embedding, k * 2)  # Get extra for filtering
-
-        # Process results
-        search_results = []
-        for idx, score in results:
-            if score < min_score:
-                continue
-
-            metadata = self.index.metadata[idx]
-
-            # Apply filters
-            if filters:
-                skip = False
-                for key, value in filters.items():
-                    if metadata.get(key) != value:
-                        skip = True
-                        break
-                if skip:
-                    continue
-
-            result = SearchResult(
-                content=metadata.get('content', ''),
-                score=float(score),
-                metadata=metadata,
-                chunk_id=metadata.get('chunk_id'),
-                standard_id=metadata.get('standard_id'),
-                section_id=metadata.get('section_id')
-            )
-            search_results.append(result)
-
-            if len(search_results) >= k:
-                break
-
-        return search_results
-
-    def find_similar(self, text: str, k: int = 5) -> list[SearchResult]:
-        """Find content similar to given text"""
-        if not self._is_indexed:
-            raise RuntimeError("No content indexed yet")
-
-        # Encode text
-        text_embedding = self.embedding_model.encode_single(text)
-
-        # Search
-        results = self.index.search(text_embedding, k)
-
-        search_results = []
-        for idx, score in results:
-            metadata = self.index.metadata[idx]
-            result = SearchResult(
-                content=metadata.get('content', ''),
-                score=float(score),
-                metadata=metadata,
-                standard_id=metadata.get('standard_id'),
-                section_id=metadata.get('section_id')
-            )
-            search_results.append(result)
-
-        return search_results
-
-    def rerank_results(
-        self,
-        query: str,
-        results: list[SearchResult],
-        context: dict[str, Any] | None = None
-    ) -> list[SearchResult]:
-        """
-        Rerank results based on additional context
-
-        Args:
-            query: Original query
-            results: Initial search results
-            context: Additional context (e.g., project type, language)
-
-        Returns:
-            Reranked results
-        """
-        if not context:
-            return results
-
-        # Apply context-based boosting
-        for result in results:
-            boost = 1.0
-
-            # Boost based on project type match
-            if 'project_type' in context:
-                project_type = context['project_type'].lower()
-                if project_type in result.content.lower():
-                    boost *= 1.2
-
-            # Boost based on language match
-            if 'language' in context:
-                language = context['language'].lower()
-                if language in result.content.lower():
-                    boost *= 1.1
-
-            # Boost based on compliance level
-            if 'compliance_level' in context:
-                level = context['compliance_level'].lower()
-                if level in ['high', 'strict'] and any(
-                    keyword in result.content.lower()
-                    for keyword in ['must', 'shall', 'required', 'mandatory']
-                ):
-                    boost *= 1.15
-
-            result.score *= boost
-
-        # Re-sort by score
-        return sorted(results, key=lambda r: r.score, reverse=True)
-
-    def _chunk_text(self, text: str, chunk_size: int) -> list[str]:
-        """Split text into chunks"""
-        # Simple paragraph-based chunking
-        paragraphs = text.split('\n\n')
-        chunks = []
-        current_chunk: list[str] = []
-        current_size = 0
-
-        for para in paragraphs:
-            para_size = len(para.split())
-
-            if current_size + para_size > chunk_size and current_chunk:
-                chunks.append('\n\n'.join(current_chunk))
-                current_chunk = [para]
-                current_size = para_size
-            else:
-                current_chunk.append(para)
-                current_size += para_size
-
-        if current_chunk:
-            chunks.append('\n\n'.join(current_chunk))
-
-        return chunks
-
-    def save_index(self):
-        """Save index to disk"""
-        if not self.index_path:
-            raise ValueError("No index path specified")
-
-        logger.info(f"Saving index to {self.index_path}")
-        self.index.save(self.index_path)
-
-    def load_index(self):
-        """Load index from disk"""
-        if not self.index_path:
-            raise ValueError("No index path specified")
-
-        logger.info(f"Loading index from {self.index_path}")
-        self.index.load(self.index_path)
-        self._is_indexed = True
-
-    def get_index_stats(self) -> dict[str, Any]:
-        """Get statistics about the index"""
-        if not self._is_indexed:
-            return {"indexed": False}
-
-        # Count different types
-        type_counts: dict[str, int] = {}
-        for metadata in self.index.metadata:
-            doc_type = metadata.get('type', 'unknown')
-            type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
-
-        return {
-            "indexed": True,
-            "total_documents": len(self.index.metadata),
-            "dimension": self.index.dimension,
-            "types": type_counts,
-            "has_faiss": self.index.use_faiss
-        }
-
-
-class QueryExpander:
-    """
-    Expands queries with synonyms and related terms
-    @nist-controls: SI-10
-    @evidence: Query enhancement for better search
-    """
-
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    highlights: List[str] = field(default_factory=list)
+    explanation: Optional[str] = None
+
+
+@dataclass
+class SearchQuery:
+    """Represents a parsed search query."""
+    original: str
+    preprocessed: str
+    tokens: List[str]
+    stems: List[str]
+    expanded_terms: List[str] = field(default_factory=list)
+    boolean_operators: Dict[str, List[str]] = field(default_factory=dict)
+    filters: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SearchAnalytics:
+    """Tracks search analytics and metrics."""
+    query_count: int = 0
+    total_latency: float = 0.0
+    cache_hits: int = 0
+    cache_misses: int = 0
+    popular_queries: Counter = field(default_factory=Counter)
+    failed_queries: List[Tuple[str, str]] = field(default_factory=list)
+    average_results_per_query: float = 0.0
+    click_through_data: Dict[str, List[str]] = field(default_factory=dict)
+
+
+class QueryPreprocessor:
+    """Handles query preprocessing including synonyms, stemming, and expansion."""
+    
     def __init__(self):
-        self.expansions = {
-            # Security terms
-            "authentication": ["auth", "login", "identity", "credentials", "authn"],
-            "authorization": ["authz", "access control", "permissions", "rbac", "acl"],
-            "encryption": ["crypto", "cryptography", "cipher", "encrypt", "tls", "ssl"],
-            "security": ["secure", "protection", "safeguard", "defense"],
-            "compliance": ["compliant", "conform", "adherence", "regulatory"],
-
-            # Development terms
-            "api": ["interface", "endpoint", "rest", "graphql", "service"],
-            "database": ["db", "storage", "persistence", "sql", "nosql"],
-            "testing": ["test", "qa", "quality", "validation", "verification"],
-            "logging": ["log", "audit", "monitoring", "telemetry", "observability"],
-
-            # NIST specific
-            "nist": ["800-53", "controls", "compliance framework"],
-            "control": ["requirement", "safeguard", "measure", "countermeasure"],
-            "risk": ["threat", "vulnerability", "exposure", "impact"],
+        self.stemmer = PorterStemmer()
+        self.stopwords = set(nltk.corpus.stopwords.words('english'))
+        
+        # Domain-specific synonyms for standards/MCP context
+        self.synonyms = {
+            'api': ['interface', 'endpoint', 'service'],
+            'test': ['testing', 'validation', 'verification', 'check'],
+            'security': ['secure', 'safety', 'protection', 'auth', 'authentication'],
+            'standard': ['convention', 'guideline', 'best practice', 'rule'],
+            'web': ['website', 'webapp', 'frontend', 'browser'],
+            'react': ['reactjs', 'react.js'],
+            'vue': ['vuejs', 'vue.js'],
+            'angular': ['angularjs', 'angular.js'],
+            'mcp': ['model context protocol', 'context protocol'],
+            'llm': ['language model', 'ai model', 'gpt', 'claude'],
+            'performance': ['speed', 'optimization', 'efficiency', 'fast'],
+            'accessibility': ['a11y', 'wcag', 'aria'],
+            'database': ['db', 'data store', 'storage'],
+            'deploy': ['deployment', 'release', 'publish'],
+            'config': ['configuration', 'settings', 'setup'],
         }
+        
+        # Build reverse synonym mapping
+        self.reverse_synonyms = {}
+        for key, values in self.synonyms.items():
+            for value in values:
+                if value not in self.reverse_synonyms:
+                    self.reverse_synonyms[value] = []
+                self.reverse_synonyms[value].append(key)
+    
+    def preprocess(self, query: str) -> SearchQuery:
+        """Preprocess a query with all enhancement techniques."""
+        # Parse boolean operators
+        boolean_ops = self._extract_boolean_operators(query)
+        clean_query = self._remove_boolean_operators(query)
+        
+        # Tokenize and clean
+        tokens = word_tokenize(clean_query.lower())
+        tokens = [t for t in tokens if t.isalnum() and t not in self.stopwords]
+        
+        # Generate stems
+        stems = [self.stemmer.stem(token) for token in tokens]
+        
+        # Expand query with synonyms
+        expanded_terms = self._expand_with_synonyms(tokens)
+        
+        # Create search query object
+        search_query = SearchQuery(
+            original=query,
+            preprocessed=clean_query.lower(),
+            tokens=tokens,
+            stems=stems,
+            expanded_terms=expanded_terms,
+            boolean_operators=boolean_ops
+        )
+        
+        return search_query
+    
+    def _extract_boolean_operators(self, query: str) -> Dict[str, List[str]]:
+        """Extract AND, OR, NOT operators from query."""
+        operators = {
+            'AND': [],
+            'OR': [],
+            'NOT': []
+        }
+        
+        # Match patterns like "term1 AND term2"
+        and_pattern = r'(\w+)\s+AND\s+(\w+)'
+        or_pattern = r'(\w+)\s+OR\s+(\w+)'
+        not_pattern = r'NOT\s+(\w+)'
+        
+        for match in re.finditer(and_pattern, query):
+            operators['AND'].append((match.group(1).lower(), match.group(2).lower()))
+        
+        for match in re.finditer(or_pattern, query):
+            operators['OR'].append((match.group(1).lower(), match.group(2).lower()))
+        
+        for match in re.finditer(not_pattern, query):
+            operators['NOT'].append(match.group(1).lower())
+        
+        return operators
+    
+    def _remove_boolean_operators(self, query: str) -> str:
+        """Remove boolean operators from query."""
+        # Remove boolean operators but keep the terms
+        query = re.sub(r'\s+AND\s+', ' ', query)
+        query = re.sub(r'\s+OR\s+', ' ', query)
+        query = re.sub(r'\s+NOT\s+', ' ', query)
+        return query
+    
+    def _expand_with_synonyms(self, tokens: List[str]) -> List[str]:
+        """Expand tokens with synonyms."""
+        expanded = set()
+        
+        for token in tokens:
+            # Add original token
+            expanded.add(token)
+            
+            # Add direct synonyms
+            if token in self.synonyms:
+                expanded.update(self.synonyms[token])
+            
+            # Check if token is a synonym of something else
+            if token in self.reverse_synonyms:
+                expanded.update(self.reverse_synonyms[token])
+        
+        return list(expanded)
 
-    def expand_query(self, query: str) -> str:
-        """Expand query with related terms"""
-        query_lower = query.lower()
-        expanded_terms = [query]
 
-        # Check each term in expansions
-        for key, synonyms in self.expansions.items():
-            if key in query_lower:
-                # Add synonyms that aren't already in query
-                for synonym in synonyms:
-                    if synonym not in query_lower:
-                        expanded_terms.append(synonym)
+class EmbeddingCache:
+    """Manages embedding generation with caching."""
+    
+    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', cache_dir: Optional[Path] = None):
+        self.model = SentenceTransformer(model_name)
+        self.cache_dir = cache_dir or Path.home() / '.mcp_search_cache'
+        self.cache_dir.mkdir(exist_ok=True)
+        
+        # In-memory cache with TTL
+        self.memory_cache = {}
+        self.cache_ttl = timedelta(hours=24)
+        
+        # Redis cache for distributed systems (optional)
+        self.redis_client = None
+        try:
+            self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+            self.redis_client.ping()
+        except:
+            logger.info("Redis not available, using file-based cache only")
+    
+    def get_embedding(self, text: str, use_cache: bool = True) -> np.ndarray:
+        """Get embedding for text with caching."""
+        # Generate cache key
+        cache_key = hashlib.sha256(text.encode()).hexdigest()
+        
+        if use_cache:
+            # Check memory cache
+            if cache_key in self.memory_cache:
+                cached_time, embedding = self.memory_cache[cache_key]
+                if datetime.now() - cached_time < self.cache_ttl:
+                    return embedding
+            
+            # Check Redis cache
+            if self.redis_client:
+                try:
+                    cached = self.redis_client.get(f"emb:{cache_key}")
+                    if cached:
+                        return pickle.loads(cached.encode('latin-1'))
+                except:
+                    pass
+            
+            # Check file cache
+            cache_file = self.cache_dir / f"{cache_key}.pkl"
+            if cache_file.exists():
+                try:
+                    with open(cache_file, 'rb') as f:
+                        return pickle.load(f)
+                except:
+                    pass
+        
+        # Generate embedding
+        embedding = self.model.encode(text, convert_to_numpy=True)
+        
+        # Cache the result
+        if use_cache:
+            self._cache_embedding(cache_key, embedding)
+        
+        return embedding
+    
+    def get_embeddings_batch(self, texts: List[str], use_cache: bool = True) -> np.ndarray:
+        """Get embeddings for multiple texts with batching."""
+        if not use_cache:
+            return self.model.encode(texts, convert_to_numpy=True)
+        
+        # Separate cached and uncached texts
+        embeddings = [None] * len(texts)
+        uncached_indices = []
+        uncached_texts = []
+        
+        for i, text in enumerate(texts):
+            cache_key = hashlib.sha256(text.encode()).hexdigest()
+            
+            # Try to get from cache
+            cached_emb = self._get_cached_embedding(cache_key)
+            if cached_emb is not None:
+                embeddings[i] = cached_emb
+            else:
+                uncached_indices.append(i)
+                uncached_texts.append(text)
+        
+        # Generate embeddings for uncached texts
+        if uncached_texts:
+            new_embeddings = self.model.encode(uncached_texts, convert_to_numpy=True)
+            
+            # Cache and assign results
+            for idx, text, emb in zip(uncached_indices, uncached_texts, new_embeddings):
+                cache_key = hashlib.sha256(text.encode()).hexdigest()
+                self._cache_embedding(cache_key, emb)
+                embeddings[idx] = emb
+        
+        return np.vstack(embeddings)
+    
+    def _get_cached_embedding(self, cache_key: str) -> Optional[np.ndarray]:
+        """Try to get embedding from various cache layers."""
+        # Memory cache
+        if cache_key in self.memory_cache:
+            cached_time, embedding = self.memory_cache[cache_key]
+            if datetime.now() - cached_time < self.cache_ttl:
+                return embedding
+        
+        # Redis cache
+        if self.redis_client:
+            try:
+                cached = self.redis_client.get(f"emb:{cache_key}")
+                if cached:
+                    return pickle.loads(cached.encode('latin-1'))
+            except:
+                pass
+        
+        # File cache
+        cache_file = self.cache_dir / f"{cache_key}.pkl"
+        if cache_file.exists():
+            try:
+                with open(cache_file, 'rb') as f:
+                    return pickle.load(f)
+            except:
+                pass
+        
+        return None
+    
+    def _cache_embedding(self, cache_key: str, embedding: np.ndarray):
+        """Cache embedding in multiple layers."""
+        # Memory cache
+        self.memory_cache[cache_key] = (datetime.now(), embedding)
+        
+        # Redis cache
+        if self.redis_client:
+            try:
+                self.redis_client.setex(
+                    f"emb:{cache_key}",
+                    int(self.cache_ttl.total_seconds()),
+                    pickle.dumps(embedding).decode('latin-1')
+                )
+            except:
+                pass
+        
+        # File cache
+        cache_file = self.cache_dir / f"{cache_key}.pkl"
+        try:
+            with open(cache_file, 'wb') as f:
+                pickle.dump(embedding, f)
+        except:
+            pass
+    
+    def clear_cache(self):
+        """Clear all caches."""
+        self.memory_cache.clear()
+        
+        if self.redis_client:
+            try:
+                for key in self.redis_client.scan_iter("emb:*"):
+                    self.redis_client.delete(key)
+            except:
+                pass
+        
+        # Clear file cache
+        for cache_file in self.cache_dir.glob("*.pkl"):
+            try:
+                cache_file.unlink()
+            except:
+                pass
 
-        # Also check if query matches any synonym
-        for key, synonyms in self.expansions.items():
-            for synonym in synonyms:
-                if synonym in query_lower and key not in query_lower:
-                    expanded_terms.append(key)
 
-        return " ".join(expanded_terms)
+class FuzzyMatcher:
+    """Handles fuzzy matching for typo tolerance."""
+    
+    def __init__(self, threshold: int = 80):
+        self.threshold = threshold
+        self.known_terms = set()
+    
+    def add_known_terms(self, terms: List[str]):
+        """Add terms to the known terms set."""
+        self.known_terms.update(terms)
+    
+    def find_matches(self, query: str, candidates: List[str] = None) -> List[Tuple[str, int]]:
+        """Find fuzzy matches for a query."""
+        if candidates is None:
+            candidates = list(self.known_terms)
+        
+        # Use token set ratio for better matching of partial terms
+        matches = process.extract(
+            query,
+            candidates,
+            scorer=fuzz.token_set_ratio,
+            limit=5
+        )
+        
+        # Filter by threshold
+        return [(match, score) for match, score in matches if score >= self.threshold]
+    
+    def correct_query(self, query: str) -> Tuple[str, List[str]]:
+        """Attempt to correct typos in query."""
+        tokens = query.lower().split()
+        corrections = []
+        corrected_tokens = []
+        
+        for token in tokens:
+            matches = self.find_matches(token)
+            if matches and matches[0][1] < 100:  # Not exact match
+                best_match = matches[0][0]
+                corrections.append(f"{token} -> {best_match}")
+                corrected_tokens.append(best_match)
+            else:
+                corrected_tokens.append(token)
+        
+        corrected_query = ' '.join(corrected_tokens)
+        return corrected_query, corrections
 
 
-# Convenience functions
-def create_semantic_search_engine(
-    model_name: str = "all-MiniLM-L6-v2",
-    index_path: Path | None = None
-) -> SemanticSearchEngine:
-    """Create a semantic search engine"""
-    embedding_model = EmbeddingModel(model_name)
-    return SemanticSearchEngine(embedding_model, index_path)
+class SemanticSearch:
+    """Main semantic search engine with all enhanced features."""
+    
+    def __init__(self, 
+                 embedding_model: str = 'all-MiniLM-L6-v2',
+                 enable_analytics: bool = True,
+                 cache_dir: Optional[Path] = None):
+        self.preprocessor = QueryPreprocessor()
+        self.embedding_cache = EmbeddingCache(embedding_model, cache_dir)
+        self.fuzzy_matcher = FuzzyMatcher()
+        self.analytics = SearchAnalytics() if enable_analytics else None
+        
+        # Document store (in production, this would be a vector database)
+        self.documents = {}
+        self.document_embeddings = {}
+        self.document_metadata = {}
+        
+        # Query result cache
+        self.result_cache = {}
+        self.result_cache_ttl = timedelta(minutes=30)
+        
+        # Thread pool for parallel processing
+        self.executor = ThreadPoolExecutor(max_workers=4)
+    
+    def index_document(self, doc_id: str, content: str, metadata: Dict[str, Any] = None):
+        """Index a document for searching."""
+        # Store document
+        self.documents[doc_id] = content
+        self.document_metadata[doc_id] = metadata or {}
+        
+        # Generate and cache embedding
+        embedding = self.embedding_cache.get_embedding(content)
+        self.document_embeddings[doc_id] = embedding
+        
+        # Update fuzzy matcher with document terms
+        tokens = word_tokenize(content.lower())
+        self.fuzzy_matcher.add_known_terms(tokens)
+    
+    def index_documents_batch(self, documents: List[Tuple[str, str, Dict[str, Any]]]):
+        """Index multiple documents efficiently."""
+        # Extract components
+        doc_ids = [doc[0] for doc in documents]
+        contents = [doc[1] for doc in documents]
+        metadatas = [doc[2] if len(doc) > 2 else {} for doc in documents]
+        
+        # Store documents
+        for doc_id, content, metadata in zip(doc_ids, contents, metadatas):
+            self.documents[doc_id] = content
+            self.document_metadata[doc_id] = metadata
+        
+        # Generate embeddings in batch
+        embeddings = self.embedding_cache.get_embeddings_batch(contents)
+        
+        # Store embeddings
+        for doc_id, embedding in zip(doc_ids, embeddings):
+            self.document_embeddings[doc_id] = embedding
+        
+        # Update fuzzy matcher
+        all_tokens = []
+        for content in contents:
+            tokens = word_tokenize(content.lower())
+            all_tokens.extend(tokens)
+        self.fuzzy_matcher.add_known_terms(list(set(all_tokens)))
+    
+    def search(self, 
+               query: str, 
+               top_k: int = 10,
+               filters: Optional[Dict[str, Any]] = None,
+               rerank: bool = True,
+               use_fuzzy: bool = True,
+               use_cache: bool = True) -> List[SearchResult]:
+        """Perform semantic search with all enhancements."""
+        start_time = time.time()
+        
+        # Check result cache
+        cache_key = self._get_result_cache_key(query, top_k, filters)
+        if use_cache and cache_key in self.result_cache:
+            cached_time, cached_results = self.result_cache[cache_key]
+            if datetime.now() - cached_time < self.result_cache_ttl:
+                if self.analytics:
+                    self.analytics.cache_hits += 1
+                return cached_results
+        
+        if self.analytics:
+            self.analytics.cache_misses += 1
+        
+        try:
+            # Preprocess query
+            search_query = self.preprocessor.preprocess(query)
+            
+            # Apply fuzzy matching if enabled
+            if use_fuzzy:
+                corrected_query, corrections = self.fuzzy_matcher.correct_query(
+                    search_query.preprocessed
+                )
+                if corrections:
+                    logger.info(f"Applied corrections: {corrections}")
+                    # Re-preprocess with corrected query
+                    search_query = self.preprocessor.preprocess(corrected_query)
+            
+            # Generate query embedding with expanded terms
+            expanded_query = ' '.join(search_query.tokens + search_query.expanded_terms)
+            query_embedding = self.embedding_cache.get_embedding(expanded_query)
+            
+            # Calculate similarities
+            similarities = self._calculate_similarities(
+                query_embedding,
+                search_query,
+                filters
+            )
+            
+            # Get top results
+            top_indices = np.argsort(similarities)[-top_k:][::-1]
+            
+            # Create initial results
+            results = []
+            for idx in top_indices:
+                doc_id = list(self.documents.keys())[idx]
+                score = float(similarities[idx])
+                
+                if score > 0:  # Only include positive scores
+                    result = SearchResult(
+                        id=doc_id,
+                        content=self.documents[doc_id],
+                        score=score,
+                        metadata=self.document_metadata.get(doc_id, {})
+                    )
+                    results.append(result)
+            
+            # Apply re-ranking if enabled
+            if rerank and len(results) > 1:
+                results = self._rerank_results(results, search_query)
+            
+            # Generate highlights
+            for result in results:
+                result.highlights = self._generate_highlights(
+                    result.content,
+                    search_query.tokens
+                )
+            
+            # Cache results
+            if use_cache:
+                self.result_cache[cache_key] = (datetime.now(), results)
+            
+            # Update analytics
+            if self.analytics:
+                elapsed = time.time() - start_time
+                self.analytics.query_count += 1
+                self.analytics.total_latency += elapsed
+                self.analytics.popular_queries[query] += 1
+                self.analytics.average_results_per_query = (
+                    (self.analytics.average_results_per_query * (self.analytics.query_count - 1) + len(results))
+                    / self.analytics.query_count
+                )
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Search error: {e}")
+            if self.analytics:
+                self.analytics.failed_queries.append((query, str(e)))
+            return []
+    
+    def _calculate_similarities(self, 
+                              query_embedding: np.ndarray,
+                              search_query: SearchQuery,
+                              filters: Optional[Dict[str, Any]]) -> np.ndarray:
+        """Calculate similarities with boolean operators and filters."""
+        # Get all document embeddings as matrix
+        doc_ids = list(self.documents.keys())
+        doc_embeddings = np.vstack([self.document_embeddings[doc_id] for doc_id in doc_ids])
+        
+        # Calculate base similarities
+        similarities = cosine_similarity([query_embedding], doc_embeddings)[0]
+        
+        # Apply boolean operators
+        if search_query.boolean_operators:
+            similarities = self._apply_boolean_operators(
+                similarities,
+                doc_ids,
+                search_query.boolean_operators
+            )
+        
+        # Apply filters
+        if filters:
+            similarities = self._apply_filters(similarities, doc_ids, filters)
+        
+        return similarities
+    
+    def _apply_boolean_operators(self,
+                                similarities: np.ndarray,
+                                doc_ids: List[str],
+                                operators: Dict[str, List]) -> np.ndarray:
+        """Apply AND, OR, NOT boolean operators."""
+        modified_similarities = similarities.copy()
+        
+        for i, doc_id in enumerate(doc_ids):
+            content = self.documents[doc_id].lower()
+            
+            # Apply NOT operators
+            for not_term in operators.get('NOT', []):
+                if not_term in content:
+                    modified_similarities[i] = 0
+            
+            # Apply AND operators
+            for term1, term2 in operators.get('AND', []):
+                if not (term1 in content and term2 in content):
+                    modified_similarities[i] *= 0.5  # Penalize but don't eliminate
+            
+            # Apply OR operators (boost if either term present)
+            for term1, term2 in operators.get('OR', []):
+                if term1 in content or term2 in content:
+                    modified_similarities[i] *= 1.2  # Boost score
+        
+        return modified_similarities
+    
+    def _apply_filters(self,
+                      similarities: np.ndarray,
+                      doc_ids: List[str],
+                      filters: Dict[str, Any]) -> np.ndarray:
+        """Apply metadata filters."""
+        modified_similarities = similarities.copy()
+        
+        for i, doc_id in enumerate(doc_ids):
+            metadata = self.document_metadata.get(doc_id, {})
+            
+            # Check each filter
+            for key, value in filters.items():
+                if key not in metadata:
+                    modified_similarities[i] = 0
+                elif isinstance(value, list):
+                    # Filter value is a list - check if metadata value is in list
+                    if metadata[key] not in value:
+                        modified_similarities[i] = 0
+                else:
+                    # Direct comparison
+                    if metadata[key] != value:
+                        modified_similarities[i] = 0
+        
+        return modified_similarities
+    
+    def _rerank_results(self,
+                       results: List[SearchResult],
+                       search_query: SearchQuery) -> List[SearchResult]:
+        """Re-rank results based on additional factors."""
+        # Calculate additional scoring factors
+        for result in results:
+            # Term frequency boost
+            term_freq_score = self._calculate_term_frequency_score(
+                result.content,
+                search_query.tokens
+            )
+            
+            # Recency boost (if timestamp in metadata)
+            recency_score = self._calculate_recency_score(result.metadata)
+            
+            # Combine scores
+            result.score = (
+                result.score * 0.7 +  # Original semantic similarity
+                term_freq_score * 0.2 +  # Term frequency
+                recency_score * 0.1  # Recency
+            )
+            
+            # Add explanation
+            result.explanation = (
+                f"Semantic: {result.score:.3f}, "
+                f"Term Freq: {term_freq_score:.3f}, "
+                f"Recency: {recency_score:.3f}"
+            )
+        
+        # Re-sort by new scores
+        return sorted(results, key=lambda x: x.score, reverse=True)
+    
+    def _calculate_term_frequency_score(self, content: str, terms: List[str]) -> float:
+        """Calculate term frequency score."""
+        content_lower = content.lower()
+        total_occurrences = sum(content_lower.count(term) for term in terms)
+        
+        # Normalize by content length
+        return min(total_occurrences / (len(content_lower.split()) + 1), 1.0)
+    
+    def _calculate_recency_score(self, metadata: Dict[str, Any]) -> float:
+        """Calculate recency score based on timestamp."""
+        if 'timestamp' not in metadata:
+            return 0.5  # Neutral score if no timestamp
+        
+        try:
+            timestamp = datetime.fromisoformat(metadata['timestamp'])
+            days_old = (datetime.now() - timestamp).days
+            
+            # Exponential decay - newer documents get higher scores
+            return np.exp(-days_old / 30)  # Half-life of 30 days
+        except:
+            return 0.5
+    
+    def _generate_highlights(self, content: str, terms: List[str]) -> List[str]:
+        """Generate highlighted snippets."""
+        highlights = []
+        sentences = content.split('.')
+        
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
+            if any(term in sentence_lower for term in terms):
+                # Highlight matching terms
+                highlighted = sentence
+                for term in terms:
+                    # Case-insensitive replacement
+                    pattern = re.compile(re.escape(term), re.IGNORECASE)
+                    highlighted = pattern.sub(f"**{term}**", highlighted)
+                
+                highlights.append(highlighted.strip())
+                
+                if len(highlights) >= 3:  # Limit to 3 highlights
+                    break
+        
+        return highlights
+    
+    def _get_result_cache_key(self, query: str, top_k: int, filters: Optional[Dict]) -> str:
+        """Generate cache key for results."""
+        filter_str = json.dumps(filters, sort_keys=True) if filters else ""
+        return hashlib.sha256(f"{query}:{top_k}:{filter_str}".encode()).hexdigest()
+    
+    def get_analytics_report(self) -> Dict[str, Any]:
+        """Generate analytics report."""
+        if not self.analytics:
+            return {"error": "Analytics not enabled"}
+        
+        avg_latency = (
+            self.analytics.total_latency / self.analytics.query_count
+            if self.analytics.query_count > 0
+            else 0
+        )
+        
+        cache_hit_rate = (
+            self.analytics.cache_hits / (self.analytics.cache_hits + self.analytics.cache_misses)
+            if (self.analytics.cache_hits + self.analytics.cache_misses) > 0
+            else 0
+        )
+        
+        return {
+            "total_queries": self.analytics.query_count,
+            "average_latency_ms": avg_latency * 1000,
+            "cache_hit_rate": cache_hit_rate,
+            "average_results_per_query": self.analytics.average_results_per_query,
+            "top_queries": self.analytics.popular_queries.most_common(10),
+            "failed_queries_count": len(self.analytics.failed_queries),
+            "recent_failures": self.analytics.failed_queries[-5:],
+        }
+    
+    def track_click(self, query: str, result_id: str):
+        """Track click-through data for analytics."""
+        if self.analytics:
+            if query not in self.analytics.click_through_data:
+                self.analytics.click_through_data[query] = []
+            self.analytics.click_through_data[query].append(result_id)
+    
+    def close(self):
+        """Clean up resources."""
+        self.executor.shutdown()
 
 
-def search_standards(
-    query: str,
-    standards: list[dict[str, Any]],
-    k: int = 10,
-    context: dict[str, Any] | None = None
-) -> list[SearchResult]:
-    """
-    Quick search function for standards
+# Async wrapper for non-blocking search
+class AsyncSemanticSearch:
+    """Async wrapper for SemanticSearch."""
+    
+    def __init__(self, semantic_search: SemanticSearch):
+        self.search_engine = semantic_search
+        self.loop = asyncio.new_event_loop()
+        self.thread = threading.Thread(target=self._run_loop, daemon=True)
+        self.thread.start()
+    
+    def _run_loop(self):
+        """Run the async event loop in a separate thread."""
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
+    
+    async def search_async(self, query: str, **kwargs) -> List[SearchResult]:
+        """Perform search asynchronously."""
+        future = self.loop.run_in_executor(
+            None,
+            self.search_engine.search,
+            query,
+            *kwargs
+        )
+        return await future
+    
+    async def index_documents_batch_async(self, documents: List[Tuple[str, str, Dict[str, Any]]]):
+        """Index documents asynchronously."""
+        future = self.loop.run_in_executor(
+            None,
+            self.search_engine.index_documents_batch,
+            documents
+        )
+        await future
+    
+    def close(self):
+        """Clean up async resources."""
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.thread.join()
+        self.search_engine.close()
 
-    Args:
-        query: Search query
-        standards: Standards to search
-        k: Number of results
-        context: Optional context for reranking
 
-    Returns:
-        Search results
-    """
-    engine = create_semantic_search_engine()
-    engine.index_standards(standards)
-
-    # Expand query
-    expander = QueryExpander()
-    expanded_query = expander.expand_query(query)
-
-    # Search
-    results = engine.search(expanded_query, k)
-
-    # Rerank if context provided
-    if context:
-        results = engine.rerank_results(query, results, context)
-
-    return results
+# Convenience function for creating search engine
+def create_search_engine(
+    embedding_model: str = 'all-MiniLM-L6-v2',
+    enable_analytics: bool = True,
+    cache_dir: Optional[Path] = None,
+    async_mode: bool = False
+) -> Union[SemanticSearch, AsyncSemanticSearch]:
+    """Create a semantic search engine instance."""
+    search_engine = SemanticSearch(
+        embedding_model=embedding_model,
+        enable_analytics=enable_analytics,
+        cache_dir=cache_dir
+    )
+    
+    if async_mode:
+        return AsyncSemanticSearch(search_engine)
+    
+    return search_engine

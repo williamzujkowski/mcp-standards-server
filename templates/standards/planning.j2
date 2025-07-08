@@ -1,0 +1,253 @@
+{# Planning Template - For project planning, estimation, roadmaps #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** {{ standard.domain }}
+**Planning Type:** {{ standard.planning_type | default('Project Planning') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.objectives %}
+### Planning Objectives
+{% for objective in standard.objectives %}
+- {{ objective }}
+{% endfor %}
+{% endif %}
+
+## Planning Framework
+
+{% if standard.framework %}
+### Methodology
+- **Type**: {{ standard.framework.methodology }}
+- **Approach**: {{ standard.framework.approach }}
+- **Cadence**: {{ standard.framework.cadence }}
+
+### Planning Horizons
+{% for horizon in standard.framework.horizons %}
+- **{{ horizon.name }}**: {{ horizon.duration }}
+  - Focus: {{ horizon.focus }}
+  - Review Frequency: {{ horizon.review_frequency }}
+{% endfor %}
+{% endif %}
+
+## Planning Process
+
+{% if standard.process %}
+### Process Flow
+```mermaid
+graph TD
+{% for phase in standard.process.phases %}
+    {{ phase.id }}[{{ phase.name }}]
+    {%- if phase.next %}
+    {{ phase.id }} --> {{ phase.next }}
+    {%- endif %}
+{% endfor %}
+```
+
+### Planning Phases
+{% for phase in standard.process.phases %}
+#### {{ loop.index }}. {{ phase.name }}
+- **Duration**: {{ phase.duration }}
+- **Participants**: {{ phase.participants | join(', ') }}
+- **Deliverables**: {{ phase.deliverables | join(', ') }}
+
+**Activities:**
+{% for activity in phase.activities %}
+- {{ activity }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Estimation Guidelines
+
+{% if standard.estimation %}
+### Estimation Techniques
+{% for technique in standard.estimation.techniques %}
+#### {{ technique.name }}
+- **When to use**: {{ technique.when_to_use }}
+- **Process**: {{ technique.process }}
+- **Accuracy**: {{ technique.accuracy_range }}
+{% endfor %}
+
+### Estimation Factors
+{% for factor in standard.estimation.factors %}
+- **{{ factor.name }}**: {{ factor.description }}
+  - Weight: {{ factor.weight }}
+  - How to measure: {{ factor.measurement }}
+{% endfor %}
+
+### Buffer Guidelines
+- **Technical Risk Buffer**: {{ standard.estimation.buffers.technical }}
+- **Integration Buffer**: {{ standard.estimation.buffers.integration }}
+- **External Dependency Buffer**: {{ standard.estimation.buffers.external }}
+{% endif %}
+
+## Resource Planning
+
+{% if standard.resources %}
+### Resource Types
+{% for resource in standard.resources.types %}
+- **{{ resource.name }}**
+  - Planning considerations: {{ resource.considerations }}
+  - Allocation method: {{ resource.allocation_method }}
+{% endfor %}
+
+### Capacity Planning
+- **Utilization Target**: {{ standard.resources.utilization_target }}
+- **Peak Load Factor**: {{ standard.resources.peak_load_factor }}
+- **Reserve Capacity**: {{ standard.resources.reserve_capacity }}
+{% endif %}
+
+## Risk Management
+
+{% if standard.risks %}
+### Risk Assessment Framework
+{% for category in standard.risks.categories %}
+#### {{ category.name }}
+{% for risk in category.risks %}
+- **{{ risk.name }}**
+  - Probability: {{ risk.probability }}
+  - Impact: {{ risk.impact }}
+  - Mitigation: {{ risk.mitigation }}
+{% endfor %}
+{% endfor %}
+
+### Risk Register Template
+| Risk | Category | Probability | Impact | Mitigation | Owner | Status |
+|------|----------|-------------|---------|------------|-------|--------|
+{% for risk in standard.risks.register_template %}
+| {{ risk.example }} | {{ risk.category }} | {{ risk.probability }} | {{ risk.impact }} | {{ risk.mitigation }} | {{ risk.owner }} | {{ risk.status }} |
+{% endfor %}
+{% endif %}
+
+## Roadmap Components
+
+{% if standard.roadmap %}
+### Roadmap Structure
+- **Time Horizons**: {{ standard.roadmap.horizons | join(', ') }}
+- **Update Frequency**: {{ standard.roadmap.update_frequency }}
+- **Level of Detail**: {{ standard.roadmap.detail_level }}
+
+### Roadmap Elements
+{% for element in standard.roadmap.elements %}
+- **{{ element.name }}**: {{ element.description }}
+  - Required: {{ element.required | default('Yes') }}
+  - Format: {{ element.format }}
+{% endfor %}
+
+### Milestone Criteria
+{% for criterion in standard.roadmap.milestone_criteria %}
+- {{ criterion }}
+{% endfor %}
+{% endif %}
+
+## Dependencies Management
+
+{% if standard.dependencies %}
+### Dependency Types
+{% for type in standard.dependencies.types %}
+- **{{ type.name }}**: {{ type.description }}
+  - Tracking method: {{ type.tracking }}
+  - Lead time: {{ type.lead_time }}
+{% endfor %}
+
+### Dependency Tracking
+```yaml
+{{ standard.dependencies.tracking_template | indent(2) }}
+```
+{% endif %}
+
+## Communication Plan
+
+{% if standard.communication %}
+### Stakeholder Communication
+{% for stakeholder in standard.communication.stakeholders %}
+#### {{ stakeholder.group }}
+- **Frequency**: {{ stakeholder.frequency }}
+- **Format**: {{ stakeholder.format }}
+- **Content**: {{ stakeholder.content | join(', ') }}
+- **Channel**: {{ stakeholder.channel }}
+{% endfor %}
+
+### Status Reporting
+- **Format**: {{ standard.communication.status_format }}
+- **Frequency**: {{ standard.communication.status_frequency }}
+- **Distribution**: {{ standard.communication.distribution | join(', ') }}
+{% endif %}
+
+## Metrics and Tracking
+
+{% if standard.metrics %}
+### Planning Metrics
+{% for metric in standard.metrics.planning %}
+- **{{ metric.name }}**
+  - Formula: {{ metric.formula }}
+  - Target: {{ metric.target }}
+  - Reporting: {{ metric.reporting_frequency }}
+{% endfor %}
+
+### Execution Metrics
+{% for metric in standard.metrics.execution %}
+- **{{ metric.name }}**
+  - Measurement: {{ metric.measurement }}
+  - Threshold: {{ metric.threshold }}
+  - Action: {{ metric.action_required }}
+{% endfor %}
+{% endif %}
+
+## Tools and Templates
+
+{% if standard.tools %}
+### Planning Tools
+{% for tool in standard.tools.planning %}
+- **{{ tool.name }}**
+  - Purpose: {{ tool.purpose }}
+  - Features used: {{ tool.features | join(', ') }}
+{% endfor %}
+
+### Templates
+{% for template in standard.tools.templates %}
+- [{{ template.name }}]({{ template.location }})
+  - Purpose: {{ template.purpose }}
+{% endfor %}
+{% endif %}
+
+## Review and Adaptation
+
+{% if standard.review %}
+### Review Process
+- **Frequency**: {{ standard.review.frequency }}
+- **Participants**: {{ standard.review.participants | join(', ') }}
+- **Duration**: {{ standard.review.duration }}
+
+### Review Checklist
+{% for item in standard.review.checklist %}
+- [ ] {{ item }}
+{% endfor %}
+
+### Adaptation Triggers
+{% for trigger in standard.review.adaptation_triggers %}
+- {{ trigger }}
+{% endfor %}
+{% endif %}
+
+## Best Practices
+
+{% if standard.best_practices %}
+{% for practice in standard.best_practices %}
+### {{ practice.title }}
+{{ practice.description }}
+
+**Benefits:**
+{% for benefit in practice.benefits %}
+- {{ benefit }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Process Owner: {{ standard.process_owner | default('PMO') }}*

@@ -1,0 +1,328 @@
+{# Technical Writing Template - For technical documentation and content #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** Technical Writing
+**Document Type:** {{ standard.document_type | default('Technical Documentation') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.audience %}
+### Target Audience
+{% for audience in standard.audience %}
+#### {{ audience.name }}
+- **Technical Level**: {{ audience.technical_level }}
+- **Background**: {{ audience.background }}
+- **Goals**: {{ audience.goals | join(', ') }}
+- **Pain Points**: {{ audience.pain_points | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## Documentation Standards
+
+{% if standard.standards %}
+### Writing Principles
+{% for principle in standard.standards.principles %}
+- **{{ principle.name }}**: {{ principle.description }}
+{% endfor %}
+
+### Style Guide
+- **Voice**: {{ standard.standards.style.voice }}
+- **Tone**: {{ standard.standards.style.tone }}
+- **Person**: {{ standard.standards.style.person }}
+- **Tense**: {{ standard.standards.style.tense }}
+
+### Terminology
+{% for term in standard.standards.terminology %}
+- **{{ term.term }}**: {{ term.definition }}
+  - Usage: {{ term.usage }}
+  - Avoid: {{ term.avoid | join(', ') | default('N/A') }}
+{% endfor %}
+{% endif %}
+
+## Document Structure
+
+{% if standard.structure %}
+### Required Sections
+{% for section in standard.structure.required %}
+#### {{ section.name }}
+- **Purpose**: {{ section.purpose }}
+- **Content**: {{ section.content_guide }}
+- **Length**: {{ section.length_guide }}
+{% endfor %}
+
+### Optional Sections
+{% for section in standard.structure.optional %}
+- **{{ section.name }}**: {{ section.when_to_include }}
+{% endfor %}
+
+### Document Templates
+{% for template in standard.structure.templates %}
+#### {{ template.name }}
+```markdown
+{{ template.structure }}
+```
+{% endfor %}
+{% endif %}
+
+## Content Types
+
+{% if standard.content_types %}
+{% for content_type in standard.content_types %}
+### {{ content_type.name }}
+
+**Purpose**: {{ content_type.purpose }}
+**Format**: {{ content_type.format }}
+
+#### Structure
+{{ content_type.structure }}
+
+#### Best Practices
+{% for practice in content_type.best_practices %}
+- {{ practice }}
+{% endfor %}
+
+#### Examples
+{% for example in content_type.examples %}
+- [{{ example.title }}]({{ example.link }})
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Technical Accuracy
+
+{% if standard.accuracy %}
+### Code Examples
+#### Standards
+{% for standard in standard.accuracy.code_standards %}
+- {{ standard }}
+{% endfor %}
+
+#### Code Block Format
+```{{ standard.accuracy.code_format.language }}
+{{ standard.accuracy.code_format.example }}
+```
+
+### Technical Review Process
+{% for step in standard.accuracy.review_process %}
+{{ loop.index }}. **{{ step.name }}**
+   - Reviewer: {{ step.reviewer }}
+   - Focus: {{ step.focus }}
+   - Checklist: {{ step.checklist | join(', ') }}
+{% endfor %}
+
+### Version Control
+- **Tracking Method**: {{ standard.accuracy.version_control.method }}
+- **Change Documentation**: {{ standard.accuracy.version_control.change_log }}
+- **Archive Policy**: {{ standard.accuracy.version_control.archive }}
+{% endif %}
+
+## Visual Elements
+
+{% if standard.visuals %}
+### Diagrams
+#### Types and Usage
+{% for diagram in standard.visuals.diagrams %}
+- **{{ diagram.type }}**: {{ diagram.when_to_use }}
+  - Tool: {{ diagram.tool }}
+  - Format: {{ diagram.format }}
+{% endfor %}
+
+#### Diagram Standards
+- **Color Scheme**: {{ standard.visuals.color_scheme }}
+- **Font**: {{ standard.visuals.font }}
+- **Size Guidelines**: {{ standard.visuals.size_guidelines }}
+
+### Screenshots
+- **Format**: {{ standard.visuals.screenshots.format }}
+- **Resolution**: {{ standard.visuals.screenshots.resolution }}
+- **Annotations**: {{ standard.visuals.screenshots.annotations }}
+- **Naming Convention**: {{ standard.visuals.screenshots.naming }}
+
+### Tables
+```markdown
+{{ standard.visuals.table_format }}
+```
+{% endif %}
+
+## API Documentation
+
+{% if standard.api_docs %}
+### API Reference Format
+```yaml
+{{ standard.api_docs.reference_format }}
+```
+
+### Required Information
+{% for info in standard.api_docs.required_info %}
+- {{ info }}
+{% endfor %}
+
+### Code Samples
+#### Languages
+{% for lang in standard.api_docs.sample_languages %}
+- {{ lang }}
+{% endfor %}
+
+#### Sample Structure
+```{{ standard.api_docs.sample_structure.language }}
+{{ standard.api_docs.sample_structure.template }}
+```
+{% endif %}
+
+## Accessibility
+
+{% if standard.accessibility %}
+### Standards Compliance
+- **WCAG Level**: {{ standard.accessibility.wcag_level }}
+- **Testing Tools**: {{ standard.accessibility.testing_tools | join(', ') }}
+
+### Requirements
+{% for req in standard.accessibility.requirements %}
+#### {{ req.name }}
+- **Guideline**: {{ req.guideline }}
+- **Implementation**: {{ req.implementation }}
+- **Testing**: {{ req.testing }}
+{% endfor %}
+
+### Alt Text Guidelines
+{% for guideline in standard.accessibility.alt_text %}
+- {{ guideline }}
+{% endfor %}
+{% endif %}
+
+## Localization
+
+{% if standard.localization %}
+### Supported Languages
+| Language | Code | RTL | Status |
+|----------|------|-----|--------|
+{% for lang in standard.localization.languages %}
+| {{ lang.name }} | {{ lang.code }} | {{ lang.rtl | default('No') }} | {{ lang.status }} |
+{% endfor %}
+
+### Translation Guidelines
+{% for guideline in standard.localization.guidelines %}
+- {{ guideline }}
+{% endfor %}
+
+### Localization Process
+{% for step in standard.localization.process %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+{% endif %}
+
+## Search Optimization
+
+{% if standard.seo %}
+### SEO Guidelines
+- **Title Format**: {{ standard.seo.title_format }}
+- **Meta Description**: {{ standard.seo.meta_description }}
+- **URL Structure**: {{ standard.seo.url_structure }}
+
+### Keywords
+#### Research Process
+{{ standard.seo.keyword_research }}
+
+#### Integration Guidelines
+{% for guideline in standard.seo.keyword_integration %}
+- {{ guideline }}
+{% endfor %}
+
+### Structured Data
+```json
+{{ standard.seo.structured_data_example | indent(2) }}
+```
+{% endif %}
+
+## Review and Publishing
+
+{% if standard.publishing %}
+### Review Process
+{% for stage in standard.publishing.review_stages %}
+#### {{ stage.name }}
+- **Reviewer**: {{ stage.reviewer }}
+- **Duration**: {{ stage.duration }}
+- **Checklist**: 
+{% for item in stage.checklist %}
+  - [ ] {{ item }}
+{% endfor %}
+{% endfor %}
+
+### Publishing Workflow
+```mermaid
+graph LR
+    A[Draft] --> B[Technical Review]
+    B --> C[Editorial Review]
+    C --> D[Final Review]
+    D --> E[Publish]
+    E --> F[Monitor]
+```
+
+### Publishing Checklist
+{% for item in standard.publishing.checklist %}
+- [ ] {{ item }}
+{% endfor %}
+{% endif %}
+
+## Maintenance
+
+{% if standard.maintenance %}
+### Update Schedule
+- **Review Frequency**: {{ standard.maintenance.review_frequency }}
+- **Update Triggers**: {{ standard.maintenance.update_triggers | join(', ') }}
+
+### Maintenance Tasks
+{% for task in standard.maintenance.tasks %}
+- **{{ task.name }}**: {{ task.frequency }}
+  - Owner: {{ task.owner }}
+  - Process: {{ task.process }}
+{% endfor %}
+
+### Deprecation Policy
+{{ standard.maintenance.deprecation_policy }}
+{% endif %}
+
+## Tools and Resources
+
+{% if standard.tools %}
+### Writing Tools
+{% for tool in standard.tools.writing %}
+- **{{ tool.name }}**: {{ tool.purpose }}
+  - Features: {{ tool.features | join(', ') }}
+{% endfor %}
+
+### Review Tools
+{% for tool in standard.tools.review %}
+- **{{ tool.name }}**: {{ tool.purpose }}
+{% endfor %}
+
+### Resources
+{% for resource in standard.resources %}
+- [{{ resource.title }}]({{ resource.url }})
+{% endfor %}
+{% endif %}
+
+## Metrics
+
+{% if standard.metrics %}
+### Documentation Metrics
+{% for metric in standard.metrics %}
+- **{{ metric.name }}**
+  - Measurement: {{ metric.measurement }}
+  - Target: {{ metric.target }}
+  - Tool: {{ metric.tool }}
+{% endfor %}
+
+### Feedback Collection
+- **Methods**: {{ standard.feedback.methods | join(', ') }}
+- **Analysis Frequency**: {{ standard.feedback.analysis_frequency }}
+- **Action Threshold**: {{ standard.feedback.action_threshold }}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Documentation Owner: {{ standard.doc_owner | default('Documentation Team') }}*

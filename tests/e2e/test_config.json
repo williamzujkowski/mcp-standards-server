@@ -1,0 +1,12 @@
+{
+  "server": {
+    "name": "mcp-standards-test",
+    "version": "0.1.0"
+  },
+  "search": {
+    "enabled": false
+  },
+  "sync": {
+    "enabled": false
+  }
+}

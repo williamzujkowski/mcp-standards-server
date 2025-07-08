@@ -1,0 +1,406 @@
+{% extends "standards/base.j2" %}
+
+{% block purpose %}
+This technical standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It provides detailed implementation guidance for technical teams and establishes consistent approaches across all {{ domain }} systems.
+
+**Technical Focus Areas:**
+{% if programming_languages %}
+- **Programming Languages**: {{ programming_languages | join(', ') }}
+{% endif %}
+{% if frameworks %}
+- **Frameworks**: {{ frameworks | join(', ') }}
+{% endif %}
+{% if tools %}
+- **Tools**: {{ tools | join(', ') }}
+{% endif %}
+{% if platforms %}
+- **Platforms**: {{ platforms | join(', ') }}
+{% endif %}
+{% endblock %}
+
+{% block scope %}
+This technical standard applies to:
+- All {{ domain }} development projects
+- Development, testing, staging, and production environments
+- CI/CD pipelines and deployment processes
+- Third-party integrations and APIs
+- Infrastructure as Code (IaC) implementations
+- Monitoring and observability systems
+{% endblock %}
+
+{% block implementation %}
+### Technical Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+{% if compliance_frameworks %}
+**Compliance Frameworks:** {{ compliance_frameworks | join(', ') }}
+{% endif %}
+
+### Architecture Guidelines
+
+#### System Architecture
+```mermaid
+graph TB
+    A[Client Applications] --> B[API Gateway]
+    B --> C[Service Layer]
+    C --> D[Data Layer]
+    D --> E[Storage Systems]
+    
+    F[Monitoring] --> C
+    G[Security] --> B
+    H[Logging] --> C
+```
+
+#### Security Architecture
+- **Authentication**: Implement multi-factor authentication
+- **Authorization**: Role-based access control (RBAC)
+- **Encryption**: Data encryption at rest and in transit
+- **Network Security**: Secure network segmentation
+
+### Development Standards
+
+#### Code Quality
+```python
+# Example: Secure API endpoint implementation
+from flask import Flask, request, jsonify
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+import logging
+
+app = Flask(__name__)
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+jwt = JWTManager(app)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.route('/api/secure-endpoint', methods=['POST'])
+@jwt_required()
+def secure_endpoint():
+    """Secure API endpoint with proper logging and validation."""
+    try:
+        # Input validation
+        data = request.get_json()
+        if not data or 'required_field' not in data:
+            logger.warning("Invalid request received")
+            return jsonify({"error": "Missing required field"}), 400
+        
+        # Process request
+        result = process_secure_data(data)
+        
+        # Log success
+        logger.info(f"Secure endpoint accessed successfully")
+        return jsonify({"status": "success", "data": result}), 200
+        
+    except Exception as e:
+        logger.error(f"Error in secure endpoint: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+```
+
+#### Testing Standards
+```python
+# Example: Unit test for secure endpoint
+import unittest
+from unittest.mock import patch, MagicMock
+from app import app
+
+class TestSecureEndpoint(unittest.TestCase):
+    def setUp(self):
+        self.app = app.test_client()
+        self.app.testing = True
+    
+    def test_secure_endpoint_success(self):
+        """Test successful secure endpoint access."""
+        with patch('app.jwt_required') as mock_jwt:
+            mock_jwt.return_value = True
+            response = self.app.post('/api/secure-endpoint', 
+                                   json={'required_field': 'test_value'})
+            self.assertEqual(response.status_code, 200)
+    
+    def test_secure_endpoint_invalid_input(self):
+        """Test secure endpoint with invalid input."""
+        with patch('app.jwt_required') as mock_jwt:
+            mock_jwt.return_value = True
+            response = self.app.post('/api/secure-endpoint', json={})
+            self.assertEqual(response.status_code, 400)
+```
+
+### Configuration Management
+
+#### Environment Configuration
+```yaml
+# Example: Production environment configuration
+production:
+  database:
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    name: ${DB_NAME}
+    ssl: true
+  
+  security:
+    jwt_secret: ${JWT_SECRET}
+    encryption_key: ${ENCRYPTION_KEY}
+    
+  monitoring:
+    metrics_enabled: true
+    logging_level: INFO
+    
+  performance:
+    max_connections: 100
+    timeout: 30s
+```
+
+#### Infrastructure as Code
+```terraform
+# Example: Terraform configuration for secure infrastructure
+resource "aws_security_group" "app_sg" {
+  name        = "app-security-group"
+  description = "Security group for application"
+  
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "app-sg"
+    Environment = "production"
+  }
+}
+```
+
+### Deployment Standards
+
+#### CI/CD Pipeline
+```yaml
+# Example: GitHub Actions workflow
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    - name: Run tests
+      run: |
+        pytest tests/
+    - name: Security scan
+      run: |
+        bandit -r src/
+  
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - name: Deploy to production
+      run: |
+        # Deployment commands
+        echo "Deploying to production"
+```
+
+### Performance Requirements
+
+{% if performance_requirements %}
+#### Performance Metrics
+{% for metric, value in performance_requirements.items() %}
+- **{{ metric | title }}**: {{ value }}
+{% endfor %}
+{% endif %}
+
+#### Monitoring and Alerting
+```python
+# Example: Application metrics collection
+from prometheus_client import Counter, Histogram, start_http_server
+import time
+
+# Metrics
+REQUEST_COUNT = Counter('app_requests_total', 'Total app requests')
+REQUEST_LATENCY = Histogram('app_request_duration_seconds', 'Request latency')
+
+def track_metrics(func):
+    """Decorator to track request metrics."""
+    def wrapper(*args, **kwargs):
+        REQUEST_COUNT.inc()
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+            return result
+        finally:
+            REQUEST_LATENCY.observe(time.time() - start_time)
+    return wrapper
+```
+
+### Security Requirements
+
+{% if security_requirements %}
+#### Security Controls
+{% for control, requirement in security_requirements.items() %}
+- **{{ control | title }}**: {{ requirement }}
+{% endfor %}
+{% endif %}
+
+#### Security Testing
+```python
+# Example: Security test cases
+import unittest
+from unittest.mock import patch
+from app import app
+
+class TestSecurity(unittest.TestCase):
+    def test_sql_injection_protection(self):
+        """Test SQL injection protection."""
+        malicious_input = "'; DROP TABLE users; --"
+        response = self.app.post('/api/search', 
+                               json={'query': malicious_input})
+        self.assertNotEqual(response.status_code, 500)
+    
+    def test_xss_protection(self):
+        """Test XSS protection."""
+        xss_payload = "<script>alert('xss')</script>"
+        response = self.app.post('/api/comment', 
+                               json={'content': xss_payload})
+        self.assertNotIn('<script>', response.get_data(as_text=True))
+```
+{% endblock %}
+
+{% block monitoring %}
+### Technical Monitoring
+
+#### System Metrics
+- **CPU Usage**: Monitor CPU utilization across all instances
+- **Memory Usage**: Track memory consumption and potential leaks
+- **Disk I/O**: Monitor disk read/write operations
+- **Network I/O**: Track network traffic and latency
+
+#### Application Metrics
+- **Request Rate**: Number of requests per second
+- **Response Time**: Average and percentile response times
+- **Error Rate**: Percentage of failed requests
+- **Database Performance**: Query execution times and connection pool usage
+
+#### Log Aggregation
+```python
+# Example: Structured logging configuration
+import logging
+import json
+from datetime import datetime
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_entry = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'level': record.levelname,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        return json.dumps(log_entry)
+
+# Configure logger
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+```
+
+#### Alerting Rules
+```yaml
+# Example: Prometheus alerting rules
+groups:
+- name: application.rules
+  rules:
+  - alert: HighErrorRate
+    expr: rate(app_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate detected"
+      description: "Error rate is above 10% for 5 minutes"
+  
+  - alert: HighResponseTime
+    expr: histogram_quantile(0.95, app_request_duration_seconds) > 1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High response time detected"
+      description: "95th percentile response time is above 1 second"
+```
+{% endblock %}
+
+{% block references %}
+### Technical References
+
+#### Standards and Frameworks
+{% if nist_controls %}
+- NIST SP 800-53: Security and Privacy Controls for Federal Information Systems
+{% endif %}
+{% if compliance_frameworks %}
+{% for framework in compliance_frameworks %}
+- {{ framework }} Framework Documentation
+{% endfor %}
+{% endif %}
+
+#### Programming Languages
+{% if programming_languages %}
+{% for lang in programming_languages %}
+- {{ lang }} Official Documentation
+- {{ lang }} Security Best Practices
+{% endfor %}
+{% endif %}
+
+#### Frameworks and Tools
+{% if frameworks %}
+{% for framework in frameworks %}
+- {{ framework }} Documentation
+{% endfor %}
+{% endif %}
+{% if tools %}
+{% for tool in tools %}
+- {{ tool }} User Guide
+{% endfor %}
+{% endif %}
+
+#### Implementation Guides
+{% if implementation_guides %}
+{% for guide in implementation_guides %}
+- {{ guide }}
+{% endfor %}
+{% endif %}
+
+#### Code Examples
+{% if code_examples %}
+{% for example in code_examples %}
+- {{ example }}
+{% endfor %}
+{% endif %}
+{% endblock %}

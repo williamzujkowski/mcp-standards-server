@@ -1,0 +1,180 @@
+# {{ title }}
+
+**Version:** {{ version | format_version }}  
+**Domain:** {{ domain }}  
+**Type:** {{ type | title }}  
+**Risk Level:** {{ risk_level | format_risk_level }}  
+**Maturity Level:** {{ maturity_level | title }}  
+**Author:** {{ author }}  
+**Created:** {{ created_date }}  
+**Last Updated:** {{ updated_date }}  
+
+## Purpose
+
+{{ description }}
+
+{% block purpose %}
+This standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It serves as a comprehensive framework to ensure consistency, security, and compliance across all implementations.
+{% endblock %}
+
+## Scope
+
+{% block scope %}
+This standard applies to:
+- All {{ domain }} systems and applications
+- Development, testing, and production environments
+- Third-party integrations and vendor solutions
+- Compliance and audit requirements
+{% endblock %}
+
+## Implementation
+
+{% block implementation %}
+### Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+{% if compliance_frameworks %}
+**Compliance Frameworks:** {{ compliance_frameworks | join(', ') }}
+{% endif %}
+
+### Guidelines
+
+1. **Planning Phase**
+   - Define scope and objectives
+   - Identify stakeholders and responsibilities
+   - Establish success criteria
+
+2. **Implementation Phase**
+   - Follow established procedures
+   - Implement security controls
+   - Document all configurations
+
+3. **Validation Phase**
+   - Conduct testing and validation
+   - Perform security assessments
+   - Review compliance requirements
+
+4. **Maintenance Phase**
+   - Monitor and maintain systems
+   - Update documentation
+   - Conduct regular reviews
+{% endblock %}
+
+## Compliance
+
+{% block compliance %}
+### Regulatory Requirements
+
+{% if compliance_frameworks %}
+{% for framework in compliance_frameworks %}
+- **{{ framework }}**: Compliance with {{ framework }} requirements
+{% endfor %}
+{% endif %}
+
+### Risk Management
+
+- **Risk Level**: {{ risk_level | format_compliance_level }}
+- **Risk Assessment**: Regular risk assessments required
+- **Mitigation Strategies**: Implement appropriate controls
+
+### Audit Requirements
+
+- Regular compliance audits
+- Documentation review
+- Control effectiveness testing
+{% endblock %}
+
+## Monitoring and Measurement
+
+{% block monitoring %}
+### Key Performance Indicators
+
+- Implementation coverage
+- Compliance adherence
+- Security incident metrics
+- System performance metrics
+
+### Reporting
+
+- Monthly compliance reports
+- Quarterly risk assessments
+- Annual standard reviews
+{% endblock %}
+
+## Responsibilities
+
+{% block responsibilities %}
+### Standard Owner
+- Maintain standard documentation
+- Approve changes and updates
+- Ensure compliance monitoring
+
+### Implementation Teams
+- Follow standard requirements
+- Report compliance issues
+- Maintain documentation
+
+### Audit Teams
+- Conduct compliance reviews
+- Validate implementation
+- Report findings and recommendations
+{% endblock %}
+
+## References
+
+{% block references %}
+### Standards and Frameworks
+{% if nist_controls %}
+- NIST SP 800-53: Security and Privacy Controls for Federal Information Systems
+{% endif %}
+{% if compliance_frameworks %}
+{% for framework in compliance_frameworks %}
+- {{ framework }} Framework Documentation
+{% endfor %}
+{% endif %}
+
+### Implementation Guides
+{% if implementation_guides %}
+{% for guide in implementation_guides %}
+- {{ guide }}
+{% endfor %}
+{% endif %}
+
+### Dependencies
+{% if dependencies %}
+{% for dependency in dependencies %}
+- {{ dependency }}
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+## Appendix
+
+{% block appendix %}
+### Glossary
+
+**Standard**: A documented agreement containing technical specifications or criteria to be used consistently.
+
+**Compliance**: The act of conforming to rules, regulations, or standards.
+
+**Risk**: The potential for loss, damage, or destruction of an asset as a result of a threat.
+
+### Change History
+
+| Version | Date | Changes | Author |
+|---------|------|---------|---------|
+| {{ version }} | {{ updated_date }} | Initial version | {{ author }} |
+
+### Review and Approval
+
+- **Review Status**: {{ review_status | title }}
+- **Reviewers**: {{ reviewers | join(', ') }}
+- **Approval Date**: {{ approval_date or 'Pending' }}
+{% endblock %}
+
+---
+
+*This document is part of the {{ domain }} standards framework and is subject to regular review and updates.*

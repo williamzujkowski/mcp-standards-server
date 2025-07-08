@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy backend requirements
+COPY web/backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the main project requirements for dependencies
+COPY pyproject.toml /
+RUN pip install --no-cache-dir -e /
+
+# Copy backend code
+COPY web/backend/ ./web/backend/
+COPY src/ ./src/
+COPY data/standards/ ./data/standards/
+
+# Environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Expose port
+EXPOSE 8000
+
+# Run the server
+CMD ["uvicorn", "web.backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

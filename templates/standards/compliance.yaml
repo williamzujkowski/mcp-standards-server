@@ -1,0 +1,44 @@
+name: "Compliance Standard Template"
+description: "Template for compliance-focused standards with regulatory requirements, controls, and audit procedures"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "compliance"
+tags:
+  - "compliance"
+  - "audit"
+  - "regulatory"
+  - "controls"
+extends: "standards/base.j2"
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+  - compliance_frameworks
+  - risk_level
+optional_variables:
+  - regulatory_requirements
+  - audit_requirements
+  - evidence_requirements
+  - compliance_metrics
+  - nist_controls
+  - implementation_guides
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - control_implementation
+  - risk_assessment_framework
+  - audit_assessment
+  - compliance_monitoring
+  - incident_response

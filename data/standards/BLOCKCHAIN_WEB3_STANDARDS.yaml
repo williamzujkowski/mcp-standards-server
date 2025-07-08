@@ -1,0 +1,97 @@
+approval_date: null
+audit_requirements:
+- automated_testing
+- formal_verification
+- third_party_audit
+- bug_bounty
+author: MCP Standards Team
+blockchain_networks:
+- ethereum
+- bitcoin
+- polygon
+- solana
+- avalanche
+- cardano
+- polkadot
+code_examples: []
+compliance_frameworks:
+- AML/KYC
+- MiCA
+- GDPR
+- SOX
+- PCI DSS
+created_date: '2025-07-07T23:25:53.608556'
+dependencies:
+- security_standards
+- api_design_standards
+- testing_standards
+description: Comprehensive standards for blockchain and Web3 development, smart contracts,
+  and decentralized applications
+development_frameworks:
+- hardhat
+- truffle
+- foundry
+- brownie
+- anchor
+domain: blockchain
+gas_optimization:
+- storage_optimization
+- function_optimization
+- batch_operations
+- proxy_patterns
+implementation_guides:
+- smart_contract_development
+- defi_protocol_design
+- nft_marketplace_creation
+- dao_governance
+maturity_level: production
+nist_controls:
+- AC-1
+- AC-6
+- AU-2
+- AU-12
+- CM-2
+- CM-8
+- IA-2
+- IA-4
+- RA-3
+- RA-5
+- SA-3
+- SA-8
+- SC-7
+- SC-8
+- SC-12
+- SC-13
+- SI-3
+- SI-4
+review_status: draft
+reviewers: []
+risk_level: high
+security_tools:
+- slither
+- mythril
+- oyente
+- securify
+- manticore
+smart_contract_languages:
+- solidity
+- vyper
+- rust
+- move
+tags:
+- blockchain
+- web3
+- smart-contracts
+- defi
+- nft
+- cryptocurrency
+- decentralized
+title: Blockchain/Web3 Development Standards
+type: technical
+updated_date: '2025-07-07T23:25:53.608563'
+version: 1.0.0
+wallet_integration:
+- metamask
+- walletconnect
+- phantom
+- coinbase_wallet

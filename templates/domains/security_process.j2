@@ -1,0 +1,289 @@
+{# Security Process Template - For security reviews and audits #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** Security
+**Process Type:** {{ standard.process_type | default('Security Review') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.compliance %}
+### Compliance Requirements
+{% for req in standard.compliance %}
+- **{{ req.framework }}**: {{ req.requirement }}
+  - Controls: {{ req.controls | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## Security Review Process
+
+{% if standard.review_process %}
+### Process Overview
+```mermaid
+graph TD
+    A[Request Submitted] --> B{Initial Triage}
+    B -->|High Risk| C[Full Security Review]
+    B -->|Medium Risk| D[Standard Review]
+    B -->|Low Risk| E[Automated Scan]
+    C --> F[Manual Assessment]
+    D --> F
+    E --> G{Pass?}
+    F --> G
+    G -->|Yes| H[Approval]
+    G -->|No| I[Remediation Required]
+    I --> J[Re-review]
+    J --> G
+```
+
+### Review Stages
+{% for stage in standard.review_process.stages %}
+#### {{ loop.index }}. {{ stage.name }}
+- **Duration**: {{ stage.duration }}
+- **Owner**: {{ stage.owner }}
+- **Type**: {{ stage.type }}
+
+**Activities**:
+{% for activity in stage.activities %}
+- {{ activity }}
+{% endfor %}
+
+**Deliverables**:
+{% for deliverable in stage.deliverables %}
+- {{ deliverable }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Security Controls
+
+{% if standard.controls %}
+### Control Categories
+{% for category in standard.controls.categories %}
+#### {{ category.name }}
+**Objective**: {{ category.objective }}
+
+{% for control in category.controls %}
+##### {{ control.id }}: {{ control.name }}
+- **Description**: {{ control.description }}
+- **Implementation**: {{ control.implementation }}
+- **Verification**: {{ control.verification }}
+- **Frequency**: {{ control.frequency }}
+{% endfor %}
+{% endfor %}
+
+### Control Effectiveness Metrics
+{% for metric in standard.controls.metrics %}
+- **{{ metric.name }}**: {{ metric.measurement }}
+  - Target: {{ metric.target }}
+  - Current: {{ metric.current | default('TBD') }}
+{% endfor %}
+{% endif %}
+
+## Risk Assessment
+
+{% if standard.risk_assessment %}
+### Risk Matrix
+```
+Impact ↑
+High    | Medium | High   | Critical | Critical |
+Medium  | Low    | Medium | High     | Critical |
+Low     | Low    | Low    | Medium   | High     |
+        |--------|--------|----------|----------|
+          Low     Medium    High     Critical  → Likelihood
+```
+
+### Risk Categories
+{% for category in standard.risk_assessment.categories %}
+#### {{ category.name }}
+{% for risk in category.risks %}
+- **{{ risk.name }}**
+  - Likelihood: {{ risk.likelihood }}
+  - Impact: {{ risk.impact }}
+  - Risk Level: {{ risk.level }}
+  - Mitigation: {{ risk.mitigation }}
+{% endfor %}
+{% endfor %}
+
+### Risk Acceptance Criteria
+{% for criterion in standard.risk_assessment.acceptance_criteria %}
+- **{{ criterion.level }}**: {{ criterion.approval_required }}
+{% endfor %}
+{% endif %}
+
+## Security Testing
+
+{% if standard.testing %}
+### Testing Types
+{% for test_type in standard.testing.types %}
+#### {{ test_type.name }}
+- **Scope**: {{ test_type.scope }}
+- **Frequency**: {{ test_type.frequency }}
+- **Tools**: {{ test_type.tools | join(', ') }}
+- **Duration**: {{ test_type.duration }}
+
+**Test Cases**:
+{% for test_case in test_type.test_cases %}
+- {{ test_case }}
+{% endfor %}
+{% endfor %}
+
+### Penetration Testing
+- **Frequency**: {{ standard.testing.pentest.frequency }}
+- **Scope**: {{ standard.testing.pentest.scope }}
+- **Methodology**: {{ standard.testing.pentest.methodology }}
+- **Reporting**: {{ standard.testing.pentest.reporting }}
+{% endif %}
+
+## Vulnerability Management
+
+{% if standard.vulnerability_management %}
+### Vulnerability Classification
+| Severity | CVSS Score | Response Time | Resolution Time |
+|----------|------------|---------------|-----------------|
+{% for class in standard.vulnerability_management.classification %}
+| {{ class.severity }} | {{ class.cvss_range }} | {{ class.response_time }} | {{ class.resolution_time }} |
+{% endfor %}
+
+### Scanning Schedule
+{% for scan in standard.vulnerability_management.scanning %}
+- **{{ scan.type }}**: {{ scan.frequency }}
+  - Scope: {{ scan.scope }}
+  - Tools: {{ scan.tools | join(', ') }}
+{% endfor %}
+
+### Remediation Process
+{% for step in standard.vulnerability_management.remediation_process %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+{% endif %}
+
+## Incident Response
+
+{% if standard.incident_response %}
+### Incident Classification
+{% for class in standard.incident_response.classification %}
+- **{{ class.severity }}**: {{ class.description }}
+  - Examples: {{ class.examples | join(', ') }}
+  - Response Time: {{ class.response_time }}
+{% endfor %}
+
+### Response Procedures
+{% for procedure in standard.incident_response.procedures %}
+#### {{ procedure.phase }}
+{% for step in procedure.steps %}
+{{ loop.index }}. {{ step.action }}
+   - Owner: {{ step.owner }}
+   - Timeline: {{ step.timeline }}
+{% endfor %}
+{% endfor %}
+
+### Communication Plan
+{% for comm in standard.incident_response.communication %}
+- **{{ comm.audience }}**: {{ comm.method }}
+  - Timing: {{ comm.timing }}
+  - Template: {{ comm.template }}
+{% endfor %}
+{% endif %}
+
+## Security Architecture Review
+
+{% if standard.architecture_review %}
+### Review Criteria
+{% for criterion in standard.architecture_review.criteria %}
+#### {{ criterion.name }}
+- **Requirement**: {{ criterion.requirement }}
+- **Rationale**: {{ criterion.rationale }}
+- **Validation**: {{ criterion.validation }}
+{% endfor %}
+
+### Architecture Patterns
+{% for pattern in standard.architecture_review.patterns %}
+#### {{ pattern.name }}
+- **Use Case**: {{ pattern.use_case }}
+- **Security Benefits**: {{ pattern.benefits | join(', ') }}
+- **Implementation Guide**: [Link]({{ pattern.guide }})
+{% endfor %}
+{% endif %}
+
+## Compliance and Audit
+
+{% if standard.audit %}
+### Audit Schedule
+{% for audit in standard.audit.schedule %}
+- **{{ audit.type }}**: {{ audit.frequency }}
+  - Scope: {{ audit.scope }}
+  - Auditor: {{ audit.auditor }}
+{% endfor %}
+
+### Evidence Collection
+{% for evidence in standard.audit.evidence %}
+#### {{ evidence.control }}
+- **Type**: {{ evidence.type }}
+- **Collection Method**: {{ evidence.method }}
+- **Retention**: {{ evidence.retention }}
+- **Location**: {{ evidence.storage }}
+{% endfor %}
+
+### Audit Findings Management
+{% for step in standard.audit.findings_process %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+{% endif %}
+
+## Security Training
+
+{% if standard.training %}
+### Training Requirements
+{% for requirement in standard.training.requirements %}
+#### {{ requirement.role }}
+{% for training in requirement.trainings %}
+- **{{ training.name }}**
+  - Frequency: {{ training.frequency }}
+  - Duration: {{ training.duration }}
+  - Provider: {{ training.provider }}
+{% endfor %}
+{% endfor %}
+
+### Security Awareness
+- **Program**: {{ standard.training.awareness.program }}
+- **Frequency**: {{ standard.training.awareness.frequency }}
+- **Topics**: {{ standard.training.awareness.topics | join(', ') }}
+{% endif %}
+
+## Tools and Technologies
+
+{% if standard.tools %}
+### Security Tools
+{% for tool in standard.tools %}
+#### {{ tool.name }}
+- **Category**: {{ tool.category }}
+- **Purpose**: {{ tool.purpose }}
+- **Integration**: {{ tool.integration }}
+- **License**: {{ tool.license }}
+{% endfor %}
+{% endif %}
+
+## Metrics and Reporting
+
+{% if standard.metrics %}
+### Security Metrics
+{% for metric in standard.metrics %}
+- **{{ metric.name }}**
+  - Formula: {{ metric.formula }}
+  - Target: {{ metric.target }}
+  - Collection: {{ metric.collection }}
+  - Reporting: {{ metric.reporting }}
+{% endfor %}
+
+### Security Dashboard
+- **URL**: [Security Dashboard]({{ standard.dashboard.url }})
+- **Update Frequency**: {{ standard.dashboard.update_frequency }}
+- **Access**: {{ standard.dashboard.access }}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Security Owner: {{ standard.security_owner | default('Security Team') }}*

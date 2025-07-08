@@ -1,0 +1,180 @@
+{# Operational Standards Template - For monitoring, incident response, SRE standards #}
+# {{ standard.title }}
+
+**Version:** {{ standard.version }}
+**Category:** {{ standard.category }}
+**Domain:** {{ standard.domain }}
+**Status:** {{ standard.status | default('active') }}
+
+## Overview
+
+{{ standard.description }}
+
+{% if standard.objectives %}
+### Objectives
+{% for objective in standard.objectives %}
+- {{ objective }}
+{% endfor %}
+{% endif %}
+
+## Operational Requirements
+
+{% if standard.requirements %}
+### Core Requirements
+{% for req in standard.requirements %}
+- **{{ req.name }}**: {{ req.description }}
+  {%- if req.priority %}
+  - Priority: {{ req.priority }}
+  {%- endif %}
+  {%- if req.validation_criteria %}
+  - Validation: {{ req.validation_criteria }}
+  {%- endif %}
+{% endfor %}
+{% endif %}
+
+{% if standard.service_levels %}
+### Service Level Objectives (SLOs)
+{% for slo in standard.service_levels %}
+- **{{ slo.name }}**
+  - Target: {{ slo.target }}
+  - Measurement: {{ slo.measurement }}
+  - Window: {{ slo.window }}
+{% endfor %}
+{% endif %}
+
+## Monitoring and Alerting
+
+{% if standard.monitoring %}
+### Monitoring Strategy
+{{ standard.monitoring.strategy }}
+
+### Key Metrics
+{% for metric in standard.monitoring.metrics %}
+- **{{ metric.name }}**
+  - Type: {{ metric.type }}
+  - Threshold: {{ metric.threshold }}
+  - Collection: {{ metric.collection_method }}
+{% endfor %}
+
+### Alert Configuration
+{% for alert in standard.monitoring.alerts %}
+- **{{ alert.name }}**
+  - Condition: {{ alert.condition }}
+  - Severity: {{ alert.severity }}
+  - Channels: {{ alert.channels | join(', ') }}
+  - Runbook: {{ alert.runbook_link }}
+{% endfor %}
+{% endif %}
+
+## Incident Response
+
+{% if standard.incident_response %}
+### Response Procedures
+{% for procedure in standard.incident_response.procedures %}
+#### {{ procedure.severity }} Severity
+1. **Detection**: {{ procedure.detection }}
+2. **Triage**: {{ procedure.triage }}
+3. **Response**: {{ procedure.response }}
+4. **Resolution**: {{ procedure.resolution }}
+5. **Post-mortem**: {{ procedure.postmortem }}
+{% endfor %}
+
+### Escalation Matrix
+{% for level in standard.incident_response.escalation %}
+- **Level {{ level.level }}**: {{ level.criteria }}
+  - Contacts: {{ level.contacts | join(', ') }}
+  - Response Time: {{ level.response_time }}
+{% endfor %}
+{% endif %}
+
+## Runbooks
+
+{% if standard.runbooks %}
+{% for runbook in standard.runbooks %}
+### {{ runbook.title }}
+**Purpose:** {{ runbook.purpose }}
+**Trigger:** {{ runbook.trigger }}
+
+#### Steps:
+{% for step in runbook.steps %}
+{{ loop.index }}. {{ step.action }}
+   {%- if step.command %}
+   ```bash
+   {{ step.command }}
+   ```
+   {%- endif %}
+   {%- if step.validation %}
+   - Validation: {{ step.validation }}
+   {%- endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+## Automation
+
+{% if standard.automation %}
+### Automated Tasks
+{% for task in standard.automation.tasks %}
+- **{{ task.name }}**
+  - Schedule: {{ task.schedule }}
+  - Tool: {{ task.tool }}
+  - Script: `{{ task.script_location }}`
+{% endfor %}
+
+### CI/CD Integration
+{% for pipeline in standard.automation.pipelines %}
+- **{{ pipeline.name }}**
+  - Trigger: {{ pipeline.trigger }}
+  - Stages: {{ pipeline.stages | join(' → ') }}
+{% endfor %}
+{% endif %}
+
+## Tools and Technologies
+
+{% if standard.tools %}
+### Required Tools
+{% for tool in standard.tools %}
+- **{{ tool.name }}** (v{{ tool.version }})
+  - Purpose: {{ tool.purpose }}
+  - Configuration: `{{ tool.config_location }}`
+{% endfor %}
+{% endif %}
+
+## Compliance and Auditing
+
+{% if standard.compliance %}
+### Compliance Requirements
+{% for req in standard.compliance.requirements %}
+- **{{ req.standard }}**: {{ req.requirement }}
+  - Evidence: {{ req.evidence_type }}
+  - Frequency: {{ req.audit_frequency }}
+{% endfor %}
+
+### Audit Trail
+- Events to log: {{ standard.compliance.audit_events | join(', ') }}
+- Retention period: {{ standard.compliance.retention_period }}
+- Storage location: {{ standard.compliance.storage_location }}
+{% endif %}
+
+## Performance Benchmarks
+
+{% if standard.benchmarks %}
+{% for benchmark in standard.benchmarks %}
+### {{ benchmark.name }}
+- Target: {{ benchmark.target }}
+- Current: {{ benchmark.current }}
+- Measurement: {{ benchmark.measurement_method }}
+{% endfor %}
+{% endif %}
+
+## References
+
+{% if standard.references %}
+{% for ref in standard.references %}
+- [{{ ref.title }}]({{ ref.url }})
+{% endfor %}
+{% endif %}
+
+---
+*Last Updated: {{ standard.last_updated | default('N/A') }}*
+*Maintained by: {{ standard.maintainer | default('Operations Team') }}*

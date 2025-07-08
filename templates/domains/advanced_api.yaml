@@ -1,0 +1,52 @@
+name: "Advanced API Design Standard Template"
+description: "Template for advanced API design standards with REST, GraphQL, gRPC, and modern API patterns"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "domain-specific"
+domain: "advanced_api"
+tags:
+  - "api"
+  - "rest"
+  - "graphql"
+  - "grpc"
+  - "microservices"
+  - "versioning"
+  - "rate-limiting"
+extends: "standards/technical.j2"
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+optional_variables:
+  - api_types
+  - authentication_methods
+  - data_formats
+  - versioning_strategies
+  - rate_limiting_methods
+  - documentation_tools
+  - monitoring_requirements
+  - nist_controls
+  - compliance_frameworks
+  - implementation_guides
+  - code_examples
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - restful_api_design
+  - graphql_implementation
+  - grpc_services
+  - api_security
+  - rate_limiting_throttling
+  - versioning_strategies
