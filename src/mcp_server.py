@@ -297,7 +297,7 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "force_refresh": {"type": "boolean", "description": "Force refresh of references", "default": false}
+                            "force_refresh": {"type": "boolean", "description": "Force refresh of references", "default": False}
                         }
                     }
                 ),
