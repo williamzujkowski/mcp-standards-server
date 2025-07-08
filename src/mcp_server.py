@@ -45,6 +45,8 @@ from .core.errors import (
     ErrorCode,
     RateLimitError
 )
+# Import privacy filtering
+from .core.privacy import get_privacy_filter, PrivacyConfig
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +70,11 @@ class MCPStandardsServer:
         
         # Initialize input validator
         self.input_validator = get_input_validator()
+        
+        # Initialize privacy filter
+        privacy_config = PrivacyConfig(**self.config.get("privacy", {}))
+        self.privacy_filter = get_privacy_filter()
+        self.privacy_filter.config = privacy_config
         
         # Initialize rate limiting (simple in-memory implementation)
         self._rate_limit_store: Dict[str, List[float]] = {}
@@ -470,6 +477,20 @@ class MCPStandardsServer:
                 # Record successful tool call
                 duration = time.time() - start_time
                 self.metrics.record_tool_call(name, duration, True)
+                
+                # Apply privacy filtering if enabled
+                if self.privacy_filter.config.detect_pii:
+                    # Generate privacy report for monitoring
+                    privacy_report = self.privacy_filter.get_privacy_report(result)
+                    if privacy_report["has_pii"]:
+                        logger.warning(
+                            f"PII detected in response for tool {name}: "
+                            f"{privacy_report['pii_count']} instances of "
+                            f"{', '.join(privacy_report['pii_types_found'])}"
+                        )
+                        # Filter the response
+                        filtered_result, _ = self.privacy_filter.filter_dict(result)
+                        result = filtered_result
                 
                 # Track response size
                 response_text = json.dumps(result, indent=2)
