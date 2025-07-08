@@ -122,10 +122,13 @@ async def mcp_server(tmp_path):
     
     # Enable coverage in subprocess
     env["COVERAGE_PROCESS_START"] = str(Path(__file__).parent.parent.parent / ".coveragerc")
-    sitecustomize_path = Path(__file__).parent.parent.parent / "sitecustomize.py"
-    if sitecustomize_path.exists():
-        # Add the directory containing sitecustomize.py to PYTHONPATH
-        env["PYTHONPATH"] = f"{sitecustomize_path.parent}:{env['PYTHONPATH']}"
+    
+    # Ensure sitecustomize.py is in PYTHONPATH for coverage subprocess
+    project_root = Path(__file__).parent.parent.parent
+    env["PYTHONPATH"] = f"{project_root}:{env.get('PYTHONPATH', '')}"
+    
+    # Enable coverage for subprocess
+    env["COVERAGE_RUN"] = "true"
     
     # Log environment for debugging
     logger.debug(f"MCP_STANDARDS_DATA_DIR: {env['MCP_STANDARDS_DATA_DIR']}")

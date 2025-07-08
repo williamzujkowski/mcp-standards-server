@@ -389,6 +389,9 @@ class MCPStandardsServer:
                 )
             ]
         
+        # Capture self in closure for nested function
+        server_instance = self
+        
         @self.server.call_tool()
         async def call_tool(name: str, arguments: Dict[str, Any], **kwargs) -> List[TextContent]:
             """Handle tool calls with authentication and validation."""
@@ -396,7 +399,7 @@ class MCPStandardsServer:
             
             # Track request size
             request_size = len(json.dumps(arguments).encode('utf-8'))
-            self.metrics.record_request_size(request_size, name)
+            server_instance.metrics.record_request_size(request_size, name)
             
             # Start timing the tool call
             start_time = time.time()
@@ -404,40 +407,40 @@ class MCPStandardsServer:
             try:
                 # Extract authentication from request context if available
                 headers = kwargs.get("headers", {})
-                auth_type, credential = self.auth_manager.extract_auth_from_headers(headers)
+                auth_type, credential = server_instance.auth_manager.extract_auth_from_headers(headers)
                 
                 # Verify authentication if enabled
-                if self.auth_manager.is_enabled():
+                if server_instance.auth_manager.is_enabled():
                     if not credential:
-                        self.metrics.record_auth_attempt("none", False)
+                        server_instance.metrics.record_auth_attempt("none", False)
                         raise AuthenticationError("Authentication required")
                     
                     if auth_type == "bearer":
-                        is_valid, payload, error_msg = self.auth_manager.verify_token(credential)
-                        self.metrics.record_auth_attempt("bearer", is_valid)
+                        is_valid, payload, error_msg = server_instance.auth_manager.verify_token(credential)
+                        server_instance.metrics.record_auth_attempt("bearer", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid token")
                         
                         # Check tool permission
-                        if not self.auth_manager.check_permission(payload, "mcp:tools"):
+                        if not server_instance.auth_manager.check_permission(payload, "mcp:tools"):
                             raise AuthorizationError(
                                 "Insufficient permissions for tool access",
                                 required_scope="mcp:tools"
                             )
                     elif auth_type == "api_key":
-                        is_valid, user_id, error_msg = self.auth_manager.verify_api_key(credential)
-                        self.metrics.record_auth_attempt("api_key", is_valid)
+                        is_valid, user_id, error_msg = server_instance.auth_manager.verify_api_key(credential)
+                        server_instance.metrics.record_auth_attempt("api_key", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid API key")
                     
                     # Check rate limits
                     user_key = credential if credential else "anonymous"
-                    if not self._check_rate_limit(user_key):
-                        self.metrics.record_rate_limit_hit(user_key, "standard")
+                    if not server_instance._check_rate_limit(user_key):
+                        server_instance.metrics.record_rate_limit_hit(user_key, "standard")
                         raise RateLimitError(
-                            limit=self.rate_limit_max_requests,
-                            window=f"{self.rate_limit_window}s",
-                            retry_after=self.rate_limit_window
+                            limit=server_instance.rate_limit_max_requests,
+                            window=f"{server_instance.rate_limit_window}s",
+                            retry_after=server_instance.rate_limit_window
                         )
                 
                 # Validate tool exists
@@ -454,7 +457,7 @@ class MCPStandardsServer:
                 
                 # Validate input arguments
                 try:
-                    validated_args = self.input_validator.validate_tool_input(name, arguments)
+                    validated_args = server_instance.input_validator.validate_tool_input(name, arguments)
                 except ValidationError:
                     # Re-raise our custom validation errors
                     raise
@@ -469,19 +472,19 @@ class MCPStandardsServer:
                     )
                 
                 # Execute tool
-                result = await self._execute_tool(name, validated_args)
+                result = await server_instance._execute_tool(name, validated_args)
                 
                 # Log successful execution
                 logger.debug(f"Tool {name} executed successfully")
                 
                 # Record successful tool call
                 duration = time.time() - start_time
-                self.metrics.record_tool_call(name, duration, True)
+                server_instance.metrics.record_tool_call(name, duration, True)
                 
                 # Apply privacy filtering if enabled
-                if self.privacy_filter.config.detect_pii:
+                if server_instance.privacy_filter.config.detect_pii:
                     # Generate privacy report for monitoring
-                    privacy_report = self.privacy_filter.get_privacy_report(result)
+                    privacy_report = server_instance.privacy_filter.get_privacy_report(result)
                     if privacy_report["has_pii"]:
                         logger.warning(
                             f"PII detected in response for tool {name}: "
@@ -489,13 +492,13 @@ class MCPStandardsServer:
                             f"{', '.join(privacy_report['pii_types_found'])}"
                         )
                         # Filter the response
-                        filtered_result, _ = self.privacy_filter.filter_dict(result)
+                        filtered_result, _ = server_instance.privacy_filter.filter_dict(result)
                         result = filtered_result
                 
                 # Track response size
                 response_text = json.dumps(result, indent=2)
                 response_size = len(response_text.encode('utf-8'))
-                self.metrics.record_response_size(response_size, name)
+                server_instance.metrics.record_response_size(response_size, name)
                 
                 # Return successful result
                 return [TextContent(
@@ -507,7 +510,7 @@ class MCPStandardsServer:
                 # Handle structured errors
                 logger.error(f"MCP error in tool {name}: {e}", exc_info=True)
                 duration = time.time() - start_time
-                self.metrics.record_tool_call(name, duration, False, e.code.value)
+                server_instance.metrics.record_tool_call(name, duration, False, e.code.value)
                 return [TextContent(
                     type="text",
                     text=json.dumps(e.to_dict(), indent=2)
@@ -516,7 +519,7 @@ class MCPStandardsServer:
                 # Handle unexpected errors
                 logger.error(f"Unexpected error in tool {name}: {e}", exc_info=True)
                 duration = time.time() - start_time
-                self.metrics.record_tool_call(name, duration, False, type(e).__name__)
+                server_instance.metrics.record_tool_call(name, duration, False, type(e).__name__)
                 error = MCPError(
                     code=ErrorCode.SYSTEM_INTERNAL_ERROR,
                     message=f"Internal error: {str(e)}",

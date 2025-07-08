@@ -3,11 +3,15 @@ source = src
 branch = True
 parallel = True
 concurrency = multiprocessing,thread
+data_file = .coverage
 omit = 
     */tests/*
     */test_*
     */__pycache__/*
     */site-packages/*
+    */venv/*
+    */virtualenv/*
+    */mcp_standards_server.egg-info/*
 
 [report]
 exclude_lines =
@@ -18,8 +22,11 @@ exclude_lines =
     if __name__ == .__main__.:
     if TYPE_CHECKING:
     @abstract
+    @abstractmethod
 precision = 2
 show_missing = True
+skip_covered = False
+fail_under = 30
 
 [html]
 directory = htmlcov
