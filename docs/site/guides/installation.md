@@ -9,39 +9,14 @@ This guide covers all the ways to install and set up the MCP Standards Server.
 - **Memory**: 512MB minimum, 2GB recommended
 - **Disk Space**: 100MB for installation, 500MB+ for standards cache
 - **Network**: Internet connection for syncing standards
+- **Redis** (optional): For enhanced caching performance
+- **Node.js 16+** (optional): For web UI development
 
 ## Installation Methods
 
-### Method 1: Using pip (Recommended)
+### Method 1: From Source (Currently Available)
 
-The simplest way to install MCP Standards Server:
-
-```bash
-pip install mcp-standards-server
-```
-
-For user-only installation (no sudo required):
-
-```bash
-pip install --user mcp-standards-server
-```
-
-### Method 2: Using pipx (Best for CLI tools)
-
-[pipx](https://pypa.github.io/pipx/) installs Python applications in isolated environments:
-
-```bash
-# Install pipx first
-python -m pip install --user pipx
-python -m pipx ensurepath
-
-# Install MCP Standards Server
-pipx install mcp-standards-server
-```
-
-### Method 3: From Source
-
-For development or latest features:
+Clone and install from the GitHub repository:
 
 ```bash
 # Clone the repository
@@ -51,8 +26,51 @@ cd mcp-standards-server
 # Install in development mode
 pip install -e .
 
-# Or install normally
-pip install .
+# Or install with all dependencies
+pip install -e ".[full]"
+
+# For development with testing tools
+pip install -e ".[test]"
+```
+
+### Method 2: Optional Dependencies
+
+#### Redis Installation
+
+```bash
+# macOS
+brew install redis
+brew services start redis
+
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install redis-server
+sudo systemctl start redis
+
+# Windows (using WSL or Docker)
+docker run -d -p 6379:6379 redis:latest
+```
+
+#### Web UI Dependencies
+
+```bash
+# Install Node.js dependencies for web UI
+cd src/web
+npm install
+npm run build
+```
+
+### Method 3: Running the MCP Server
+
+```bash
+# Start the MCP server
+python -m src.server
+
+# Or use the CLI
+mcp-standards --help
+
+# Start with web UI
+mcp-standards web --port 8080
 ```
 
 ### Method 4: Using Docker
@@ -85,45 +103,43 @@ ENTRYPOINT ["mcp-standards"]
 
 ### Method 5: Package Managers
 
-#### Homebrew (macOS/Linux)
+#### Future Installation Methods
 
-```bash
-brew tap williamzujkowski/mcp-standards
-brew install mcp-standards-server
-```
+The following installation methods are planned for future releases:
 
-#### AUR (Arch Linux)
-
-```bash
-yay -S mcp-standards-server
-# or
-paru -S mcp-standards-server
-```
+- **pip**: `pip install mcp-standards-server`
+- **pipx**: `pipx install mcp-standards-server`
+- **Homebrew**: `brew install mcp-standards-server`
+- **Docker Hub**: `docker pull mcp-standards/server`
 
 ## Verify Installation
 
 After installation, verify everything is working:
 
 ```bash
-# Check version
-mcp-standards --version
-
 # Show help
+python -m src.cli.main --help
+
+# Or if installed in development mode
 mcp-standards --help
 
-# Run diagnostic
-mcp-standards diagnose
+# Test the server
+python -m src.server
 ```
 
 Expected output:
 ```
-MCP Standards Server v1.0.0
+MCP Standards Server
 
-✓ Python version: 3.11.0
-✓ Installation path: /usr/local/bin/mcp-standards
-✓ Config directory: /home/user/.config/mcp-standards
-✓ Cache directory: /home/user/.cache/mcp-standards
-✓ All checks passed!
+Usage: mcp-standards [OPTIONS] COMMAND [ARGS]...
+
+Commands:
+  query     Query standards based on context
+  validate  Validate code against standards
+  sync      Synchronize standards from repository
+  serve     Start the MCP server
+  web       Start the web UI
+  cache     Manage the standards cache
 ```
 
 ## Post-Installation Setup
@@ -227,7 +243,7 @@ If `mcp-standards` is not found after installation:
 
 3. **Use python -m**:
    ```bash
-   python -m mcp_standards --help
+   python -m src.cli.main --help
    ```
 
 ### Permission Denied

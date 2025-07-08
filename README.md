@@ -4,14 +4,28 @@ A Model Context Protocol (MCP) server that provides intelligent, context-aware a
 
 ## Features
 
-- **Intelligent Standard Selection**: Rule-based engine automatically selects relevant standards based on project context
-- **Flexible Rule System**: Define complex conditions using AND/OR/NOT logic with various operators
-- **Priority-Based Conflict Resolution**: Handles competing standards through configurable priorities
-- **Automatic Standards Synchronization**: Fetches and caches standards from GitHub repository with version tracking
-- **Extensible Architecture**: Easy to add new rules, standards, and evaluation logic
-- **Decision Tree Visualization**: Understand rule relationships and decision paths
-- **Token Optimization**: Efficient standard delivery optimized for LLM consumption
-- **Rate Limit Handling**: Intelligent GitHub API rate limit management with automatic retry
+### Core Capabilities
+- **25 Comprehensive Standards**: Complete coverage of software development lifecycle
+- **Intelligent Standard Selection**: Rule-based engine with 40+ detection rules
+- **MCP Server Implementation**: Full Model Context Protocol support with multiple tools
+- **Standards Generation System**: Template-based creation with quality assurance
+- **Hybrid Vector Storage**: ChromaDB + in-memory for semantic search
+- **Multi-Language Analyzers**: Python, JavaScript, Go, Java, Rust, TypeScript support
+
+### Advanced Features
+- **Redis Caching Layer**: L1/L2 architecture for performance optimization
+- **Web UI**: React/TypeScript interface for browsing and testing standards
+- **CLI Tools**: Comprehensive command-line interface with documentation
+- **Performance Benchmarking**: Continuous monitoring and optimization
+- **Token Optimization**: Multiple compression formats for LLM efficiency
+- **NIST Compliance**: NIST 800-53r5 control mapping and validation
+- **Community Features**: Review process, contribution guidelines, analytics
+
+## Requirements
+
+- Python 3.8 or higher
+- Redis (optional, for caching)
+- Node.js 16+ (optional, for web UI)
 
 ## Quick Start
 
@@ -27,6 +41,14 @@ pip install -e .
 
 # Or install with all dependencies
 pip install -e ".[full]"
+
+# For development with testing tools
+pip install -e ".[test]"
+
+# Install Redis (optional, for caching)
+# macOS: brew install redis
+# Ubuntu: sudo apt-get install redis-server
+# Windows: Use WSL or Docker
 ```
 
 ### Basic Usage
@@ -52,10 +74,24 @@ result = engine.evaluate(context)
 print(f"Selected standards: {result['resolved_standards']}")
 ```
 
-### Running the Demo
+### Running the MCP Server
 
 ```bash
-python examples/rule_engine_demo.py
+# Start the MCP server
+python -m src.server
+
+# Or use the CLI
+mcp-standards --help
+
+# Run the web UI
+mcp-standards web
+```
+
+### Using the Universal Project Kickstart
+
+```bash
+# Copy the kickstart prompt for any LLM
+cat kickstart.md
 ```
 
 ### Synchronizing Standards
@@ -122,45 +158,51 @@ Example rule:
 }
 ```
 
-## Supported Project Types
+## Available Standards
 
-The rule engine supports automatic standard selection for:
+The system includes 25 comprehensive standards:
 
-- **Web Applications**: React, Vue, Angular, and vanilla JavaScript
-- **APIs**: REST and GraphQL APIs in Python, Node.js, and other languages
-- **Mobile Apps**: React Native and other mobile frameworks
-- **Microservices**: Cloud-native and containerized applications
-- **Data Pipelines**: ETL and data processing workflows
-- **Machine Learning**: ML project structure and deployment
-- **MCP Servers**: Model Context Protocol server development
+### Specialty Domains (8)
+- AI/ML Operations, Blockchain/Web3, IoT/Edge Computing, Gaming Development
+- AR/VR Development, Advanced API Design, Database Optimization, Green Computing
+
+### Testing & Quality (3)
+- Advanced Testing, Code Review, Performance Optimization
+
+### Security & Compliance (3)
+- Security Review & Audit, Data Privacy, Business Continuity
+
+### Documentation & Communication (4)
+- Technical Content, Documentation Writing, Team Collaboration, Project Planning
+
+### Operations & Infrastructure (4)
+- Deployment & Release, Monitoring & Incident Response, SRE, Technical Debt
+
+### User Experience (3)
+- Advanced Accessibility, Internationalization, Developer Experience
+
+See [STANDARDS_COMPLETE_CATALOG.md](./STANDARDS_COMPLETE_CATALOG.md) for details.
 
 ## Architecture
 
 ```
 mcp-standards-server/
 ├── src/
-│   ├── cli/
-│   │   ├── __init__.py
-│   │   └── main.py                # CLI interface
-│   └── core/
-│       └── standards/
-│           ├── rule_engine.py      # Main rule engine implementation
-│           ├── sync.py             # Standards synchronization module
-│           └── __init__.py
+│   ├── core/
+│   │   ├── mcp/              # MCP server implementation
+│   │   ├── standards/        # Standards engine & storage
+│   │   └── compliance/       # NIST compliance mapping
+│   ├── analyzers/            # Language-specific analyzers
+│   ├── generators/           # Standards generation system
+│   ├── cli/                  # CLI interface
+│   └── web/                  # React/TypeScript UI
 ├── data/
-│   └── standards/
-│       ├── cache/                  # Cached standards files
-│       ├── meta/
-│       │   └── standard-selection-rules.json  # Rule definitions
-│       └── sync_config.yaml        # Sync configuration
-├── tests/
-│   └── unit/
-│       └── core/
-│           └── standards/
-│               ├── test_rule_engine.py  # Rule engine tests
-│               └── test_sync.py         # Sync module tests
-└── examples/
-    └── rule_engine_demo.py  # Usage examples
+│   └── standards/            # 25 comprehensive standards
+│       ├── meta/            # Rule engine configuration
+│       └── cache/           # Redis-backed cache
+├── templates/                # Standard generation templates
+├── tests/                    # Comprehensive test suite
+└── benchmarks/              # Performance benchmarking
 ```
 
 ## Testing
@@ -188,9 +230,16 @@ pytest tests/unit/core/standards/test_rule_engine.py
 
 ## Documentation
 
+### Quick Start
+- [Universal Project Kickstart](./kickstart.md) - Copy-paste prompt for any LLM
+- [Standards Complete Catalog](./STANDARDS_COMPLETE_CATALOG.md) - All 25 standards
+- [Creating Standards Guide](./docs/CREATING_STANDARDS_GUIDE.md) - How to create new standards
+
+### Technical Documentation
+- [Claude Integration Guide](CLAUDE.md) - Main system documentation
 - [Rule Engine Documentation](src/core/standards/README_RULE_ENGINE.md)
+- [API Documentation](./docs/api/mcp-tools.md)
 - [Project Plan](project_plan.md)
-- [Claude Integration Guide](CLAUDE.md)
 
 ## License
 

@@ -1,11 +1,11 @@
 # Complete Standards Catalog - MCP Standards Server
 
 **Last Updated:** 2025-01-08  
-**Total Standards:** 25+ comprehensive standards covering all aspects of software development
+**Total Standards:** 25 comprehensive standards covering all aspects of software development
 
 ## Standards Overview
 
-### 🚀 Original Specialty Domain Standards (8)
+### 🚀 Specialty Domain Standards (8)
 1. **AI/ML Operations (MLOps)** - Model lifecycle, ethical AI, monitoring
 2. **Blockchain/Web3 Development** - Smart contracts, DeFi, security
 3. **IoT/Edge Computing** - Device management, protocols, optimization
@@ -15,29 +15,31 @@
 7. **Database Design & Optimization** - Schema design, performance tuning
 8. **Sustainability & Green Computing** - Carbon footprint, efficiency
 
-### 🔧 Critical Project Lifecycle Standards (5)
+### 🔧 Testing & Quality Standards (3)
 9. **Advanced Testing Methodologies** - Performance, security, chaos engineering
-10. **Security Review & Audit Process** - Threat modeling, vulnerability management
-11. **Code Review Best Practices** - Review workflows, automated checks
-12. **Deployment & Release Management** - Release strategies, feature flags
-13. **Performance Tuning & Optimization** - Profiling, caching, scaling
+10. **Code Review Best Practices** - Review workflows, automated checks
+11. **Performance Tuning & Optimization** - Profiling, caching, scaling
 
-### 📝 Content & Communication Standards (4)
-14. **Technical Content Creation** - Blog posts, tutorials, videos
-15. **Documentation Writing** - API docs, READMEs, architecture docs
-16. **Team Collaboration & Communication** - Remote work, meetings, mentoring
-17. **Project Planning & Estimation** - Agile planning, roadmaps, risk
+### 🛡️ Security & Compliance Standards (3)
+12. **Security Review & Audit Process** - Threat modeling, vulnerability management
+13. **Data Privacy & Compliance** - GDPR/CCPA, PII handling, auditing
+14. **Business Continuity & Disaster Recovery** - BCP/DR planning, testing
 
-### 🏭 Operational Excellence Standards (4)
-18. **Monitoring & Incident Response** - SLIs/SLOs, alerting, post-mortems
-19. **Site Reliability Engineering (SRE)** - Error budgets, toil reduction
-20. **Technical Debt Management** - Identification, prioritization, ROI
-21. **Business Continuity & Disaster Recovery** - BCP/DR planning, testing
+### 📝 Documentation & Communication Standards (4)
+15. **Technical Content Creation** - Blog posts, tutorials, videos
+16. **Documentation Writing** - API docs, READMEs, architecture docs
+17. **Team Collaboration & Communication** - Remote work, meetings, mentoring
+18. **Project Planning & Estimation** - Agile planning, roadmaps, risk
 
-### 🎯 Specialized Development Standards (4)
-22. **Advanced Accessibility** - WCAG 2.1, cognitive accessibility, testing
-23. **Internationalization & Localization** - i18n patterns, RTL, translation
-24. **Data Privacy & Compliance** - GDPR/CCPA, PII handling, auditing
+### 🏭 Operations & Infrastructure Standards (4)
+19. **Deployment & Release Management** - Release strategies, feature flags
+20. **Monitoring & Incident Response** - SLIs/SLOs, alerting, post-mortems
+21. **Site Reliability Engineering (SRE)** - Error budgets, toil reduction
+22. **Technical Debt Management** - Identification, prioritization, ROI
+
+### 🎯 User Experience & Accessibility Standards (3)
+23. **Advanced Accessibility** - WCAG 2.1, cognitive accessibility, testing
+24. **Internationalization & Localization** - i18n patterns, RTL, translation
 25. **Developer Experience (DX)** - API design, SDKs, CLI tools
 
 ## Key Features Across All Standards
