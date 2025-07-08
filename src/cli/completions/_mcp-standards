@@ -1,0 +1,222 @@
+#compdef mcp-standards
+# ZSH completion script for mcp-standards
+#
+# Installation:
+#   - Copy to a directory in your $fpath (e.g., /usr/local/share/zsh/site-functions/)
+#   OR
+#   - Add to ~/.zshrc: fpath=(~/path/to/completions $fpath)
+
+_mcp_standards() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    # Global options
+    local global_options=(
+        '(-h --help)'{-h,--help}'[Show help message]'
+        '(-v --verbose)'{-v,--verbose}'[Enable verbose output]'
+        '(-c --config)'{-c,--config}'[Use custom configuration file]:config file:_files -g "*.{yaml,yml}"'
+        '--no-color[Disable colored output]'
+        '--json[Output in JSON format]'
+        '--version[Show version information]'
+    )
+
+    # Main commands
+    local commands=(
+        'sync:Synchronize standards from repository'
+        'status:Show sync status and statistics'
+        'cache:Manage local cache'
+        'config:Show or manage configuration'
+        'query:Query standards based on context'
+        'validate:Validate code against standards'
+        'serve:Start MCP server'
+    )
+
+    # First, complete main commands and global options
+    _arguments -C \
+        "$global_options[@]" \
+        '1: :->command' \
+        '*:: :->args'
+
+    case $state in
+        command)
+            _describe -t commands 'mcp-standards commands' commands
+            ;;
+        args)
+            case $line[1] in
+                sync)
+                    _mcp_standards_sync
+                    ;;
+                status)
+                    _mcp_standards_status
+                    ;;
+                cache)
+                    _mcp_standards_cache
+                    ;;
+                config)
+                    _mcp_standards_config
+                    ;;
+                query)
+                    _mcp_standards_query
+                    ;;
+                validate)
+                    _mcp_standards_validate
+                    ;;
+                serve)
+                    _mcp_standards_serve
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+# Sync command completion
+_mcp_standards_sync() {
+    _arguments \
+        '(-f --force)'{-f,--force}'[Force sync all files]' \
+        '--check[Check for updates without downloading]' \
+        '*--include[Include files matching pattern]:pattern:' \
+        '*--exclude[Exclude files matching pattern]:pattern:' \
+        '--parallel[Number of parallel downloads]:number:(1 2 5 10 20)' \
+        '--retry[Number of retry attempts]:number:(1 2 3 5)' \
+        '--timeout[Timeout in seconds]:seconds:(10 30 60 120)'
+}
+
+# Status command completion
+_mcp_standards_status() {
+    _arguments \
+        '--json[Output in JSON format]' \
+        '--detailed[Show detailed information]' \
+        '--check-health[Perform health checks]' \
+        '--summary[Show only summary information]'
+}
+
+# Cache command completion
+_mcp_standards_cache() {
+    _arguments \
+        '--list[List all cached files]' \
+        '--clear[Clear all cached files]' \
+        '--clear-outdated[Clear only outdated files]' \
+        '--analyze[Analyze cache usage]' \
+        '--verify[Verify cache integrity]' \
+        '--export[Export cache]:export path:_files' \
+        '--import[Import cache]:import path:_files' \
+        '--size-limit[Set cache size limit]:size (MB):'
+}
+
+# Config command completion
+_mcp_standards_config() {
+    local config_keys=(
+        'repository.owner'
+        'repository.repo'
+        'repository.branch'
+        'repository.path'
+        'sync.cache_ttl_hours'
+        'sync.parallel_downloads'
+        'cache.directory'
+        'cache.max_size_mb'
+        'server.port'
+        'server.host'
+    )
+
+    _arguments \
+        '--init[Initialize new configuration]' \
+        '--show[Display current configuration]' \
+        '--validate[Validate configuration]' \
+        '--edit[Open configuration in editor]' \
+        '--get[Get configuration value]:key:($config_keys)' \
+        '--set[Set configuration value]:key:($config_keys):value:' \
+        '--schema[Show configuration schema]' \
+        '--migrate[Migrate from old format]'
+}
+
+# Query command completion
+_mcp_standards_query() {
+    local project_types=(
+        'web-application:Web application'
+        'api:API service'
+        'cli:Command-line tool'
+        'library:Library/package'
+        'mobile:Mobile application'
+        'desktop:Desktop application'
+        'microservice:Microservice'
+    )
+
+    local frameworks=(
+        'react' 'vue' 'angular' 'svelte' 'nextjs'
+        'express' 'fastapi' 'django' 'flask' 'rails'
+        'spring' 'laravel' 'symfony'
+    )
+
+    local languages=(
+        'javascript' 'typescript' 'python' 'java' 'go'
+        'rust' 'ruby' 'php' 'csharp' 'swift' 'kotlin'
+    )
+
+    _arguments \
+        '--project-type[Type of project]:type:->project_types' \
+        '*--framework[Framework used]:framework:($frameworks)' \
+        '*--language[Programming language]:language:($languages)' \
+        '*--requirements[Special requirements]:requirement:(accessibility security performance compliance)' \
+        '*--tags[Filter by tags]:tag:' \
+        '--format[Output format]:format:(text json yaml markdown)' \
+        '--detailed[Include detailed content]' \
+        '--token-budget[Token limit]:tokens:' \
+        '--semantic[Natural language query]:query:' \
+        '--context[Context file]:file:_files -g "*.json"'
+
+    case $state in
+        project_types)
+            _describe -t project-types 'project type' project_types
+            ;;
+    esac
+}
+
+# Validate command completion
+_mcp_standards_validate() {
+    _arguments \
+        '--fix[Automatically fix issues]' \
+        '--dry-run[Preview fixes without applying]' \
+        '--format[Output format]:format:(text json junit sarif)' \
+        '--severity[Minimum severity]:severity:(error warning info)' \
+        '--fail-on[Fail on severity]:severity:(error warning info)' \
+        '--output[Output file]:file:_files' \
+        '--standards[Standards file]:file:_files -g "*.{yaml,yml,json}"' \
+        '--auto-detect[Auto-detect standards]' \
+        '*--ignore[Ignore pattern]:pattern:' \
+        '--config[Validation config]:file:_files -g "*.{yaml,yml}"' \
+        '--parallel[Parallel workers]:workers:(1 2 4 8 16)' \
+        '*:path:_files'
+}
+
+# Serve command completion
+_mcp_standards_serve() {
+    _arguments \
+        '--host[Host to bind]:host:(localhost 0.0.0.0 127.0.0.1)' \
+        '--port[Port to listen on]:port:(3000 3001 8080 8081)' \
+        '--stdio[Run in stdio mode]' \
+        '--socket[Unix socket path]:path:_files' \
+        '--daemon[Run as daemon]' \
+        '--log-level[Log level]:level:(debug info warning error)' \
+        '--workers[Number of workers]:workers:(auto 1 2 4 8 16)' \
+        '--auth[Authentication type]:type:(none token oauth)' \
+        '--tls-cert[TLS certificate]:file:_files -g "*.{pem,crt}"' \
+        '--tls-key[TLS key]:file:_files -g "*.{pem,key}"'
+}
+
+# Helper function for file patterns
+_mcp_patterns() {
+    local patterns=(
+        '*.yaml:YAML files'
+        '*.yml:YAML files (short)'
+        '*.json:JSON files'
+        '*.md:Markdown files'
+        '**/*.js:All JavaScript files'
+        '**/*.py:All Python files'
+        'src/**:All files in src'
+        '*.test.*:Test files'
+        '*.spec.*:Spec files'
+    )
+    _describe -t patterns 'file pattern' patterns
+}
+
+_mcp_standards "$@"

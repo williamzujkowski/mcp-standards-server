@@ -1,0 +1,423 @@
+"""Cache decorators for easy integration with methods and functions."""
+
+import asyncio
+import functools
+import hashlib
+import inspect
+import logging
+from typing import Any, Callable, Optional, Union, Dict, List, Set
+from dataclasses import dataclass
+
+from .redis_client import RedisCache, get_cache
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class CacheKeyConfig:
+    """Configuration for cache key generation."""
+    
+    prefix: str
+    version: str = "v1"
+    include_args: bool = True
+    include_kwargs: bool = True
+    include_self: bool = False
+    exclude_args: Set[str] = None
+    custom_key_func: Optional[Callable] = None
+    
+    def __post_init__(self):
+        if self.exclude_args is None:
+            self.exclude_args = set()
+
+
+def generate_cache_key(
+    func: Callable,
+    args: tuple,
+    kwargs: dict,
+    config: CacheKeyConfig
+) -> str:
+    """Generate cache key from function and arguments."""
+    if config.custom_key_func:
+        return config.custom_key_func(func, args, kwargs)
+        
+    key_parts = [config.prefix, config.version, func.__name__]
+    
+    # Get function signature for proper argument mapping
+    sig = inspect.signature(func)
+    bound_args = sig.bind(*args, **kwargs)
+    bound_args.apply_defaults()
+    
+    # Build key from arguments
+    arg_parts = []
+    
+    for param_name, param_value in bound_args.arguments.items():
+        # Skip excluded arguments
+        if param_name in config.exclude_args:
+            continue
+            
+        # Skip self/cls if not included
+        if param_name in ('self', 'cls') and not config.include_self:
+            continue
+            
+        # Skip args/kwargs based on config
+        if param_name in sig.parameters:
+            param = sig.parameters[param_name]
+            if param.kind == inspect.Parameter.VAR_POSITIONAL and not config.include_args:
+                continue
+            if param.kind == inspect.Parameter.VAR_KEYWORD and not config.include_kwargs:
+                continue
+                
+        # Convert value to string representation
+        try:
+            if isinstance(param_value, (str, int, float, bool, type(None))):
+                value_str = str(param_value)
+            elif isinstance(param_value, (list, tuple, dict, set)):
+                value_str = json.dumps(param_value, sort_keys=True)
+            else:
+                # For complex objects, use repr or str
+                value_str = repr(param_value)
+        except Exception:
+            # Fallback to object id for unhashable objects
+            value_str = f"obj_{id(param_value)}"
+            
+        arg_parts.append(f"{param_name}:{value_str}")
+        
+    if arg_parts:
+        key_parts.append(hashlib.md5(":".join(arg_parts).encode()).hexdigest())
+        
+    return ":".join(key_parts)
+
+
+def cache_result(
+    prefix: str,
+    ttl: Optional[int] = None,
+    version: str = "v1",
+    cache: Optional[RedisCache] = None,
+    include_args: bool = True,
+    include_kwargs: bool = True,
+    include_self: bool = False,
+    exclude_args: Optional[List[str]] = None,
+    custom_key_func: Optional[Callable] = None,
+    condition: Optional[Callable] = None,
+    on_cached: Optional[Callable] = None,
+    on_computed: Optional[Callable] = None
+) -> Callable:
+    """
+    Decorator to cache function/method results.
+    
+    Args:
+        prefix: Cache key prefix (e.g., "search", "standards")
+        ttl: Time to live in seconds (None for default)
+        version: Cache version for invalidation
+        cache: RedisCache instance (None for global)
+        include_args: Include positional args in cache key
+        include_kwargs: Include keyword args in cache key
+        include_self: Include self/cls in cache key
+        exclude_args: List of argument names to exclude
+        custom_key_func: Custom function to generate cache key
+        condition: Function to determine if result should be cached
+        on_cached: Callback when result is retrieved from cache
+        on_computed: Callback when result is computed
+        
+    Examples:
+        @cache_result("search", ttl=300)
+        def search_standards(query: str) -> List[Standard]:
+            # Expensive search operation
+            return results
+            
+        @cache_result("user", include_self=True)
+        async def get_user_data(self, user_id: str) -> dict:
+            # User-specific data
+            return data
+    """
+    
+    def decorator(func: Callable) -> Callable:
+        # Determine if function is async
+        is_async = asyncio.iscoroutinefunction(func)
+        
+        # Create cache key config
+        key_config = CacheKeyConfig(
+            prefix=prefix,
+            version=version,
+            include_args=include_args,
+            include_kwargs=include_kwargs,
+            include_self=include_self,
+            exclude_args=set(exclude_args or []),
+            custom_key_func=custom_key_func
+        )
+        
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            # Get cache instance
+            cache_instance = cache or get_cache()
+            
+            # Check condition
+            if condition and not condition(*args, **kwargs):
+                return await func(*args, **kwargs)
+                
+            # Generate cache key
+            try:
+                cache_key = generate_cache_key(func, args, kwargs, key_config)
+            except Exception as e:
+                logger.warning(f"Failed to generate cache key: {e}")
+                return await func(*args, **kwargs)
+                
+            # Try to get from cache
+            try:
+                cached_value = await cache_instance.async_get(cache_key)
+                if cached_value is not None:
+                    if on_cached:
+                        on_cached(cache_key, cached_value)
+                    logger.debug(f"Cache hit for key: {cache_key}")
+                    return cached_value
+            except Exception as e:
+                logger.warning(f"Cache get failed: {e}")
+                
+            # Compute result
+            result = await func(*args, **kwargs)
+            
+            # Store in cache
+            try:
+                await cache_instance.async_set(cache_key, result, ttl=ttl)
+                if on_computed:
+                    on_computed(cache_key, result)
+                logger.debug(f"Cached result for key: {cache_key}")
+            except Exception as e:
+                logger.warning(f"Cache set failed: {e}")
+                
+            return result
+            
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            # Get cache instance
+            cache_instance = cache or get_cache()
+            
+            # Check condition
+            if condition and not condition(*args, **kwargs):
+                return func(*args, **kwargs)
+                
+            # Generate cache key
+            try:
+                cache_key = generate_cache_key(func, args, kwargs, key_config)
+            except Exception as e:
+                logger.warning(f"Failed to generate cache key: {e}")
+                return func(*args, **kwargs)
+                
+            # Try to get from cache
+            try:
+                cached_value = cache_instance.get(cache_key)
+                if cached_value is not None:
+                    if on_cached:
+                        on_cached(cache_key, cached_value)
+                    logger.debug(f"Cache hit for key: {cache_key}")
+                    return cached_value
+            except Exception as e:
+                logger.warning(f"Cache get failed: {e}")
+                
+            # Compute result
+            result = func(*args, **kwargs)
+            
+            # Store in cache
+            try:
+                cache_instance.set(cache_key, result, ttl=ttl)
+                if on_computed:
+                    on_computed(cache_key, result)
+                logger.debug(f"Cached result for key: {cache_key}")
+            except Exception as e:
+                logger.warning(f"Cache set failed: {e}")
+                
+            return result
+            
+        # Add cache control methods
+        wrapper = async_wrapper if is_async else sync_wrapper
+        wrapper.cache_key_config = key_config
+        wrapper.invalidate = functools.partial(invalidate_for_function, func, key_config)
+        
+        return wrapper
+        
+    return decorator
+
+
+def invalidate_cache(
+    pattern: Optional[str] = None,
+    prefix: Optional[str] = None,
+    cache: Optional[RedisCache] = None,
+    keys: Optional[List[str]] = None
+) -> Callable:
+    """
+    Decorator to invalidate cache entries after function execution.
+    
+    Args:
+        pattern: Pattern to match keys for deletion (e.g., "search:*")
+        prefix: Prefix to match keys for deletion
+        cache: RedisCache instance (None for global)
+        keys: Specific keys to invalidate
+        
+    Examples:
+        @invalidate_cache(prefix="standards")
+        def update_standard(standard_id: str, data: dict):
+            # Update operation that invalidates standards cache
+            pass
+            
+        @invalidate_cache(pattern="user:*:{user_id}")
+        async def delete_user(user_id: str):
+            # Delete user and invalidate all user caches
+            pass
+    """
+    
+    def decorator(func: Callable) -> Callable:
+        is_async = asyncio.iscoroutinefunction(func)
+        
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            # Execute function first
+            result = await func(*args, **kwargs)
+            
+            # Invalidate cache
+            cache_instance = cache or get_cache()
+            
+            try:
+                if keys:
+                    for key in keys:
+                        await cache_instance.async_delete(key)
+                elif pattern:
+                    # Substitute pattern with actual values from args/kwargs
+                    actual_pattern = pattern
+                    sig = inspect.signature(func)
+                    bound_args = sig.bind(*args, **kwargs)
+                    bound_args.apply_defaults()
+                    
+                    for param_name, param_value in bound_args.arguments.items():
+                        placeholder = f"{{{param_name}}}"
+                        if placeholder in actual_pattern:
+                            actual_pattern = actual_pattern.replace(placeholder, str(param_value))
+                            
+                    await cache_instance.async_delete_pattern(actual_pattern)
+                elif prefix:
+                    await cache_instance.async_delete_pattern(f"{prefix}:*")
+                    
+                logger.debug(f"Cache invalidated after {func.__name__}")
+                
+            except Exception as e:
+                logger.error(f"Cache invalidation failed: {e}")
+                
+            return result
+            
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            # Execute function first
+            result = func(*args, **kwargs)
+            
+            # Invalidate cache
+            cache_instance = cache or get_cache()
+            
+            try:
+                if keys:
+                    for key in keys:
+                        cache_instance.delete(key)
+                elif pattern:
+                    # Substitute pattern with actual values from args/kwargs
+                    actual_pattern = pattern
+                    sig = inspect.signature(func)
+                    bound_args = sig.bind(*args, **kwargs)
+                    bound_args.apply_defaults()
+                    
+                    for param_name, param_value in bound_args.arguments.items():
+                        placeholder = f"{{{param_name}}}"
+                        if placeholder in actual_pattern:
+                            actual_pattern = actual_pattern.replace(placeholder, str(param_value))
+                            
+                    cache_instance.delete_pattern(actual_pattern)
+                elif prefix:
+                    cache_instance.delete_pattern(f"{prefix}:*")
+                    
+                logger.debug(f"Cache invalidated after {func.__name__}")
+                
+            except Exception as e:
+                logger.error(f"Cache invalidation failed: {e}")
+                
+            return result
+            
+        return async_wrapper if is_async else sync_wrapper
+        
+    return decorator
+
+
+def cache_key(*args, **kwargs) -> str:
+    """
+    Generate a cache key from arguments.
+    
+    Examples:
+        key = cache_key("user", user_id, role="admin")
+        # Returns something like "user:123:role:admin"
+    """
+    return RedisCache.generate_cache_key(*args, **kwargs)
+
+
+def invalidate_for_function(
+    func: Callable,
+    key_config: CacheKeyConfig,
+    *args,
+    **kwargs
+):
+    """Invalidate cache for specific function call."""
+    cache_instance = get_cache()
+    
+    try:
+        cache_key = generate_cache_key(func, args, kwargs, key_config)
+        cache_instance.delete(cache_key)
+        logger.debug(f"Invalidated cache for key: {cache_key}")
+    except Exception as e:
+        logger.error(f"Failed to invalidate cache: {e}")
+
+
+class CacheManager:
+    """
+    Context manager for batch cache operations.
+    
+    Examples:
+        async with CacheManager() as cache:
+            results = await cache.mget(["key1", "key2", "key3"])
+            await cache.mset({"key4": value4, "key5": value5})
+    """
+    
+    def __init__(self, cache: Optional[RedisCache] = None):
+        self.cache = cache or get_cache()
+        self.batch_gets = []
+        self.batch_sets = {}
+        
+    async def __aenter__(self):
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        # Execute any pending batch operations
+        if self.batch_sets:
+            await self.cache.async_mset(self.batch_sets)
+            
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Execute any pending batch operations
+        if self.batch_sets:
+            self.cache.mset(self.batch_sets)
+            
+    async def get(self, key: str) -> Any:
+        """Get value from cache."""
+        return await self.cache.async_get(key)
+        
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None):
+        """Set value in cache."""
+        await self.cache.async_set(key, value, ttl)
+        
+    async def mget(self, keys: List[str]) -> Dict[str, Any]:
+        """Get multiple values."""
+        return await self.cache.async_mget(keys)
+        
+    async def mset(self, mapping: Dict[str, Any], ttl: Optional[int] = None):
+        """Set multiple values."""
+        await self.cache.async_mset(mapping, ttl)
+
+
+# Import json for key generation
+import json

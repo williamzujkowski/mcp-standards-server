@@ -1,0 +1,185 @@
+.\" Manpage for mcp-standards sync
+.TH MCP-STANDARDS-SYNC 1 "January 2025" "1.0.0" "MCP Standards Server Manual"
+
+.SH NAME
+mcp-standards-sync \- Synchronize standards from repository
+
+.SH SYNOPSIS
+.B mcp-standards sync
+[\fB\-f\fR|\fB\-\-force\fR]
+[\fB\-\-check\fR]
+[\fB\-\-include\fR \fIPATTERN\fR]
+[\fB\-\-exclude\fR \fIPATTERN\fR]
+[\fB\-\-parallel\fR \fIN\fR]
+[\fB\-\-retry\fR \fIN\fR]
+[\fB\-\-timeout\fR \fISECONDS\fR]
+
+.SH DESCRIPTION
+The
+.B sync
+command downloads standards files from a configured GitHub repository and caches them locally. It supports incremental updates, force synchronization, and checking for updates without downloading.
+
+.SH OPTIONS
+.TP
+.BR \-f ", " \-\-force
+Force synchronization of all files, ignoring cache TTL. Downloads all files regardless of whether they are up to date.
+
+.TP
+.BR \-\-check
+Check for updates without downloading files. Shows which files are outdated.
+
+.TP
+.BR \-\-include " " \fIPATTERN\fR
+Include only files matching the glob pattern. Can be specified multiple times.
+
+.TP
+.BR \-\-exclude " " \fIPATTERN\fR
+Exclude files matching the glob pattern. Can be specified multiple times.
+
+.TP
+.BR \-\-parallel " " \fIN\fR
+Number of parallel downloads. Default: 5. Range: 1-20.
+
+.TP
+.BR \-\-retry " " \fIN\fR
+Number of retry attempts for failed downloads. Default: 3.
+
+.TP
+.BR \-\-timeout " " \fISECONDS\fR
+Timeout for each file download in seconds. Default: 30.
+
+.TP
+.BR \-q ", " \-\-quiet
+Suppress progress output. Only show errors.
+
+.TP
+.BR \-v ", " \-\-verbose
+Show detailed sync progress and debug information.
+
+.SH CONFIGURATION
+The sync command reads configuration from:
+.nf
+repository:
+  owner: williamzujkowski
+  repo: standards
+  branch: main
+  path: standards
+  auth:
+    type: token
+    token: ghp_xxxxxxxxxxxx
+
+sync:
+  cache_ttl_hours: 24
+  parallel_downloads: 5
+  retry_attempts: 3
+  timeout_seconds: 30
+  include_patterns:
+    - "*.yaml"
+    - "*.md"
+  exclude_patterns:
+    - "*.draft.*"
+.fi
+
+.SH EXAMPLES
+.TP
+Basic sync:
+.B mcp-standards sync
+
+.TP
+Check for updates:
+.B mcp-standards sync --check
+
+.TP
+Force sync all files:
+.B mcp-standards sync --force
+
+.TP
+Sync only YAML files:
+.B mcp-standards sync --include "*.yaml"
+
+.TP
+Exclude draft files:
+.B mcp-standards sync --exclude "*.draft.*"
+
+.TP
+Increase parallel downloads:
+.B mcp-standards sync --parallel 10
+
+.SH CACHING
+Files are cached based on the configured TTL (Time To Live). The cache prevents unnecessary downloads and reduces API calls. Cache location: ~/.cache/mcp-standards/
+
+.SH AUTHENTICATION
+GitHub API authentication can be configured to increase rate limits:
+
+.TP
+Personal Access Token:
+.nf
+export MCP_STANDARDS_REPOSITORY_AUTH_TOKEN=ghp_xxxxxxxxxxxx
+.fi
+
+.TP
+GitHub App:
+Configure in .mcp-standards.yaml with app_id and private_key_path.
+
+.SH EXIT STATUS
+.TP
+.B 0
+Sync completed successfully
+
+.TP
+.B 1
+Sync failed or partially failed
+
+.TP
+.B 2
+Configuration error
+
+.TP
+.B 3
+Network error
+
+.TP
+.B 4
+Authentication error
+
+.TP
+.B 5
+Rate limit exceeded
+
+.SH ENVIRONMENT
+.TP
+.B MCP_STANDARDS_REPOSITORY_OWNER
+Repository owner (overrides config)
+
+.TP
+.B MCP_STANDARDS_REPOSITORY_REPO  
+Repository name (overrides config)
+
+.TP
+.B MCP_STANDARDS_REPOSITORY_BRANCH
+Branch to sync from (overrides config)
+
+.TP
+.B MCP_STANDARDS_REPOSITORY_AUTH_TOKEN
+GitHub authentication token
+
+.TP
+.B HTTPS_PROXY
+Proxy server for HTTPS requests
+
+.SH FILES
+.TP
+.I ~/.cache/mcp-standards/
+Default cache directory
+
+.TP
+.I ~/.cache/mcp-standards/metadata.json
+Sync metadata and timestamps
+
+.SH SEE ALSO
+.BR mcp-standards (1),
+.BR mcp-standards-cache (1),
+.BR mcp-standards-status (1)
+
+.SH BUGS
+Report bugs at: https://github.com/williamzujkowski/mcp-standards-server/issues
