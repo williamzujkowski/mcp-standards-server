@@ -9,6 +9,137 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 from .metadata import StandardMetadata
+from dataclasses import dataclass
+from typing import Union
+
+
+@dataclass
+class ValidationResult:
+    """Result of standard validation."""
+    is_valid: bool
+    errors: List[str]
+    warnings: List[str]
+    quality_metrics: Dict[str, float]
+    completeness_score: float
+    suggestions: List[str]
+
+
+class StandardValidator:
+    """Validator for individual standards (compatible with MCP server)."""
+    
+    def __init__(self):
+        """Initialize the validator."""
+        self.nist_controls = self._load_nist_controls()
+        self.compliance_frameworks = self._load_compliance_frameworks()
+    
+    def validate(self, content: Union[Dict[str, Any], str]) -> ValidationResult:
+        """
+        Validate a standard content.
+        
+        Args:
+            content: Standard content as dict or string
+            
+        Returns:
+            ValidationResult object
+        """
+        errors = []
+        warnings = []
+        suggestions = []
+        quality_metrics = {}
+        
+        # Parse content if it's a string
+        if isinstance(content, str):
+            try:
+                import yaml
+                content = yaml.safe_load(content)
+            except Exception as e:
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[f"Failed to parse content: {e}"],
+                    warnings=[],
+                    quality_metrics={},
+                    completeness_score=0.0,
+                    suggestions=[]
+                )
+        
+        # Required fields validation
+        required_fields = ['title', 'description', 'domain']
+        for field in required_fields:
+            if not content.get(field):
+                errors.append(f"Missing required field: {field}")
+        
+        # Quality metrics calculation
+        quality_metrics['completeness'] = self._calculate_completeness(content)
+        quality_metrics['clarity'] = self._calculate_clarity(content)
+        quality_metrics['actionability'] = self._calculate_actionability(content)
+        
+        # Calculate overall completeness score
+        completeness_score = quality_metrics['completeness']
+        
+        # Generate suggestions
+        if quality_metrics['completeness'] < 0.8:
+            suggestions.append("Add more comprehensive documentation")
+        if quality_metrics['actionability'] < 0.6:
+            suggestions.append("Include more practical examples and implementation guides")
+        
+        # Check for warnings
+        if not content.get('created_date'):
+            warnings.append("Missing creation date")
+        if not content.get('author'):
+            warnings.append("Missing author information")
+        
+        is_valid = len(errors) == 0
+        
+        return ValidationResult(
+            is_valid=is_valid,
+            errors=errors,
+            warnings=warnings,
+            quality_metrics=quality_metrics,
+            completeness_score=completeness_score,
+            suggestions=suggestions
+        )
+    
+    def _calculate_completeness(self, content: Dict[str, Any]) -> float:
+        """Calculate completeness score."""
+        required = ['title', 'description', 'domain', 'author']
+        optional = ['examples', 'implementation_guides', 'code_examples', 'guidelines']
+        
+        score = 0.0
+        for field in required:
+            if content.get(field):
+                score += 0.6 / len(required)
+        
+        for field in optional:
+            if content.get(field):
+                score += 0.4 / len(optional)
+        
+        return min(score, 1.0)
+    
+    def _calculate_clarity(self, content: Dict[str, Any]) -> float:
+        """Calculate clarity score based on description quality."""
+        description = content.get('description', '')
+        if not description:
+            return 0.0
+        
+        # Simple heuristic based on length and structure
+        if len(description) < 50:
+            return 0.3
+        elif len(description) < 200:
+            return 0.7
+        else:
+            return 1.0
+    
+    def _calculate_actionability(self, content: Dict[str, Any]) -> float:
+        """Calculate actionability score."""
+        score = 0.0
+        if content.get('examples'):
+            score += 0.3
+        if content.get('implementation_guides'):
+            score += 0.4
+        if content.get('code_examples'):
+            score += 0.3
+        
+        return min(score, 1.0)
 
 
 class StandardsValidator:

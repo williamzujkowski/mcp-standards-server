@@ -15,6 +15,16 @@ from .engine import TemplateEngine
 from .metadata import StandardMetadata
 from .validator import StandardsValidator
 from .quality_assurance import QualityAssuranceSystem
+from dataclasses import dataclass
+
+
+@dataclass
+class GenerationResult:
+    """Result of standard generation."""
+    standard: str
+    metadata: Dict[str, Any]
+    warnings: List[str]
+    quality_score: float
 
 
 class StandardsGenerator:
@@ -39,17 +49,21 @@ class StandardsGenerator:
     def generate_standard(
         self,
         template_name: str,
-        metadata: Dict[str, Any],
-        output_path: str,
+        context: Dict[str, Any],
+        title: str,
+        domain: Optional[str] = None,
+        output_path: Optional[str] = None,
         validate: bool = True,
-        preview: bool = False
-    ) -> Dict[str, Any]:
+        preview: bool = True
+    ) -> GenerationResult:
         """
         Generate a standard document.
         
         Args:
             template_name: Name of the template to use
-            metadata: Standard metadata dictionary
+            context: Generation context dictionary
+            title: Standard title
+            domain: Domain/category for the standard
             output_path: Path where to save the generated standard
             validate: Whether to validate the generated standard
             preview: If True, return preview without saving
@@ -57,7 +71,15 @@ class StandardsGenerator:
         Returns:
             Dictionary containing generation results and validation info
         """
-        # Validate metadata
+        # Create metadata from context
+        metadata = {
+            'title': title,
+            'domain': domain or 'general',
+            'created_date': datetime.utcnow().isoformat(),
+            'author': context.get('author', 'MCP Standards Generator'),
+            **context
+        }
+        
         std_metadata = StandardMetadata.from_dict(metadata)
         std_metadata.validate()
         
@@ -72,26 +94,23 @@ class StandardsGenerator:
         # Quality assurance check
         qa_results = self.qa_system.assess_standard(content, std_metadata)
         
-        # Save or return preview
-        if preview:
-            return {
-                "content": content,
-                "metadata": std_metadata.to_dict(),
-                "validation": validation_results,
-                "quality_assessment": qa_results,
-                "preview": True
-            }
-        else:
-            # Save to file
+        # Extract warnings and quality score
+        warnings = validation_results.get('warnings', [])
+        if qa_results:
+            warnings.extend(qa_results.get('warnings', []))
+        
+        quality_score = qa_results.get('overall_score', 0.8) if qa_results else 0.8
+        
+        # Save to file if output_path is provided
+        if output_path and not preview:
             self._save_standard(content, output_path, std_metadata)
-            
-            return {
-                "output_path": output_path,
-                "metadata": std_metadata.to_dict(),
-                "validation": validation_results,
-                "quality_assessment": qa_results,
-                "success": True
-            }
+        
+        return GenerationResult(
+            standard=content,
+            metadata=std_metadata.to_dict(),
+            warnings=warnings,
+            quality_score=quality_score
+        )
     
     def _save_standard(self, content: str, output_path: str, metadata: StandardMetadata):
         """Save the standard to file with metadata."""
@@ -107,9 +126,20 @@ class StandardsGenerator:
         with open(metadata_path, 'w', encoding='utf-8') as f:
             yaml.dump(metadata.to_dict(), f, default_flow_style=False)
     
-    def list_templates(self) -> List[Dict[str, Any]]:
+    def list_templates(self, domain: Optional[str] = None) -> List[Dict[str, Any]]:
         """List available templates with their metadata."""
-        return self.engine.list_templates()
+        templates = self.engine.list_templates()
+        
+        if domain:
+            # Filter templates by domain if specified
+            filtered_templates = []
+            for template in templates:
+                template_domain = template.get('domain', 'general')
+                if template_domain == domain or domain in template.get('name', '').lower():
+                    filtered_templates.append(template)
+            return filtered_templates
+        
+        return templates
     
     def get_template_schema(self, template_name: str) -> Dict[str, Any]:
         """Get the schema for a specific template."""

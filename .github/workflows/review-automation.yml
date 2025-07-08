@@ -1,0 +1,398 @@
+name: Standards Review Automation
+
+on:
+  pull_request:
+    types: [opened, edited]
+    paths: 
+      - 'data/standards/**'
+      - 'standards/**'
+  
+  issue_comment:
+    types: [created]
+
+  schedule:
+    # Run daily at 9 AM UTC to check for overdue reviews
+    - cron: '0 9 * * *'
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  REVIEW_WEBHOOK_URL: ${{ secrets.REVIEW_WEBHOOK_URL }}
+
+jobs:
+  assign-reviewers:
+    name: Auto-assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install PyGithub requests pyyaml
+          
+      - name: Detect standard domain
+        id: detect-domain
+        run: |
+          # Extract domain from changed files
+          FILES=$(git diff --name-only HEAD~1)
+          echo "Changed files: $FILES"
+          
+          # Simple domain detection based on filename patterns
+          DOMAIN="general"
+          if echo "$FILES" | grep -q "API\|api\|REST\|GraphQL"; then
+            DOMAIN="api"
+          elif echo "$FILES" | grep -q "SECURITY\|security\|AUTH"; then
+            DOMAIN="security"
+          elif echo "$FILES" | grep -q "AI_ML\|ML\|ai"; then
+            DOMAIN="ai-ml"
+          elif echo "$FILES" | grep -q "CLOUD\|cloud\|kubernetes\|k8s"; then
+            DOMAIN="cloud-native"
+          elif echo "$FILES" | grep -q "DATA\|data\|database"; then
+            DOMAIN="data-engineering"
+          elif echo "$FILES" | grep -q "FRONTEND\|frontend\|react\|vue"; then
+            DOMAIN="frontend"
+          elif echo "$FILES" | grep -q "BLOCKCHAIN\|blockchain\|web3"; then
+            DOMAIN="blockchain"
+          elif echo "$FILES" | grep -q "GAMING\|gaming\|ar\|vr"; then
+            DOMAIN="gaming"
+          elif echo "$FILES" | grep -q "IOT\|iot\|edge"; then
+            DOMAIN="iot"
+          fi
+          
+          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
+          echo "Detected domain: $DOMAIN"
+          
+      - name: Extract standard name
+        id: extract-name
+        run: |
+          # Extract standard name from PR title or filename
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          STANDARD_NAME=$(echo "$PR_TITLE" | sed 's/^[^:]*: *//' | sed 's/ *$//')
+          
+          if [ -z "$STANDARD_NAME" ]; then
+            # Fall back to filename
+            FILES=$(git diff --name-only HEAD~1 | head -1)
+            STANDARD_NAME=$(basename "$FILES" .md | sed 's/_STANDARDS$//')
+          fi
+          
+          echo "name=$STANDARD_NAME" >> $GITHUB_OUTPUT
+          echo "Standard name: $STANDARD_NAME"
+          
+      - name: Assign reviewers
+        run: |
+          python scripts/reviewer_tools.py assign \
+            --standard "${{ steps.extract-name.outputs.name }}" \
+            --domain "${{ steps.detect-domain.outputs.domain }}" \
+            --pr ${{ github.event.pull_request.number }}
+            
+      - name: Create review checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const domain = "${{ steps.detect-domain.outputs.domain }}";
+            const standardName = "${{ steps.extract-name.outputs.name }}";
+            
+            const checklist = `## Review Checklist for ${standardName}
+            
+            **Domain:** ${domain}
+            **Quality Gate:** Minimum 80% score required
+            
+            ### Technical Review
+            - [ ] Technical accuracy verified
+            - [ ] Implementation feasibility confirmed  
+            - [ ] Security considerations addressed
+            - [ ] Performance implications documented
+            - [ ] Code examples tested and working
+            
+            ### Editorial Review
+            - [ ] Clear and actionable guidance
+            - [ ] Grammar and spelling correct
+            - [ ] Consistent terminology
+            - [ ] Proper markdown formatting
+            - [ ] Accessibility considerations
+            
+            ### Community Review
+            - [ ] Addresses real community needs
+            - [ ] Practical implementation guidance
+            - [ ] Use case coverage appropriate
+            - [ ] Community value demonstrated
+            
+            ### Final Approval Criteria
+            - [ ] All review stages completed
+            - [ ] Quality score ≥ 80%
+            - [ ] Required feedback addressed
+            - [ ] Publication readiness confirmed
+            
+            ---
+            
+            **Next Steps:**
+            1. Technical reviewers will complete their review within 5 days
+            2. Editorial review will begin after technical approval
+            3. Community review period opens day 3
+            4. Final approval and publication follows successful reviews
+            
+            **Questions?** Tag @williamzujkowski or check the [review process documentation](docs/community/review-process.md).`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: checklist
+            });
+
+  handle-review-commands:
+    name: Handle Review Commands
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/review')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install PyGithub requests pyyaml
+          
+      - name: Parse review command
+        id: parse-command
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const comment = context.payload.comment.body;
+            const commands = {
+              complete: /\/review complete (\w+) (\w+)/,
+              status: /\/review status/,
+              reassign: /\/review reassign (\w+) (\w+)/,
+              remind: /\/review remind/
+            };
+            
+            for (const [action, pattern] of Object.entries(commands)) {
+              const match = comment.match(pattern);
+              if (match) {
+                return JSON.stringify({
+                  action: action,
+                  params: match.slice(1)
+                });
+              }
+            }
+            return JSON.stringify({ action: 'unknown' });
+            
+      - name: Execute review command
+        run: |
+          COMMAND=$(echo '${{ steps.parse-command.outputs.result }}' | jq -r '.action')
+          
+          case "$COMMAND" in
+            "complete")
+              REVIEWER=$(echo '${{ steps.parse-command.outputs.result }}' | jq -r '.params[0]')
+              STAGE=$(echo '${{ steps.parse-command.outputs.result }}' | jq -r '.params[1]')
+              STANDARD="${{ github.event.issue.title }}"
+              
+              python scripts/reviewer_tools.py complete \
+                --standard "$STANDARD" \
+                --reviewer "$REVIEWER" \
+                --stage "$STAGE" \
+                --feedback-url "${{ github.event.comment.html_url }}"
+              ;;
+            "status")
+              python scripts/reviewer_tools.py report > review_status.json
+              ;;
+            "remind")
+              python scripts/reviewer_tools.py notify
+              ;;
+            *)
+              echo "Unknown or invalid review command"
+              ;;
+          esac
+
+  daily-review-check:
+    name: Daily Review Status Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install PyGithub requests pyyaml
+          
+      - name: Check overdue reviews
+        id: check-overdue
+        run: |
+          python scripts/reviewer_tools.py overdue > overdue_reviews.txt
+          if [ -s overdue_reviews.txt ]; then
+            echo "has_overdue=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_overdue=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Send reminder notifications
+        if: steps.check-overdue.outputs.has_overdue == 'true'
+        run: |
+          python scripts/reviewer_tools.py notify
+          
+      - name: Create issue for overdue reviews
+        if: steps.check-overdue.outputs.has_overdue == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const overdueReviews = fs.readFileSync('overdue_reviews.txt', 'utf8');
+            
+            const issueBody = `## Overdue Review Alert
+            
+            The following reviews are overdue and require attention:
+            
+            \`\`\`
+            ${overdueReviews}
+            \`\`\`
+            
+            **Actions Taken:**
+            - Reminder notifications sent to assigned reviewers
+            - Escalation process initiated
+            
+            **Next Steps:**
+            - Reviewers should complete overdue reviews ASAP
+            - Maintainers may reassign if no response within 24 hours
+            - Consider extending deadlines if justified
+            
+            ---
+            
+            This issue was automatically created by the review automation system.`;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Overdue Reviews Alert - ${new Date().toISOString().split('T')[0]}`,
+              body: issueBody,
+              labels: ['review-management', 'priority-high']
+            });
+
+  quality-gate-check:
+    name: Quality Gate Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Run quality validation
+        id: quality-check
+        run: |
+          # Find changed standard files
+          FILES=$(git diff --name-only HEAD~1 | grep -E '\.(md|yaml)$' | head -1)
+          
+          if [ -n "$FILES" ]; then
+            echo "Validating: $FILES"
+            
+            # Run validation using the CLI
+            python -m src.cli.main validate "$FILES" --strict > quality_report.txt 2>&1
+            QUALITY_EXIT_CODE=$?
+            
+            # Extract quality score if available
+            QUALITY_SCORE=$(grep -o "Quality Score: [0-9.]*" quality_report.txt | cut -d' ' -f3 || echo "0.0")
+            
+            echo "quality_score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+            echo "validation_passed=$([[ $QUALITY_EXIT_CODE -eq 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            
+            # Save report for comment
+            cat quality_report.txt
+          else
+            echo "No standard files to validate"
+            echo "quality_score=1.0" >> $GITHUB_OUTPUT
+            echo "validation_passed=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Comment quality results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const qualityScore = parseFloat("${{ steps.quality-check.outputs.quality_score }}");
+            const validationPassed = "${{ steps.quality-check.outputs.validation_passed }}" === "true";
+            
+            let reportContent = "";
+            try {
+              reportContent = fs.readFileSync('quality_report.txt', 'utf8');
+            } catch (e) {
+              reportContent = "No quality report generated.";
+            }
+            
+            const status = validationPassed ? "✅ PASSED" : "❌ FAILED";
+            const scoreEmoji = qualityScore >= 0.8 ? "🟢" : qualityScore >= 0.6 ? "🟡" : "🔴";
+            
+            const comment = `## Quality Gate Check ${status}
+            
+            **Quality Score:** ${scoreEmoji} ${(qualityScore * 100).toFixed(1)}% 
+            **Minimum Required:** 80%
+            **Validation:** ${validationPassed ? "Passed" : "Failed"}
+            
+            <details>
+            <summary>Detailed Quality Report</summary>
+            
+            \`\`\`
+            ${reportContent}
+            \`\`\`
+            
+            </details>
+            
+            ${!validationPassed ? "**❗ This PR cannot be merged until quality issues are resolved.**" : ""}
+            ${qualityScore < 0.8 ? "**⚠️ Quality score below minimum threshold. Please address feedback to improve quality.**" : ""}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+      - name: Set PR status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const qualityScore = parseFloat("${{ steps.quality-check.outputs.quality_score }}");
+            const validationPassed = "${{ steps.quality-check.outputs.validation_passed }}" === "true";
+            
+            const state = (validationPassed && qualityScore >= 0.8) ? "success" : "failure";
+            const description = `Quality: ${(qualityScore * 100).toFixed(1)}% (min 80%)`;
+            
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: state,
+              description: description,
+              context: "standards/quality-gate"
+            });

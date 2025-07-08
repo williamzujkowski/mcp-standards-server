@@ -25,6 +25,9 @@ from .core.standards.token_optimizer import (
     DynamicLoader,
     create_token_optimizer
 )
+from .core.standards.cross_referencer import CrossReferencer
+from .core.standards.analytics import StandardsAnalytics
+from .generators.engine import StandardsGenerator
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +43,7 @@ class MCPStandardsServer:
         # Initialize components
         # Get data directory
         data_dir = Path(os.environ.get("MCP_STANDARDS_DATA_DIR", "data"))
-        rules_file = data_dir / "standards" / "meta" / "standard-selection-rules.json"
+        rules_file = data_dir / "standards" / "meta" / "enhanced-selection-rules.json"
         
         self.rule_engine = RuleEngine(
             Path(self.config.get("rules_file", str(rules_file)))
@@ -50,6 +53,14 @@ class MCPStandardsServer:
             config_path=sync_config_path,
             cache_dir=data_dir / "standards" / "cache"
         )
+        
+        # Initialize cross-referencer and analytics
+        self.cross_referencer = CrossReferencer(data_dir / "standards")
+        self.analytics = StandardsAnalytics(data_dir / "standards" / "analytics")
+        
+        # Initialize standards generator
+        templates_dir = Path("templates")
+        self.generator = StandardsGenerator(templates_dir)
         
         # Initialize search only if enabled
         self.search = None
@@ -231,6 +242,101 @@ class MCPStandardsServer:
                         "type": "object",
                         "properties": {}
                     }
+                ),
+                Tool(
+                    name="generate_standard",
+                    description="Generate a new standard based on template and context",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "template_name": {"type": "string", "description": "Template name"},
+                            "context": {"type": "object", "description": "Generation context"},
+                            "domain": {"type": "string", "description": "Domain/category"},
+                            "title": {"type": "string", "description": "Standard title"}
+                        },
+                        "required": ["template_name", "context", "title"]
+                    }
+                ),
+                Tool(
+                    name="validate_standard",
+                    description="Validate a standard document for completeness and quality",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "standard_content": {"type": "string", "description": "Standard content to validate"},
+                            "format": {"type": "string", "description": "Content format (yaml/json)", "default": "yaml"}
+                        },
+                        "required": ["standard_content"]
+                    }
+                ),
+                Tool(
+                    name="list_templates",
+                    description="List available standard templates",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "domain": {"type": "string", "description": "Filter by domain"}
+                        }
+                    }
+                ),
+                Tool(
+                    name="get_cross_references",
+                    description="Get cross-references for a standard or concept",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "standard_id": {"type": "string", "description": "Standard ID"},
+                            "concept": {"type": "string", "description": "Concept to find references for"},
+                            "max_depth": {"type": "integer", "description": "Maximum reference depth", "default": 2}
+                        }
+                    }
+                ),
+                Tool(
+                    name="generate_cross_references",
+                    description="Generate cross-references between standards",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "force_refresh": {"type": "boolean", "description": "Force refresh of references", "default": false}
+                        }
+                    }
+                ),
+                Tool(
+                    name="get_standards_analytics",
+                    description="Get analytics and usage statistics for standards",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "metric_type": {"type": "string", "description": "Type of metrics (usage/popularity/gaps)", "default": "usage"},
+                            "time_range": {"type": "string", "description": "Time range for metrics", "default": "30d"},
+                            "standard_ids": {"type": "array", "items": {"type": "string"}, "description": "Specific standards"}
+                        }
+                    }
+                ),
+                Tool(
+                    name="track_standards_usage",
+                    description="Track usage of specific standards or sections",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "standard_id": {"type": "string", "description": "Standard ID"},
+                            "section_id": {"type": "string", "description": "Section ID"},
+                            "usage_type": {"type": "string", "description": "Usage type (view/apply/reference)"},
+                            "context": {"type": "object", "description": "Usage context"}
+                        },
+                        "required": ["standard_id", "usage_type"]
+                    }
+                ),
+                Tool(
+                    name="get_recommendations",
+                    description="Get recommendations for standards improvement or gaps",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "analysis_type": {"type": "string", "description": "Type of analysis (gaps/quality/usage)", "default": "gaps"},
+                            "context": {"type": "object", "description": "Analysis context"}
+                        }
+                    }
                 )
             ]
         
@@ -301,6 +407,50 @@ class MCPStandardsServer:
                     )
                 elif name == "get_sync_status":
                     result = await self._get_sync_status()
+                elif name == "generate_standard":
+                    result = await self._generate_standard(
+                        arguments["template_name"],
+                        arguments["context"],
+                        arguments["title"],
+                        arguments.get("domain")
+                    )
+                elif name == "validate_standard":
+                    result = await self._validate_standard(
+                        arguments["standard_content"],
+                        arguments.get("format", "yaml")
+                    )
+                elif name == "list_templates":
+                    result = await self._list_templates(
+                        arguments.get("domain")
+                    )
+                elif name == "get_cross_references":
+                    result = await self._get_cross_references(
+                        arguments.get("standard_id"),
+                        arguments.get("concept"),
+                        arguments.get("max_depth", 2)
+                    )
+                elif name == "generate_cross_references":
+                    result = await self._generate_cross_references(
+                        arguments.get("force_refresh", False)
+                    )
+                elif name == "get_standards_analytics":
+                    result = await self._get_standards_analytics(
+                        arguments.get("metric_type", "usage"),
+                        arguments.get("time_range", "30d"),
+                        arguments.get("standard_ids")
+                    )
+                elif name == "track_standards_usage":
+                    result = await self._track_standards_usage(
+                        arguments["standard_id"],
+                        arguments["usage_type"],
+                        arguments.get("section_id"),
+                        arguments.get("context")
+                    )
+                elif name == "get_recommendations":
+                    result = await self._get_recommendations(
+                        arguments.get("analysis_type", "gaps"),
+                        arguments.get("context")
+                    )
                 else:
                     raise ValueError(f"Unknown tool: {name}")
                 
@@ -700,6 +850,239 @@ class MCPStandardsServer:
             "cache_size_mb": status["total_size_mb"],
             "rate_limit": status["rate_limit"]
         }
+        
+    async def _generate_standard(
+        self,
+        template_name: str,
+        context: Dict[str, Any],
+        title: str,
+        domain: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Generate a new standard based on template and context."""
+        try:
+            result = self.generator.generate_standard(
+                template_name=template_name,
+                context=context,
+                title=title,
+                domain=domain
+            )
+            return {
+                "standard": result.standard,
+                "metadata": result.metadata,
+                "warnings": result.warnings,
+                "quality_score": result.quality_score
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "template_name": template_name
+            }
+    
+    async def _validate_standard(
+        self,
+        standard_content: str,
+        format: str = "yaml"
+    ) -> Dict[str, Any]:
+        """Validate a standard document for completeness and quality."""
+        try:
+            from .generators.validator import StandardValidator
+            validator = StandardValidator()
+            
+            # Parse content based on format
+            if format.lower() == "yaml":
+                import yaml
+                content = yaml.safe_load(standard_content)
+            else:
+                content = json.loads(standard_content)
+            
+            validation_result = validator.validate(content)
+            
+            return {
+                "valid": validation_result.is_valid,
+                "errors": validation_result.errors,
+                "warnings": validation_result.warnings,
+                "quality_metrics": validation_result.quality_metrics,
+                "completeness_score": validation_result.completeness_score,
+                "suggestions": validation_result.suggestions
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": str(e)
+            }
+    
+    async def _list_templates(
+        self,
+        domain: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """List available standard templates."""
+        try:
+            templates = self.generator.list_templates(domain=domain)
+            return {
+                "templates": [
+                    {
+                        "name": template.name,
+                        "domain": template.domain,
+                        "description": template.description,
+                        "variables": template.variables,
+                        "features": template.features
+                    }
+                    for template in templates
+                ]
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "templates": []
+            }
+    
+    async def _get_cross_references(
+        self,
+        standard_id: Optional[str] = None,
+        concept: Optional[str] = None,
+        max_depth: int = 2
+    ) -> Dict[str, Any]:
+        """Get cross-references for a standard or concept."""
+        try:
+            if standard_id:
+                refs = self.cross_referencer.get_references_for_standard(
+                    standard_id, max_depth=max_depth
+                )
+            elif concept:
+                refs = self.cross_referencer.find_concept_references(
+                    concept, max_depth=max_depth
+                )
+            else:
+                return {"error": "Either standard_id or concept must be provided"}
+            
+            return {
+                "references": refs,
+                "depth": max_depth,
+                "total_found": len(refs)
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "references": []
+            }
+    
+    async def _generate_cross_references(
+        self,
+        force_refresh: bool = False
+    ) -> Dict[str, Any]:
+        """Generate cross-references between standards."""
+        try:
+            result = self.cross_referencer.generate_cross_references(
+                force_refresh=force_refresh
+            )
+            return {
+                "status": "completed",
+                "processed_standards": result.processed_count,
+                "new_references": result.new_references_count,
+                "updated_references": result.updated_references_count,
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e)
+            }
+    
+    async def _get_standards_analytics(
+        self,
+        metric_type: str = "usage",
+        time_range: str = "30d",
+        standard_ids: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """Get analytics and usage statistics for standards."""
+        try:
+            if metric_type == "usage":
+                result = self.analytics.get_usage_metrics(
+                    time_range=time_range,
+                    standard_ids=standard_ids
+                )
+            elif metric_type == "popularity":
+                result = self.analytics.get_popularity_metrics(
+                    time_range=time_range,
+                    standard_ids=standard_ids
+                )
+            elif metric_type == "gaps":
+                result = self.analytics.analyze_coverage_gaps(
+                    standard_ids=standard_ids
+                )
+            else:
+                return {"error": f"Unknown metric type: {metric_type}"}
+            
+            return {
+                "metric_type": metric_type,
+                "time_range": time_range,
+                "data": result
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "metric_type": metric_type
+            }
+    
+    async def _track_standards_usage(
+        self,
+        standard_id: str,
+        usage_type: str,
+        section_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Track usage of specific standards or sections."""
+        try:
+            self.analytics.track_usage(
+                standard_id=standard_id,
+                usage_type=usage_type,
+                section_id=section_id,
+                context=context or {}
+            )
+            return {
+                "status": "tracked",
+                "standard_id": standard_id,
+                "usage_type": usage_type,
+                "section_id": section_id
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e)
+            }
+    
+    async def _get_recommendations(
+        self,
+        analysis_type: str = "gaps",
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Get recommendations for standards improvement or gaps."""
+        try:
+            if analysis_type == "gaps":
+                recommendations = self.analytics.get_gap_recommendations(
+                    context=context
+                )
+            elif analysis_type == "quality":
+                recommendations = self.analytics.get_quality_recommendations(
+                    context=context
+                )
+            elif analysis_type == "usage":
+                recommendations = self.analytics.get_usage_recommendations(
+                    context=context
+                )
+            else:
+                return {"error": f"Unknown analysis type: {analysis_type}"}
+            
+            return {
+                "analysis_type": analysis_type,
+                "recommendations": recommendations,
+                "generated_at": self.analytics.get_current_timestamp()
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "analysis_type": analysis_type
+            }
             
     async def run(self):
         """Run the MCP server."""

@@ -1,0 +1,279 @@
+# Reviewer Configuration
+# This file defines the reviewer team structure and capabilities
+
+github_token: ${GITHUB_TOKEN}  # Set via environment variable
+
+reviewers:
+  # Maintainers
+  - username: williamzujkowski
+    name: William Zujkowski
+    domains: [api, security, cloud-native, general]
+    role: maintainer
+    max_concurrent: 5
+    availability: true
+    contact_info: william@example.com
+
+  - username: lead-maintainer
+    name: Lead Maintainer
+    domains: [general, governance, process]
+    role: maintainer
+    max_concurrent: 4
+    availability: true
+    contact_info: lead@example.com
+
+  # Domain Experts
+  - username: api-expert
+    name: API Design Expert
+    domains: [api, microservices, integration]
+    role: domain_expert
+    max_concurrent: 3
+    availability: true
+    contact_info: api-expert@example.com
+
+  - username: security-expert
+    name: Security Expert
+    domains: [security, compliance, privacy]
+    role: domain_expert
+    max_concurrent: 3
+    availability: true
+    contact_info: security-expert@example.com
+
+  - username: ml-expert
+    name: ML/AI Expert
+    domains: [ai-ml, data-science, analytics]
+    role: domain_expert
+    max_concurrent: 2
+    availability: true
+    contact_info: ml-expert@example.com
+
+  - username: cloud-expert
+    name: Cloud Native Expert
+    domains: [cloud-native, devops, kubernetes]
+    role: domain_expert
+    max_concurrent: 3
+    availability: true
+    contact_info: cloud-expert@example.com
+
+  - username: data-expert
+    name: Data Engineering Expert
+    domains: [data-engineering, databases, analytics]
+    role: domain_expert
+    max_concurrent: 2
+    availability: true
+    contact_info: data-expert@example.com
+
+  - username: frontend-expert
+    name: Frontend Expert
+    domains: [frontend, mobile, ui-ux]
+    role: domain_expert
+    max_concurrent: 2
+    availability: true
+    contact_info: frontend-expert@example.com
+
+  - username: blockchain-expert
+    name: Blockchain Expert
+    domains: [blockchain, web3, defi]
+    role: domain_expert
+    max_concurrent: 2
+    availability: true
+    contact_info: blockchain-expert@example.com
+
+  - username: gaming-expert
+    name: Gaming Expert
+    domains: [gaming, ar-vr, graphics]
+    role: domain_expert
+    max_concurrent: 2
+    availability: true
+    contact_info: gaming-expert@example.com
+
+  - username: iot-expert
+    name: IoT Expert
+    domains: [iot, edge-computing, embedded]
+    role: domain_expert
+    max_concurrent: 2
+    availability: true
+    contact_info: iot-expert@example.com
+
+  # Editorial Team
+  - username: technical-writer-1
+    name: Senior Technical Writer
+    domains: [general]
+    role: editorial
+    max_concurrent: 4
+    availability: true
+    contact_info: writer1@example.com
+
+  - username: technical-writer-2
+    name: Technical Documentation Specialist
+    domains: [general]
+    role: editorial
+    max_concurrent: 3
+    availability: true
+    contact_info: writer2@example.com
+
+  - username: content-editor
+    name: Content Editor
+    domains: [general]
+    role: editorial
+    max_concurrent: 3
+    availability: true
+    contact_info: editor@example.com
+
+  # Community Reviewers
+  - username: community-member-1
+    name: Active Community Member 1
+    domains: [api, frontend, general]
+    role: community
+    max_concurrent: 2
+    availability: true
+    contact_info: community1@example.com
+
+  - username: community-member-2
+    name: Active Community Member 2
+    domains: [security, devops, general]
+    role: community
+    max_concurrent: 2
+    availability: true
+    contact_info: community2@example.com
+
+  - username: community-member-3
+    name: Active Community Member 3
+    domains: [data-engineering, ai-ml, general]
+    role: community
+    max_concurrent: 2
+    availability: true
+    contact_info: community3@example.com
+
+  - username: community-member-4
+    name: Active Community Member 4
+    domains: [cloud-native, microservices, general]
+    role: community
+    max_concurrent: 2
+    availability: true
+    contact_info: community4@example.com
+
+  - username: community-member-5
+    name: Active Community Member 5
+    domains: [frontend, mobile, general]
+    role: community
+    max_concurrent: 2
+    availability: true
+    contact_info: community5@example.com
+
+# Review Stage Configuration
+review_stages:
+  technical:
+    duration_days: 5
+    required_reviewers: 2
+    reviewer_roles: [maintainer, domain_expert]
+    
+  editorial:
+    duration_days: 3
+    required_reviewers: 1
+    reviewer_roles: [editorial, maintainer]
+    
+  community:
+    duration_days: 7
+    required_reviewers: 3
+    reviewer_roles: [community, domain_expert, maintainer]
+    
+  final:
+    duration_days: 2
+    required_reviewers: 1
+    reviewer_roles: [maintainer]
+
+# Notification Configuration
+notifications:
+  webhook_url: ${REVIEW_WEBHOOK_URL}  # Set via environment variable
+  
+  reminder_hours: 24  # Send reminder 24 hours before due
+  
+  channels:
+    - type: github
+      enabled: true
+    - type: webhook
+      enabled: true
+    - type: email
+      enabled: false  # Configure email settings separately
+
+# Quality Gates
+quality_gates:
+  minimum_score: 0.8
+  required_sections:
+    - introduction
+    - implementation
+    - examples
+    - security
+    - compliance
+  
+  breaking_change_keywords:
+    - "BREAKING:"
+    - "deprecated"
+    - "removed"
+    - "no longer supported"
+    - "incompatible"
+
+# Domain Mapping
+domain_mapping:
+  api:
+    - rest
+    - graphql
+    - grpc
+    - microservices
+    - integration
+    
+  security:
+    - authentication
+    - authorization
+    - encryption
+    - compliance
+    - privacy
+    
+  cloud-native:
+    - kubernetes
+    - docker
+    - microservices
+    - devops
+    - observability
+    
+  data-engineering:
+    - pipelines
+    - databases
+    - analytics
+    - governance
+    - streaming
+    
+  ai-ml:
+    - machine-learning
+    - artificial-intelligence
+    - data-science
+    - mlops
+    - modeling
+    
+  frontend:
+    - react
+    - vue
+    - angular
+    - mobile
+    - ui-ux
+    
+  blockchain:
+    - web3
+    - smart-contracts
+    - defi
+    - nft
+    - cryptocurrency
+    
+  gaming:
+    - game-development
+    - ar-vr
+    - graphics
+    - physics
+    - multiplayer
+    
+  iot:
+    - edge-computing
+    - embedded
+    - sensors
+    - protocols
+    - automation
