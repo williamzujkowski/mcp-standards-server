@@ -19,6 +19,7 @@ import pytest
 from memory_profiler import profile
 
 from tests.e2e.fixtures import SAMPLE_CONTEXTS, create_test_mcp_config
+from tests.e2e.conftest import MCPTestClient, mcp_server, mcp_client
 
 
 class PerformanceMetrics:

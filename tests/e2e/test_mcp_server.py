@@ -23,105 +23,11 @@ import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from contextlib import asynccontextmanager
-
 from src.core.standards.rule_engine import RuleEngine
 from src.core.standards.sync import StandardsSynchronizer
-from tests.e2e.test_data_setup import setup_test_data
 
-
-class MCPTestClient:
-    """Test client for interacting with MCP server."""
-    
-    def __init__(self, server_params: StdioServerParameters):
-        self.server_params = server_params
-        self.session: Optional[ClientSession] = None
-        self._read = None
-        self._write = None
-        
-    @asynccontextmanager
-    async def connect(self):
-        """Connect to the MCP server as an async context manager."""
-        async with stdio_client(self.server_params) as (read, write):
-            self._read = read
-            self._write = write
-            async with ClientSession(read, write) as session:
-                self.session = session
-                try:
-                    # Initialize the session
-                    await session.initialize()
-                    yield self
-                finally:
-                    self.session = None
-                    self._read = None
-                    self._write = None
-                
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """Call a tool on the MCP server."""
-        if not self.session:
-            raise RuntimeError("Not connected to server")
-        
-        result = await self.session.call_tool(tool_name, arguments)
-        
-        # Extract the content from the result
-        if hasattr(result, 'content') and result.content:
-            # Parse the JSON content from the first text content
-            if result.content[0].text:
-                return json.loads(result.content[0].text)
-        
-        return result
-
-
-@pytest.fixture
-async def mcp_server(tmp_path):
-    """Fixture to start and stop MCP server for tests."""
-    # Set up test data
-    setup_test_data(tmp_path)
-    
-    # Set up test environment
-    env = os.environ.copy()
-    env["MCP_STANDARDS_DATA_DIR"] = str(tmp_path)
-    env["MCP_CONFIG_PATH"] = str(Path(__file__).parent / "test_config.json")
-    env["MCP_DISABLE_SEARCH"] = "true"  # Disable search to avoid heavy deps
-    
-    # Server parameters - run directly without coverage subprocess
-    # Coverage will be handled by the parent process
-    server_params = StdioServerParameters(
-        command="python",
-        args=["-m", "src"],
-        env=env
-    )
-    
-    # Start server process
-    process = await asyncio.create_subprocess_exec(
-        server_params.command,
-        *server_params.args,
-        env=server_params.env,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    
-    # Wait for server to start
-    await asyncio.sleep(1)
-    
-    try:
-        yield server_params
-    finally:
-        # Stop server
-        try:
-            process.terminate()
-            await asyncio.wait_for(process.wait(), timeout=5.0)
-        except (ProcessLookupError, asyncio.TimeoutError):
-            # Process may have already exited
-            pass
-
-
-@pytest.fixture
-async def mcp_client(mcp_server):
-    """Fixture to provide connected MCP client for tests."""
-    client = MCPTestClient(mcp_server)
-    async with client.connect() as connected_client:
-        yield connected_client
+# Import MCPTestClient and fixtures from conftest
+from tests.e2e.conftest import MCPTestClient, mcp_server, mcp_client
 
 
 
