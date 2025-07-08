@@ -529,132 +529,132 @@ class MCPStandardsServer:
                     type="text",
                     text=json.dumps(error.to_dict(), indent=2)
                 )]
-        
-        async def _execute_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-            """Execute a specific tool with validated arguments."""
-            try:
-                if name == "get_applicable_standards":
-                    return await self._get_applicable_standards(
-                        arguments["context"],
-                        arguments.get("include_resolution_details", False)
-                    )
-                elif name == "validate_against_standard":
-                    return await self._validate_against_standard(
-                        arguments["code"],
-                        arguments["standard"],
-                        arguments.get("language")
-                    )
-                elif name == "search_standards":
-                    return await self._search_standards(
-                        arguments["query"],
-                        arguments.get("limit", 10),
-                        arguments.get("min_relevance", 0.0),
-                        arguments.get("filters")
-                    )
-                elif name == "get_standard_details":
-                    return await self._get_standard_details(
-                        arguments["standard_id"]
-                    )
-                elif name == "list_available_standards":
-                    return await self._list_available_standards(
-                        arguments.get("category"),
-                        arguments.get("limit", 100)
-                    )
-                elif name == "suggest_improvements":
-                    return await self._suggest_improvements(
-                        arguments["code"],
-                        arguments["context"]
-                    )
-                elif name == "sync_standards":
-                    return await self._sync_standards(
-                        arguments.get("force", False)
-                    )
-                elif name == "get_optimized_standard":
-                    return await self._get_optimized_standard(
-                        arguments["standard_id"],
-                        arguments.get("format_type", "condensed"),
-                        arguments.get("token_budget"),
-                        arguments.get("required_sections"),
-                        arguments.get("context")
-                    )
-                elif name == "auto_optimize_standards":
-                    return await self._auto_optimize_standards(
-                        arguments["standard_ids"],
-                        arguments["total_token_budget"],
-                        arguments.get("context")
-                    )
-                elif name == "progressive_load_standard":
-                    return await self._progressive_load_standard(
-                        arguments["standard_id"],
-                        arguments["initial_sections"],
-                        arguments.get("max_depth", 3)
-                    )
-                elif name == "estimate_token_usage":
-                    return await self._estimate_token_usage(
-                        arguments["standard_ids"],
-                        arguments.get("format_types")
-                    )
-                elif name == "get_sync_status":
-                    return await self._get_sync_status()
-                elif name == "generate_standard":
-                    return await self._generate_standard(
-                        arguments["template_name"],
-                        arguments["context"],
-                        arguments["title"],
-                        arguments.get("domain")
-                    )
-                elif name == "validate_standard":
-                    return await self._validate_standard(
-                        arguments["standard_content"],
-                        arguments.get("format", "yaml")
-                    )
-                elif name == "list_templates":
-                    return await self._list_templates(
-                        arguments.get("domain")
-                    )
-                elif name == "get_cross_references":
-                    return await self._get_cross_references(
-                        arguments.get("standard_id"),
-                        arguments.get("concept"),
-                        arguments.get("max_depth", 2)
-                    )
-                elif name == "generate_cross_references":
-                    return await self._generate_cross_references(
-                        arguments.get("force_refresh", False)
-                    )
-                elif name == "get_standards_analytics":
-                    return await self._get_standards_analytics(
-                        arguments.get("metric_type", "usage"),
-                        arguments.get("time_range", "30d"),
-                        arguments.get("standard_ids")
-                    )
-                elif name == "track_standards_usage":
-                    return await self._track_standards_usage(
-                        arguments["standard_id"],
-                        arguments["usage_type"],
-                        arguments.get("section_id"),
-                        arguments.get("context")
-                    )
-                elif name == "get_recommendations":
-                    return await self._get_recommendations(
-                        arguments.get("analysis_type", "gaps"),
-                        arguments.get("context")
-                    )
-                elif name == "get_metrics_dashboard":
-                    return await self._get_metrics_dashboard()
-                else:
-                    raise ToolNotFoundError(name)
-                    
-            except MCPError:
-                # Re-raise MCP errors
-                raise
-            except Exception as e:
-                # Wrap unexpected errors
-                raise MCPError(
-                    code=ErrorCode.TOOL_EXECUTION_FAILED,
-                    message=f"Tool execution failed: {str(e)}",
-                    details={"tool": name, "error_type": type(e).__name__}
+    
+    async def _execute_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a specific tool with validated arguments."""
+        try:
+            if name == "get_applicable_standards":
+                return await self._get_applicable_standards(
+                    arguments["context"],
+                    arguments.get("include_resolution_details", False)
                 )
+            elif name == "validate_against_standard":
+                return await self._validate_against_standard(
+                    arguments["code"],
+                    arguments["standard"],
+                    arguments.get("language")
+                )
+            elif name == "search_standards":
+                return await self._search_standards(
+                    arguments["query"],
+                    arguments.get("limit", 10),
+                    arguments.get("min_relevance", 0.0),
+                    arguments.get("filters")
+                )
+            elif name == "get_standard_details":
+                return await self._get_standard_details(
+                    arguments["standard_id"]
+                )
+            elif name == "list_available_standards":
+                return await self._list_available_standards(
+                    arguments.get("category"),
+                    arguments.get("limit", 100)
+                )
+            elif name == "suggest_improvements":
+                return await self._suggest_improvements(
+                    arguments["code"],
+                    arguments["context"]
+                )
+            elif name == "sync_standards":
+                return await self._sync_standards(
+                    arguments.get("force", False)
+                )
+            elif name == "get_optimized_standard":
+                return await self._get_optimized_standard(
+                    arguments["standard_id"],
+                    arguments.get("format_type", "condensed"),
+                    arguments.get("token_budget"),
+                    arguments.get("required_sections"),
+                    arguments.get("context")
+                )
+            elif name == "auto_optimize_standards":
+                return await self._auto_optimize_standards(
+                    arguments["standard_ids"],
+                    arguments["total_token_budget"],
+                    arguments.get("context")
+                )
+            elif name == "progressive_load_standard":
+                return await self._progressive_load_standard(
+                    arguments["standard_id"],
+                    arguments["initial_sections"],
+                    arguments.get("max_depth", 3)
+                )
+            elif name == "estimate_token_usage":
+                return await self._estimate_token_usage(
+                    arguments["standard_ids"],
+                    arguments.get("format_types")
+                )
+            elif name == "get_sync_status":
+                return await self._get_sync_status()
+            elif name == "generate_standard":
+                return await self._generate_standard(
+                    arguments["template_name"],
+                    arguments["context"],
+                    arguments["title"],
+                    arguments.get("domain")
+                )
+            elif name == "validate_standard":
+                return await self._validate_standard(
+                    arguments["standard_content"],
+                    arguments.get("format", "yaml")
+                )
+            elif name == "list_templates":
+                return await self._list_templates(
+                    arguments.get("domain")
+                )
+            elif name == "get_cross_references":
+                return await self._get_cross_references(
+                    arguments.get("standard_id"),
+                    arguments.get("concept"),
+                    arguments.get("max_depth", 2)
+                )
+            elif name == "generate_cross_references":
+                return await self._generate_cross_references(
+                    arguments.get("force_refresh", False)
+                )
+            elif name == "get_standards_analytics":
+                return await self._get_standards_analytics(
+                    arguments.get("metric_type", "usage"),
+                    arguments.get("time_range", "30d"),
+                    arguments.get("standard_ids")
+                )
+            elif name == "track_standards_usage":
+                return await self._track_standards_usage(
+                    arguments["standard_id"],
+                    arguments["usage_type"],
+                    arguments.get("section_id"),
+                    arguments.get("context")
+                )
+            elif name == "get_recommendations":
+                return await self._get_recommendations(
+                    arguments.get("analysis_type", "gaps"),
+                    arguments.get("context")
+                )
+            elif name == "get_metrics_dashboard":
+                return await self._get_metrics_dashboard()
+            else:
+                raise ToolNotFoundError(name)
+                
+        except MCPError:
+            # Re-raise MCP errors
+            raise
+        except Exception as e:
+            # Wrap unexpected errors
+            raise MCPError(
+                code=ErrorCode.TOOL_EXECUTION_FAILED,
+                message=f"Tool execution failed: {str(e)}",
+                details={"tool": name, "error_type": type(e).__name__}
+            )
     
     async def _get_applicable_standards(
         self,
