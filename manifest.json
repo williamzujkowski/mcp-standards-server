@@ -1,0 +1,255 @@
+{
+  "name": "mcp-standards-server",
+  "version": "1.0.0",
+  "description": "MCP server for software engineering standards management and compliance checking",
+  "author": {
+    "name": "William Zujkowski",
+    "email": "noreply@example.com"
+  },
+  "license": "MIT",
+  "capabilities": {
+    "tools": {
+      "get_applicable_standards": {
+        "description": "Get applicable standards based on project context",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "context": {
+              "type": "object",
+              "required": true,
+              "description": "Project context including type, language, framework, etc."
+            },
+            "include_resolution_details": {
+              "type": "boolean",
+              "default": false,
+              "description": "Include detailed rule resolution information"
+            }
+          },
+          "required": ["context"]
+        }
+      },
+      "validate_against_standard": {
+        "description": "Validate code against a specific standard",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "required": true,
+              "description": "Code to validate"
+            },
+            "standard": {
+              "type": "string",
+              "required": true,
+              "description": "Standard ID to validate against"
+            },
+            "language": {
+              "type": "string",
+              "required": true,
+              "description": "Programming language of the code"
+            }
+          },
+          "required": ["code", "standard", "language"]
+        }
+      },
+      "search_standards": {
+        "description": "Search standards using semantic search",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "required": true,
+              "description": "Search query"
+            },
+            "limit": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum number of results"
+            },
+            "min_relevance": {
+              "type": "number",
+              "default": 0.0,
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Minimum relevance score"
+            },
+            "filters": {
+              "type": "object",
+              "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "languages": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                }
+              }
+            }
+          },
+          "required": ["query"]
+        }
+      },
+      "get_standard_details": {
+        "description": "Get detailed information about a specific standard",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "standard_id": {
+              "type": "string",
+              "required": true,
+              "description": "ID of the standard"
+            }
+          },
+          "required": ["standard_id"]
+        }
+      },
+      "list_available_standards": {
+        "description": "List all available standards with optional filtering",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "description": "Filter by category"
+            },
+            "limit": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        }
+      },
+      "suggest_improvements": {
+        "description": "Suggest improvements based on applicable standards",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "required": true,
+              "description": "Code to analyze"
+            },
+            "context": {
+              "type": "object",
+              "required": true,
+              "description": "Project context"
+            }
+          },
+          "required": ["code", "context"]
+        }
+      },
+      "sync_standards": {
+        "description": "Synchronize standards from GitHub repository",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "force": {
+              "type": "boolean",
+              "default": false,
+              "description": "Force re-sync even if up to date"
+            }
+          }
+        }
+      },
+      "get_sync_status": {
+        "description": "Get current synchronization status",
+        "input_schema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      "generate_cross_references": {
+        "description": "Generate cross-references between standards",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "force_refresh": {
+              "type": "boolean",
+              "default": false,
+              "description": "Force refresh of references"
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "standards": {
+        "description": "Access to standards database",
+        "supported_operations": ["read", "list", "search"]
+      },
+      "rules": {
+        "description": "Access to rule engine configuration",
+        "supported_operations": ["read", "list"]
+      },
+      "cache": {
+        "description": "Cache management",
+        "supported_operations": ["read", "clear"]
+      }
+    },
+    "transports": ["stdio"],
+    "authentication": {
+      "supported": ["jwt", "api_key"],
+      "required": false
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "default_limits": {
+        "requests_per_minute": 100,
+        "requests_per_hour": 5000
+      }
+    }
+  },
+  "requirements": {
+    "python": ">=3.10",
+    "dependencies": [
+      "mcp>=0.1.0",
+      "pydantic>=2.0",
+      "redis>=4.0.0",
+      "PyYAML>=6.0",
+      "chromadb>=0.4.0",
+      "sentence-transformers>=2.2.0"
+    ]
+  },
+  "configuration": {
+    "environment_variables": {
+      "MCP_STANDARDS_DATA_DIR": {
+        "description": "Directory for standards data",
+        "required": false,
+        "default": "./data/standards"
+      },
+      "MCP_REDIS_URL": {
+        "description": "Redis connection URL",
+        "required": false,
+        "default": "redis://localhost:6379"
+      },
+      "MCP_AUTH_ENABLED": {
+        "description": "Enable authentication",
+        "required": false,
+        "default": "false"
+      },
+      "MCP_LOG_LEVEL": {
+        "description": "Logging level",
+        "required": false,
+        "default": "INFO"
+      }
+    }
+  },
+  "performance": {
+    "targets": {
+      "tool_call_latency_ms": 50,
+      "resource_read_latency_ms": 100,
+      "connection_establishment_ms": 500
+    },
+    "optimizations": [
+      "Response caching",
+      "Lazy loading of standards",
+      "Connection pooling"
+    ]
+  }
+}

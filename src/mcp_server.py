@@ -8,12 +8,14 @@ import asyncio
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent, CallToolResult, InitializeRequest
+from pydantic import ValidationError as PydanticValidationError
 
 from .core.standards.rule_engine import RuleEngine
 from .core.standards.sync import StandardsSynchronizer
@@ -29,6 +31,19 @@ from .core.standards.cross_referencer import CrossReferencer
 from .core.standards.analytics import StandardsAnalytics
 from .generators import StandardsGenerator
 
+# Import authentication, validation and error handling modules
+from .core.auth import get_auth_manager, AuthConfig
+from .core.validation import get_input_validator
+from .core.errors import (
+    MCPError,
+    AuthenticationError,
+    AuthorizationError,
+    ToolNotFoundError,
+    ValidationError,
+    ErrorCode,
+    RateLimitError
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +54,19 @@ class MCPStandardsServer:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.server = Server("mcp-standards-server")
+        
+        # Initialize auth manager
+        auth_config = AuthConfig(**self.config.get("auth", {}))
+        self.auth_manager = get_auth_manager()
+        self.auth_manager.config = auth_config
+        
+        # Initialize input validator
+        self.input_validator = get_input_validator()
+        
+        # Initialize rate limiting (simple in-memory implementation)
+        self._rate_limit_store: Dict[str, List[float]] = {}
+        self.rate_limit_window = self.config.get("rate_limit_window", 60)  # seconds
+        self.rate_limit_max_requests = self.config.get("rate_limit_max_requests", 100)
         
         # Initialize components
         # Get data directory
@@ -84,6 +112,9 @@ class MCPStandardsServer:
         
         # Register tools
         self._register_tools()
+        
+        # Register initialization handler
+        self._register_initialization_handler()
         
     def _register_tools(self):
         """Register all MCP tools."""
@@ -341,48 +372,146 @@ class MCPStandardsServer:
             ]
         
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
-            """Handle tool calls."""
+        async def call_tool(name: str, arguments: Dict[str, Any], **kwargs) -> List[TextContent]:
+            """Handle tool calls with authentication and validation."""
             logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
+            
+            try:
+                # Extract authentication from request context if available
+                headers = kwargs.get("headers", {})
+                auth_type, credential = self.auth_manager.extract_auth_from_headers(headers)
+                
+                # Verify authentication if enabled
+                if self.auth_manager.is_enabled():
+                    if not credential:
+                        raise AuthenticationError("Authentication required")
+                    
+                    if auth_type == "bearer":
+                        is_valid, payload, error_msg = self.auth_manager.verify_token(credential)
+                        if not is_valid:
+                            raise AuthenticationError(error_msg or "Invalid token")
+                        
+                        # Check tool permission
+                        if not self.auth_manager.check_permission(payload, "mcp:tools"):
+                            raise AuthorizationError(
+                                "Insufficient permissions for tool access",
+                                required_scope="mcp:tools"
+                            )
+                    elif auth_type == "api_key":
+                        is_valid, user_id, error_msg = self.auth_manager.verify_api_key(credential)
+                        if not is_valid:
+                            raise AuthenticationError(error_msg or "Invalid API key")
+                    
+                    # Check rate limits
+                    user_key = credential if credential else "anonymous"
+                    if not self._check_rate_limit(user_key):
+                        raise RateLimitError(
+                            limit=self.rate_limit_max_requests,
+                            window=f"{self.rate_limit_window}s",
+                            retry_after=self.rate_limit_window
+                        )
+                
+                # Validate tool exists
+                if name not in [
+                    "get_applicable_standards", "validate_against_standard", "search_standards",
+                    "get_standard_details", "list_available_standards", "suggest_improvements",
+                    "sync_standards", "get_optimized_standard", "auto_optimize_standards",
+                    "progressive_load_standard", "estimate_token_usage", "get_sync_status",
+                    "generate_standard", "validate_standard", "list_templates",
+                    "get_cross_references", "generate_cross_references", "get_standards_analytics",
+                    "track_standards_usage", "get_recommendations"
+                ]:
+                    raise ToolNotFoundError(name)
+                
+                # Validate input arguments
+                try:
+                    validated_args = self.input_validator.validate_tool_input(name, arguments)
+                except ValidationError:
+                    # Re-raise our custom validation errors
+                    raise
+                except PydanticValidationError as e:
+                    # Convert Pydantic validation errors to our format
+                    errors = e.errors()
+                    first_error = errors[0] if errors else {}
+                    field = ".".join(str(loc) for loc in first_error.get("loc", []))
+                    raise ValidationError(
+                        message=first_error.get("msg", "Validation error"),
+                        field=field or "unknown"
+                    )
+                
+                # Execute tool
+                result = await self._execute_tool(name, validated_args)
+                
+                # Log successful execution
+                logger.debug(f"Tool {name} executed successfully")
+                
+                # Return successful result
+                return [TextContent(
+                    type="text",
+                    text=json.dumps(result, indent=2)
+                )]
+                
+            except MCPError as e:
+                # Handle structured errors
+                logger.error(f"MCP error in tool {name}: {e}", exc_info=True)
+                return [TextContent(
+                    type="text",
+                    text=json.dumps(e.to_dict(), indent=2)
+                )]
+            except Exception as e:
+                # Handle unexpected errors
+                logger.error(f"Unexpected error in tool {name}: {e}", exc_info=True)
+                error = MCPError(
+                    code=ErrorCode.SYSTEM_INTERNAL_ERROR,
+                    message=f"Internal error: {str(e)}",
+                    details={"tool": name}
+                )
+                return [TextContent(
+                    type="text",
+                    text=json.dumps(error.to_dict(), indent=2)
+                )]
+        
+        async def _execute_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+            """Execute a specific tool with validated arguments."""
             try:
                 if name == "get_applicable_standards":
-                    result = await self._get_applicable_standards(
+                    return await self._get_applicable_standards(
                         arguments["context"],
                         arguments.get("include_resolution_details", False)
                     )
                 elif name == "validate_against_standard":
-                    result = await self._validate_against_standard(
+                    return await self._validate_against_standard(
                         arguments["code"],
                         arguments["standard"],
                         arguments.get("language")
                     )
                 elif name == "search_standards":
-                    result = await self._search_standards(
+                    return await self._search_standards(
                         arguments["query"],
                         arguments.get("limit", 10),
                         arguments.get("min_relevance", 0.0),
                         arguments.get("filters")
                     )
                 elif name == "get_standard_details":
-                    result = await self._get_standard_details(
+                    return await self._get_standard_details(
                         arguments["standard_id"]
                     )
                 elif name == "list_available_standards":
-                    result = await self._list_available_standards(
+                    return await self._list_available_standards(
                         arguments.get("category"),
                         arguments.get("limit", 100)
                     )
                 elif name == "suggest_improvements":
-                    result = await self._suggest_improvements(
+                    return await self._suggest_improvements(
                         arguments["code"],
                         arguments["context"]
                     )
                 elif name == "sync_standards":
-                    result = await self._sync_standards(
+                    return await self._sync_standards(
                         arguments.get("force", False)
                     )
                 elif name == "get_optimized_standard":
-                    result = await self._get_optimized_standard(
+                    return await self._get_optimized_standard(
                         arguments["standard_id"],
                         arguments.get("format_type", "condensed"),
                         arguments.get("token_budget"),
@@ -390,90 +519,81 @@ class MCPStandardsServer:
                         arguments.get("context")
                     )
                 elif name == "auto_optimize_standards":
-                    result = await self._auto_optimize_standards(
+                    return await self._auto_optimize_standards(
                         arguments["standard_ids"],
                         arguments["total_token_budget"],
                         arguments.get("context")
                     )
                 elif name == "progressive_load_standard":
-                    result = await self._progressive_load_standard(
+                    return await self._progressive_load_standard(
                         arguments["standard_id"],
                         arguments["initial_sections"],
                         arguments.get("max_depth", 3)
                     )
                 elif name == "estimate_token_usage":
-                    result = await self._estimate_token_usage(
+                    return await self._estimate_token_usage(
                         arguments["standard_ids"],
                         arguments.get("format_types")
                     )
                 elif name == "get_sync_status":
-                    result = await self._get_sync_status()
+                    return await self._get_sync_status()
                 elif name == "generate_standard":
-                    result = await self._generate_standard(
+                    return await self._generate_standard(
                         arguments["template_name"],
                         arguments["context"],
                         arguments["title"],
                         arguments.get("domain")
                     )
                 elif name == "validate_standard":
-                    result = await self._validate_standard(
+                    return await self._validate_standard(
                         arguments["standard_content"],
                         arguments.get("format", "yaml")
                     )
                 elif name == "list_templates":
-                    result = await self._list_templates(
+                    return await self._list_templates(
                         arguments.get("domain")
                     )
                 elif name == "get_cross_references":
-                    result = await self._get_cross_references(
+                    return await self._get_cross_references(
                         arguments.get("standard_id"),
                         arguments.get("concept"),
                         arguments.get("max_depth", 2)
                     )
                 elif name == "generate_cross_references":
-                    result = await self._generate_cross_references(
+                    return await self._generate_cross_references(
                         arguments.get("force_refresh", False)
                     )
                 elif name == "get_standards_analytics":
-                    result = await self._get_standards_analytics(
+                    return await self._get_standards_analytics(
                         arguments.get("metric_type", "usage"),
                         arguments.get("time_range", "30d"),
                         arguments.get("standard_ids")
                     )
                 elif name == "track_standards_usage":
-                    result = await self._track_standards_usage(
+                    return await self._track_standards_usage(
                         arguments["standard_id"],
                         arguments["usage_type"],
                         arguments.get("section_id"),
                         arguments.get("context")
                     )
                 elif name == "get_recommendations":
-                    result = await self._get_recommendations(
+                    return await self._get_recommendations(
                         arguments.get("analysis_type", "gaps"),
                         arguments.get("context")
                     )
                 else:
-                    raise ValueError(f"Unknown tool: {name}")
-                
-                # Log the result before creating response
-                logger.debug(f"Tool {name} result: {result}")
-                
-                # Convert result to JSON and return as TextContent
-                return [TextContent(
-                    type="text",
-                    text=json.dumps(result, indent=2)
-                )]
+                    raise ToolNotFoundError(name)
+                    
+            except MCPError:
+                # Re-raise MCP errors
+                raise
             except Exception as e:
-                logger.error(f"Error in tool {name}: {e}", exc_info=True)
-                # Return error as TextContent
-                error_result = {
-                    "error": str(e),
-                    "tool": name
-                }
-                return [TextContent(
-                    type="text",
-                    text=json.dumps(error_result, indent=2)
-                )]
+                # Wrap unexpected errors
+                raise MCPError(
+                    code=ErrorCode.TOOL_EXECUTION_FAILED,
+                    message=f"Tool execution failed: {str(e)}",
+                    details={"tool": name, "error_type": type(e).__name__}
+                )
     
     async def _get_applicable_standards(
         self,
@@ -566,7 +686,11 @@ class MCPStandardsServer:
             with open(standard_path, 'r') as f:
                 return json.load(f)
         else:
-            raise ValueError(f"Standard '{standard_id}' not found")
+            raise MCPError(
+                code=ErrorCode.STANDARDS_NOT_FOUND,
+                message=f"Standard '{standard_id}' not found",
+                details={"standard_id": standard_id}
+            )
             
     async def _list_available_standards(
         self,
@@ -577,19 +701,34 @@ class MCPStandardsServer:
         standards = []
         
         # List cached standards
-        for file_path in self.synchronizer.cache_dir.glob("*.json"):
+        cache_dir = self.synchronizer.cache_dir
+        if not cache_dir.exists():
+            raise MCPError(
+                code=ErrorCode.RESOURCE_NOT_FOUND,
+                message="Standards cache directory not found",
+                suggestion="Run sync_standards to populate the cache"
+            )
+        
+        for file_path in cache_dir.glob("*.json"):
             try:
                 with open(file_path, 'r') as f:
                     standard = json.load(f)
                     
                 if category is None or standard.get("category") == category:
                     standards.append({
-                        "id": standard["id"],
-                        "name": standard["name"],
+                        "id": standard.get("id", file_path.stem),
+                        "name": standard.get("name", "Unknown"),
                         "category": standard.get("category"),
                         "tags": standard.get("tags", [])
                     })
-            except Exception:
+            except json.JSONDecodeError as e:
+                logger.warning(f"Invalid JSON in {file_path}: {e}")
+                continue
+            except KeyError as e:
+                logger.warning(f"Missing required field in {file_path}: {e}")
+                continue
+            except Exception as e:
+                logger.warning(f"Failed to load standard from {file_path}: {e}")
                 continue
                 
         return {"standards": standards[:limit]}
@@ -645,10 +784,11 @@ class MCPStandardsServer:
                 "message": result.message
             }
         except Exception as e:
-            return {
-                "status": "failed",
-                "error": str(e)
-            }
+            raise MCPError(
+                code=ErrorCode.STANDARDS_SYNC_FAILED,
+                message=f"Standards synchronization failed: {str(e)}",
+                details={"force": force}
+            )
             
     async def _get_optimized_standard(
         self,
@@ -707,7 +847,8 @@ class MCPStandardsServer:
             try:
                 standard = await self._get_standard_details(std_id)
                 standards.append(standard)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to load standard {std_id}: {e}")
                 continue
         
         # Estimate token distribution
@@ -823,7 +964,8 @@ class MCPStandardsServer:
             try:
                 standard = await self._get_standard_details(std_id)
                 standards.append(standard)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to load standard {std_id}: {e}")
                 continue
         
         # Estimate for each format
@@ -1097,6 +1239,54 @@ class MCPStandardsServer:
                 "analysis_type": analysis_type
             }
             
+    def _register_initialization_handler(self):
+        """Register the initialization request handler."""
+        @self.server.initialize()
+        async def initialize(init_request: InitializeRequest) -> None:
+            """Handle MCP initialization with optional authentication."""
+            # Extract client info if available
+            client_info = init_request.client_info if hasattr(init_request, 'client_info') else {}
+            
+            # Check for authentication in initialization
+            if self.auth_manager.is_enabled():
+                # Look for auth token in client_info
+                auth_token = client_info.get('authToken')
+                api_key = client_info.get('apiKey')
+                
+                if auth_token:
+                    is_valid, payload, error_msg = self.auth_manager.verify_token(auth_token)
+                    if not is_valid:
+                        logger.warning(f"Invalid auth token during initialization: {error_msg}")
+                elif api_key:
+                    is_valid, user_id, error_msg = self.auth_manager.verify_api_key(api_key)
+                    if not is_valid:
+                        logger.warning(f"Invalid API key during initialization: {error_msg}")
+                else:
+                    logger.info("No authentication provided during initialization")
+            
+            logger.info(f"MCP server initialized with client: {client_info.get('name', 'Unknown')}")
+    
+    def _check_rate_limit(self, user_key: str) -> bool:
+        """Check if user is within rate limits."""
+        now = time.time()
+        
+        # Clean up old entries
+        if user_key in self._rate_limit_store:
+            self._rate_limit_store[user_key] = [
+                timestamp for timestamp in self._rate_limit_store[user_key]
+                if now - timestamp < self.rate_limit_window
+            ]
+        else:
+            self._rate_limit_store[user_key] = []
+        
+        # Check if limit exceeded
+        if len(self._rate_limit_store[user_key]) >= self.rate_limit_max_requests:
+            return False
+        
+        # Add current request
+        self._rate_limit_store[user_key].append(now)
+        return True
+    
     async def run(self):
         """Run the MCP server."""
         async with stdio_server() as (read_stream, write_stream):

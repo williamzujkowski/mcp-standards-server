@@ -44,6 +44,7 @@ setup(
         "nltk>=3.8.0",
         "fuzzywuzzy>=0.18.0",
         "python-Levenshtein>=0.12.0",  # For better fuzzy matching performance
+        "PyJWT>=2.8.0",  # For JWT authentication
     ],
     extras_require={
         "test": [
