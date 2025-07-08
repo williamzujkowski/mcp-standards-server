@@ -67,21 +67,25 @@ jobs:
     - name: Start Redis (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        choco install redis-64 -y
-        redis-server --service-install
-        redis-server --service-start
+        # Install Redis using chocolatey
+        choco install redis-64 -y --no-progress
+        # Start Redis in the background directly (not as a service)
+        Start-Process -FilePath "C:\ProgramData\chocolatey\lib\redis-64\redis-server.exe" -WindowStyle Hidden
+        Start-Sleep -Seconds 5
+        # Test Redis connection
+        & "C:\ProgramData\chocolatey\lib\redis-64\redis-cli.exe" ping
       shell: pwsh
 
     - name: Run E2E tests with coverage
       run: |
-        export COVERAGE_PROCESS_START=${{ github.workspace }}/.coveragerc
-        export PYTHONPATH=${{ github.workspace }}:${{ github.workspace }}:$PYTHONPATH
-        pytest tests/e2e/ --cov=src --cov-report=term-missing --cov-report=xml --cov-report=html --cov-fail-under=0 --timeout=300 -v
-        coverage combine || true
+        # Clear any existing coverage data
+        coverage erase || true
+        rm -f .coverage* 2>/dev/null || true
+        # Run tests with coverage using pyproject.toml config
+        pytest tests/e2e/ --cov=src --cov-branch --cov-report=term-missing --cov-report=xml --cov-report=html --timeout=300 -v
       env:
         PYTHONPATH: ${{ github.workspace }}
         MCP_TEST_MODE: "true"
-        COVERAGE_PROCESS_START: ${{ github.workspace }}/.coveragerc
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4

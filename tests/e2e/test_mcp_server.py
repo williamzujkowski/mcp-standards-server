@@ -88,23 +88,13 @@ async def mcp_server():
         env["MCP_CONFIG_PATH"] = str(Path(__file__).parent / "test_config.json")
         env["MCP_DISABLE_SEARCH"] = "true"  # Disable search to avoid heavy deps
         
-        # Server parameters - run with coverage if available
-        coverage_run = ["coverage", "run", "-p", "--source=src", "-m"]
-        try:
-            # Check if coverage is available
-            import coverage
-            server_params = StdioServerParameters(
-                command="python",
-                args=["-m", "coverage", "run", "-p", "--source=src", "-m", "src.mcp_server"],
-                env=env
-            )
-        except ImportError:
-            # Fallback to regular python
-            server_params = StdioServerParameters(
-                command="python",
-                args=["-m", "src.mcp_server"],
-                env=env
-            )
+        # Server parameters - run directly without coverage subprocess
+        # Coverage will be handled by the parent process
+        server_params = StdioServerParameters(
+            command="python",
+            args=["-m", "src"],
+            env=env
+        )
         
         # Start server process
         process = await asyncio.create_subprocess_exec(
