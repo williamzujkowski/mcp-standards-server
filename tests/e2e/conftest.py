@@ -120,6 +120,13 @@ async def mcp_server(tmp_path):
     env["MCP_DISABLE_SEARCH"] = "true"  # Disable search to avoid heavy deps
     env["PYTHONPATH"] = str(Path(__file__).parent.parent.parent)  # Project root
     
+    # Enable coverage in subprocess
+    env["COVERAGE_PROCESS_START"] = str(Path(__file__).parent.parent.parent / ".coveragerc")
+    sitecustomize_path = Path(__file__).parent.parent.parent / "sitecustomize.py"
+    if sitecustomize_path.exists():
+        # Add the directory containing sitecustomize.py to PYTHONPATH
+        env["PYTHONPATH"] = f"{sitecustomize_path.parent}:{env['PYTHONPATH']}"
+    
     # Log environment for debugging
     logger.debug(f"MCP_STANDARDS_DATA_DIR: {env['MCP_STANDARDS_DATA_DIR']}")
     logger.debug(f"MCP_CONFIG_PATH: {env['MCP_CONFIG_PATH']}")
@@ -135,6 +142,7 @@ async def mcp_server(tmp_path):
     
     # Start server process
     logger.info("Starting server process...")
+    logger.debug(f"Command: {server_params.command} {' '.join(server_params.args)}")
     process = await asyncio.create_subprocess_exec(
         server_params.command,
         *server_params.args,
@@ -155,7 +163,9 @@ async def mcp_server(tmp_path):
             if process.returncode is not None:
                 # Process exited, read stderr for error info
                 stderr_data = await process.stderr.read()
+                stdout_data = await process.stdout.read()
                 logger.error(f"Server process exited with code {process.returncode}")
+                logger.error(f"Server stdout: {stdout_data.decode()}")
                 logger.error(f"Server stderr: {stderr_data.decode()}")
                 raise RuntimeError(f"Server failed to start: {stderr_data.decode()}")
             
@@ -210,18 +220,8 @@ async def mcp_client(mcp_server):
 
 def pytest_sessionfinish(session, exitstatus):
     """Combine coverage data after all tests."""
-    if os.environ.get("COVERAGE_PROCESS_START"):
-        # Coverage is running in subprocess mode
-        try:
-            subprocess.run(["coverage", "combine"], check=False)
-        except FileNotFoundError:
-            pass
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_coverage():
-    """Setup coverage for subprocesses."""
-    # Set environment variable to enable subprocess coverage
-    os.environ["COVERAGE_PROCESS_START"] = ".coveragerc"
-    yield
-    # Cleanup is handled in pytest_sessionfinish
+    # Always try to combine coverage data
+    try:
+        subprocess.run(["coverage", "combine"], check=False, capture_output=True)
+    except FileNotFoundError:
+        pass

@@ -127,6 +127,50 @@ def setup_test_data(data_dir: Path):
                 },
                 "standards": ["javascript-es6-standards", "react-18-patterns"],
                 "tags": ["javascript", "web", "frontend"]
+            },
+            {
+                "id": "python-api-rule",
+                "name": "Python API Application",
+                "priority": 8,
+                "conditions": {
+                    "logic": "AND",
+                    "conditions": [
+                        {
+                            "field": "project_type",
+                            "operator": "equals",
+                            "value": "api"
+                        },
+                        {
+                            "field": "language",
+                            "operator": "equals",
+                            "value": "python"
+                        }
+                    ]
+                },
+                "standards": ["python-testing"],
+                "tags": ["python", "api", "backend"]
+            },
+            {
+                "id": "mobile-app-rule",
+                "name": "Mobile Application",
+                "priority": 7,
+                "conditions": {
+                    "logic": "AND",
+                    "conditions": [
+                        {
+                            "field": "project_type",
+                            "operator": "equals",
+                            "value": "mobile_app"
+                        },
+                        {
+                            "field": "framework",
+                            "operator": "equals",
+                            "value": "react-native"
+                        }
+                    ]
+                },
+                "standards": ["react-18-patterns", "javascript-es6-standards"],
+                "tags": ["mobile", "react-native", "javascript"]
             }
         ]
     }
