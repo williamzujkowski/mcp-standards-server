@@ -73,58 +73,46 @@ class MCPTestClient:
 
 
 @pytest.fixture
-async def mcp_server():
+async def mcp_server(tmp_path):
     """Fixture to start and stop MCP server for tests."""
-    # Create temporary directory for test data
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        
-        # Set up test data
-        setup_test_data(temp_path)
-        
-        # Set up test environment
-        env = os.environ.copy()
-        env["MCP_STANDARDS_DATA_DIR"] = str(temp_path)
-        env["MCP_CONFIG_PATH"] = str(Path(__file__).parent / "test_config.json")
-        env["MCP_DISABLE_SEARCH"] = "true"  # Disable search to avoid heavy deps
-        
-        # Server parameters - run directly without coverage subprocess
-        # Coverage will be handled by the parent process
-        server_params = StdioServerParameters(
-            command="python",
-            args=["-m", "src"],
-            env=env
-        )
-        
-        # Start server process
-        process = await asyncio.create_subprocess_exec(
-            server_params.command,
-            *server_params.args,
-            env=server_params.env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        
-        # Wait for server to start
-        await asyncio.sleep(1)
-        
+    # Set up test data
+    setup_test_data(tmp_path)
+    
+    # Set up test environment
+    env = os.environ.copy()
+    env["MCP_STANDARDS_DATA_DIR"] = str(tmp_path)
+    env["MCP_CONFIG_PATH"] = str(Path(__file__).parent / "test_config.json")
+    env["MCP_DISABLE_SEARCH"] = "true"  # Disable search to avoid heavy deps
+    
+    # Server parameters - run directly without coverage subprocess
+    # Coverage will be handled by the parent process
+    server_params = StdioServerParameters(
+        command="python",
+        args=["-m", "src"],
+        env=env
+    )
+    
+    # Start server process
+    process = await asyncio.create_subprocess_exec(
+        server_params.command,
+        *server_params.args,
+        env=server_params.env,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    
+    # Wait for server to start
+    await asyncio.sleep(1)
+    
+    try:
         yield server_params
-        
+    finally:
         # Stop server
         try:
             process.terminate()
             await asyncio.wait_for(process.wait(), timeout=5.0)
         except (ProcessLookupError, asyncio.TimeoutError):
             # Process may have already exited
-            pass
-        
-        # Combine coverage data if we used coverage
-        try:
-            import coverage
-            import subprocess
-            # Try to combine coverage data
-            subprocess.run(["coverage", "combine"], check=False)
-        except (ImportError, FileNotFoundError):
             pass
 
 

@@ -89,8 +89,9 @@ def setup_test_data(data_dir: Path):
     sync_config = {
         "repository": {
             "owner": "test",
-            "name": "standards",
-            "branch": "main"
+            "repo": "standards",
+            "branch": "main",
+            "path": "standards/"
         },
         "paths": {
             "standards": "standards/",
