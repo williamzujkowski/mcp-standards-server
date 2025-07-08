@@ -78,6 +78,11 @@ class MCPError(Exception):
             field=field,
             suggestion=suggestion
         )
+    
+    @property
+    def code(self) -> ErrorCode:
+        """Access the error code for backward compatibility."""
+        return self.error_detail.code
         
     def to_dict(self) -> Dict[str, Any]:
         """Convert error to dictionary for JSON response."""
