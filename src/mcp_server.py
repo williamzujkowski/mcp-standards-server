@@ -9,7 +9,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -341,7 +341,7 @@ class MCPStandardsServer:
             ]
         
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Dict[str, Any]):
+        async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             """Handle tool calls."""
             logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
             try:
@@ -458,28 +458,22 @@ class MCPStandardsServer:
                 # Log the result before creating response
                 logger.debug(f"Tool {name} result: {result}")
                 
-                # Create the response
-                response_text = json.dumps(result, indent=2)
-                logger.debug(f"Response text type: {type(response_text)}, length: {len(response_text)}")
-                
-                return CallToolResult(
-                    content=[TextContent(
-                        type="text",
-                        text=response_text
-                    )]
-                )
+                # Convert result to JSON and return as TextContent
+                return [TextContent(
+                    type="text",
+                    text=json.dumps(result, indent=2)
+                )]
             except Exception as e:
                 logger.error(f"Error in tool {name}: {e}", exc_info=True)
-                error_text = json.dumps({
+                # Return error as TextContent
+                error_result = {
                     "error": str(e),
                     "tool": name
-                })
-                return CallToolResult(
-                    content=[TextContent(
-                        type="text",
-                        text=error_text
-                    )]
-                )
+                }
+                return [TextContent(
+                    type="text",
+                    text=json.dumps(error_result, indent=2)
+                )]
     
     async def _get_applicable_standards(
         self,
