@@ -1,0 +1,578 @@
+{% extends "standards/base.j2" %}
+
+{% block purpose %}
+This process standard defines the procedures, workflows, and methodologies for {{ title.lower() }}. It establishes consistent approaches across all {{ domain }} operations and ensures effective process management.
+
+**Process Focus Areas:**
+- **Process Design**: Structured workflow definition and optimization
+- **Role Clarity**: Clear roles and responsibilities
+- **Decision Making**: Defined decision points and criteria
+- **Quality Assurance**: Process validation and improvement
+- **Change Management**: Controlled process evolution
+{% endblock %}
+
+{% block scope %}
+This process standard applies to:
+- All {{ domain }} operational processes
+- Process stakeholders and participants
+- Process documentation and training
+- Process performance monitoring
+- Process improvement initiatives
+- Change management activities
+{% endblock %}
+
+{% block implementation %}
+### Process Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+{% if compliance_frameworks %}
+**Compliance Frameworks:** {{ compliance_frameworks | join(', ') }}
+{% endif %}
+
+### Process Design
+
+#### Process Overview
+```mermaid
+graph TD
+    A[Process Start] --> B{Initial Assessment}
+    B -->|Approved| C[Process Execution]
+    B -->|Rejected| D[Process Rejection]
+    C --> E[Quality Check]
+    E -->|Pass| F[Process Completion]
+    E -->|Fail| G[Process Revision]
+    G --> C
+    F --> H[Process End]
+    D --> H
+```
+
+#### Process Steps
+{% if process_steps %}
+{% for step in process_steps %}
+{{ loop.index }}. **{{ step.name }}**
+   - **Description**: {{ step.description }}
+   - **Responsible**: {{ step.responsible }}
+   - **Duration**: {{ step.duration }}
+   - **Inputs**: {{ step.inputs | join(', ') }}
+   - **Outputs**: {{ step.outputs | join(', ') }}
+   - **Decision Points**: {{ step.decision_points | join(', ') }}
+
+{% endfor %}
+{% else %}
+1. **Process Initiation**
+   - Define process objectives and scope
+   - Identify stakeholders and resources
+   - Establish success criteria
+
+2. **Process Planning**
+   - Develop detailed process plan
+   - Assign roles and responsibilities
+   - Create process timeline
+
+3. **Process Execution**
+   - Execute process steps according to plan
+   - Monitor progress and quality
+   - Document activities and decisions
+
+4. **Process Review**
+   - Conduct process review and validation
+   - Identify improvement opportunities
+   - Update process documentation
+
+5. **Process Closure**
+   - Complete process deliverables
+   - Conduct lessons learned session
+   - Archive process documentation
+{% endif %}
+
+### Roles and Responsibilities
+
+#### Process Owner
+```yaml
+role: Process Owner
+responsibilities:
+  - Define process objectives and scope
+  - Approve process changes and updates
+  - Ensure process compliance and effectiveness
+  - Resolve process-related issues and conflicts
+  - Report process performance metrics
+
+qualifications:
+  - Domain expertise in {{ domain }}
+  - Process management experience
+  - Understanding of compliance requirements
+  - Decision-making authority
+```
+
+#### Process Manager
+```yaml
+role: Process Manager
+responsibilities:
+  - Manage day-to-day process operations
+  - Coordinate process activities and resources
+  - Monitor process performance and quality
+  - Implement process improvements
+  - Provide process training and support
+
+qualifications:
+  - Process management certification
+  - Project management experience
+  - Strong communication skills
+  - Analytical and problem-solving abilities
+```
+
+#### Process Participants
+```yaml
+role: Process Participants
+responsibilities:
+  - Execute assigned process activities
+  - Follow process procedures and guidelines
+  - Report process issues and improvements
+  - Participate in process training
+  - Contribute to process improvement initiatives
+
+qualifications:
+  - Relevant technical or functional expertise
+  - Understanding of process requirements
+  - Attention to detail and quality focus
+  - Collaborative working style
+```
+
+### Decision Framework
+
+#### Decision Points
+{% if decision_points %}
+{% for decision in decision_points %}
+**{{ decision.name }}**
+- **Criteria**: {{ decision.criteria }}
+- **Decision Maker**: {{ decision.decision_maker }}
+- **Input Required**: {{ decision.input_required | join(', ') }}
+- **Possible Outcomes**: {{ decision.outcomes | join(', ') }}
+- **Escalation Path**: {{ decision.escalation_path }}
+
+{% endfor %}
+{% else %}
+**Process Approval Decision**
+- **Criteria**: Requirements met, resources available, stakeholder approval
+- **Decision Maker**: Process Owner
+- **Input Required**: Requirements analysis, resource assessment, stakeholder feedback
+- **Possible Outcomes**: Approved, Rejected, Conditional Approval
+- **Escalation Path**: Department Manager → Division Director
+
+**Quality Gate Decision**
+- **Criteria**: Quality standards met, testing completed, documentation current
+- **Decision Maker**: Quality Assurance Manager
+- **Input Required**: Quality metrics, test results, documentation review
+- **Possible Outcomes**: Pass, Fail, Conditional Pass
+- **Escalation Path**: Process Manager → Process Owner
+{% endif %}
+
+#### Decision Matrix
+```python
+# Example: Decision matrix implementation
+class DecisionMatrix:
+    def __init__(self):
+        self.criteria = {}
+        self.weights = {}
+        self.alternatives = {}
+    
+    def add_criterion(self, criterion_name, weight):
+        """Add a decision criterion with weight."""
+        self.criteria[criterion_name] = weight
+        self.weights[criterion_name] = weight
+    
+    def evaluate_alternative(self, alternative_name, scores):
+        """Evaluate an alternative against all criteria."""
+        if alternative_name not in self.alternatives:
+            self.alternatives[alternative_name] = {}
+        
+        weighted_score = 0
+        for criterion, score in scores.items():
+            if criterion in self.criteria:
+                weighted_score += score * self.weights[criterion]
+                self.alternatives[alternative_name][criterion] = score
+        
+        self.alternatives[alternative_name]['total_score'] = weighted_score
+        return weighted_score
+    
+    def get_best_alternative(self):
+        """Get the alternative with the highest score."""
+        if not self.alternatives:
+            return None
+        
+        best_alternative = max(self.alternatives.items(), 
+                             key=lambda x: x[1]['total_score'])
+        return best_alternative[0]
+```
+
+### Process Monitoring
+
+#### Key Performance Indicators
+```yaml
+kpis:
+  - name: "Process Cycle Time"
+    description: "Average time from process start to completion"
+    target: "< 5 business days"
+    measurement: "Days"
+    frequency: "Weekly"
+    
+  - name: "Process Quality Score"
+    description: "Percentage of processes completed without defects"
+    target: "> 95%"
+    measurement: "Percentage"
+    frequency: "Monthly"
+    
+  - name: "Process Compliance Rate"
+    description: "Percentage of processes following standard procedures"
+    target: "100%"
+    measurement: "Percentage"
+    frequency: "Monthly"
+    
+  - name: "Customer Satisfaction"
+    description: "Customer satisfaction with process outcomes"
+    target: "> 4.0/5.0"
+    measurement: "Rating"
+    frequency: "Quarterly"
+```
+
+#### Process Metrics Collection
+```python
+# Example: Process metrics collection system
+class ProcessMetrics:
+    def __init__(self):
+        self.metrics = {}
+        self.process_instances = {}
+    
+    def start_process_instance(self, process_id, instance_id):
+        """Start tracking a process instance."""
+        self.process_instances[instance_id] = {
+            'process_id': process_id,
+            'start_time': datetime.now(),
+            'end_time': None,
+            'status': 'In Progress',
+            'steps_completed': 0,
+            'quality_score': None
+        }
+    
+    def complete_process_step(self, instance_id, step_name, quality_score=None):
+        """Record completion of a process step."""
+        if instance_id in self.process_instances:
+            instance = self.process_instances[instance_id]
+            instance['steps_completed'] += 1
+            
+            if quality_score is not None:
+                if instance['quality_score'] is None:
+                    instance['quality_score'] = quality_score
+                else:
+                    # Average quality scores
+                    instance['quality_score'] = (instance['quality_score'] + quality_score) / 2
+    
+    def complete_process_instance(self, instance_id, final_status='Completed'):
+        """Complete a process instance."""
+        if instance_id in self.process_instances:
+            instance = self.process_instances[instance_id]
+            instance['end_time'] = datetime.now()
+            instance['status'] = final_status
+            
+            # Calculate cycle time
+            cycle_time = (instance['end_time'] - instance['start_time']).total_seconds() / 86400  # days
+            instance['cycle_time'] = cycle_time
+            
+            # Update process metrics
+            self.update_process_metrics(instance['process_id'], instance)
+    
+    def update_process_metrics(self, process_id, instance):
+        """Update aggregate process metrics."""
+        if process_id not in self.metrics:
+            self.metrics[process_id] = {
+                'total_instances': 0,
+                'completed_instances': 0,
+                'average_cycle_time': 0,
+                'average_quality_score': 0
+            }
+        
+        metrics = self.metrics[process_id]
+        metrics['total_instances'] += 1
+        
+        if instance['status'] == 'Completed':
+            metrics['completed_instances'] += 1
+            
+            # Update average cycle time
+            current_avg = metrics['average_cycle_time']
+            new_avg = ((current_avg * (metrics['completed_instances'] - 1)) + 
+                      instance['cycle_time']) / metrics['completed_instances']
+            metrics['average_cycle_time'] = new_avg
+            
+            # Update average quality score
+            if instance['quality_score'] is not None:
+                current_avg = metrics['average_quality_score']
+                new_avg = ((current_avg * (metrics['completed_instances'] - 1)) + 
+                          instance['quality_score']) / metrics['completed_instances']
+                metrics['average_quality_score'] = new_avg
+```
+
+### Process Improvement
+
+#### Continuous Improvement Framework
+```mermaid
+graph LR
+    A[Identify Issue] --> B[Analyze Root Cause]
+    B --> C[Develop Solution]
+    C --> D[Implement Solution]
+    D --> E[Monitor Results]
+    E --> F{Effective?}
+    F -->|Yes| G[Standardize]
+    F -->|No| B
+    G --> H[Document Changes]
+```
+
+#### Improvement Tracking
+```python
+# Example: Process improvement tracking
+class ProcessImprovement:
+    def __init__(self):
+        self.improvements = {}
+        self.improvement_counter = 0
+    
+    def propose_improvement(self, process_id, description, proposed_by):
+        """Propose a process improvement."""
+        self.improvement_counter += 1
+        improvement_id = f"PI-{self.improvement_counter:04d}"
+        
+        self.improvements[improvement_id] = {
+            'process_id': process_id,
+            'description': description,
+            'proposed_by': proposed_by,
+            'proposed_date': datetime.now(),
+            'status': 'Proposed',
+            'priority': 'Medium',
+            'expected_benefit': '',
+            'implementation_plan': '',
+            'approval_date': None,
+            'implementation_date': None,
+            'results': {}
+        }
+        
+        return improvement_id
+    
+    def approve_improvement(self, improvement_id, approver, implementation_plan):
+        """Approve a process improvement."""
+        if improvement_id in self.improvements:
+            improvement = self.improvements[improvement_id]
+            improvement['status'] = 'Approved'
+            improvement['approver'] = approver
+            improvement['approval_date'] = datetime.now()
+            improvement['implementation_plan'] = implementation_plan
+    
+    def implement_improvement(self, improvement_id, implementation_notes):
+        """Implement a process improvement."""
+        if improvement_id in self.improvements:
+            improvement = self.improvements[improvement_id]
+            improvement['status'] = 'Implemented'
+            improvement['implementation_date'] = datetime.now()
+            improvement['implementation_notes'] = implementation_notes
+    
+    def measure_improvement_results(self, improvement_id, metrics):
+        """Measure the results of a process improvement."""
+        if improvement_id in self.improvements:
+            improvement = self.improvements[improvement_id]
+            improvement['results'] = metrics
+            improvement['results_date'] = datetime.now()
+            
+            # Determine if improvement was successful
+            if self.is_improvement_successful(metrics):
+                improvement['status'] = 'Successful'
+            else:
+                improvement['status'] = 'Unsuccessful'
+```
+
+### Success Criteria
+
+#### Process Success Metrics
+{% if success_criteria %}
+{% for criterion in success_criteria %}
+- {{ criterion }}
+{% endfor %}
+{% else %}
+- **Timeliness**: Process completed within defined timeframes
+- **Quality**: Process outputs meet quality standards
+- **Compliance**: Process follows all required procedures
+- **Customer Satisfaction**: Process outcomes meet customer expectations
+- **Efficiency**: Process resources used effectively
+- **Effectiveness**: Process objectives achieved
+{% endif %}
+
+#### Process Validation
+```python
+# Example: Process validation framework
+class ProcessValidation:
+    def __init__(self):
+        self.validation_rules = {}
+        self.validation_results = {}
+    
+    def define_validation_rule(self, rule_id, description, validation_logic):
+        """Define a process validation rule."""
+        self.validation_rules[rule_id] = {
+            'description': description,
+            'validation_logic': validation_logic,
+            'active': True
+        }
+    
+    def validate_process_instance(self, instance_id, process_data):
+        """Validate a process instance against all rules."""
+        validation_results = {
+            'instance_id': instance_id,
+            'validation_date': datetime.now(),
+            'passed': True,
+            'rule_results': {}
+        }
+        
+        for rule_id, rule in self.validation_rules.items():
+            if rule['active']:
+                result = self.apply_validation_rule(rule_id, process_data)
+                validation_results['rule_results'][rule_id] = result
+                
+                if not result['passed']:
+                    validation_results['passed'] = False
+        
+        self.validation_results[instance_id] = validation_results
+        return validation_results
+    
+    def apply_validation_rule(self, rule_id, process_data):
+        """Apply a specific validation rule."""
+        rule = self.validation_rules[rule_id]
+        
+        try:
+            # Execute validation logic
+            passed = rule['validation_logic'](process_data)
+            return {
+                'rule_id': rule_id,
+                'passed': passed,
+                'message': f"Validation rule {rule_id} {'passed' if passed else 'failed'}"
+            }
+        except Exception as e:
+            return {
+                'rule_id': rule_id,
+                'passed': False,
+                'message': f"Validation rule {rule_id} failed with error: {str(e)}"
+            }
+```
+{% endblock %}
+
+{% block monitoring %}
+### Process Monitoring
+
+#### Real-time Process Monitoring
+```python
+# Example: Real-time process monitoring
+class ProcessMonitor:
+    def __init__(self):
+        self.active_processes = {}
+        self.monitoring_rules = {}
+        self.alerts = []
+    
+    def monitor_process(self, process_id, monitoring_interval=60):
+        """Start monitoring a process."""
+        self.active_processes[process_id] = {
+            'monitoring_start': datetime.now(),
+            'last_check': datetime.now(),
+            'status': 'Active',
+            'monitoring_interval': monitoring_interval
+        }
+    
+    def check_process_health(self, process_id):
+        """Check the health of a monitored process."""
+        if process_id not in self.active_processes:
+            return False
+        
+        process_info = self.active_processes[process_id]
+        
+        # Check if process is still running
+        if self.is_process_running(process_id):
+            process_info['last_check'] = datetime.now()
+            process_info['status'] = 'Active'
+            return True
+        else:
+            process_info['status'] = 'Inactive'
+            self.generate_alert(process_id, 'Process not responding')
+            return False
+    
+    def generate_alert(self, process_id, message):
+        """Generate a process monitoring alert."""
+        alert = {
+            'process_id': process_id,
+            'message': message,
+            'timestamp': datetime.now(),
+            'severity': 'High',
+            'acknowledged': False
+        }
+        
+        self.alerts.append(alert)
+        
+        # Send notification
+        self.send_alert_notification(alert)
+```
+
+#### Process Performance Dashboard
+```yaml
+# Example: Process performance dashboard configuration
+dashboard:
+  title: "Process Performance Dashboard"
+  refresh_interval: "5 minutes"
+  
+  widgets:
+    - type: "metric"
+      title: "Active Processes"
+      query: "count(active_processes)"
+      color: "blue"
+      
+    - type: "chart"
+      title: "Process Cycle Time Trend"
+      query: "avg(cycle_time) by process_id"
+      chart_type: "line"
+      time_range: "7 days"
+      
+    - type: "table"
+      title: "Process Quality Scores"
+      query: "process_quality_scores"
+      columns: ["Process ID", "Quality Score", "Last Updated"]
+      
+    - type: "alert_list"
+      title: "Process Alerts"
+      query: "active_alerts"
+      max_items: 10
+```
+{% endblock %}
+
+{% block references %}
+### Process References
+
+#### Process Management Standards
+- ISO 9001: Quality Management Systems
+- ISO/IEC 15504: Process Assessment
+- CMMI: Capability Maturity Model Integration
+- ITIL: Information Technology Infrastructure Library
+
+#### Process Improvement Methodologies
+- Lean Six Sigma
+- Business Process Reengineering (BPR)
+- Kaizen (Continuous Improvement)
+- DMAIC (Define, Measure, Analyze, Improve, Control)
+
+#### Process Documentation
+{% if process_steps %}
+- Process Flow Diagrams
+- Work Instructions
+- Process Validation Records
+- Training Materials
+{% endif %}
+
+#### Related Standards
+{% if dependencies %}
+{% for dependency in dependencies %}
+- {{ dependency }}
+{% endfor %}
+{% endif %}
+{% endblock %}

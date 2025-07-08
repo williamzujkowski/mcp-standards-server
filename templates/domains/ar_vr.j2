@@ -1,0 +1,1255 @@
+{% extends "standards/technical.j2" %}
+
+{% block purpose %}
+This AR/VR standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It provides comprehensive guidance for immersive experience development, spatial computing, and cross-platform AR/VR applications while ensuring user safety and optimal performance.
+
+**AR/VR Focus Areas:**
+- **Immersive Experience Design**: User-centered design for 3D environments
+- **Spatial Computing**: Mixed reality and spatial interaction patterns
+- **Performance Optimization**: Frame rate, latency, and resource management
+- **Platform Integration**: Cross-platform development and deployment
+- **User Safety**: Comfort, accessibility, and health considerations
+- **Content Creation**: 3D assets, animations, and interactive elements
+{% endblock %}
+
+{% block scope %}
+This AR/VR standard applies to:
+- All augmented reality and virtual reality applications
+- Mixed reality (MR) and extended reality (XR) projects
+- Spatial computing and 3D interaction systems
+- Immersive content creation and management
+- Cross-platform AR/VR development
+- User experience design for immersive environments
+- Performance optimization for real-time rendering
+- Platform-specific deployment and optimization
+{% endblock %}
+
+{% block implementation %}
+### AR/VR Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+**Spatial Computing Framework:** Mixed reality and spatial interaction design
+**User Safety Guidelines:** Comfort, accessibility, and health considerations
+**Performance Standards:** Frame rate, latency, and resource optimization
+
+### Immersive Experience Architecture
+
+#### AR/VR Development Pipeline
+```mermaid
+graph LR
+    A[Concept Design] --> B[3D Asset Creation]
+    B --> C[Environment Setup]
+    C --> D[Interaction Design]
+    D --> E[Performance Optimization]
+    E --> F[Platform Testing]
+    F --> G[User Testing]
+    G --> H[Deployment]
+    H --> I[Monitoring]
+    I --> J[Updates]
+    J --> G
+```
+
+#### Spatial Computing Framework
+```csharp
+// Example: Unity AR/VR spatial computing framework
+using UnityEngine;
+using UnityEngine.XR;
+using UnityEngine.XR.ARFoundation;
+
+public class SpatialComputingManager : MonoBehaviour
+{
+    [Header("AR/VR Configuration")]
+    public XROrigin xrOrigin;
+    public ARPlaneManager planeManager;
+    public ARAnchorManager anchorManager;
+    
+    [Header("Interaction Systems")]
+    public SpatialInteractionSystem interactionSystem;
+    public HandTrackingSystem handTracking;
+    public EyeTrackingSystem eyeTracking;
+    
+    private Dictionary<string, SpatialObject> spatialObjects = new Dictionary<string, SpatialObject>();
+    private PerformanceMonitor performanceMonitor;
+    
+    void Start()
+    {
+        InitializeSpatialComputing();
+        SetupPerformanceMonitoring();
+    }
+    
+    void InitializeSpatialComputing()
+    {
+        // Initialize XR subsystems
+        if (XRSettings.enabled)
+        {
+            Debug.Log("XR enabled: " + XRSettings.loadedDeviceName);
+            
+            // Configure tracking systems
+            SetupPlaneDetection();
+            SetupAnchorTracking();
+            SetupInteractionSystems();
+        }
+    }
+    
+    void SetupPlaneDetection()
+    {
+        if (planeManager != null)
+        {
+            planeManager.planesChanged += OnPlanesChanged;
+            planeManager.requestedDetectionMode = PlaneDetectionMode.Horizontal | PlaneDetectionMode.Vertical;
+        }
+    }
+    
+    void SetupAnchorTracking()
+    {
+        if (anchorManager != null)
+        {
+            anchorManager.anchorsChanged += OnAnchorsChanged;
+        }
+    }
+    
+    void SetupInteractionSystems()
+    {
+        if (interactionSystem != null)
+        {
+            interactionSystem.OnObjectSelected += HandleObjectSelection;
+            interactionSystem.OnObjectManipulated += HandleObjectManipulation;
+        }
+    }
+    
+    void OnPlanesChanged(ARPlanesChangedEventArgs args)
+    {
+        // Handle plane detection
+        foreach (var plane in args.added)
+        {
+            Debug.Log($"New plane detected: {plane.trackableId}");
+            CreateSpatialAnchors(plane);
+        }
+        
+        foreach (var plane in args.updated)
+        {
+            Debug.Log($"Plane updated: {plane.trackableId}");
+            UpdateSpatialObjects(plane);
+        }
+    }
+    
+    void OnAnchorsChanged(ARAnchorsChangedEventArgs args)
+    {
+        // Handle anchor tracking
+        foreach (var anchor in args.added)
+        {
+            Debug.Log($"New anchor created: {anchor.trackableId}");
+            RegisterSpatialObject(anchor);
+        }
+    }
+    
+    void CreateSpatialAnchors(ARPlane plane)
+    {
+        // Create spatial anchors for persistent object placement
+        Vector3 anchorPosition = plane.center;
+        Quaternion anchorRotation = plane.transform.rotation;
+        
+        var anchorRequest = new ARAnchorRequest
+        {
+            position = anchorPosition,
+            rotation = anchorRotation
+        };
+        
+        anchorManager.RequestAnchor(anchorRequest);
+    }
+    
+    void RegisterSpatialObject(ARAnchor anchor)
+    {
+        var spatialObject = new SpatialObject
+        {
+            Id = anchor.trackableId.ToString(),
+            Position = anchor.transform.position,
+            Rotation = anchor.transform.rotation,
+            Timestamp = Time.time
+        };
+        
+        spatialObjects[spatialObject.Id] = spatialObject;
+    }
+    
+    void HandleObjectSelection(SpatialObject obj)
+    {
+        Debug.Log($"Object selected: {obj.Id}");
+        // Implement object selection logic
+    }
+    
+    void HandleObjectManipulation(SpatialObject obj, Vector3 position, Quaternion rotation)
+    {
+        Debug.Log($"Object manipulated: {obj.Id}");
+        // Update object position and rotation
+        obj.Position = position;
+        obj.Rotation = rotation;
+    }
+    
+    void SetupPerformanceMonitoring()
+    {
+        performanceMonitor = new PerformanceMonitor();
+        performanceMonitor.StartMonitoring();
+    }
+    
+    void Update()
+    {
+        // Monitor performance metrics
+        performanceMonitor.UpdateMetrics();
+        
+        // Check for performance issues
+        if (performanceMonitor.FrameRate < 60)
+        {
+            Debug.LogWarning($"Low frame rate detected: {performanceMonitor.FrameRate}");
+            OptimizePerformance();
+        }
+    }
+    
+    void OptimizePerformance()
+    {
+        // Implement performance optimization strategies
+        ReduceRenderingQuality();
+        OptimizeGeometry();
+        ManageMemoryUsage();
+    }
+}
+
+[System.Serializable]
+public class SpatialObject
+{
+    public string Id;
+    public Vector3 Position;
+    public Quaternion Rotation;
+    public float Timestamp;
+    public Dictionary<string, object> Properties;
+}
+```
+
+#### Performance Optimization Framework
+```csharp
+// Example: VR performance optimization system
+public class VRPerformanceOptimizer : MonoBehaviour
+{
+    [Header("Performance Targets")]
+    public float targetFrameRate = 90f;
+    public float targetLatency = 20f; // milliseconds
+    
+    [Header("Optimization Settings")]
+    public bool dynamicResolution = true;
+    public bool fixedFoveatedRendering = true;
+    public bool adaptiveQuality = true;
+    
+    private PerformanceMetrics metrics;
+    private QualitySettings qualitySettings;
+    
+    void Start()
+    {
+        InitializePerformanceOptimization();
+    }
+    
+    void InitializePerformanceOptimization()
+    {
+        metrics = new PerformanceMetrics();
+        qualitySettings = new QualitySettings();
+        
+        // Set initial quality settings
+        SetOptimalQualitySettings();
+        
+        // Enable performance monitoring
+        StartCoroutine(MonitorPerformance());
+    }
+    
+    void SetOptimalQualitySettings()
+    {
+        // Configure rendering settings for VR
+        QualitySettings.vSyncCount = 0; // Disable VSync for VR
+        QualitySettings.antiAliasing = 0; // Use MSAA instead
+        
+        // Set texture quality
+        QualitySettings.masterTextureLimit = 0;
+        QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+        
+        // Configure shadows
+        QualitySettings.shadowResolution = ShadowResolution.Medium;
+        QualitySettings.shadowDistance = 50f;
+        
+        // Enable GPU instancing
+        Graphics.SetRenderTarget(null);
+    }
+    
+    IEnumerator MonitorPerformance()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(1f);
+            
+            // Update performance metrics
+            metrics.UpdateMetrics();
+            
+            // Apply dynamic optimizations
+            if (adaptiveQuality)
+            {
+                ApplyAdaptiveQuality();
+            }
+            
+            // Check for performance issues
+            CheckPerformanceThresholds();
+        }
+    }
+    
+    void ApplyAdaptiveQuality()
+    {
+        float currentFrameRate = metrics.FrameRate;
+        float frameRateRatio = currentFrameRate / targetFrameRate;
+        
+        if (frameRateRatio < 0.9f)
+        {
+            // Reduce quality
+            ReduceQuality();
+        }
+        else if (frameRateRatio > 1.1f)
+        {
+            // Increase quality
+            IncreaseQuality();
+        }
+    }
+    
+    void ReduceQuality()
+    {
+        // Reduce rendering resolution
+        if (dynamicResolution)
+        {
+            XRSettings.renderViewportScale = Mathf.Max(0.7f, XRSettings.renderViewportScale - 0.1f);
+        }
+        
+        // Reduce texture quality
+        QualitySettings.masterTextureLimit = Mathf.Min(2, QualitySettings.masterTextureLimit + 1);
+        
+        // Reduce shadow quality
+        QualitySettings.shadowDistance = Mathf.Max(20f, QualitySettings.shadowDistance - 10f);
+    }
+    
+    void IncreaseQuality()
+    {
+        // Increase rendering resolution
+        if (dynamicResolution)
+        {
+            XRSettings.renderViewportScale = Mathf.Min(1.0f, XRSettings.renderViewportScale + 0.05f);
+        }
+        
+        // Increase texture quality
+        QualitySettings.masterTextureLimit = Mathf.Max(0, QualitySettings.masterTextureLimit - 1);
+        
+        // Increase shadow quality
+        QualitySettings.shadowDistance = Mathf.Min(100f, QualitySettings.shadowDistance + 5f);
+    }
+    
+    void CheckPerformanceThresholds()
+    {
+        // Check frame rate
+        if (metrics.FrameRate < targetFrameRate * 0.8f)
+        {
+            Debug.LogWarning($"Frame rate below threshold: {metrics.FrameRate}");
+            TriggerPerformanceAlert("Low Frame Rate");
+        }
+        
+        // Check latency
+        if (metrics.MotionToPhotonLatency > targetLatency * 1.5f)
+        {
+            Debug.LogWarning($"Latency above threshold: {metrics.MotionToPhotonLatency}ms");
+            TriggerPerformanceAlert("High Latency");
+        }
+    }
+    
+    void TriggerPerformanceAlert(string alertType)
+    {
+        // Implement performance alert system
+        Debug.Log($"Performance Alert: {alertType}");
+    }
+}
+
+public class PerformanceMetrics
+{
+    public float FrameRate { get; private set; }
+    public float MotionToPhotonLatency { get; private set; }
+    public float GPUTime { get; private set; }
+    public float CPUTime { get; private set; }
+    public long MemoryUsage { get; private set; }
+    
+    public void UpdateMetrics()
+    {
+        FrameRate = 1.0f / Time.deltaTime;
+        MotionToPhotonLatency = CalculateMotionToPhotonLatency();
+        GPUTime = UnityEngine.Profiling.Profiler.GetRuntimeMemorySize(null);
+        CPUTime = Time.realtimeSinceStartup;
+        MemoryUsage = System.GC.GetTotalMemory(false);
+    }
+    
+    private float CalculateMotionToPhotonLatency()
+    {
+        // Simplified latency calculation
+        return Time.deltaTime * 1000f; // Convert to milliseconds
+    }
+}
+```
+
+### User Experience and Safety
+
+#### Comfort and Safety Guidelines
+```csharp
+// Example: VR comfort and safety system
+public class VRComfortSystem : MonoBehaviour
+{
+    [Header("Comfort Settings")]
+    public float maxPlayTime = 3600f; // 1 hour
+    public float comfortBreakInterval = 1800f; // 30 minutes
+    public bool enableComfortVignette = true;
+    public bool enableTeleportation = true;
+    
+    [Header("Motion Sickness Prevention")]
+    public float maxAngularVelocity = 90f; // degrees per second
+    public float maxLinearAcceleration = 5f; // m/s²
+    public bool enableStaticReference = true;
+    
+    private float sessionStartTime;
+    private float lastComfortBreak;
+    private VRComfortMetrics comfortMetrics;
+    
+    void Start()
+    {
+        InitializeComfortSystem();
+    }
+    
+    void InitializeComfortSystem()
+    {
+        sessionStartTime = Time.time;
+        lastComfortBreak = Time.time;
+        comfortMetrics = new VRComfortMetrics();
+        
+        // Configure comfort settings
+        SetupComfortVignette();
+        SetupTeleportation();
+        SetupMotionSicknessPreventions();
+    }
+    
+    void SetupComfortVignette()
+    {
+        if (enableComfortVignette)
+        {
+            // Implement vignette effect for comfort
+            var vignetteEffect = Camera.main.gameObject.AddComponent<VignetteEffect>();
+            vignetteEffect.intensity = 0.3f;
+            vignetteEffect.smoothness = 0.5f;
+        }
+    }
+    
+    void SetupTeleportation()
+    {
+        if (enableTeleportation)
+        {
+            // Configure teleportation for comfort
+            var teleportController = FindObjectOfType<TeleportController>();
+            if (teleportController != null)
+            {
+                teleportController.fadeTime = 0.3f;
+                teleportController.enableCurvedPointer = true;
+            }
+        }
+    }
+    
+    void SetupMotionSicknessPreventions()
+    {
+        // Configure motion sickness prevention
+        var locomotionSystem = FindObjectOfType<LocomotionSystem>();
+        if (locomotionSystem != null)
+        {
+            locomotionSystem.maxAngularVelocity = maxAngularVelocity;
+            locomotionSystem.maxLinearAcceleration = maxLinearAcceleration;
+        }
+    }
+    
+    void Update()
+    {
+        // Monitor user comfort
+        MonitorComfortMetrics();
+        
+        // Check for comfort breaks
+        CheckComfortBreaks();
+        
+        // Monitor motion sickness indicators
+        MonitorMotionSickness();
+    }
+    
+    void MonitorComfortMetrics()
+    {
+        comfortMetrics.UpdateMetrics();
+        
+        // Check for excessive motion
+        if (comfortMetrics.AngularVelocity > maxAngularVelocity)
+        {
+            TriggerComfortIntervention("Excessive rotation detected");
+        }
+        
+        if (comfortMetrics.LinearAcceleration > maxLinearAcceleration)
+        {
+            TriggerComfortIntervention("Excessive acceleration detected");
+        }
+    }
+    
+    void CheckComfortBreaks()
+    {
+        float currentTime = Time.time;
+        float sessionDuration = currentTime - sessionStartTime;
+        float timeSinceBreak = currentTime - lastComfortBreak;
+        
+        // Suggest comfort break
+        if (timeSinceBreak > comfortBreakInterval)
+        {
+            SuggestComfortBreak();
+        }
+        
+        // Enforce maximum session time
+        if (sessionDuration > maxPlayTime)
+        {
+            EnforceSessionEnd();
+        }
+    }
+    
+    void SuggestComfortBreak()
+    {
+        Debug.Log("Suggesting comfort break");
+        // Implement comfort break UI
+        ShowComfortBreakNotification();
+    }
+    
+    void EnforceSessionEnd()
+    {
+        Debug.Log("Enforcing session end for user safety");
+        // Implement session end enforcement
+        ShowSessionEndNotification();
+    }
+    
+    void TriggerComfortIntervention(string reason)
+    {
+        Debug.Log($"Comfort intervention: {reason}");
+        // Implement comfort intervention
+        ActivateComfortMeasures();
+    }
+    
+    void ActivateComfortMeasures()
+    {
+        // Enable comfort vignette
+        if (enableComfortVignette)
+        {
+            var vignetteEffect = Camera.main.GetComponent<VignetteEffect>();
+            if (vignetteEffect != null)
+            {
+                vignetteEffect.intensity = 0.7f;
+            }
+        }
+        
+        // Enable static reference
+        if (enableStaticReference)
+        {
+            ShowStaticReference();
+        }
+    }
+    
+    void ShowStaticReference()
+    {
+        // Display static reference object for comfort
+        var staticReference = GameObject.FindGameObjectWithTag("StaticReference");
+        if (staticReference != null)
+        {
+            staticReference.SetActive(true);
+        }
+    }
+    
+    void ShowComfortBreakNotification()
+    {
+        // Implement comfort break notification UI
+    }
+    
+    void ShowSessionEndNotification()
+    {
+        // Implement session end notification UI
+    }
+}
+
+public class VRComfortMetrics
+{
+    public float AngularVelocity { get; private set; }
+    public float LinearAcceleration { get; private set; }
+    public float HeadMovementSpeed { get; private set; }
+    public float EyeStrain { get; private set; }
+    
+    private Vector3 lastHeadPosition;
+    private Vector3 lastHeadRotation;
+    
+    public void UpdateMetrics()
+    {
+        // Calculate head movement metrics
+        var headTransform = Camera.main.transform;
+        
+        // Angular velocity
+        Vector3 currentRotation = headTransform.eulerAngles;
+        Vector3 rotationDelta = currentRotation - lastHeadRotation;
+        AngularVelocity = rotationDelta.magnitude / Time.deltaTime;
+        lastHeadRotation = currentRotation;
+        
+        // Linear acceleration
+        Vector3 currentPosition = headTransform.position;
+        Vector3 positionDelta = currentPosition - lastHeadPosition;
+        LinearAcceleration = positionDelta.magnitude / (Time.deltaTime * Time.deltaTime);
+        lastHeadPosition = currentPosition;
+        
+        // Head movement speed
+        HeadMovementSpeed = positionDelta.magnitude / Time.deltaTime;
+        
+        // Eye strain (simplified calculation)
+        EyeStrain = CalculateEyeStrain();
+    }
+    
+    private float CalculateEyeStrain()
+    {
+        // Simplified eye strain calculation based on rendering metrics
+        float frameRate = 1.0f / Time.deltaTime;
+        float targetFrameRate = 90f;
+        
+        return Mathf.Max(0, 1.0f - (frameRate / targetFrameRate));
+    }
+}
+```
+
+### Cross-Platform Development
+
+#### Platform Abstraction Layer
+```csharp
+// Example: Cross-platform AR/VR abstraction
+public abstract class XRPlatformAdapter : MonoBehaviour
+{
+    public abstract string PlatformName { get; }
+    public abstract bool IsVRSupported { get; }
+    public abstract bool IsARSupported { get; }
+    
+    public abstract void Initialize();
+    public abstract void Shutdown();
+    public abstract void UpdateTracking();
+    public abstract Vector3 GetHeadPosition();
+    public abstract Quaternion GetHeadRotation();
+    public abstract bool IsControllerConnected(int controllerIndex);
+    public abstract Vector3 GetControllerPosition(int controllerIndex);
+    public abstract Quaternion GetControllerRotation(int controllerIndex);
+}
+
+public class UniversalXRAdapter : XRPlatformAdapter
+{
+    public override string PlatformName => "Universal XR";
+    public override bool IsVRSupported => XRSettings.enabled;
+    public override bool IsARSupported => ARSubsystemManager.systemState == ARSystemState.Ready;
+    
+    private Camera xrCamera;
+    private InputDevice[] controllers;
+    
+    void Start()
+    {
+        Initialize();
+    }
+    
+    public override void Initialize()
+    {
+        // Initialize XR systems
+        xrCamera = Camera.main;
+        controllers = new InputDevice[2];
+        
+        // Configure platform-specific settings
+        ConfigurePlatformSettings();
+        
+        // Setup tracking
+        SetupTracking();
+    }
+    
+    void ConfigurePlatformSettings()
+    {
+        // Platform-specific configuration
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            ConfigureAndroidSettings();
+        }
+        else if (Application.platform == RuntimePlatform.IPhonePlayer)
+        {
+            ConfigureIOSSettings();
+        }
+        else
+        {
+            ConfigureDesktopSettings();
+        }
+    }
+    
+    void ConfigureAndroidSettings()
+    {
+        // Android-specific VR/AR settings
+        XRSettings.renderViewportScale = 1.0f;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+    }
+    
+    void ConfigureIOSSettings()
+    {
+        // iOS-specific VR/AR settings
+        XRSettings.renderViewportScale = 1.2f;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+    }
+    
+    void ConfigureDesktopSettings()
+    {
+        // Desktop VR settings
+        XRSettings.renderViewportScale = 1.0f;
+        QualitySettings.vSyncCount = 0;
+    }
+    
+    void SetupTracking()
+    {
+        // Setup head tracking
+        if (xrCamera != null)
+        {
+            xrCamera.transform.localPosition = Vector3.zero;
+            xrCamera.transform.localRotation = Quaternion.identity;
+        }
+        
+        // Setup controller tracking
+        SetupControllerTracking();
+    }
+    
+    void SetupControllerTracking()
+    {
+        var inputDevices = new List<InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(
+            InputDeviceCharacteristics.Controller,
+            inputDevices
+        );
+        
+        for (int i = 0; i < Mathf.Min(inputDevices.Count, controllers.Length); i++)
+        {
+            controllers[i] = inputDevices[i];
+        }
+    }
+    
+    public override void UpdateTracking()
+    {
+        // Update controller tracking
+        SetupControllerTracking();
+    }
+    
+    public override Vector3 GetHeadPosition()
+    {
+        return xrCamera != null ? xrCamera.transform.position : Vector3.zero;
+    }
+    
+    public override Quaternion GetHeadRotation()
+    {
+        return xrCamera != null ? xrCamera.transform.rotation : Quaternion.identity;
+    }
+    
+    public override bool IsControllerConnected(int controllerIndex)
+    {
+        return controllerIndex < controllers.Length && 
+               controllers[controllerIndex].isValid;
+    }
+    
+    public override Vector3 GetControllerPosition(int controllerIndex)
+    {
+        if (IsControllerConnected(controllerIndex))
+        {
+            Vector3 position;
+            if (controllers[controllerIndex].TryGetFeatureValue(
+                CommonUsages.devicePosition, out position))
+            {
+                return position;
+            }
+        }
+        return Vector3.zero;
+    }
+    
+    public override Quaternion GetControllerRotation(int controllerIndex)
+    {
+        if (IsControllerConnected(controllerIndex))
+        {
+            Quaternion rotation;
+            if (controllers[controllerIndex].TryGetFeatureValue(
+                CommonUsages.deviceRotation, out rotation))
+            {
+                return rotation;
+            }
+        }
+        return Quaternion.identity;
+    }
+    
+    public override void Shutdown()
+    {
+        // Cleanup XR systems
+        XRSettings.enabled = false;
+    }
+}
+```
+
+### Content Creation and Management
+
+#### Asset Pipeline
+```csharp
+// Example: AR/VR asset management system
+public class XRAssetManager : MonoBehaviour
+{
+    [Header("Asset Configuration")]
+    public string assetBundlePath = "Assets/XRAssets";
+    public int maxLoadedAssets = 50;
+    public float assetUnloadDelay = 30f;
+    
+    private Dictionary<string, GameObject> loadedAssets = new Dictionary<string, GameObject>();
+    private Dictionary<string, float> assetLastUsed = new Dictionary<string, float>();
+    private AssetBundle currentAssetBundle;
+    
+    void Start()
+    {
+        InitializeAssetManager();
+    }
+    
+    void InitializeAssetManager()
+    {
+        // Load asset bundles
+        LoadAssetBundles();
+        
+        // Start asset management coroutine
+        StartCoroutine(ManageAssets());
+    }
+    
+    void LoadAssetBundles()
+    {
+        // Load platform-specific asset bundles
+        string platformPath = GetPlatformAssetPath();
+        
+        if (System.IO.File.Exists(platformPath))
+        {
+            currentAssetBundle = AssetBundle.LoadFromFile(platformPath);
+            Debug.Log($"Loaded asset bundle: {platformPath}");
+        }
+        else
+        {
+            Debug.LogError($"Asset bundle not found: {platformPath}");
+        }
+    }
+    
+    string GetPlatformAssetPath()
+    {
+        string platformName = "";
+        
+        #if UNITY_ANDROID
+        platformName = "Android";
+        #elif UNITY_IOS
+        platformName = "iOS";
+        #elif UNITY_STANDALONE_WIN
+        platformName = "Windows";
+        #elif UNITY_STANDALONE_OSX
+        platformName = "macOS";
+        #endif
+        
+        return Path.Combine(assetBundlePath, platformName, "xrassets");
+    }
+    
+    public GameObject LoadAsset(string assetName)
+    {
+        // Check if asset is already loaded
+        if (loadedAssets.ContainsKey(assetName))
+        {
+            assetLastUsed[assetName] = Time.time;
+            return loadedAssets[assetName];
+        }
+        
+        // Load asset from bundle
+        if (currentAssetBundle != null)
+        {
+            GameObject assetPrefab = currentAssetBundle.LoadAsset<GameObject>(assetName);
+            
+            if (assetPrefab != null)
+            {
+                GameObject instance = Instantiate(assetPrefab);
+                loadedAssets[assetName] = instance;
+                assetLastUsed[assetName] = Time.time;
+                
+                Debug.Log($"Loaded asset: {assetName}");
+                return instance;
+            }
+        }
+        
+        Debug.LogError($"Failed to load asset: {assetName}");
+        return null;
+    }
+    
+    public void UnloadAsset(string assetName)
+    {
+        if (loadedAssets.ContainsKey(assetName))
+        {
+            Destroy(loadedAssets[assetName]);
+            loadedAssets.Remove(assetName);
+            assetLastUsed.Remove(assetName);
+            
+            Debug.Log($"Unloaded asset: {assetName}");
+        }
+    }
+    
+    IEnumerator ManageAssets()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(10f);
+            
+            // Check for assets to unload
+            if (loadedAssets.Count > maxLoadedAssets)
+            {
+                UnloadUnusedAssets();
+            }
+            
+            // Unload old assets
+            UnloadOldAssets();
+        }
+    }
+    
+    void UnloadUnusedAssets()
+    {
+        var assetsToUnload = assetLastUsed
+            .OrderBy(kvp => kvp.Value)
+            .Take(loadedAssets.Count - maxLoadedAssets)
+            .Select(kvp => kvp.Key)
+            .ToList();
+        
+        foreach (var assetName in assetsToUnload)
+        {
+            UnloadAsset(assetName);
+        }
+    }
+    
+    void UnloadOldAssets()
+    {
+        float currentTime = Time.time;
+        var oldAssets = assetLastUsed
+            .Where(kvp => currentTime - kvp.Value > assetUnloadDelay)
+            .Select(kvp => kvp.Key)
+            .ToList();
+        
+        foreach (var assetName in oldAssets)
+        {
+            UnloadAsset(assetName);
+        }
+    }
+    
+    void OnDestroy()
+    {
+        // Cleanup asset bundles
+        if (currentAssetBundle != null)
+        {
+            currentAssetBundle.Unload(true);
+        }
+    }
+}
+```
+{% endblock %}
+
+{% block monitoring %}
+### AR/VR System Monitoring
+
+#### Performance Monitoring
+```csharp
+// Example: AR/VR performance monitoring
+public class XRPerformanceMonitor : MonoBehaviour
+{
+    [Header("Monitoring Configuration")]
+    public float monitoringInterval = 1f;
+    public bool enableDetailedMetrics = true;
+    public bool enablePerformanceLogging = true;
+    
+    private XRPerformanceMetrics metrics;
+    private List<PerformanceSnapshot> performanceHistory;
+    
+    void Start()
+    {
+        InitializeMonitoring();
+    }
+    
+    void InitializeMonitoring()
+    {
+        metrics = new XRPerformanceMetrics();
+        performanceHistory = new List<PerformanceSnapshot>();
+        
+        // Start monitoring coroutine
+        StartCoroutine(MonitorPerformance());
+    }
+    
+    IEnumerator MonitorPerformance()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(monitoringInterval);
+            
+            // Update performance metrics
+            metrics.UpdateMetrics();
+            
+            // Create performance snapshot
+            var snapshot = new PerformanceSnapshot
+            {
+                Timestamp = Time.time,
+                FrameRate = metrics.FrameRate,
+                MotionToPhotonLatency = metrics.MotionToPhotonLatency,
+                CPUUsage = metrics.CPUUsage,
+                GPUUsage = metrics.GPUUsage,
+                MemoryUsage = metrics.MemoryUsage,
+                ThermalState = metrics.ThermalState
+            };
+            
+            performanceHistory.Add(snapshot);
+            
+            // Maintain history size
+            if (performanceHistory.Count > 1000)
+            {
+                performanceHistory.RemoveAt(0);
+            }
+            
+            // Check for performance issues
+            CheckPerformanceThresholds(snapshot);
+            
+            // Log performance data
+            if (enablePerformanceLogging)
+            {
+                LogPerformanceData(snapshot);
+            }
+        }
+    }
+    
+    void CheckPerformanceThresholds(PerformanceSnapshot snapshot)
+    {
+        // Check frame rate
+        if (snapshot.FrameRate < 60f)
+        {
+            TriggerPerformanceAlert("Low Frame Rate", snapshot.FrameRate);
+        }
+        
+        // Check latency
+        if (snapshot.MotionToPhotonLatency > 20f)
+        {
+            TriggerPerformanceAlert("High Latency", snapshot.MotionToPhotonLatency);
+        }
+        
+        // Check thermal state
+        if (snapshot.ThermalState > 0.8f)
+        {
+            TriggerPerformanceAlert("High Temperature", snapshot.ThermalState);
+        }
+    }
+    
+    void TriggerPerformanceAlert(string alertType, float value)
+    {
+        Debug.LogWarning($"Performance Alert: {alertType} = {value}");
+        
+        // Implement performance alert actions
+        ApplyPerformanceOptimizations(alertType);
+    }
+    
+    void ApplyPerformanceOptimizations(string alertType)
+    {
+        switch (alertType)
+        {
+            case "Low Frame Rate":
+                ReduceRenderingQuality();
+                break;
+            case "High Latency":
+                OptimizeInputProcessing();
+                break;
+            case "High Temperature":
+                ReducePowerConsumption();
+                break;
+        }
+    }
+    
+    void ReduceRenderingQuality()
+    {
+        // Reduce rendering quality to improve frame rate
+        XRSettings.renderViewportScale = Mathf.Max(0.7f, XRSettings.renderViewportScale - 0.1f);
+        QualitySettings.masterTextureLimit = Mathf.Min(2, QualitySettings.masterTextureLimit + 1);
+    }
+    
+    void OptimizeInputProcessing()
+    {
+        // Optimize input processing to reduce latency
+        XRSettings.useOcclusionMesh = false;
+        QualitySettings.shadowDistance = Mathf.Max(20f, QualitySettings.shadowDistance - 10f);
+    }
+    
+    void ReducePowerConsumption()
+    {
+        // Reduce power consumption to lower temperature
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 1;
+    }
+    
+    void LogPerformanceData(PerformanceSnapshot snapshot)
+    {
+        if (enableDetailedMetrics)
+        {
+            Debug.Log($"Performance: FPS={snapshot.FrameRate:F1}, " +
+                     $"Latency={snapshot.MotionToPhotonLatency:F1}ms, " +
+                     $"CPU={snapshot.CPUUsage:F1}%, " +
+                     $"GPU={snapshot.GPUUsage:F1}%, " +
+                     $"Memory={snapshot.MemoryUsage:F1}MB, " +
+                     $"Thermal={snapshot.ThermalState:F2}");
+        }
+    }
+    
+    public PerformanceReport GeneratePerformanceReport()
+    {
+        var report = new PerformanceReport
+        {
+            GeneratedAt = System.DateTime.Now,
+            TotalSnapshots = performanceHistory.Count,
+            AverageFrameRate = performanceHistory.Average(s => s.FrameRate),
+            AverageLatency = performanceHistory.Average(s => s.MotionToPhotonLatency),
+            MaxMemoryUsage = performanceHistory.Max(s => s.MemoryUsage),
+            PerformanceIssues = CountPerformanceIssues()
+        };
+        
+        return report;
+    }
+    
+    private int CountPerformanceIssues()
+    {
+        return performanceHistory.Count(s => 
+            s.FrameRate < 60f || 
+            s.MotionToPhotonLatency > 20f || 
+            s.ThermalState > 0.8f);
+    }
+}
+
+[System.Serializable]
+public class PerformanceSnapshot
+{
+    public float Timestamp;
+    public float FrameRate;
+    public float MotionToPhotonLatency;
+    public float CPUUsage;
+    public float GPUUsage;
+    public float MemoryUsage;
+    public float ThermalState;
+}
+
+[System.Serializable]
+public class PerformanceReport
+{
+    public System.DateTime GeneratedAt;
+    public int TotalSnapshots;
+    public float AverageFrameRate;
+    public float AverageLatency;
+    public float MaxMemoryUsage;
+    public int PerformanceIssues;
+}
+```
+
+#### User Experience Monitoring
+```yaml
+# Example: XR user experience monitoring configuration
+xr_monitoring:
+  user_experience:
+    metrics:
+      - "session_duration"
+      - "interaction_frequency"
+      - "comfort_level"
+      - "motion_sickness_indicators"
+      - "user_engagement"
+    
+    comfort_tracking:
+      - metric: "head_movement_velocity"
+        threshold: 90 # degrees per second
+        action: "reduce_rotation_speed"
+      
+      - metric: "motion_to_photon_latency"
+        threshold: 20 # milliseconds
+        action: "optimize_rendering"
+      
+      - metric: "session_duration"
+        threshold: 3600 # seconds
+        action: "suggest_break"
+    
+    engagement_tracking:
+      - metric: "interaction_success_rate"
+        threshold: 0.8
+        action: "improve_ui_feedback"
+      
+      - metric: "task_completion_rate"
+        threshold: 0.9
+        action: "simplify_interactions"
+  
+  platform_monitoring:
+    performance_targets:
+      frame_rate: 90 # fps
+      latency: 20 # milliseconds
+      temperature: 40 # celsius
+      battery_life: 180 # minutes
+    
+    optimization_strategies:
+      - condition: "frame_rate < 60"
+        actions:
+          - "reduce_render_scale"
+          - "lower_texture_quality"
+          - "disable_effects"
+      
+      - condition: "temperature > 45"
+        actions:
+          - "reduce_cpu_usage"
+          - "lower_frame_rate"
+          - "pause_non_essential_tasks"
+```
+{% endblock %}
+
+{% block references %}
+### AR/VR References
+
+#### Development Platforms
+- **Unity XR**: Cross-platform XR development
+- **Unreal Engine**: High-fidelity VR/AR experiences
+- **AR Foundation**: Unity's AR development framework
+- **ARCore**: Google's AR platform for Android
+- **ARKit**: Apple's AR framework for iOS
+
+#### VR Platforms
+- **Oculus SDK**: Meta Quest and Rift development
+- **OpenVR**: SteamVR and multi-platform VR
+- **PICO SDK**: ByteDance VR platform
+- **HTC Vive**: HTC's VR development tools
+- **PlayStation VR**: Sony's VR platform
+
+#### AR Platforms
+- **Vuforia**: Computer vision AR platform
+- **8th Wall**: Web-based AR platform
+- **Spark AR**: Meta's AR creation platform
+- **Lens Studio**: Snapchat's AR development tool
+- **ZapWorks**: Zappar's AR development platform
+
+#### Performance and Analytics
+- **Unity Analytics**: Performance and user behavior tracking
+- **GameAnalytics**: Game-specific analytics platform
+- **Firebase**: Google's mobile and web analytics
+- **Oculus Analytics**: Meta's VR-specific analytics
+- **Custom metrics**: Platform-specific performance tools
+
+#### Standards and Guidelines
+- **WebXR**: Web-based XR experiences standard
+- **OpenXR**: Cross-platform XR API standard
+- **IEEE VR**: Virtual reality standards
+- **ISO/IEC 18039**: VR safety guidelines
+- **W3C Immersive Web**: Web-based immersive experiences
+
+#### Safety and Accessibility
+- **VR Safety Guidelines**: Industry best practices
+- **Accessibility Standards**: Inclusive design guidelines
+- **Health and Safety**: Motion sickness prevention
+- **Age-Appropriate Design**: Child safety considerations
+- **Data Privacy**: User data protection in immersive environments
+{% endblock %}

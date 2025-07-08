@@ -1,0 +1,455 @@
+{% extends "standards/base.j2" %}
+
+{% block purpose %}
+This compliance standard defines the requirements, controls, and procedures for {{ title.lower() }}. It ensures adherence to regulatory requirements and industry best practices while maintaining operational effectiveness.
+
+**Compliance Focus Areas:**
+{% if regulatory_requirements %}
+- **Regulatory Requirements**: {{ regulatory_requirements | join(', ') }}
+{% endif %}
+{% if compliance_frameworks %}
+- **Compliance Frameworks**: {{ compliance_frameworks | join(', ') }}
+{% endif %}
+- **Risk Management**: {{ risk_level | format_compliance_level }} impact requirements
+- **Audit Readiness**: Continuous compliance monitoring and reporting
+{% endblock %}
+
+{% block scope %}
+This compliance standard applies to:
+- All {{ domain }} systems and processes
+- Data handling and processing activities
+- Third-party vendor relationships
+- Audit and assessment activities
+- Incident response procedures
+- Training and awareness programs
+{% endblock %}
+
+{% block implementation %}
+### Compliance Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+{% if compliance_frameworks %}
+**Compliance Frameworks:** {{ compliance_frameworks | join(', ') }}
+{% endif %}
+
+### Control Implementation
+
+#### Administrative Controls
+```markdown
+AC-1: Access Control Policy and Procedures
+- Develop and maintain access control policies
+- Review and update procedures annually
+- Ensure proper authorization workflows
+
+AC-2: Account Management
+- Implement account provisioning procedures
+- Regular account reviews and recertification
+- Automated account lifecycle management
+```
+
+#### Technical Controls
+```python
+# Example: Access control implementation
+import hashlib
+import secrets
+from datetime import datetime, timedelta
+from functools import wraps
+
+class AccessControl:
+    def __init__(self):
+        self.sessions = {}
+        self.failed_attempts = {}
+    
+    def authenticate_user(self, username, password):
+        """Authenticate user with secure password handling."""
+        # Hash password with salt
+        salt = secrets.token_hex(16)
+        password_hash = hashlib.pbkdf2_hmac('sha256', 
+                                          password.encode('utf-8'), 
+                                          salt.encode('utf-8'), 
+                                          100000)
+        
+        # Check against stored hash
+        if self.verify_password(username, password_hash):
+            # Create session token
+            token = secrets.token_urlsafe(32)
+            self.sessions[token] = {
+                'username': username,
+                'created': datetime.now(),
+                'last_activity': datetime.now()
+            }
+            return token
+        else:
+            self.record_failed_attempt(username)
+            return None
+    
+    def require_auth(self, func):
+        """Decorator to require authentication."""
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            token = self.get_auth_token()
+            if not token or not self.validate_session(token):
+                raise AuthenticationError("Valid authentication required")
+            return func(*args, **kwargs)
+        return wrapper
+```
+
+#### Physical Controls
+- **Facility Access**: Secure physical access to facilities
+- **Equipment Protection**: Secure storage and disposal of equipment
+- **Environmental Controls**: Climate and power management
+
+### Risk Assessment Framework
+
+#### Risk Identification
+```yaml
+# Example: Risk assessment template
+risk_assessment:
+  asset_identification:
+    - name: "Customer Database"
+      type: "Data"
+      classification: "Confidential"
+      owner: "Data Protection Officer"
+    
+  threat_identification:
+    - name: "Unauthorized Access"
+      likelihood: "Medium"
+      impact: "High"
+      risk_rating: "High"
+    
+  vulnerability_assessment:
+    - name: "Weak Authentication"
+      severity: "High"
+      affected_assets: ["Customer Database"]
+      remediation: "Implement MFA"
+```
+
+#### Risk Mitigation
+```python
+# Example: Risk mitigation controls
+class RiskMitigation:
+    def __init__(self):
+        self.controls = {}
+    
+    def implement_control(self, control_id, control_type, description):
+        """Implement a risk mitigation control."""
+        self.controls[control_id] = {
+            'type': control_type,
+            'description': description,
+            'implemented_date': datetime.now(),
+            'effectiveness': 'Not Tested',
+            'last_review': None
+        }
+    
+    def test_control_effectiveness(self, control_id):
+        """Test the effectiveness of a control."""
+        if control_id in self.controls:
+            # Perform control testing
+            test_result = self.perform_control_test(control_id)
+            self.controls[control_id]['effectiveness'] = test_result
+            self.controls[control_id]['last_review'] = datetime.now()
+            return test_result
+        return None
+```
+
+### Audit and Assessment
+
+#### Audit Requirements
+{% if audit_requirements %}
+{% for requirement, details in audit_requirements.items() %}
+- **{{ requirement | title }}**: {{ details }}
+{% endfor %}
+{% endif %}
+
+#### Evidence Collection
+```python
+# Example: Evidence collection system
+class EvidenceCollection:
+    def __init__(self):
+        self.evidence_store = {}
+    
+    def collect_evidence(self, control_id, evidence_type, evidence_data):
+        """Collect evidence for compliance controls."""
+        evidence_id = f"{control_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        self.evidence_store[evidence_id] = {
+            'control_id': control_id,
+            'type': evidence_type,
+            'data': evidence_data,
+            'collected_date': datetime.now(),
+            'collector': self.get_current_user(),
+            'status': 'Collected'
+        }
+        
+        return evidence_id
+    
+    def generate_audit_report(self, audit_scope):
+        """Generate comprehensive audit report."""
+        report = {
+            'audit_scope': audit_scope,
+            'report_date': datetime.now(),
+            'findings': [],
+            'recommendations': [],
+            'evidence_references': []
+        }
+        
+        # Compile evidence and findings
+        for evidence_id, evidence in self.evidence_store.items():
+            if evidence['control_id'] in audit_scope:
+                report['evidence_references'].append(evidence_id)
+        
+        return report
+```
+
+### Compliance Monitoring
+
+#### Continuous Monitoring
+```python
+# Example: Compliance monitoring system
+class ComplianceMonitor:
+    def __init__(self):
+        self.monitoring_rules = {}
+        self.compliance_metrics = {}
+    
+    def define_monitoring_rule(self, rule_id, control_id, metric, threshold):
+        """Define a compliance monitoring rule."""
+        self.monitoring_rules[rule_id] = {
+            'control_id': control_id,
+            'metric': metric,
+            'threshold': threshold,
+            'last_check': None,
+            'status': 'Active'
+        }
+    
+    def check_compliance(self, rule_id):
+        """Check compliance against a monitoring rule."""
+        rule = self.monitoring_rules.get(rule_id)
+        if not rule:
+            return None
+        
+        # Collect current metric value
+        current_value = self.get_metric_value(rule['metric'])
+        
+        # Compare against threshold
+        compliant = current_value <= rule['threshold']
+        
+        # Update rule status
+        self.monitoring_rules[rule_id]['last_check'] = datetime.now()
+        self.monitoring_rules[rule_id]['compliant'] = compliant
+        
+        return compliant
+```
+
+#### Compliance Reporting
+```python
+# Example: Compliance reporting
+class ComplianceReporting:
+    def __init__(self):
+        self.reports = {}
+    
+    def generate_compliance_report(self, framework, period):
+        """Generate compliance report for a specific framework."""
+        report = {
+            'framework': framework,
+            'period': period,
+            'generated_date': datetime.now(),
+            'controls_assessed': 0,
+            'controls_compliant': 0,
+            'findings': [],
+            'recommendations': []
+        }
+        
+        # Assess controls for the framework
+        for control in self.get_framework_controls(framework):
+            report['controls_assessed'] += 1
+            
+            if self.assess_control_compliance(control):
+                report['controls_compliant'] += 1
+            else:
+                report['findings'].append({
+                    'control': control,
+                    'issue': 'Non-compliant',
+                    'severity': 'High'
+                })
+        
+        # Calculate compliance percentage
+        if report['controls_assessed'] > 0:
+            compliance_percentage = (report['controls_compliant'] / 
+                                   report['controls_assessed']) * 100
+            report['compliance_percentage'] = compliance_percentage
+        
+        return report
+```
+
+### Incident Response
+
+#### Incident Classification
+```yaml
+# Example: Incident classification matrix
+incident_classification:
+  severity_levels:
+    - level: "Critical"
+      criteria: "Data breach affecting >10,000 records"
+      response_time: "1 hour"
+      escalation: "CISO, Legal, PR"
+    
+    - level: "High"
+      criteria: "System compromise or significant data loss"
+      response_time: "4 hours"
+      escalation: "Security Team, Management"
+    
+    - level: "Medium"
+      criteria: "Policy violation or minor security event"
+      response_time: "24 hours"
+      escalation: "Security Team"
+```
+
+#### Incident Response Procedures
+```python
+# Example: Incident response system
+class IncidentResponse:
+    def __init__(self):
+        self.incidents = {}
+        self.response_team = {}
+    
+    def report_incident(self, incident_type, severity, description):
+        """Report a security incident."""
+        incident_id = f"INC-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        
+        self.incidents[incident_id] = {
+            'type': incident_type,
+            'severity': severity,
+            'description': description,
+            'reported_date': datetime.now(),
+            'status': 'Reported',
+            'assigned_to': None,
+            'response_actions': []
+        }
+        
+        # Auto-assign based on severity
+        if severity == 'Critical':
+            self.escalate_incident(incident_id)
+        
+        return incident_id
+    
+    def escalate_incident(self, incident_id):
+        """Escalate incident to appropriate team."""
+        incident = self.incidents.get(incident_id)
+        if incident:
+            # Notify incident response team
+            self.notify_response_team(incident_id, incident['severity'])
+            
+            # Update incident status
+            incident['status'] = 'Escalated'
+            incident['escalated_date'] = datetime.now()
+```
+{% endblock %}
+
+{% block monitoring %}
+### Compliance Monitoring
+
+#### Key Compliance Indicators
+- **Control Effectiveness**: Percentage of controls operating effectively
+- **Audit Findings**: Number and severity of audit findings
+- **Incident Response**: Time to detect and respond to incidents
+- **Training Compliance**: Percentage of staff completing required training
+
+#### Compliance Metrics
+```python
+# Example: Compliance metrics dashboard
+class ComplianceMetrics:
+    def __init__(self):
+        self.metrics = {}
+    
+    def calculate_control_effectiveness(self):
+        """Calculate overall control effectiveness."""
+        total_controls = len(self.get_all_controls())
+        effective_controls = len(self.get_effective_controls())
+        
+        if total_controls > 0:
+            effectiveness = (effective_controls / total_controls) * 100
+            return effectiveness
+        return 0
+    
+    def track_audit_findings(self, finding_severity):
+        """Track audit findings by severity."""
+        if finding_severity not in self.metrics:
+            self.metrics[finding_severity] = 0
+        self.metrics[finding_severity] += 1
+    
+    def generate_compliance_dashboard(self):
+        """Generate compliance dashboard data."""
+        return {
+            'control_effectiveness': self.calculate_control_effectiveness(),
+            'audit_findings': self.metrics,
+            'compliance_trend': self.calculate_compliance_trend(),
+            'last_updated': datetime.now()
+        }
+```
+
+#### Automated Compliance Checks
+```yaml
+# Example: Automated compliance checks
+compliance_checks:
+  - check_id: "AC-001"
+    name: "Password Policy Compliance"
+    frequency: "Daily"
+    script: "check_password_policy.py"
+    threshold: "95%"
+    
+  - check_id: "AU-001"
+    name: "Log Retention Compliance"
+    frequency: "Weekly"
+    script: "check_log_retention.py"
+    threshold: "100%"
+    
+  - check_id: "CM-001"
+    name: "Configuration Baseline Compliance"
+    frequency: "Daily"
+    script: "check_config_baseline.py"
+    threshold: "98%"
+```
+{% endblock %}
+
+{% block references %}
+### Compliance References
+
+#### Regulatory Standards
+{% if regulatory_requirements %}
+{% for requirement in regulatory_requirements %}
+- {{ requirement }} Compliance Requirements
+{% endfor %}
+{% endif %}
+
+#### Industry Frameworks
+{% if compliance_frameworks %}
+{% for framework in compliance_frameworks %}
+- {{ framework }} Control Framework
+- {{ framework }} Assessment Guide
+{% endfor %}
+{% endif %}
+
+#### NIST Publications
+{% if nist_controls %}
+- NIST SP 800-53: Security and Privacy Controls for Federal Information Systems
+- NIST Cybersecurity Framework
+- NIST Risk Management Framework
+{% endif %}
+
+#### Evidence Requirements
+{% if evidence_requirements %}
+{% for evidence in evidence_requirements %}
+- {{ evidence }}
+{% endfor %}
+{% endif %}
+
+#### Compliance Metrics
+{% if compliance_metrics %}
+{% for metric, definition in compliance_metrics.items() %}
+- **{{ metric }}**: {{ definition }}
+{% endfor %}
+{% endif %}
+{% endblock %}

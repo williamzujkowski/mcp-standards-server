@@ -2,7 +2,7 @@
 """
 MCP Standards Server CLI
 
-Main command-line interface for managing and syncing standards.
+Main command-line interface for managing, syncing, and generating standards.
 """
 
 import argparse
@@ -114,6 +114,122 @@ def create_parser() -> argparse.ArgumentParser:
         '--show',
         action='store_true',
         help='Show current configuration'
+    )
+    
+    # Generate command
+    generate_parser = subparsers.add_parser(
+        'generate',
+        help='Generate standards from templates'
+    )
+    generate_parser.add_argument(
+        '--template', '-t',
+        help='Template name to use'
+    )
+    generate_parser.add_argument(
+        '--domain', '-d',
+        help='Domain-specific template'
+    )
+    generate_parser.add_argument(
+        '--output', '-o',
+        help='Output file path'
+    )
+    generate_parser.add_argument(
+        '--title',
+        help='Standard title'
+    )
+    generate_parser.add_argument(
+        '--version',
+        default='1.0.0',
+        help='Standard version'
+    )
+    generate_parser.add_argument(
+        '--author',
+        help='Standard author'
+    )
+    generate_parser.add_argument(
+        '--description',
+        help='Standard description'
+    )
+    generate_parser.add_argument(
+        '--interactive', '-i',
+        action='store_true',
+        help='Interactive mode'
+    )
+    generate_parser.add_argument(
+        '--preview', '-p',
+        action='store_true',
+        help='Preview mode (no file output)'
+    )
+    generate_parser.add_argument(
+        '--validate',
+        action='store_true',
+        default=True,
+        help='Validate generated standard'
+    )
+    generate_parser.add_argument(
+        '--config-file',
+        help='Configuration file path'
+    )
+    
+    # Generate subcommands
+    generate_subparsers = generate_parser.add_subparsers(
+        dest='generate_command',
+        help='Generate subcommands'
+    )
+    
+    # List templates
+    generate_subparsers.add_parser(
+        'list-templates',
+        help='List available templates'
+    )
+    
+    # Template info
+    template_info_parser = generate_subparsers.add_parser(
+        'template-info',
+        help='Get template information'
+    )
+    template_info_parser.add_argument(
+        'template_name',
+        help='Template name'
+    )
+    
+    # Customize template
+    customize_parser = generate_subparsers.add_parser(
+        'customize',
+        help='Create custom template'
+    )
+    customize_parser.add_argument(
+        '--template', '-t',
+        required=True,
+        help='Base template'
+    )
+    customize_parser.add_argument(
+        '--name', '-n',
+        required=True,
+        help='Custom template name'
+    )
+    customize_parser.add_argument(
+        '--config',
+        help='Customization config file'
+    )
+    customize_parser.add_argument(
+        '--interactive', '-i',
+        action='store_true',
+        help='Interactive customization'
+    )
+    
+    # Validate standard
+    validate_parser = generate_subparsers.add_parser(
+        'validate',
+        help='Validate existing standard'
+    )
+    validate_parser.add_argument(
+        'standard_file',
+        help='Standard file to validate'
+    )
+    validate_parser.add_argument(
+        '--report', '-r',
+        help='Output report file'
     )
     
     return parser
@@ -297,6 +413,264 @@ def cmd_config(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_generate(args: argparse.Namespace) -> int:
+    """Handle generate command."""
+    try:
+        # Import generate commands
+        from .commands.generate import StandardsGenerator, StandardMetadata
+        from .commands.generate import _interactive_standard_creation, _interactive_template_customization
+        from ..generators.validator import StandardsValidator
+        from ..generators.quality_assurance import QualityAssuranceSystem
+        
+        generator = StandardsGenerator()
+        
+        # Handle subcommands
+        if args.generate_command == 'list-templates':
+            templates = generator.list_templates()
+            
+            print("Available Templates:")
+            print("=" * 50)
+            
+            # Group by category
+            categories = {}
+            for template in templates:
+                category = template['category']
+                if category not in categories:
+                    categories[category] = []
+                categories[category].append(template)
+            
+            for category, category_templates in categories.items():
+                print(f"\n{category.upper()}:")
+                for template in category_templates:
+                    print(f"  {template['name']}")
+                    if template['description']:
+                        print(f"    Description: {template['description']}")
+                    if template['tags']:
+                        print(f"    Tags: {', '.join(template['tags'])}")
+                    print()
+            
+            return 0
+        
+        elif args.generate_command == 'template-info':
+            # Get template schema
+            schema = generator.get_template_schema(args.template_name)
+            
+            # Validate template
+            validation = generator.validate_template(args.template_name)
+            
+            print(f"Template: {args.template_name}")
+            print("=" * 50)
+            
+            print(f"Valid: {'✓' if validation['valid'] else '✗'}")
+            if not validation['valid']:
+                print(f"Error: {validation.get('error', 'Unknown error')}")
+                print(f"Message: {validation.get('message', '')}")
+            
+            if 'variables' in validation:
+                print(f"\nRequired Variables:")
+                for var in validation['variables']:
+                    print(f"  - {var}")
+            
+            if schema:
+                import yaml
+                print(f"\nSchema:")
+                print(yaml.dump(schema, default_flow_style=False))
+            
+            return 0
+        
+        elif args.generate_command == 'customize':
+            if args.interactive:
+                customizations = _interactive_template_customization()
+            elif args.config:
+                import yaml
+                with open(args.config, 'r') as f:
+                    if args.config.endswith('.yaml') or args.config.endswith('.yml'):
+                        customizations = yaml.safe_load(f)
+                    else:
+                        customizations = json.load(f)
+            else:
+                print("Error: Either --config or --interactive must be specified", file=sys.stderr)
+                return 1
+            
+            # Create custom template
+            custom_path = generator.create_custom_template(args.name, args.template, customizations)
+            
+            print(f"Custom template created: {custom_path}")
+            return 0
+        
+        elif args.generate_command == 'validate':
+            # Read the standard file
+            with open(args.standard_file, 'r') as f:
+                content = f.read()
+            
+            # Try to find corresponding metadata file
+            metadata_file = args.standard_file.replace('.md', '.yaml')
+            if Path(metadata_file).exists():
+                import yaml
+                with open(metadata_file, 'r') as f:
+                    metadata_dict = yaml.safe_load(f)
+                metadata = StandardMetadata.from_dict(metadata_dict)
+            else:
+                # Create minimal metadata for validation
+                metadata = StandardMetadata(
+                    title=Path(args.standard_file).stem,
+                    version="1.0.0",
+                    domain="general",
+                    type="technical"
+                )
+            
+            # Validate
+            validator = StandardsValidator()
+            qa_system = QualityAssuranceSystem()
+            
+            validation_results = validator.validate_standard(content, metadata)
+            qa_results = qa_system.assess_standard(content, metadata)
+            
+            # Display results
+            print(f"Validation Results for: {args.standard_file}")
+            print("=" * 50)
+            
+            if validation_results['valid']:
+                print("✓ Validation passed")
+            else:
+                print("✗ Validation failed")
+                for error in validation_results['errors']:
+                    print(f"  Error: {error}")
+            
+            if validation_results['warnings']:
+                print("Warnings:")
+                for warning in validation_results['warnings']:
+                    print(f"  - {warning}")
+            
+            print(f"\nQuality Score: {qa_results['overall_score']}/100")
+            print("\nScore Breakdown:")
+            for metric, score in qa_results['scores'].items():
+                print(f"  {metric}: {score:.1f}")
+            
+            if qa_results['recommendations']:
+                print("\nRecommendations:")
+                for rec in qa_results['recommendations'][:10]:
+                    print(f"  - {rec}")
+            
+            # Save report if requested
+            if args.report:
+                report_data = {
+                    'standard_file': args.standard_file,
+                    'validation_results': validation_results,
+                    'quality_assessment': qa_results,
+                    'generated_at': datetime.now().isoformat()
+                }
+                
+                import yaml
+                with open(args.report, 'w') as f:
+                    if args.report.endswith('.yaml') or args.report.endswith('.yml'):
+                        yaml.dump(report_data, f, default_flow_style=False)
+                    else:
+                        json.dump(report_data, f, indent=2)
+                
+                print(f"\nReport saved to: {args.report}")
+            
+            return 0
+        
+        else:
+            # Main generate command
+            # Load configuration if provided
+            if args.config_file:
+                import yaml
+                with open(args.config_file, 'r') as f:
+                    if args.config_file.endswith('.yaml') or args.config_file.endswith('.yml'):
+                        config_data = yaml.safe_load(f)
+                    else:
+                        config_data = json.load(f)
+            else:
+                config_data = {}
+            
+            # Interactive mode
+            if args.interactive:
+                metadata = _interactive_standard_creation(generator, args.domain)
+            else:
+                # Build metadata from parameters and config
+                metadata = {
+                    'title': args.title or config_data.get('title'),
+                    'version': args.version or config_data.get('version', '1.0.0'),
+                    'author': args.author or config_data.get('author'),
+                    'description': args.description or config_data.get('description'),
+                    'domain': args.domain or config_data.get('domain', 'general'),
+                    'type': config_data.get('type', 'technical'),
+                    'created_date': datetime.now().isoformat(),
+                    'updated_date': datetime.now().isoformat(),
+                    **config_data
+                }
+            
+            # Validate required fields
+            if not metadata.get('title'):
+                print("Error: Title is required", file=sys.stderr)
+                return 1
+            
+            # Determine template
+            template = args.template
+            if not template:
+                if args.domain:
+                    template = f"domains/{args.domain}.j2"
+                else:
+                    template = f"standards/{metadata.get('type', 'base')}.j2"
+            
+            # Determine output path
+            output = args.output
+            if not output and not args.preview:
+                safe_title = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in metadata['title'])
+                output = f"{safe_title.lower()}_standard.md"
+            
+            # Generate standard
+            result = generator.generate_standard(
+                template_name=template,
+                metadata=metadata,
+                output_path=output or "",
+                validate=args.validate,
+                preview=args.preview
+            )
+            
+            if args.preview:
+                print("=== PREVIEW ===")
+                print(result['content'])
+                print("\n=== METADATA ===")
+                import yaml
+                print(yaml.dump(result['metadata'], default_flow_style=False))
+            else:
+                print(f"Standard generated successfully: {result['output_path']}")
+            
+            # Show validation results
+            if args.validate and 'validation' in result:
+                validation = result['validation']
+                if validation['valid']:
+                    print("✓ Validation passed")
+                else:
+                    print("✗ Validation failed:")
+                    for error in validation['errors']:
+                        print(f"  - {error}")
+                
+                if validation['warnings']:
+                    print("Warnings:")
+                    for warning in validation['warnings']:
+                        print(f"  - {warning}")
+            
+            # Show quality assessment
+            if 'quality_assessment' in result:
+                qa = result['quality_assessment']
+                print(f"Quality Score: {qa['overall_score']}/100")
+                
+                if qa['recommendations']:
+                    print("Recommendations:")
+                    for rec in qa['recommendations'][:5]:  # Show top 5
+                        print(f"  - {rec}")
+            
+            return 0
+    
+    except Exception as e:
+        print(f"Error in generate command: {e}", file=sys.stderr)
+        return 1
+
+
 def main() -> int:
     """Main entry point for CLI."""
     parser = create_parser()
@@ -314,6 +688,8 @@ def main() -> int:
         return cmd_cache(args)
     elif args.command == 'config':
         return cmd_config(args)
+    elif args.command == 'generate':
+        return cmd_generate(args)
     else:
         parser.print_help()
         return 1

@@ -1,0 +1,1511 @@
+# Advanced API Design Standards
+
+**Version:** v1.0.0  
+**Domain:** api  
+**Type:** Technical  
+**Risk Level:** MODERATE  
+**Maturity Level:** Production  
+**Author:** MCP Standards Team  
+**Created:** 2025-07-07T23:26:10.027417  
+**Last Updated:** 2025-07-07T23:26:10.027426  
+
+## Purpose
+
+Comprehensive standards for advanced API design, including REST, GraphQL, gRPC, and modern API patterns
+
+This API design standard defines the requirements, guidelines, and best practices for advanced api design standards. It provides comprehensive guidance for RESTful API development, GraphQL implementation, and API lifecycle management while ensuring consistency, security, and developer experience across all API implementations.
+
+**API Design Focus Areas:**
+- **REST API Design**: Resource modeling and HTTP best practices
+- **GraphQL Implementation**: Schema design and query optimization
+- **API Security**: Authentication, authorization, and data protection
+- **Documentation**: OpenAPI specifications and developer guides
+- **Versioning**: API evolution and backward compatibility
+- **Performance**: Optimization, caching, and rate limiting
+
+## Scope
+
+This API design standard applies to:
+- RESTful API development and implementation
+- GraphQL API design and schema management
+- API gateway configuration and management
+- Authentication and authorization systems
+- API documentation and developer experience
+- API testing, monitoring, and analytics
+- Microservices communication patterns
+- Third-party API integrations
+
+## Implementation
+
+### API Design Requirements
+
+**NIST Controls:** NIST-AC-1, AC-6, AU-2, AU-12, CM-2, CM-8, IA-2, IA-4, RA-3, RA-5, SA-3, SA-8, SC-7, SC-8, SC-12, SC-13, SI-3, SI-4
+
+**API Standards:** OpenAPI 3.0, GraphQL, JSON:API
+**Security Standards:** OAuth 2.0, JWT, API key management
+**Documentation Standards:** Interactive documentation, code examples
+
+### RESTful API Design
+
+#### REST API Architecture
+```mermaid
+graph TB
+    A[Client Applications] --> B[API Gateway]
+    B --> C[Load Balancer]
+    C --> D[API Services]
+    
+    D --> E[Authentication Service]
+    D --> F[Authorization Service]
+    D --> G[Business Logic Services]
+    D --> H[Data Services]
+    
+    I[Rate Limiting] --> B
+    J[API Analytics] --> B
+    K[Caching Layer] --> D
+    
+    L[Database] --> H
+    M[External APIs] --> G
+    
+    N[API Documentation] --> B
+    O[Developer Portal] --> B
+```
+
+#### REST API Implementation
+```python
+# Example: RESTful API implementation with FastAPI
+from fastapi import FastAPI, HTTPException, Depends, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, validator
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
+import jwt
+import bcrypt
+import redis
+import logging
+from contextlib import asynccontextmanager
+import asyncio
+
+# Configuration
+class APIConfig:
+    SECRET_KEY = "your-secret-key-here"
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 30
+    REDIS_URL = "redis://localhost:6379"
+    API_VERSION = "v1"
+    API_TITLE = "Example API"
+    API_DESCRIPTION = "A comprehensive API example following best practices"
+
+# Models
+class UserBase(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50, regex="^[a-zA-Z0-9_]+$")
+    email: str = Field(..., regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8)
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+class UserResponse(UserBase):
+    id: int
+    created_at: datetime
+    is_active: bool = True
+    
+    class Config:
+        orm_mode = True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+class ErrorResponse(BaseModel):
+    error: str
+    message: str
+    details: Optional[Dict[str, Any]] = None
+
+# Security
+security = HTTPBearer()
+
+class AuthenticationService:
+    def __init__(self):
+        self.redis_client = redis.from_url(APIConfig.REDIS_URL)
+    
+    def hash_password(self, password: str) -> str:
+        """Hash password using bcrypt."""
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    
+    def verify_password(self, password: str, hashed_password: str) -> bool:
+        """Verify password against hash."""
+        return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+    
+    def create_access_token(self, data: dict) -> str:
+        """Create JWT access token."""
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(minutes=APIConfig.ACCESS_TOKEN_EXPIRE_MINUTES)
+        to_encode.update({"exp": expire})
+        
+        return jwt.encode(to_encode, APIConfig.SECRET_KEY, algorithm=APIConfig.ALGORITHM)
+    
+    def verify_token(self, token: str) -> dict:
+        """Verify and decode JWT token."""
+        try:
+            payload = jwt.decode(token, APIConfig.SECRET_KEY, algorithms=[APIConfig.ALGORITHM])
+            return payload
+        except jwt.PyJWTError:
+            return None
+    
+    def revoke_token(self, jti: str):
+        """Revoke token by adding to blacklist."""
+        self.redis_client.setex(f"blacklist:{jti}", 86400, "revoked")
+    
+    def is_token_revoked(self, jti: str) -> bool:
+        """Check if token is revoked."""
+        return self.redis_client.exists(f"blacklist:{jti}")
+
+# Rate limiting
+class RateLimiter:
+    def __init__(self):
+        self.redis_client = redis.from_url(APIConfig.REDIS_URL)
+    
+    async def is_allowed(self, key: str, limit: int, window: int) -> bool:
+        """Check if request is within rate limit."""
+        current = self.redis_client.get(key)
+        
+        if current is None:
+            # First request in window
+            pipe = self.redis_client.pipeline()
+            pipe.incr(key)
+            pipe.expire(key, window)
+            pipe.execute()
+            return True
+        elif int(current) < limit:
+            self.redis_client.incr(key)
+            return True
+        else:
+            return False
+
+# Application setup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logging.info("Starting API server...")
+    yield
+    # Shutdown
+    logging.info("Shutting down API server...")
+
+app = FastAPI(
+    title=APIConfig.API_TITLE,
+    description=APIConfig.API_DESCRIPTION,
+    version=APIConfig.API_VERSION,
+    docs_url=f"/{APIConfig.API_VERSION}/docs",
+    redoc_url=f"/{APIConfig.API_VERSION}/redoc",
+    openapi_url=f"/{APIConfig.API_VERSION}/openapi.json",
+    lifespan=lifespan
+)
+
+# Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://yourdomain.com"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["yourdomain.com", "*.yourdomain.com"]
+)
+
+# Services
+auth_service = AuthenticationService()
+rate_limiter = RateLimiter()
+
+# Dependencies
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get current authenticated user."""
+    token = credentials.credentials
+    payload = auth_service.verify_token(token)
+    
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Check if token is revoked
+    jti = payload.get("jti")
+    if jti and auth_service.is_token_revoked(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return payload
+
+async def check_rate_limit(request):
+    """Check rate limit for request."""
+    client_ip = request.client.host
+    key = f"rate_limit:{client_ip}"
+    
+    if not await rate_limiter.is_allowed(key, limit=100, window=3600):  # 100 requests per hour
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded"
+        )
+
+# Exception handlers
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message=exc.detail,
+            details={"status_code": exc.status_code}
+        ).dict()
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    logging.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error="InternalServerError",
+            message="An unexpected error occurred"
+        ).dict()
+    )
+
+# Health check endpoint
+@app.get(f"/{APIConfig.API_VERSION}/health", tags=["Health"])
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": APIConfig.API_VERSION
+    }
+
+# Authentication endpoints
+@app.post(f"/{APIConfig.API_VERSION}/auth/register", 
+          response_model=UserResponse, 
+          status_code=status.HTTP_201_CREATED,
+          tags=["Authentication"])
+async def register_user(user: UserCreate):
+    """Register a new user."""
+    # Check if user already exists (mock implementation)
+    # In real implementation, check database
+    
+    hashed_password = auth_service.hash_password(user.password)
+    
+    # Create user (mock implementation)
+    new_user = {
+        "id": 1,
+        "username": user.username,
+        "email": user.email,
+        "created_at": datetime.utcnow(),
+        "is_active": True
+    }
+    
+    return UserResponse(**new_user)
+
+@app.post(f"/{APIConfig.API_VERSION}/auth/login", 
+          response_model=TokenResponse,
+          tags=["Authentication"])
+async def login(username: str, password: str):
+    """Authenticate user and return access token."""
+    # Verify credentials (mock implementation)
+    # In real implementation, check against database
+    
+    if username == "demo" and password == "password123":
+        # Create token
+        token_data = {"sub": username, "user_id": 1}
+        access_token = auth_service.create_access_token(token_data)
+        
+        return TokenResponse(
+            access_token=access_token,
+            expires_in=APIConfig.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password"
+        )
+
+@app.post(f"/{APIConfig.API_VERSION}/auth/logout", tags=["Authentication"])
+async def logout(current_user: dict = Depends(get_current_user)):
+    """Logout user and revoke token."""
+    # In real implementation, extract JTI from token and revoke
+    return {"message": "Successfully logged out"}
+
+# User endpoints
+@app.get(f"/{APIConfig.API_VERSION}/users/me", 
+         response_model=UserResponse,
+         tags=["Users"])
+async def get_current_user_profile(current_user: dict = Depends(get_current_user)):
+    """Get current user profile."""
+    # Mock user data
+    user_data = {
+        "id": current_user["user_id"],
+        "username": current_user["sub"],
+        "email": "user@example.com",
+        "created_at": datetime.utcnow(),
+        "is_active": True
+    }
+    
+    return UserResponse(**user_data)
+
+@app.get(f"/{APIConfig.API_VERSION}/users", 
+         response_model=List[UserResponse],
+         tags=["Users"])
+async def list_users(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(10, ge=1, le=100, description="Number of records to return"),
+    search: Optional[str] = Query(None, description="Search term"),
+    current_user: dict = Depends(get_current_user)
+):
+    """List users with pagination and search."""
+    # Mock implementation
+    users = [
+        {
+            "id": i,
+            "username": f"user{i}",
+            "email": f"user{i}@example.com",
+            "created_at": datetime.utcnow(),
+            "is_active": True
+        }
+        for i in range(skip + 1, skip + limit + 1)
+    ]
+    
+    return [UserResponse(**user) for user in users]
+
+# Resource endpoints with CRUD operations
+class ResourceBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    
+class ResourceCreate(ResourceBase):
+    pass
+
+class ResourceUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+
+class ResourceResponse(ResourceBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    owner_id: int
+    
+    class Config:
+        orm_mode = True
+
+@app.post(f"/{APIConfig.API_VERSION}/resources", 
+          response_model=ResourceResponse,
+          status_code=status.HTTP_201_CREATED,
+          tags=["Resources"])
+async def create_resource(
+    resource: ResourceCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new resource."""
+    # Mock implementation
+    new_resource = {
+        "id": 1,
+        "name": resource.name,
+        "description": resource.description,
+        "created_at": datetime.utcnow(),
+        "owner_id": current_user["user_id"]
+    }
+    
+    return ResourceResponse(**new_resource)
+
+@app.get(f"/{APIConfig.API_VERSION}/resources/", 
+         response_model=ResourceResponse,
+         tags=["Resources"])
+async def get_resource(
+    resource_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific resource by ID."""
+    # Mock implementation
+    if resource_id == 999:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found"
+        )
+    
+    resource_data = {
+        "id": resource_id,
+        "name": f"Resource {resource_id}",
+        "description": f"Description for resource {resource_id}",
+        "created_at": datetime.utcnow(),
+        "owner_id": current_user["user_id"]
+    }
+    
+    return ResourceResponse(**resource_data)
+
+@app.put(f"/{APIConfig.API_VERSION}/resources/", 
+         response_model=ResourceResponse,
+         tags=["Resources"])
+async def update_resource(
+    resource_id: int,
+    resource_update: ResourceUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a resource."""
+    # Mock implementation
+    updated_resource = {
+        "id": resource_id,
+        "name": resource_update.name or f"Resource {resource_id}",
+        "description": resource_update.description,
+        "created_at": datetime.utcnow() - timedelta(days=1),
+        "updated_at": datetime.utcnow(),
+        "owner_id": current_user["user_id"]
+    }
+    
+    return ResourceResponse(**updated_resource)
+
+@app.delete(f"/{APIConfig.API_VERSION}/resources/", 
+            status_code=status.HTTP_204_NO_CONTENT,
+            tags=["Resources"])
+async def delete_resource(
+    resource_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a resource."""
+    # Mock implementation
+    if resource_id == 999:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found"
+        )
+    
+    # In real implementation, delete from database
+    pass
+
+# API versioning example
+@app.get(f"/{APIConfig.API_VERSION}/version", tags=["Meta"])
+async def get_api_version():
+    """Get API version information."""
+    return {
+        "version": APIConfig.API_VERSION,
+        "title": APIConfig.API_TITLE,
+        "description": APIConfig.API_DESCRIPTION,
+        "documentation_url": f"/{APIConfig.API_VERSION}/docs"
+    }
+
+# Custom response headers middleware
+@app.middleware("http")
+async def add_custom_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-API-Version"] = APIConfig.API_VERSION
+    response.headers["X-RateLimit-Limit"] = "100"
+    response.headers["X-RateLimit-Window"] = "3600"
+    return response
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+### GraphQL API Implementation
+
+#### GraphQL Schema Design
+```python
+# Example: GraphQL API implementation
+import graphene
+from graphene import ObjectType, String, Int, List, Field, Mutation, Schema
+from graphene.relay import Node, Connection
+from graphql import GraphQLError
+from typing import Optional, Dict, Any
+import jwt
+from datetime import datetime
+
+# GraphQL Types
+class UserType(ObjectType):
+    class Meta:
+        interfaces = (Node,)
+    
+    id = Int(required=True)
+    username = String(required=True)
+    email = String(required=True)
+    created_at = String(required=True)
+    is_active = String(required=True)
+    
+    @staticmethod
+    def resolve_created_at(root, info):
+        return root.created_at.isoformat()
+
+class ResourceType(ObjectType):
+    class Meta:
+        interfaces = (Node,)
+    
+    id = Int(required=True)
+    name = String(required=True)
+    description = String()
+    created_at = String(required=True)
+    updated_at = String()
+    owner = Field(UserType)
+    
+    @staticmethod
+    def resolve_owner(root, info):
+        # In real implementation, fetch from database
+        return {
+            "id": root.owner_id,
+            "username": f"user{root.owner_id}",
+            "email": f"user{root.owner_id}@example.com",
+            "created_at": datetime.utcnow(),
+            "is_active": True
+        }
+
+class UserConnection(Connection):
+    class Meta:
+        node = UserType
+
+class ResourceConnection(Connection):
+    class Meta:
+        node = ResourceType
+
+# Mutations
+class CreateResource(Mutation):
+    class Arguments:
+        name = String(required=True)
+        description = String()
+    
+    resource = Field(ResourceType)
+    success = String()
+    
+    @staticmethod
+    def mutate(root, info, name, description=None):
+        # Verify authentication
+        user = get_current_user_from_context(info.context)
+        if not user:
+            raise GraphQLError("Authentication required")
+        
+        # Create resource (mock implementation)
+        new_resource = {
+            "id": 1,
+            "name": name,
+            "description": description,
+            "created_at": datetime.utcnow(),
+            "owner_id": user["user_id"]
+        }
+        
+        return CreateResource(
+            resource=new_resource,
+            success="Resource created successfully"
+        )
+
+class UpdateResource(Mutation):
+    class Arguments:
+        id = Int(required=True)
+        name = String()
+        description = String()
+    
+    resource = Field(ResourceType)
+    success = String()
+    
+    @staticmethod
+    def mutate(root, info, id, name=None, description=None):
+        user = get_current_user_from_context(info.context)
+        if not user:
+            raise GraphQLError("Authentication required")
+        
+        # Update resource (mock implementation)
+        updated_resource = {
+            "id": id,
+            "name": name or f"Resource {id}",
+            "description": description,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "owner_id": user["user_id"]
+        }
+        
+        return UpdateResource(
+            resource=updated_resource,
+            success="Resource updated successfully"
+        )
+
+# Queries
+class Query(ObjectType):
+    user = Field(UserType, id=Int(required=True))
+    users = Field(List(UserType), limit=Int(), offset=Int())
+    me = Field(UserType)
+    
+    resource = Field(ResourceType, id=Int(required=True))
+    resources = Field(List(ResourceType), limit=Int(), offset=Int())
+    
+    @staticmethod
+    def resolve_user(root, info, id):
+        # Mock implementation
+        return {
+            "id": id,
+            "username": f"user{id}",
+            "email": f"user{id}@example.com",
+            "created_at": datetime.utcnow(),
+            "is_active": True
+        }
+    
+    @staticmethod
+    def resolve_users(root, info, limit=10, offset=0):
+        # Mock implementation with pagination
+        return [
+            {
+                "id": i,
+                "username": f"user{i}",
+                "email": f"user{i}@example.com",
+                "created_at": datetime.utcnow(),
+                "is_active": True
+            }
+            for i in range(offset + 1, offset + limit + 1)
+        ]
+    
+    @staticmethod
+    def resolve_me(root, info):
+        user = get_current_user_from_context(info.context)
+        if not user:
+            raise GraphQLError("Authentication required")
+        
+        return {
+            "id": user["user_id"],
+            "username": user["sub"],
+            "email": "current@example.com",
+            "created_at": datetime.utcnow(),
+            "is_active": True
+        }
+    
+    @staticmethod
+    def resolve_resource(root, info, id):
+        # Mock implementation
+        return {
+            "id": id,
+            "name": f"Resource {id}",
+            "description": f"Description for resource {id}",
+            "created_at": datetime.utcnow(),
+            "owner_id": 1
+        }
+    
+    @staticmethod
+    def resolve_resources(root, info, limit=10, offset=0):
+        # Mock implementation
+        return [
+            {
+                "id": i,
+                "name": f"Resource {i}",
+                "description": f"Description for resource {i}",
+                "created_at": datetime.utcnow(),
+                "owner_id": 1
+            }
+            for i in range(offset + 1, offset + limit + 1)
+        ]
+
+class Mutations(ObjectType):
+    create_resource = CreateResource.Field()
+    update_resource = UpdateResource.Field()
+
+# Schema
+schema = Schema(query=Query, mutation=Mutations)
+
+# Authentication helper
+def get_current_user_from_context(context) -> Optional[Dict[str, Any]]:
+    """Extract current user from GraphQL context."""
+    request = context.get("request")
+    if not request:
+        return None
+    
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    
+    token = auth_header[7:]  # Remove "Bearer " prefix
+    
+    try:
+        payload = jwt.decode(token, "your-secret-key", algorithms=["HS256"])
+        return payload
+    except jwt.PyJWTError:
+        return None
+
+# GraphQL query complexity analysis
+class QueryComplexityAnalyzer:
+    def __init__(self, max_complexity=100):
+        self.max_complexity = max_complexity
+    
+    def analyze_query(self, query_ast):
+        """Analyze query complexity to prevent abuse."""
+        complexity = self.calculate_complexity(query_ast)
+        
+        if complexity > self.max_complexity:
+            raise GraphQLError(f"Query complexity ({complexity}) exceeds maximum allowed ({self.max_complexity})")
+        
+        return complexity
+    
+    def calculate_complexity(self, node, multiplier=1):
+        """Calculate complexity score for a query node."""
+        if hasattr(node, 'selection_set') and node.selection_set:
+            complexity = 0
+            for selection in node.selection_set.selections:
+                field_complexity = self.get_field_complexity(selection.name.value)
+                child_complexity = self.calculate_complexity(selection, multiplier)
+                complexity += (field_complexity + child_complexity) * multiplier
+            return complexity
+        return 0
+    
+    def get_field_complexity(self, field_name):
+        """Get complexity score for a specific field."""
+        complexity_map = {
+            'user': 1,
+            'users': 5,
+            'resource': 1,
+            'resources': 5,
+            'me': 1
+        }
+        return complexity_map.get(field_name, 1)
+
+# GraphQL middleware for authentication and rate limiting
+class GraphQLMiddleware:
+    def __init__(self):
+        self.complexity_analyzer = QueryComplexityAnalyzer()
+    
+    def process_request(self, request, query_ast):
+        """Process GraphQL request with security checks."""
+        # Analyze query complexity
+        self.complexity_analyzer.analyze_query(query_ast)
+        
+        # Rate limiting (integrate with existing rate limiter)
+        # Check authentication for protected operations
+        # Log request for monitoring
+        
+        return request
+
+# Example GraphQL queries and mutations
+EXAMPLE_QUERIES = {
+    "get_user": """
+        query GetUser($id: Int!) {
+            user(id: $id) {
+                id
+                username
+                email
+                createdAt
+                isActive
+            }
+        }
+    """,
+    
+    "list_resources": """
+        query ListResources($limit: Int, $offset: Int) {
+            resources(limit: $limit, offset: $offset) {
+                id
+                name
+                description
+                createdAt
+                owner {
+                    id
+                    username
+                }
+            }
+        }
+    """,
+    
+    "create_resource": """
+        mutation CreateResource($name: String!, $description: String) {
+            createResource(name: $name, description: $description) {
+                resource {
+                    id
+                    name
+                    description
+                    createdAt
+                }
+                success
+            }
+        }
+    """
+}
+```
+
+### API Gateway Configuration
+
+#### API Gateway Setup
+```yaml
+# Example: API Gateway configuration (Kong/Nginx)
+api_gateway:
+  upstream_services:
+    - name: "user-service"
+      url: "http://user-service:8000"
+      health_check: "/health"
+      
+    - name: "resource-service"
+      url: "http://resource-service:8001"
+      health_check: "/health"
+      
+    - name: "auth-service"
+      url: "http://auth-service:8002"
+      health_check: "/health"
+
+  routes:
+    - name: "auth-routes"
+      paths: ["/v1/auth/*"]
+      service: "auth-service"
+      strip_path: true
+      
+    - name: "user-routes"
+      paths: ["/v1/users/*"]
+      service: "user-service"
+      strip_path: true
+      plugins:
+        - name: "jwt"
+          config:
+            secret: "your-jwt-secret"
+        - name: "rate-limiting"
+          config:
+            minute: 100
+            hour: 1000
+            
+    - name: "resource-routes"
+      paths: ["/v1/resources/*"]
+      service: "resource-service"
+      strip_path: true
+      plugins:
+        - name: "jwt"
+        - name: "cors"
+          config:
+            origins: ["https://yourdomain.com"]
+            methods: ["GET", "POST", "PUT", "DELETE"]
+
+  global_plugins:
+    - name: "prometheus"
+      config:
+        per_consumer: true
+    - name: "request-id"
+    - name: "correlation-id"
+```
+
+### API Documentation and Testing
+
+#### OpenAPI Specification
+```yaml
+# Example: OpenAPI 3.0 specification
+openapi: 3.0.3
+info:
+  title: Example API
+  description: A comprehensive API example following best practices
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@example.com
+    url: https://example.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check API health status
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: v1
+
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user and return access token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                password:
+                  type: string
+                  minLength: 8
+              example:
+                username: demo
+                password: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users:
+    get:
+      summary: List users
+      description: Get a paginated list of users
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: skip
+          in: query
+          description: Number of records to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Number of records to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Search term
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+
+components:
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - created_at
+        - is_active
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        created_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+          example: true
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 1800
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: ValidationError
+        message:
+          type: string
+          example: Invalid input provided
+        details:
+          type: object
+          additionalProperties: true
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+```
+
+#### API Testing Framework
+```python
+# Example: API testing with pytest
+import pytest
+import httpx
+import jwt
+from datetime import datetime, timedelta
+
+class TestAPIFramework:
+    """Comprehensive API testing framework."""
+    
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.client = httpx.AsyncClient(base_url=base_url)
+        self.auth_token = None
+    
+    async def authenticate(self, username: str, password: str):
+        """Authenticate and store token."""
+        response = await self.client.post("/auth/login", json={
+            "username": username,
+            "password": password
+        })
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            self.auth_token = token_data["access_token"]
+            return True
+        return False
+    
+    def get_auth_headers(self):
+        """Get authentication headers."""
+        if self.auth_token:
+            return {"Authorization": f"Bearer {self.auth_token}"}
+        return {}
+
+@pytest.fixture
+async def api_client():
+    """API client fixture."""
+    client = TestAPIFramework("http://localhost:8000/v1")
+    await client.authenticate("demo", "password123")
+    yield client
+    await client.client.aclose()
+
+@pytest.mark.asyncio
+async def test_health_endpoint():
+    """Test health check endpoint."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://localhost:8000/v1/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "timestamp" in data
+        assert "version" in data
+
+@pytest.mark.asyncio
+async def test_user_authentication(api_client):
+    """Test user authentication flow."""
+    # Test successful login
+    assert api_client.auth_token is not None
+    
+    # Test protected endpoint
+    response = await api_client.client.get(
+        "/users/me",
+        headers=api_client.get_auth_headers()
+    )
+    assert response.status_code == 200
+    user_data = response.json()
+    assert "username" in user_data
+    assert "email" in user_data
+
+@pytest.mark.asyncio
+async def test_rate_limiting():
+    """Test API rate limiting."""
+    async with httpx.AsyncClient() as client:
+        # Make multiple requests to trigger rate limit
+        responses = []
+        for i in range(105):  # Exceed the 100 requests limit
+            response = await client.get("http://localhost:8000/v1/health")
+            responses.append(response.status_code)
+        
+        # Should have some 429 (Too Many Requests) responses
+        assert 429 in responses
+
+@pytest.mark.asyncio
+async def test_pagination(api_client):
+    """Test API pagination."""
+    response = await api_client.client.get(
+        "/users",
+        params={"skip": 0, "limit": 5},
+        headers=api_client.get_auth_headers()
+    )
+    
+    assert response.status_code == 200
+    users = response.json()
+    assert len(users) <= 5
+
+@pytest.mark.asyncio
+async def test_error_handling():
+    """Test API error handling."""
+    async with httpx.AsyncClient() as client:
+        # Test 404 error
+        response = await client.get("http://localhost:8000/v1/nonexistent")
+        assert response.status_code == 404
+        
+        # Test validation error
+        response = await client.post("http://localhost:8000/v1/auth/login", json={
+            "username": "a",  # Too short
+            "password": "b"   # Too short
+        })
+        assert response.status_code == 422  # Validation error
+
+# Load testing with locust
+from locust import HttpUser, task, between
+
+class APILoadTest(HttpUser):
+    wait_time = between(1, 3)
+    
+    def on_start(self):
+        """Login before starting tests."""
+        response = self.client.post("/auth/login", json={
+            "username": "demo",
+            "password": "password123"
+        })
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            self.auth_headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+        else:
+            self.auth_headers = {}
+    
+    @task(3)
+    def get_health(self):
+        """Test health endpoint (most frequent)."""
+        self.client.get("/health")
+    
+    @task(2)
+    def get_users(self):
+        """Test users endpoint."""
+        self.client.get("/users", headers=self.auth_headers)
+    
+    @task(1)
+    def get_user_profile(self):
+        """Test user profile endpoint."""
+        self.client.get("/users/me", headers=self.auth_headers)
+```
+
+## Compliance
+
+### Regulatory Requirements
+
+- **GDPR**: Compliance with GDPR requirements
+- **CCPA**: Compliance with CCPA requirements
+- **PCI DSS**: Compliance with PCI DSS requirements
+- **HIPAA**: Compliance with HIPAA requirements
+- **OpenAPI**: Compliance with OpenAPI requirements
+- **JSON:API**: Compliance with JSON:API requirements
+- **GraphQL Spec**: Compliance with GraphQL Spec requirements
+
+### Risk Management
+
+- **Risk Level**: Moderate Impact
+- **Risk Assessment**: Regular risk assessments required
+- **Mitigation Strategies**: Implement appropriate controls
+
+### Audit Requirements
+
+- Regular compliance audits
+- Documentation review
+- Control effectiveness testing
+
+## Monitoring and Measurement
+
+### API Monitoring and Analytics
+
+#### API Performance Monitoring
+```python
+# Example: API monitoring and metrics collection
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+import time
+import functools
+
+# Metrics
+REQUEST_COUNT = Counter('api_requests_total', 'Total API requests', ['method', 'endpoint', 'status'])
+REQUEST_LATENCY = Histogram('api_request_duration_seconds', 'Request latency', ['method', 'endpoint'])
+ACTIVE_CONNECTIONS = Gauge('api_active_connections', 'Active connections')
+ERROR_RATE = Gauge('api_error_rate', 'API error rate')
+
+class APIMonitoring:
+    def __init__(self):
+        self.request_count = 0
+        self.error_count = 0
+        
+    def track_request(self, method: str, endpoint: str, status_code: int, duration: float):
+        """Track API request metrics."""
+        REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status_code).inc()
+        REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(duration)
+        
+        self.request_count += 1
+        if status_code >= 400:
+            self.error_count += 1
+        
+        # Update error rate
+        if self.request_count > 0:
+            error_rate = self.error_count / self.request_count
+            ERROR_RATE.set(error_rate)
+
+def monitor_api_endpoint(func):
+    """Decorator to monitor API endpoint performance."""
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.time()
+        method = kwargs.get('request').method if 'request' in kwargs else 'UNKNOWN'
+        endpoint = func.__name__
+        status_code = 200
+        
+        try:
+            result = await func(*args, **kwargs)
+            return result
+        except Exception as e:
+            status_code = getattr(e, 'status_code', 500)
+            raise
+        finally:
+            duration = time.time() - start_time
+            api_monitor = APIMonitoring()
+            api_monitor.track_request(method, endpoint, status_code, duration)
+    
+    return wrapper
+
+# API health checks
+class APIHealthChecker:
+    def __init__(self):
+        self.health_checks = {}
+    
+    def register_health_check(self, name: str, check_func):
+        """Register a health check function."""
+        self.health_checks[name] = check_func
+    
+    async def run_health_checks(self):
+        """Run all registered health checks."""
+        results = {}
+        overall_healthy = True
+        
+        for name, check_func in self.health_checks.items():
+            try:
+                result = await check_func()
+                results[name] = {"status": "healthy", "details": result}
+            except Exception as e:
+                results[name] = {"status": "unhealthy", "error": str(e)}
+                overall_healthy = False
+        
+        return {
+            "overall_status": "healthy" if overall_healthy else "unhealthy",
+            "checks": results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+```
+
+#### API Analytics Dashboard
+```python
+# Example: API analytics and reporting
+class APIAnalytics:
+    def __init__(self):
+        self.redis_client = redis.from_url("redis://localhost:6379")
+    
+    def track_api_usage(self, user_id: str, endpoint: str, method: str):
+        """Track API usage for analytics."""
+        timestamp = int(time.time())
+        
+        # Track hourly usage
+        hour_key = f"api_usage:hour:{timestamp // 3600}"
+        self.redis_client.hincrby(hour_key, f"{endpoint}:{method}", 1)
+        self.redis_client.expire(hour_key, 86400)  # 24 hours
+        
+        # Track user usage
+        user_key = f"user_usage:{user_id}:{timestamp // 86400}"  # Daily
+        self.redis_client.hincrby(user_key, f"{endpoint}:{method}", 1)
+        self.redis_client.expire(user_key, 2592000)  # 30 days
+    
+    def get_usage_report(self, time_range: str = "24h"):
+        """Generate API usage report."""
+        current_time = int(time.time())
+        
+        if time_range == "24h":
+            start_time = current_time - 86400
+            interval = 3600  # 1 hour
+        elif time_range == "7d":
+            start_time = current_time - 604800
+            interval = 86400  # 1 day
+        else:
+            start_time = current_time - 86400
+            interval = 3600
+        
+        report = {
+            "time_range": time_range,
+            "start_time": start_time,
+            "end_time": current_time,
+            "usage_data": []
+        }
+        
+        # Collect usage data
+        for timestamp in range(start_time, current_time, interval):
+            key = f"api_usage:hour:{timestamp // 3600}"
+            usage_data = self.redis_client.hgetall(key)
+            
+            if usage_data:
+                report["usage_data"].append({
+                    "timestamp": timestamp,
+                    "requests": sum(int(count) for count in usage_data.values()),
+                    "endpoints": dict(usage_data)
+                })
+        
+        return report
+```
+
+## Responsibilities
+
+### Standard Owner
+- Maintain standard documentation
+- Approve changes and updates
+- Ensure compliance monitoring
+
+### Implementation Teams
+- Follow standard requirements
+- Report compliance issues
+- Maintain documentation
+
+### Audit Teams
+- Conduct compliance reviews
+- Validate implementation
+- Report findings and recommendations
+
+## References
+
+### API Design References
+
+#### REST API Standards
+- **OpenAPI Specification**: REST API documentation standard
+- **JSON:API**: Specification for building APIs in JSON
+- **HAL (Hypertext Application Language)**: Simple format for REST hypermedia APIs
+- **Richardson Maturity Model**: REST API maturity levels
+
+#### GraphQL Resources
+- **GraphQL Specification**: Official GraphQL specification
+- **Apollo GraphQL**: Comprehensive GraphQL platform
+- **Relay**: Facebook's GraphQL client framework
+- **DataLoader**: Batching and caching layer for GraphQL
+
+#### API Security
+- **OAuth 2.0**: Authorization framework
+- **OpenID Connect**: Identity layer on OAuth 2.0
+- **JWT (JSON Web Tokens)**: Compact token format
+- **API Key Management**: Best practices for API keys
+
+#### API Gateway Solutions
+- **Kong**: Open-source API gateway
+- **Ambassador**: Kubernetes-native API gateway
+- **AWS API Gateway**: Amazon's managed API gateway
+- **Zuul**: Netflix's gateway service
+
+#### Testing and Documentation
+- **Postman**: API development and testing platform
+- **Insomnia**: REST client and API testing tool
+- **Swagger UI**: Interactive API documentation
+- **ReDoc**: OpenAPI documentation generator
+
+#### Performance and Monitoring
+- **Prometheus**: Monitoring and alerting toolkit
+- **Grafana**: Analytics and monitoring platform
+- **New Relic**: Application performance monitoring
+- **DataDog**: Cloud monitoring service
+
+## Appendix
+
+### Glossary
+
+**Standard**: A documented agreement containing technical specifications or criteria to be used consistently.
+
+**Compliance**: The act of conforming to rules, regulations, or standards.
+
+**Risk**: The potential for loss, damage, or destruction of an asset as a result of a threat.
+
+### Change History
+
+| Version | Date | Changes | Author |
+|---------|------|---------|---------|
+| 1.0.0 | 2025-07-07T23:26:10.027426 | Initial version | MCP Standards Team |
+
+### Review and Approval
+
+- **Review Status**: Draft
+- **Reviewers**: 
+- **Approval Date**: Pending
+
+---
+
+*This document is part of the api standards framework and is subject to regular review and updates.*

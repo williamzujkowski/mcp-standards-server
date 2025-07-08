@@ -1,0 +1,48 @@
+name: "Architecture Pattern Standard Template"
+description: "Template for architecture standards with design patterns, scalability, and system design guidelines"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "architecture"
+tags:
+  - "architecture"
+  - "design"
+  - "patterns"
+  - "scalability"
+extends: "standards/base.j2"
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+optional_variables:
+  - architecture_patterns
+  - design_principles
+  - technology_stack
+  - scalability_requirements
+  - availability_requirements
+  - nist_controls
+  - compliance_frameworks
+  - implementation_guides
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - architecture_principles
+  - architecture_patterns
+  - technology_stack
+  - scalability_architecture
+  - availability_reliability
+  - security_architecture
+  - performance_architecture
+  - integration_architecture
+  - monitoring_architecture

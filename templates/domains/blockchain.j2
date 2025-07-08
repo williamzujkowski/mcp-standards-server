@@ -1,0 +1,1500 @@
+{% extends "standards/technical.j2" %}
+
+{% block purpose %}
+This blockchain/Web3 standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It provides comprehensive guidance for blockchain development, smart contract security, decentralized application (dApp) architecture, and Web3 ecosystem integration while ensuring security, compliance, and interoperability.
+
+**Blockchain/Web3 Focus Areas:**
+- **Smart Contract Security**: Secure smart contract development and auditing
+- **Decentralized Architecture**: dApp design patterns and best practices
+- **Consensus Mechanisms**: Blockchain consensus and governance protocols
+- **Cryptographic Security**: Key management and cryptographic implementations
+- **Interoperability**: Cross-chain communication and standards
+- **Regulatory Compliance**: Legal and regulatory requirements for blockchain
+{% endblock %}
+
+{% block scope %}
+This blockchain/Web3 standard applies to:
+- Smart contract development and deployment
+- Decentralized application (dApp) development
+- Blockchain infrastructure and node operations
+- Cryptocurrency and token implementations
+- DeFi protocol development
+- NFT and digital asset management
+- Cross-chain bridge and interoperability solutions
+- Web3 wallet and identity management
+{% endblock %}
+
+{% block implementation %}
+### Blockchain Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+**Security Standards:** Smart contract security audits and formal verification
+**Compliance Frameworks:** Anti-Money Laundering (AML), Know Your Customer (KYC)
+**Interoperability:** Cross-chain communication protocols and standards
+
+### Smart Contract Development
+
+#### Smart Contract Architecture
+```mermaid
+graph TB
+    A[User Interface] --> B[Web3 Provider]
+    B --> C[Smart Contract Interface]
+    C --> D[Core Business Logic]
+    D --> E[Access Control]
+    D --> F[State Management]
+    D --> G[Event Emission]
+    
+    H[Oracle Services] --> D
+    I[External Contracts] --> D
+    J[Governance] --> E
+    
+    K[Audit Tools] --> C
+    L[Testing Framework] --> D
+```
+
+#### Secure Smart Contract Development
+```solidity
+// Example: Secure smart contract implementation
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+/**
+ * @title SecureContract
+ * @dev Example of secure smart contract with best practices
+ */
+contract SecureContract is ReentrancyGuard, AccessControl, Pausable {
+    using SafeMath for uint256;
+    
+    // Role definitions
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+    
+    // State variables
+    mapping(address => uint256) private balances;
+    mapping(address => bool) private whitelist;
+    
+    uint256 public totalSupply;
+    uint256 public constant MAX_SUPPLY = 1000000 * 10**18;
+    uint256 public constant MIN_TRANSFER = 1000;
+    
+    // Events
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+    event Deposit(address indexed user, uint256 amount);
+    event Withdrawal(address indexed user, uint256 amount);
+    event WhitelistUpdated(address indexed user, bool status);
+    
+    // Custom errors for gas efficiency
+    error InsufficientBalance();
+    error InvalidAmount();
+    error NotWhitelisted();
+    error ExceedsMaxSupply();
+    
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+    }
+    
+    /**
+     * @dev Deposit funds with security checks
+     */
+    function deposit() external payable nonReentrant whenNotPaused {
+        if (msg.value < MIN_TRANSFER) revert InvalidAmount();
+        if (!whitelist[msg.sender]) revert NotWhitelisted();
+        
+        uint256 newBalance = balances[msg.sender].add(msg.value);
+        balances[msg.sender] = newBalance;
+        
+        emit Deposit(msg.sender, msg.value);
+    }
+    
+    /**
+     * @dev Secure withdrawal with checks-effects-interactions pattern
+     */
+    function withdraw(uint256 amount) external nonReentrant whenNotPaused {
+        if (amount == 0) revert InvalidAmount();
+        if (balances[msg.sender] < amount) revert InsufficientBalance();
+        
+        // Effects before interactions
+        balances[msg.sender] = balances[msg.sender].sub(amount);
+        
+        // Interaction
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Transfer failed");
+        
+        emit Withdrawal(msg.sender, amount);
+    }
+    
+    /**
+     * @dev Transfer with additional security checks
+     */
+    function transfer(address to, uint256 amount) external nonReentrant whenNotPaused {
+        if (to == address(0)) revert InvalidAmount();
+        if (amount == 0) revert InvalidAmount();
+        if (balances[msg.sender] < amount) revert InsufficientBalance();
+        if (!whitelist[msg.sender] || !whitelist[to]) revert NotWhitelisted();
+        
+        balances[msg.sender] = balances[msg.sender].sub(amount);
+        balances[to] = balances[to].add(amount);
+        
+        emit Transfer(msg.sender, to, amount);
+    }
+    
+    /**
+     * @dev Admin function to update whitelist
+     */
+    function updateWhitelist(address user, bool status) 
+        external 
+        onlyRole(ADMIN_ROLE) 
+    {
+        whitelist[user] = status;
+        emit WhitelistUpdated(user, status);
+    }
+    
+    /**
+     * @dev Emergency pause function
+     */
+    function pause() external onlyRole(ADMIN_ROLE) {
+        _pause();
+    }
+    
+    /**
+     * @dev Unpause function
+     */
+    function unpause() external onlyRole(ADMIN_ROLE) {
+        _unpause();
+    }
+    
+    /**
+     * @dev Get balance (view function)
+     */
+    function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
+    }
+    
+    /**
+     * @dev Check if address is whitelisted
+     */
+    function isWhitelisted(address account) external view returns (bool) {
+        return whitelist[account];
+    }
+}
+```
+
+#### Smart Contract Testing
+```javascript
+// Example: Comprehensive smart contract testing
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+
+describe("SecureContract", function () {
+    async function deploySecureContractFixture() {
+        const [owner, user1, user2, attacker] = await ethers.getSigners();
+        
+        const SecureContract = await ethers.getContractFactory("SecureContract");
+        const contract = await SecureContract.deploy();
+        
+        return { contract, owner, user1, user2, attacker };
+    }
+    
+    describe("Deployment", function () {
+        it("Should set the right owner", async function () {
+            const { contract, owner } = await loadFixture(deploySecureContractFixture);
+            
+            expect(await contract.hasRole(await contract.ADMIN_ROLE(), owner.address))
+                .to.equal(true);
+        });
+    });
+    
+    describe("Security Tests", function () {
+        it("Should prevent reentrancy attacks", async function () {
+            const { contract, user1 } = await loadFixture(deploySecureContractFixture);
+            
+            // Deploy malicious contract that attempts reentrancy
+            const MaliciousContract = await ethers.getContractFactory("MaliciousReentrant");
+            const malicious = await MaliciousContract.deploy(contract.address);
+            
+            // Whitelist the malicious contract
+            await contract.updateWhitelist(malicious.address, true);
+            
+            // Attempt reentrancy attack
+            await expect(
+                malicious.attack({ value: ethers.utils.parseEther("1") })
+            ).to.be.revertedWith("ReentrancyGuard: reentrant call");
+        });
+        
+        it("Should prevent integer overflow/underflow", async function () {
+            const { contract, user1 } = await loadFixture(deploySecureContractFixture);
+            
+            await contract.updateWhitelist(user1.address, true);
+            
+            // Try to withdraw more than balance
+            await expect(
+                contract.connect(user1).withdraw(ethers.utils.parseEther("1"))
+            ).to.be.revertedWith("InsufficientBalance");
+        });
+        
+        it("Should enforce access controls", async function () {
+            const { contract, user1 } = await loadFixture(deploySecureContractFixture);
+            
+            // Non-admin should not be able to update whitelist
+            await expect(
+                contract.connect(user1).updateWhitelist(user1.address, true)
+            ).to.be.revertedWith("AccessControl:");
+        });
+        
+        it("Should handle emergency pause correctly", async function () {
+            const { contract, owner, user1 } = await loadFixture(deploySecureContractFixture);
+            
+            await contract.updateWhitelist(user1.address, true);
+            
+            // Pause the contract
+            await contract.pause();
+            
+            // Operations should be blocked
+            await expect(
+                contract.connect(user1).deposit({ value: ethers.utils.parseEther("1") })
+            ).to.be.revertedWith("Pausable: paused");
+        });
+    });
+    
+    describe("Gas Optimization Tests", function () {
+        it("Should use custom errors for gas efficiency", async function () {
+            const { contract, user1 } = await loadFixture(deploySecureContractFixture);
+            
+            // Test custom error
+            await expect(
+                contract.connect(user1).deposit({ value: 100 })
+            ).to.be.revertedWith("NotWhitelisted");
+        });
+    });
+});
+```
+
+### DeFi Protocol Development
+
+#### DeFi Architecture Patterns
+```solidity
+// Example: DeFi lending protocol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title LendingPool
+ * @dev Simplified DeFi lending pool implementation
+ */
+contract LendingPool is ReentrancyGuard, Ownable {
+    struct LoanTerms {
+        uint256 principal;
+        uint256 interestRate;
+        uint256 duration;
+        uint256 startTime;
+        address borrower;
+        address collateralToken;
+        uint256 collateralAmount;
+        bool active;
+    }
+    
+    IERC20 public immutable lendingToken;
+    uint256 public constant COLLATERAL_RATIO = 150; // 150% collateralization
+    uint256 public constant LIQUIDATION_THRESHOLD = 120; // 120%
+    
+    mapping(address => uint256) public deposits;
+    mapping(uint256 => LoanTerms) public loans;
+    mapping(address => uint256[]) public userLoans;
+    
+    uint256 private nextLoanId = 1;
+    uint256 public totalDeposits;
+    uint256 public totalBorrowed;
+    
+    event Deposited(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+    event LoanCreated(uint256 indexed loanId, address indexed borrower, uint256 amount);
+    event LoanRepaid(uint256 indexed loanId, uint256 amount);
+    event Liquidated(uint256 indexed loanId, address indexed liquidator);
+    
+    constructor(address _lendingToken) {
+        lendingToken = IERC20(_lendingToken);
+    }
+    
+    function deposit(uint256 amount) external nonReentrant {
+        require(amount > 0, "Amount must be greater than 0");
+        
+        lendingToken.transferFrom(msg.sender, address(this), amount);
+        deposits[msg.sender] += amount;
+        totalDeposits += amount;
+        
+        emit Deposited(msg.sender, amount);
+    }
+    
+    function withdraw(uint256 amount) external nonReentrant {
+        require(deposits[msg.sender] >= amount, "Insufficient balance");
+        require(getAvailableLiquidity() >= amount, "Insufficient liquidity");
+        
+        deposits[msg.sender] -= amount;
+        totalDeposits -= amount;
+        
+        lendingToken.transfer(msg.sender, amount);
+        
+        emit Withdrawn(msg.sender, amount);
+    }
+    
+    function borrow(
+        uint256 amount,
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 duration
+    ) external nonReentrant {
+        require(amount > 0, "Amount must be greater than 0");
+        require(duration > 0, "Duration must be greater than 0");
+        require(getAvailableLiquidity() >= amount, "Insufficient liquidity");
+        
+        // Check collateral ratio
+        uint256 requiredCollateral = (amount * COLLATERAL_RATIO) / 100;
+        require(collateralAmount >= requiredCollateral, "Insufficient collateral");
+        
+        // Transfer collateral
+        IERC20(collateralToken).transferFrom(msg.sender, address(this), collateralAmount);
+        
+        // Create loan
+        uint256 loanId = nextLoanId++;
+        loans[loanId] = LoanTerms({
+            principal: amount,
+            interestRate: calculateInterestRate(amount),
+            duration: duration,
+            startTime: block.timestamp,
+            borrower: msg.sender,
+            collateralToken: collateralToken,
+            collateralAmount: collateralAmount,
+            active: true
+        });
+        
+        userLoans[msg.sender].push(loanId);
+        totalBorrowed += amount;
+        
+        // Transfer loan amount
+        lendingToken.transfer(msg.sender, amount);
+        
+        emit LoanCreated(loanId, msg.sender, amount);
+    }
+    
+    function repayLoan(uint256 loanId) external nonReentrant {
+        LoanTerms storage loan = loans[loanId];
+        require(loan.active, "Loan not active");
+        require(loan.borrower == msg.sender, "Not loan borrower");
+        
+        uint256 repayAmount = calculateRepayAmount(loanId);
+        
+        // Transfer repayment
+        lendingToken.transferFrom(msg.sender, address(this), repayAmount);
+        
+        // Return collateral
+        IERC20(loan.collateralToken).transfer(msg.sender, loan.collateralAmount);
+        
+        // Update state
+        loan.active = false;
+        totalBorrowed -= loan.principal;
+        
+        emit LoanRepaid(loanId, repayAmount);
+    }
+    
+    function liquidate(uint256 loanId) external nonReentrant {
+        LoanTerms storage loan = loans[loanId];
+        require(loan.active, "Loan not active");
+        require(isLiquidatable(loanId), "Loan not liquidatable");
+        
+        uint256 repayAmount = calculateRepayAmount(loanId);
+        
+        // Liquidator pays the debt
+        lendingToken.transferFrom(msg.sender, address(this), repayAmount);
+        
+        // Liquidator receives collateral (with penalty)
+        uint256 liquidationBonus = (loan.collateralAmount * 5) / 100; // 5% bonus
+        IERC20(loan.collateralToken).transfer(msg.sender, loan.collateralAmount + liquidationBonus);
+        
+        // Update state
+        loan.active = false;
+        totalBorrowed -= loan.principal;
+        
+        emit Liquidated(loanId, msg.sender);
+    }
+    
+    function calculateInterestRate(uint256 amount) public view returns (uint256) {
+        // Simple utilization-based interest rate model
+        uint256 utilization = (totalBorrowed * 100) / totalDeposits;
+        return 5 + (utilization / 10); // Base 5% + utilization factor
+    }
+    
+    function calculateRepayAmount(uint256 loanId) public view returns (uint256) {
+        LoanTerms memory loan = loans[loanId];
+        uint256 timeElapsed = block.timestamp - loan.startTime;
+        uint256 interest = (loan.principal * loan.interestRate * timeElapsed) / (365 days * 100);
+        return loan.principal + interest;
+    }
+    
+    function isLiquidatable(uint256 loanId) public view returns (bool) {
+        LoanTerms memory loan = loans[loanId];
+        if (!loan.active) return false;
+        
+        uint256 repayAmount = calculateRepayAmount(loanId);
+        uint256 collateralValue = getCollateralValue(loan.collateralToken, loan.collateralAmount);
+        uint256 collateralRatio = (collateralValue * 100) / repayAmount;
+        
+        return collateralRatio < LIQUIDATION_THRESHOLD;
+    }
+    
+    function getAvailableLiquidity() public view returns (uint256) {
+        return lendingToken.balanceOf(address(this)) - totalBorrowed;
+    }
+    
+    function getCollateralValue(address token, uint256 amount) public view returns (uint256) {
+        // Simplified: assume 1:1 with lending token
+        // In practice, would use price oracle
+        return amount;
+    }
+}
+```
+
+### Cross-Chain Infrastructure
+
+#### Cross-Chain Bridge Architecture
+```solidity
+// Example: Cross-chain bridge implementation
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+/**
+ * @title CrossChainBridge
+ * @dev Secure cross-chain asset bridge
+ */
+contract CrossChainBridge is ReentrancyGuard, AccessControl {
+    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    
+    struct BridgeTransaction {
+        address token;
+        uint256 amount;
+        address sender;
+        address recipient;
+        uint256 targetChainId;
+        uint256 nonce;
+        bool processed;
+        uint256 timestamp;
+    }
+    
+    mapping(uint256 => BridgeTransaction) public bridgeTransactions;
+    mapping(bytes32 => bool) public processedHashes;
+    mapping(address => bool) public supportedTokens;
+    mapping(uint256 => bool) public supportedChains;
+    
+    uint256 public nextNonce = 1;
+    uint256 public constant CONFIRMATION_THRESHOLD = 3;
+    
+    event BridgeInitiated(
+        uint256 indexed nonce,
+        address indexed token,
+        uint256 amount,
+        address indexed sender,
+        address recipient,
+        uint256 targetChainId
+    );
+    
+    event BridgeCompleted(
+        uint256 indexed nonce,
+        bytes32 indexed transactionHash
+    );
+    
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+    }
+    
+    function initiateBridge(
+        address token,
+        uint256 amount,
+        address recipient,
+        uint256 targetChainId
+    ) external nonReentrant {
+        require(supportedTokens[token], "Token not supported");
+        require(supportedChains[targetChainId], "Chain not supported");
+        require(amount > 0, "Amount must be greater than 0");
+        require(recipient != address(0), "Invalid recipient");
+        
+        // Lock tokens
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        
+        // Create bridge transaction
+        uint256 nonce = nextNonce++;
+        bridgeTransactions[nonce] = BridgeTransaction({
+            token: token,
+            amount: amount,
+            sender: msg.sender,
+            recipient: recipient,
+            targetChainId: targetChainId,
+            nonce: nonce,
+            processed: false,
+            timestamp: block.timestamp
+        });
+        
+        emit BridgeInitiated(nonce, token, amount, msg.sender, recipient, targetChainId);
+    }
+    
+    function completeBridge(
+        uint256 nonce,
+        bytes32 transactionHash,
+        bytes[] calldata signatures
+    ) external onlyRole(VALIDATOR_ROLE) {
+        require(!processedHashes[transactionHash], "Transaction already processed");
+        require(signatures.length >= CONFIRMATION_THRESHOLD, "Insufficient confirmations");
+        
+        BridgeTransaction storage transaction = bridgeTransactions[nonce];
+        require(!transaction.processed, "Transaction already processed");
+        
+        // Verify signatures (simplified)
+        require(verifySignatures(transactionHash, signatures), "Invalid signatures");
+        
+        // Mark as processed
+        transaction.processed = true;
+        processedHashes[transactionHash] = true;
+        
+        // Release tokens
+        IERC20(transaction.token).transfer(transaction.recipient, transaction.amount);
+        
+        emit BridgeCompleted(nonce, transactionHash);
+    }
+    
+    function verifySignatures(
+        bytes32 hash,
+        bytes[] calldata signatures
+    ) internal pure returns (bool) {
+        // Simplified signature verification
+        // In practice, would verify against known validator set
+        return signatures.length >= 3;
+    }
+    
+    function addSupportedToken(address token) external onlyRole(ADMIN_ROLE) {
+        supportedTokens[token] = true;
+    }
+    
+    function addSupportedChain(uint256 chainId) external onlyRole(ADMIN_ROLE) {
+        supportedChains[chainId] = true;
+    }
+}
+```
+
+### NFT and Digital Asset Management
+
+#### NFT Standard Implementation
+```solidity
+// Example: Advanced NFT implementation with royalties
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/interfaces/IERC2981.sol";
+
+/**
+ * @title AdvancedNFT
+ * @dev NFT contract with royalties, metadata, and marketplace integration
+ */
+contract AdvancedNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard, IERC2981 {
+    struct RoyaltyInfo {
+        address recipient;
+        uint256 percentage; // Basis points (e.g., 500 = 5%)
+    }
+    
+    mapping(uint256 => RoyaltyInfo) private _royalties;
+    mapping(uint256 => address) public creators;
+    mapping(address => bool) public authorizedMinters;
+    
+    uint256 public nextTokenId = 1;
+    uint256 public constant MAX_ROYALTY = 1000; // 10%
+    string private _baseTokenURI;
+    
+    event NFTMinted(uint256 indexed tokenId, address indexed creator, address indexed to);
+    event RoyaltySet(uint256 indexed tokenId, address recipient, uint256 percentage);
+    
+    constructor(
+        string memory name,
+        string memory symbol,
+        string memory baseTokenURI
+    ) ERC721(name, symbol) {
+        _baseTokenURI = baseTokenURI;
+    }
+    
+    function mint(
+        address to,
+        string memory tokenURI,
+        address royaltyRecipient,
+        uint256 royaltyPercentage
+    ) external returns (uint256) {
+        require(authorizedMinters[msg.sender] || msg.sender == owner(), "Not authorized to mint");
+        require(royaltyPercentage <= MAX_ROYALTY, "Royalty too high");
+        
+        uint256 tokenId = nextTokenId++;
+        
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, tokenURI);
+        
+        creators[tokenId] = msg.sender;
+        
+        if (royaltyRecipient != address(0) && royaltyPercentage > 0) {
+            _setRoyalty(tokenId, royaltyRecipient, royaltyPercentage);
+        }
+        
+        emit NFTMinted(tokenId, msg.sender, to);
+        
+        return tokenId;
+    }
+    
+    function _setRoyalty(
+        uint256 tokenId,
+        address recipient,
+        uint256 percentage
+    ) internal {
+        require(percentage <= MAX_ROYALTY, "Royalty too high");
+        
+        _royalties[tokenId] = RoyaltyInfo(recipient, percentage);
+        
+        emit RoyaltySet(tokenId, recipient, percentage);
+    }
+    
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        external
+        view
+        override
+        returns (address, uint256)
+    {
+        RoyaltyInfo memory royalty = _royalties[tokenId];
+        
+        if (royalty.recipient == address(0)) {
+            return (address(0), 0);
+        }
+        
+        uint256 royaltyAmount = (salePrice * royalty.percentage) / 10000;
+        return (royalty.recipient, royaltyAmount);
+    }
+    
+    function updateRoyalty(
+        uint256 tokenId,
+        address newRecipient,
+        uint256 newPercentage
+    ) external {
+        require(_exists(tokenId), "Token does not exist");
+        require(
+            creators[tokenId] == msg.sender || msg.sender == owner(),
+            "Not authorized"
+        );
+        
+        _setRoyalty(tokenId, newRecipient, newPercentage);
+    }
+    
+    function setAuthorizedMinter(address minter, bool authorized) external onlyOwner {
+        authorizedMinters[minter] = authorized;
+    }
+    
+    function setBaseURI(string memory newBaseURI) external onlyOwner {
+        _baseTokenURI = newBaseURI;
+    }
+    
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
+    }
+    
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+    
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+        delete _royalties[tokenId];
+        delete creators[tokenId];
+    }
+    
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, IERC165)
+        returns (bool)
+    {
+        return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId);
+    }
+}
+```
+
+### Web3 Integration and dApp Development
+
+#### Web3 Frontend Integration
+```javascript
+// Example: Web3 dApp frontend integration
+import { ethers } from 'ethers';
+import { useState, useEffect, useCallback } from 'react';
+
+// Contract ABI (simplified)
+const CONTRACT_ABI = [
+    "function deposit() payable",
+    "function withdraw(uint256 amount)",
+    "function balanceOf(address account) view returns (uint256)",
+    "function transfer(address to, uint256 amount)",
+    "event Transfer(address indexed from, address indexed to, uint256 amount)"
+];
+
+const CONTRACT_ADDRESS = "0x..."; // Your contract address
+
+export function useWeb3Contract() {
+    const [provider, setProvider] = useState(null);
+    const [signer, setSigner] = useState(null);
+    const [contract, setContract] = useState(null);
+    const [account, setAccount] = useState(null);
+    const [balance, setBalance] = useState('0');
+    const [isConnected, setIsConnected] = useState(false);
+
+    // Connect to wallet
+    const connectWallet = useCallback(async () => {
+        try {
+            if (window.ethereum) {
+                const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await web3Provider.send("eth_requestAccounts", []);
+                
+                const web3Signer = web3Provider.getSigner();
+                const contractInstance = new ethers.Contract(
+                    CONTRACT_ADDRESS,
+                    CONTRACT_ABI,
+                    web3Signer
+                );
+
+                setProvider(web3Provider);
+                setSigner(web3Signer);
+                setContract(contractInstance);
+                setAccount(accounts[0]);
+                setIsConnected(true);
+
+                // Get initial balance
+                const userBalance = await contractInstance.balanceOf(accounts[0]);
+                setBalance(ethers.utils.formatEther(userBalance));
+
+            } else {
+                alert('Please install MetaMask!');
+            }
+        } catch (error) {
+            console.error('Error connecting wallet:', error);
+        }
+    }, []);
+
+    // Disconnect wallet
+    const disconnectWallet = useCallback(() => {
+        setProvider(null);
+        setSigner(null);
+        setContract(null);
+        setAccount(null);
+        setBalance('0');
+        setIsConnected(false);
+    }, []);
+
+    // Deposit function
+    const deposit = useCallback(async (amount) => {
+        try {
+            if (!contract) throw new Error('Contract not connected');
+
+            const tx = await contract.deposit({
+                value: ethers.utils.parseEther(amount)
+            });
+
+            // Wait for transaction confirmation
+            const receipt = await tx.wait();
+            
+            // Update balance
+            const newBalance = await contract.balanceOf(account);
+            setBalance(ethers.utils.formatEther(newBalance));
+
+            return receipt;
+        } catch (error) {
+            console.error('Deposit error:', error);
+            throw error;
+        }
+    }, [contract, account]);
+
+    // Withdraw function
+    const withdraw = useCallback(async (amount) => {
+        try {
+            if (!contract) throw new Error('Contract not connected');
+
+            const tx = await contract.withdraw(ethers.utils.parseEther(amount));
+            
+            // Wait for transaction confirmation
+            const receipt = await tx.wait();
+            
+            // Update balance
+            const newBalance = await contract.balanceOf(account);
+            setBalance(ethers.utils.formatEther(newBalance));
+
+            return receipt;
+        } catch (error) {
+            console.error('Withdraw error:', error);
+            throw error;
+        }
+    }, [contract, account]);
+
+    // Transfer function
+    const transfer = useCallback(async (to, amount) => {
+        try {
+            if (!contract) throw new Error('Contract not connected');
+
+            const tx = await contract.transfer(to, ethers.utils.parseEther(amount));
+            
+            // Wait for transaction confirmation
+            const receipt = await tx.wait();
+            
+            // Update balance
+            const newBalance = await contract.balanceOf(account);
+            setBalance(ethers.utils.formatEther(newBalance));
+
+            return receipt;
+        } catch (error) {
+            console.error('Transfer error:', error);
+            throw error;
+        }
+    }, [contract, account]);
+
+    // Listen for events
+    useEffect(() => {
+        if (contract && account) {
+            const filter = contract.filters.Transfer(account, null);
+            
+            contract.on(filter, (from, to, amount, event) => {
+                console.log('Transfer event:', {
+                    from,
+                    to,
+                    amount: ethers.utils.formatEther(amount),
+                    txHash: event.transactionHash
+                });
+                
+                // Update balance on transfer events
+                contract.balanceOf(account).then(newBalance => {
+                    setBalance(ethers.utils.formatEther(newBalance));
+                });
+            });
+
+            return () => {
+                contract.removeAllListeners(filter);
+            };
+        }
+    }, [contract, account]);
+
+    // Check if wallet is already connected
+    useEffect(() => {
+        const checkConnection = async () => {
+            if (window.ethereum) {
+                const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await web3Provider.listAccounts();
+                
+                if (accounts.length > 0) {
+                    await connectWallet();
+                }
+            }
+        };
+
+        checkConnection();
+    }, [connectWallet]);
+
+    return {
+        provider,
+        signer,
+        contract,
+        account,
+        balance,
+        isConnected,
+        connectWallet,
+        disconnectWallet,
+        deposit,
+        withdraw,
+        transfer
+    };
+}
+
+// Example React component using the hook
+export function DAppInterface() {
+    const {
+        account,
+        balance,
+        isConnected,
+        connectWallet,
+        disconnectWallet,
+        deposit,
+        withdraw,
+        transfer
+    } = useWeb3Contract();
+
+    const [depositAmount, setDepositAmount] = useState('');
+    const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [transferTo, setTransferTo] = useState('');
+    const [transferAmount, setTransferAmount] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleDeposit = async () => {
+        setLoading(true);
+        try {
+            await deposit(depositAmount);
+            setDepositAmount('');
+            alert('Deposit successful!');
+        } catch (error) {
+            alert('Deposit failed: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleWithdraw = async () => {
+        setLoading(true);
+        try {
+            await withdraw(withdrawAmount);
+            setWithdrawAmount('');
+            alert('Withdrawal successful!');
+        } catch (error) {
+            alert('Withdrawal failed: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTransfer = async () => {
+        setLoading(true);
+        try {
+            await transfer(transferTo, transferAmount);
+            setTransferTo('');
+            setTransferAmount('');
+            alert('Transfer successful!');
+        } catch (error) {
+            alert('Transfer failed: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="dapp-interface">
+            <h1>Secure DApp Interface</h1>
+            
+            {!isConnected ? (
+                <button onClick={connectWallet}>Connect Wallet</button>
+            ) : (
+                <div>
+                    <div className="wallet-info">
+                        <p>Account: {account}</p>
+                        <p>Balance: {balance} ETH</p>
+                        <button onClick={disconnectWallet}>Disconnect</button>
+                    </div>
+
+                    <div className="deposit-section">
+                        <h3>Deposit</h3>
+                        <input
+                            type="number"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            placeholder="Amount to deposit"
+                            disabled={loading}
+                        />
+                        <button onClick={handleDeposit} disabled={loading || !depositAmount}>
+                            Deposit
+                        </button>
+                    </div>
+
+                    <div className="withdraw-section">
+                        <h3>Withdraw</h3>
+                        <input
+                            type="number"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            placeholder="Amount to withdraw"
+                            disabled={loading}
+                        />
+                        <button onClick={handleWithdraw} disabled={loading || !withdrawAmount}>
+                            Withdraw
+                        </button>
+                    </div>
+
+                    <div className="transfer-section">
+                        <h3>Transfer</h3>
+                        <input
+                            type="text"
+                            value={transferTo}
+                            onChange={(e) => setTransferTo(e.target.value)}
+                            placeholder="Recipient address"
+                            disabled={loading}
+                        />
+                        <input
+                            type="number"
+                            value={transferAmount}
+                            onChange={(e) => setTransferAmount(e.target.value)}
+                            placeholder="Amount to transfer"
+                            disabled={loading}
+                        />
+                        <button 
+                            onClick={handleTransfer} 
+                            disabled={loading || !transferTo || !transferAmount}
+                        >
+                            Transfer
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+```
+
+### Blockchain Security and Auditing
+
+#### Security Audit Checklist
+```yaml
+# Blockchain Security Audit Checklist
+security_audit:
+  smart_contract_vulnerabilities:
+    - check: "Reentrancy attacks"
+      description: "Verify reentrancy guards are in place"
+      severity: "Critical"
+      
+    - check: "Integer overflow/underflow"
+      description: "Use SafeMath or Solidity 0.8+ built-in checks"
+      severity: "High"
+      
+    - check: "Access control issues"
+      description: "Verify proper role-based access control"
+      severity: "High"
+      
+    - check: "Front-running protection"
+      description: "Implement commit-reveal or similar mechanisms"
+      severity: "Medium"
+      
+    - check: "Gas limit issues"
+      description: "Avoid unbounded loops and gas limit dependencies"
+      severity: "Medium"
+
+  defi_specific_checks:
+    - check: "Price oracle manipulation"
+      description: "Use multiple oracle sources and time-weighted averages"
+      severity: "Critical"
+      
+    - check: "Flash loan attacks"
+      description: "Implement proper flash loan protection mechanisms"
+      severity: "Critical"
+      
+    - check: "Liquidity pool manipulation"
+      description: "Verify pool manipulation resistance"
+      severity: "High"
+
+  governance_security:
+    - check: "Governance token distribution"
+      description: "Verify fair and secure token distribution"
+      severity: "High"
+      
+    - check: "Proposal validation"
+      description: "Implement proper proposal validation and timelock"
+      severity: "Medium"
+```
+
+#### Automated Security Testing
+```javascript
+// Example: Automated security testing with Hardhat
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
+describe("Security Tests", function () {
+    let contract, owner, attacker;
+
+    beforeEach(async function () {
+        [owner, attacker] = await ethers.getSigners();
+        
+        const Contract = await ethers.getContractFactory("SecureContract");
+        contract = await Contract.deploy();
+    });
+
+    describe("Reentrancy Protection", function () {
+        it("Should prevent reentrancy attacks", async function () {
+            // Deploy malicious contract
+            const Malicious = await ethers.getContractFactory("MaliciousReentrant");
+            const malicious = await Malicious.deploy(contract.address);
+            
+            // Attempt reentrancy
+            await expect(
+                malicious.attack({ value: ethers.utils.parseEther("1") })
+            ).to.be.revertedWith("ReentrancyGuard: reentrant call");
+        });
+    });
+
+    describe("Access Control", function () {
+        it("Should enforce admin-only functions", async function () {
+            await expect(
+                contract.connect(attacker).adminFunction()
+            ).to.be.revertedWith("AccessControl:");
+        });
+    });
+
+    describe("Input Validation", function () {
+        it("Should validate input parameters", async function () {
+            await expect(
+                contract.someFunction(0)
+            ).to.be.revertedWith("Invalid amount");
+        });
+    });
+
+    describe("Gas Optimization", function () {
+        it("Should use gas-efficient patterns", async function () {
+            const tx = await contract.efficientFunction();
+            const receipt = await tx.wait();
+            
+            // Check gas usage is within acceptable limits
+            expect(receipt.gasUsed).to.be.below(100000);
+        });
+    });
+});
+```
+{% endblock %}
+
+{% block monitoring %}
+### Blockchain/Web3 Monitoring
+
+#### Blockchain Network Monitoring
+```javascript
+// Example: Blockchain monitoring system
+class BlockchainMonitor {
+    constructor(providerUrl, contractAddresses) {
+        this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
+        this.contracts = {};
+        this.metrics = {};
+        
+        // Initialize contract instances
+        contractAddresses.forEach(({ address, abi, name }) => {
+            this.contracts[name] = new ethers.Contract(address, abi, this.provider);
+        });
+    }
+
+    async monitorBlockchainHealth() {
+        try {
+            // Check network connectivity
+            const blockNumber = await this.provider.getBlockNumber();
+            const gasPrice = await this.provider.getGasPrice();
+            const network = await this.provider.getNetwork();
+
+            this.metrics.network = {
+                blockNumber,
+                gasPrice: ethers.utils.formatUnits(gasPrice, 'gwei'),
+                chainId: network.chainId,
+                lastUpdated: new Date().toISOString()
+            };
+
+            return this.metrics.network;
+        } catch (error) {
+            console.error('Blockchain health check failed:', error);
+            throw error;
+        }
+    }
+
+    async monitorContractState(contractName) {
+        try {
+            const contract = this.contracts[contractName];
+            if (!contract) {
+                throw new Error(`Contract ${contractName} not found`);
+            }
+
+            // Monitor contract metrics
+            const metrics = {
+                contractAddress: contract.address,
+                blockNumber: await this.provider.getBlockNumber(),
+                contractBalance: await this.provider.getBalance(contract.address),
+                lastUpdated: new Date().toISOString()
+            };
+
+            // Add contract-specific metrics
+            if (contract.totalSupply) {
+                metrics.totalSupply = await contract.totalSupply();
+            }
+
+            this.metrics.contracts = this.metrics.contracts || {};
+            this.metrics.contracts[contractName] = metrics;
+
+            return metrics;
+        } catch (error) {
+            console.error(`Contract monitoring failed for ${contractName}:`, error);
+            throw error;
+        }
+    }
+
+    async monitorTransactionPool() {
+        try {
+            // Monitor pending transactions
+            const pendingBlock = await this.provider.send('eth_getBlockByNumber', ['pending', false]);
+            
+            const poolMetrics = {
+                pendingTransactions: pendingBlock.transactions.length,
+                gasPrice: await this.provider.getGasPrice(),
+                lastUpdated: new Date().toISOString()
+            };
+
+            this.metrics.transactionPool = poolMetrics;
+            return poolMetrics;
+        } catch (error) {
+            console.error('Transaction pool monitoring failed:', error);
+            throw error;
+        }
+    }
+
+    async monitorEvents(contractName, eventName, fromBlock = 'latest') {
+        try {
+            const contract = this.contracts[contractName];
+            if (!contract) {
+                throw new Error(`Contract ${contractName} not found`);
+            }
+
+            const filter = contract.filters[eventName]();
+            const events = await contract.queryFilter(filter, fromBlock);
+
+            const eventMetrics = {
+                contractName,
+                eventName,
+                eventCount: events.length,
+                events: events.slice(-10), // Last 10 events
+                lastUpdated: new Date().toISOString()
+            };
+
+            this.metrics.events = this.metrics.events || {};
+            this.metrics.events[`${contractName}_${eventName}`] = eventMetrics;
+
+            return eventMetrics;
+        } catch (error) {
+            console.error(`Event monitoring failed for ${contractName}.${eventName}:`, error);
+            throw error;
+        }
+    }
+
+    startRealTimeMonitoring(intervalMs = 30000) {
+        setInterval(async () => {
+            try {
+                await this.monitorBlockchainHealth();
+                
+                // Monitor all registered contracts
+                for (const contractName of Object.keys(this.contracts)) {
+                    await this.monitorContractState(contractName);
+                }
+
+                await this.monitorTransactionPool();
+                
+                console.log('Monitoring update:', this.metrics);
+            } catch (error) {
+                console.error('Real-time monitoring error:', error);
+            }
+        }, intervalMs);
+    }
+
+    getMetrics() {
+        return this.metrics;
+    }
+}
+
+// Usage example
+const monitor = new BlockchainMonitor('https://mainnet.infura.io/v3/YOUR_PROJECT_ID', [
+    {
+        name: 'LendingPool',
+        address: '0x...',
+        abi: LENDING_POOL_ABI
+    }
+]);
+
+// Start monitoring
+monitor.startRealTimeMonitoring(30000); // Every 30 seconds
+```
+
+#### DeFi Protocol Health Monitoring
+```javascript
+// Example: DeFi protocol health monitoring
+class DeFiProtocolMonitor {
+    constructor(protocolContracts) {
+        this.contracts = protocolContracts;
+        this.healthMetrics = {};
+        this.alerts = [];
+    }
+
+    async checkLiquidityPoolHealth(poolAddress) {
+        try {
+            const pool = this.contracts.pools[poolAddress];
+            
+            const metrics = {
+                totalLiquidity: await pool.getTotalLiquidity(),
+                utilizationRate: await pool.getUtilizationRate(),
+                averageAPY: await pool.getAverageAPY(),
+                totalBorrowed: await pool.getTotalBorrowed(),
+                availableLiquidity: await pool.getAvailableLiquidity()
+            };
+
+            // Check for potential issues
+            if (metrics.utilizationRate > 90) {
+                this.alerts.push({
+                    type: 'HIGH_UTILIZATION',
+                    pool: poolAddress,
+                    utilizationRate: metrics.utilizationRate,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            if (metrics.availableLiquidity < ethers.utils.parseEther("1000")) {
+                this.alerts.push({
+                    type: 'LOW_LIQUIDITY',
+                    pool: poolAddress,
+                    availableLiquidity: metrics.availableLiquidity,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            return metrics;
+        } catch (error) {
+            console.error(`Pool health check failed for ${poolAddress}:`, error);
+            throw error;
+        }
+    }
+
+    async checkOracleHealth(oracleAddress) {
+        try {
+            const oracle = this.contracts.oracles[oracleAddress];
+            
+            const metrics = {
+                lastUpdate: await oracle.getLastUpdateTime(),
+                priceDeviation: await this.calculatePriceDeviation(oracle),
+                isStale: await this.checkIfStale(oracle),
+                heartbeat: await oracle.getHeartbeat()
+            };
+
+            // Check for oracle issues
+            if (metrics.isStale) {
+                this.alerts.push({
+                    type: 'STALE_ORACLE',
+                    oracle: oracleAddress,
+                    lastUpdate: metrics.lastUpdate,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            if (metrics.priceDeviation > 5) { // 5% deviation threshold
+                this.alerts.push({
+                    type: 'PRICE_DEVIATION',
+                    oracle: oracleAddress,
+                    deviation: metrics.priceDeviation,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            return metrics;
+        } catch (error) {
+            console.error(`Oracle health check failed for ${oracleAddress}:`, error);
+            throw error;
+        }
+    }
+
+    async generateHealthReport() {
+        const report = {
+            timestamp: new Date().toISOString(),
+            pools: {},
+            oracles: {},
+            alerts: this.alerts,
+            overallHealth: 'HEALTHY'
+        };
+
+        // Check all pools
+        for (const poolAddress of Object.keys(this.contracts.pools)) {
+            report.pools[poolAddress] = await this.checkLiquidityPoolHealth(poolAddress);
+        }
+
+        // Check all oracles
+        for (const oracleAddress of Object.keys(this.contracts.oracles)) {
+            report.oracles[oracleAddress] = await this.checkOracleHealth(oracleAddress);
+        }
+
+        // Determine overall health
+        if (this.alerts.length > 0) {
+            const criticalAlerts = this.alerts.filter(alert => 
+                ['STALE_ORACLE', 'LOW_LIQUIDITY'].includes(alert.type)
+            );
+            
+            if (criticalAlerts.length > 0) {
+                report.overallHealth = 'CRITICAL';
+            } else {
+                report.overallHealth = 'WARNING';
+            }
+        }
+
+        return report;
+    }
+}
+```
+{% endblock %}
+
+{% block references %}
+### Blockchain/Web3 References
+
+#### Smart Contract Development
+- **Solidity**: Official Solidity documentation
+- **OpenZeppelin**: Secure smart contract library
+- **Hardhat**: Development environment for Ethereum
+- **Truffle**: Development framework for Ethereum
+- **Remix**: Online IDE for smart contract development
+
+#### Security and Auditing
+- **ConsenSys Smart Contract Best Practices**
+- **OWASP Smart Contract Top 10**
+- **SWC Registry**: Smart Contract Weakness Classification
+- **MythX**: Smart contract security analysis platform
+- **Slither**: Static analysis framework for Solidity
+
+#### DeFi Protocols
+- **Uniswap**: Decentralized exchange protocol
+- **Compound**: Lending and borrowing protocol
+- **Aave**: Decentralized lending platform
+- **MakerDAO**: Decentralized autonomous organization
+
+#### Cross-Chain and Interoperability
+- **Polkadot**: Multi-chain protocol
+- **Cosmos**: Interchain ecosystem
+- **LayerZero**: Omnichain interoperability protocol
+- **Chainlink CCIP**: Cross-Chain Interoperability Protocol
+
+#### NFT and Digital Assets
+- **ERC-721**: Non-Fungible Token Standard
+- **ERC-1155**: Multi-Token Standard
+- **EIP-2981**: NFT Royalty Standard
+- **OpenSea**: NFT marketplace API
+
+#### Web3 Development
+- **Ethers.js**: Ethereum library for JavaScript
+- **Web3.js**: Ethereum JavaScript API
+- **WalletConnect**: Protocol for connecting wallets to dApps
+- **MetaMask**: Browser extension wallet
+
+#### Regulatory and Compliance
+- **AML/KYC Requirements**: Anti-Money Laundering compliance
+- **Securities Regulations**: Token classification guidelines
+- **GDPR Compliance**: Data protection in blockchain
+- **MiCA Regulation**: European crypto-asset regulation
+{% endblock %}

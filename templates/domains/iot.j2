@@ -1,0 +1,1131 @@
+{% extends "standards/technical.j2" %}
+
+{% block purpose %}
+This IoT/Edge standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It provides comprehensive guidance for Internet of Things device development, edge computing architectures, and connectivity protocols while ensuring security, reliability, and scalability in distributed environments.
+
+**IoT/Edge Focus Areas:**
+- **Device Management**: IoT device lifecycle and fleet management
+- **Connectivity**: Protocol selection and network optimization
+- **Edge Computing**: Distributed processing and data management
+- **Security**: End-to-end security for IoT ecosystems
+- **Interoperability**: Device integration and protocol standards
+- **Scalability**: Handling massive device deployments
+{% endblock %}
+
+{% block scope %}
+This IoT/Edge standard applies to:
+- IoT device design and development
+- Edge computing infrastructure and applications
+- Wireless and wired connectivity protocols
+- Device management and monitoring systems
+- Data collection and processing pipelines
+- Security and privacy implementations
+- Interoperability and integration solutions
+- Scalability and performance optimization
+{% endblock %}
+
+{% block implementation %}
+### IoT/Edge Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+**Security Standards:** IoT security frameworks and device attestation
+**Connectivity Standards:** IEEE 802.11, LoRaWAN, 5G, Zigbee, Bluetooth
+**Interoperability:** MQTT, CoAP, OPC-UA, and industry-specific protocols
+
+### IoT Device Architecture
+
+#### IoT System Architecture
+```mermaid
+graph TB
+    A[IoT Devices] --> B[Edge Gateways]
+    B --> C[Connectivity Layer]
+    C --> D[Edge Computing]
+    D --> E[Cloud Platform]
+    
+    F[Device Management] --> A
+    G[Security Layer] --> A
+    G --> B
+    G --> C
+    
+    H[Data Processing] --> D
+    I[Analytics] --> E
+    J[Dashboard] --> E
+    
+    K[Mobile Apps] --> E
+    L[Web Portal] --> E
+```
+
+#### Device Hardware Architecture
+```python
+# Example: IoT device firmware structure
+import micropython
+import network
+import time
+import json
+from machine import Pin, I2C, ADC, Timer
+import crypto
+from umqtt.simple import MQTTClient
+
+class IoTDevice:
+    """Base IoT device implementation with security and connectivity."""
+    
+    def __init__(self, device_id, wifi_ssid, wifi_password, mqtt_broker):
+        self.device_id = device_id
+        self.wifi_ssid = wifi_ssid
+        self.wifi_password = wifi_password
+        self.mqtt_broker = mqtt_broker
+        
+        # Hardware setup
+        self.led = Pin(2, Pin.OUT)
+        self.button = Pin(0, Pin.IN, Pin.PULL_UP)
+        self.temperature_sensor = ADC(0)
+        
+        # Security
+        self.device_key = self._load_device_key()
+        self.tls_context = self._setup_tls()
+        
+        # Connectivity
+        self.wifi = network.WLAN(network.STA_IF)
+        self.mqtt_client = None
+        
+        # Device state
+        self.device_status = {
+            'online': False,
+            'last_heartbeat': None,
+            'firmware_version': '1.0.0',
+            'battery_level': 100
+        }
+        
+        # Sensor data buffer
+        self.sensor_buffer = []
+        self.max_buffer_size = 100
+        
+    def initialize(self):
+        """Initialize device and connect to network."""
+        print(f"Initializing IoT Device: {self.device_id}")
+        
+        # Connect to WiFi
+        self.connect_wifi()
+        
+        # Setup MQTT
+        self.setup_mqtt()
+        
+        # Start monitoring
+        self.start_monitoring()
+        
+        print("Device initialization complete")
+    
+    def connect_wifi(self):
+        """Connect to WiFi network with retry logic."""
+        self.wifi.active(True)
+        
+        if not self.wifi.isconnected():
+            print(f"Connecting to WiFi: {self.wifi_ssid}")
+            self.wifi.connect(self.wifi_ssid, self.wifi_password)
+            
+            # Wait for connection with timeout
+            timeout = 30
+            while not self.wifi.isconnected() and timeout > 0:
+                time.sleep(1)
+                timeout -= 1
+                
+            if self.wifi.isconnected():
+                print(f"WiFi connected: {self.wifi.ifconfig()}")
+                self.device_status['online'] = True
+            else:
+                print("WiFi connection failed")
+                raise Exception("WiFi connection timeout")
+    
+    def setup_mqtt(self):
+        """Setup secure MQTT connection."""
+        try:
+            self.mqtt_client = MQTTClient(
+                client_id=self.device_id,
+                server=self.mqtt_broker,
+                port=8883,  # TLS port
+                user=self.device_id,
+                password=self.device_key,
+                ssl=True,
+                ssl_params=self.tls_context
+            )
+            
+            self.mqtt_client.set_callback(self.mqtt_callback)
+            self.mqtt_client.connect()
+            
+            # Subscribe to device control topic
+            control_topic = f"devices/{self.device_id}/control"
+            self.mqtt_client.subscribe(control_topic)
+            
+            print(f"MQTT connected to {self.mqtt_broker}")
+            
+        except Exception as e:
+            print(f"MQTT connection failed: {e}")
+            raise
+    
+    def mqtt_callback(self, topic, msg):
+        """Handle incoming MQTT messages."""
+        try:
+            topic_str = topic.decode('utf-8')
+            message = json.loads(msg.decode('utf-8'))
+            
+            print(f"Received message on {topic_str}: {message}")
+            
+            # Handle control commands
+            if 'command' in message:
+                self.handle_command(message['command'], message.get('params', {}))
+                
+        except Exception as e:
+            print(f"Error processing MQTT message: {e}")
+    
+    def handle_command(self, command, params):
+        """Handle device control commands."""
+        if command == 'status':
+            self.publish_status()
+        elif command == 'restart':
+            self.restart_device()
+        elif command == 'update_config':
+            self.update_configuration(params)
+        elif command == 'led_control':
+            self.control_led(params.get('state', False))
+        else:
+            print(f"Unknown command: {command}")
+    
+    def read_sensors(self):
+        """Read sensor data from connected sensors."""
+        try:
+            # Read temperature (example)
+            temp_raw = self.temperature_sensor.read()
+            temperature = self._convert_temperature(temp_raw)
+            
+            # Read battery level
+            battery_level = self._read_battery_level()
+            
+            sensor_data = {
+                'timestamp': time.time(),
+                'device_id': self.device_id,
+                'temperature': temperature,
+                'battery_level': battery_level,
+                'button_state': self.button.value()
+            }
+            
+            return sensor_data
+            
+        except Exception as e:
+            print(f"Error reading sensors: {e}")
+            return None
+    
+    def publish_sensor_data(self, data):
+        """Publish sensor data to MQTT broker."""
+        try:
+            topic = f"devices/{self.device_id}/data"
+            message = json.dumps(data)
+            
+            self.mqtt_client.publish(topic, message)
+            print(f"Published sensor data: {data}")
+            
+        except Exception as e:
+            print(f"Error publishing sensor data: {e}")
+    
+    def publish_status(self):
+        """Publish device status."""
+        try:
+            self.device_status['last_heartbeat'] = time.time()
+            
+            topic = f"devices/{self.device_id}/status"
+            message = json.dumps(self.device_status)
+            
+            self.mqtt_client.publish(topic, message)
+            
+        except Exception as e:
+            print(f"Error publishing status: {e}")
+    
+    def start_monitoring(self):
+        """Start periodic sensor monitoring."""
+        def sensor_callback(timer):
+            try:
+                # Read sensors
+                sensor_data = self.read_sensors()
+                if sensor_data:
+                    # Buffer data
+                    self.sensor_buffer.append(sensor_data)
+                    
+                    # Manage buffer size
+                    if len(self.sensor_buffer) > self.max_buffer_size:
+                        self.sensor_buffer.pop(0)
+                    
+                    # Publish if connected
+                    if self.mqtt_client and self.wifi.isconnected():
+                        self.publish_sensor_data(sensor_data)
+                        
+                # Publish heartbeat every 10 readings
+                if len(self.sensor_buffer) % 10 == 0:
+                    self.publish_status()
+                    
+            except Exception as e:
+                print(f"Error in sensor monitoring: {e}")
+        
+        # Setup timer for periodic sensor reading (every 30 seconds)
+        self.sensor_timer = Timer(0)
+        self.sensor_timer.init(
+            period=30000,  # 30 seconds
+            mode=Timer.PERIODIC,
+            callback=sensor_callback
+        )
+    
+    def _load_device_key(self):
+        """Load device-specific cryptographic key."""
+        # In production, this would load from secure storage
+        return f"device_key_{self.device_id}"
+    
+    def _setup_tls(self):
+        """Setup TLS context for secure communication."""
+        # In production, this would setup proper TLS certificates
+        return {'ca_certs': '/cert/ca.pem'}
+    
+    def _convert_temperature(self, raw_value):
+        """Convert raw ADC value to temperature."""
+        # Example conversion (depends on sensor)
+        voltage = raw_value * 3.3 / 1024
+        temperature = (voltage - 0.5) * 100
+        return round(temperature, 2)
+    
+    def _read_battery_level(self):
+        """Read battery level percentage."""
+        # Example implementation
+        return 85  # Mock value
+    
+    def control_led(self, state):
+        """Control LED state."""
+        self.led.value(1 if state else 0)
+    
+    def restart_device(self):
+        """Restart the device."""
+        print("Restarting device...")
+        time.sleep(1)
+        micropython.reset()
+    
+    def update_configuration(self, new_config):
+        """Update device configuration."""
+        print(f"Updating configuration: {new_config}")
+        # Implement configuration update logic
+    
+    def run(self):
+        """Main device loop."""
+        try:
+            while True:
+                # Check MQTT messages
+                if self.mqtt_client:
+                    self.mqtt_client.check_msg()
+                
+                # Check WiFi connection
+                if not self.wifi.isconnected():
+                    print("WiFi disconnected, attempting to reconnect...")
+                    self.connect_wifi()
+                    if self.wifi.isconnected():
+                        self.setup_mqtt()
+                
+                time.sleep(1)
+                
+        except KeyboardInterrupt:
+            print("Device stopped by user")
+        except Exception as e:
+            print(f"Device error: {e}")
+            # Restart on critical error
+            time.sleep(5)
+            self.restart_device()
+
+# Usage example
+if __name__ == "__main__":
+    device = IoTDevice(
+        device_id="sensor_001",
+        wifi_ssid="IoT_Network",
+        wifi_password="secure_password",
+        mqtt_broker="iot.example.com"
+    )
+    
+    device.initialize()
+    device.run()
+```
+
+### Edge Computing Architecture
+
+#### Edge Gateway Implementation
+```python
+# Example: Edge gateway for IoT data processing
+import asyncio
+import json
+import time
+from typing import Dict, List, Any
+import redis
+import paho.mqtt.client as mqtt
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+
+@dataclass
+class EdgeDevice:
+    device_id: str
+    device_type: str
+    last_seen: datetime
+    status: str
+    metadata: Dict[str, Any]
+
+class EdgeGateway:
+    """Edge gateway for IoT device management and data processing."""
+    
+    def __init__(self, gateway_id: str, config: Dict[str, Any]):
+        self.gateway_id = gateway_id
+        self.config = config
+        
+        # Device registry
+        self.devices = {}
+        self.device_data_buffer = {}
+        
+        # Redis for local caching
+        self.redis_client = redis.Redis(
+            host=config.get('redis_host', 'localhost'),
+            port=config.get('redis_port', 6379),
+            decode_responses=True
+        )
+        
+        # MQTT clients
+        self.local_mqtt = mqtt.Client(client_id=f"gateway_{gateway_id}")
+        self.cloud_mqtt = mqtt.Client(client_id=f"gateway_{gateway_id}_cloud")
+        
+        # Processing rules
+        self.processing_rules = []
+        self.alert_rules = []
+        
+        # Statistics
+        self.stats = {
+            'messages_processed': 0,
+            'devices_connected': 0,
+            'data_points_cached': 0,
+            'alerts_generated': 0
+        }
+    
+    async def initialize(self):
+        """Initialize edge gateway."""
+        print(f"Initializing Edge Gateway: {self.gateway_id}")
+        
+        # Setup MQTT connections
+        await self.setup_mqtt_connections()
+        
+        # Load device registry
+        await self.load_device_registry()
+        
+        # Load processing rules
+        await self.load_processing_rules()
+        
+        # Start background tasks
+        asyncio.create_task(self.device_health_monitor())
+        asyncio.create_task(self.data_aggregation_task())
+        asyncio.create_task(self.cloud_sync_task())
+        
+        print("Edge Gateway initialization complete")
+    
+    async def setup_mqtt_connections(self):
+        """Setup MQTT connections for local and cloud communication."""
+        
+        # Local MQTT (for device communication)
+        def on_local_connect(client, userdata, flags, rc):
+            print(f"Connected to local MQTT with result code {rc}")
+            client.subscribe("devices/+/data")
+            client.subscribe("devices/+/status")
+        
+        def on_local_message(client, userdata, msg):
+            asyncio.create_task(self.handle_device_message(msg))
+        
+        self.local_mqtt.on_connect = on_local_connect
+        self.local_mqtt.on_message = on_local_message
+        self.local_mqtt.connect(
+            self.config.get('local_mqtt_host', 'localhost'),
+            self.config.get('local_mqtt_port', 1883),
+            60
+        )
+        self.local_mqtt.loop_start()
+        
+        # Cloud MQTT (for cloud communication)
+        def on_cloud_connect(client, userdata, flags, rc):
+            print(f"Connected to cloud MQTT with result code {rc}")
+            client.subscribe(f"gateways/{self.gateway_id}/commands")
+        
+        def on_cloud_message(client, userdata, msg):
+            asyncio.create_task(self.handle_cloud_command(msg))
+        
+        self.cloud_mqtt.on_connect = on_cloud_connect
+        self.cloud_mqtt.on_message = on_cloud_message
+        
+        # Setup TLS for cloud connection
+        self.cloud_mqtt.tls_set()
+        self.cloud_mqtt.connect(
+            self.config.get('cloud_mqtt_host'),
+            self.config.get('cloud_mqtt_port', 8883),
+            60
+        )
+        self.cloud_mqtt.loop_start()
+    
+    async def handle_device_message(self, msg):
+        """Handle incoming device messages."""
+        try:
+            topic_parts = msg.topic.split('/')
+            device_id = topic_parts[1]
+            message_type = topic_parts[2]
+            
+            data = json.loads(msg.payload.decode())
+            
+            # Update device registry
+            if device_id not in self.devices:
+                self.register_device(device_id, data.get('device_type', 'unknown'))
+            
+            self.devices[device_id].last_seen = datetime.now()
+            
+            if message_type == 'data':
+                await self.process_sensor_data(device_id, data)
+            elif message_type == 'status':
+                await self.process_device_status(device_id, data)
+            
+            self.stats['messages_processed'] += 1
+            
+        except Exception as e:
+            print(f"Error handling device message: {e}")
+    
+    async def process_sensor_data(self, device_id: str, data: Dict[str, Any]):
+        """Process sensor data from IoT devices."""
+        try:
+            # Cache data locally
+            cache_key = f"device_data:{device_id}:{int(time.time())}"
+            self.redis_client.setex(cache_key, 3600, json.dumps(data))
+            self.stats['data_points_cached'] += 1
+            
+            # Buffer for aggregation
+            if device_id not in self.device_data_buffer:
+                self.device_data_buffer[device_id] = []
+            
+            self.device_data_buffer[device_id].append(data)
+            
+            # Apply processing rules
+            processed_data = await self.apply_processing_rules(device_id, data)
+            
+            # Check alert rules
+            alerts = await self.check_alert_rules(device_id, processed_data)
+            if alerts:
+                await self.handle_alerts(alerts)
+            
+            # Send to cloud if needed
+            if self.should_forward_to_cloud(processed_data):
+                await self.forward_to_cloud(device_id, processed_data)
+                
+        except Exception as e:
+            print(f"Error processing sensor data: {e}")
+    
+    async def apply_processing_rules(self, device_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply data processing rules."""
+        processed_data = data.copy()
+        
+        for rule in self.processing_rules:
+            try:
+                if self.rule_matches(rule, device_id, data):
+                    processed_data = rule['processor'](processed_data)
+            except Exception as e:
+                print(f"Error applying processing rule {rule['name']}: {e}")
+        
+        return processed_data
+    
+    async def check_alert_rules(self, device_id: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check data against alert rules."""
+        alerts = []
+        
+        for rule in self.alert_rules:
+            try:
+                if self.rule_matches(rule, device_id, data):
+                    if rule['condition'](data):
+                        alert = {
+                            'rule_name': rule['name'],
+                            'device_id': device_id,
+                            'severity': rule['severity'],
+                            'message': rule['message'].format(**data),
+                            'timestamp': datetime.now().isoformat(),
+                            'data': data
+                        }
+                        alerts.append(alert)
+                        self.stats['alerts_generated'] += 1
+            except Exception as e:
+                print(f"Error checking alert rule {rule['name']}: {e}")
+        
+        return alerts
+    
+    async def handle_alerts(self, alerts: List[Dict[str, Any]]):
+        """Handle generated alerts."""
+        for alert in alerts:
+            # Log locally
+            print(f"ALERT: {alert['message']}")
+            
+            # Cache alert
+            alert_key = f"alert:{alert['device_id']}:{int(time.time())}"
+            self.redis_client.setex(alert_key, 86400, json.dumps(alert))
+            
+            # Send to cloud
+            cloud_topic = f"gateways/{self.gateway_id}/alerts"
+            self.cloud_mqtt.publish(cloud_topic, json.dumps(alert))
+    
+    def should_forward_to_cloud(self, data: Dict[str, Any]) -> bool:
+        """Determine if data should be forwarded to cloud."""
+        # Example logic: forward if temperature > threshold or every 10th reading
+        if 'temperature' in data and data['temperature'] > 30:
+            return True
+        
+        return self.stats['messages_processed'] % 10 == 0
+    
+    async def forward_to_cloud(self, device_id: str, data: Dict[str, Any]):
+        """Forward processed data to cloud."""
+        try:
+            cloud_topic = f"gateways/{self.gateway_id}/data"
+            message = {
+                'gateway_id': self.gateway_id,
+                'device_id': device_id,
+                'data': data,
+                'processed_at': datetime.now().isoformat()
+            }
+            
+            self.cloud_mqtt.publish(cloud_topic, json.dumps(message))
+            
+        except Exception as e:
+            print(f"Error forwarding to cloud: {e}")
+    
+    def register_device(self, device_id: str, device_type: str):
+        """Register new device."""
+        device = EdgeDevice(
+            device_id=device_id,
+            device_type=device_type,
+            last_seen=datetime.now(),
+            status='online',
+            metadata={}
+        )
+        
+        self.devices[device_id] = device
+        self.stats['devices_connected'] = len(self.devices)
+        
+        print(f"Registered new device: {device_id} ({device_type})")
+    
+    async def device_health_monitor(self):
+        """Monitor device health and connectivity."""
+        while True:
+            try:
+                current_time = datetime.now()
+                offline_devices = []
+                
+                for device_id, device in self.devices.items():
+                    # Check if device is offline (no communication for 5 minutes)
+                    if current_time - device.last_seen > timedelta(minutes=5):
+                        if device.status != 'offline':
+                            device.status = 'offline'
+                            offline_devices.append(device_id)
+                            print(f"Device {device_id} marked as offline")
+                
+                # Update statistics
+                online_devices = sum(1 for d in self.devices.values() if d.status == 'online')
+                self.stats['devices_connected'] = online_devices
+                
+                # Send health report to cloud
+                if offline_devices:
+                    health_report = {
+                        'gateway_id': self.gateway_id,
+                        'offline_devices': offline_devices,
+                        'total_devices': len(self.devices),
+                        'online_devices': online_devices,
+                        'timestamp': current_time.isoformat()
+                    }
+                    
+                    health_topic = f"gateways/{self.gateway_id}/health"
+                    self.cloud_mqtt.publish(health_topic, json.dumps(health_report))
+                
+                await asyncio.sleep(60)  # Check every minute
+                
+            except Exception as e:
+                print(f"Error in device health monitoring: {e}")
+                await asyncio.sleep(60)
+    
+    async def data_aggregation_task(self):
+        """Aggregate device data periodically."""
+        while True:
+            try:
+                await asyncio.sleep(300)  # Every 5 minutes
+                
+                for device_id, data_buffer in self.device_data_buffer.items():
+                    if len(data_buffer) > 0:
+                        # Calculate aggregated metrics
+                        aggregated = self.aggregate_device_data(data_buffer)
+                        
+                        # Store aggregated data
+                        agg_key = f"aggregated:{device_id}:{int(time.time())}"
+                        self.redis_client.setex(agg_key, 86400, json.dumps(aggregated))
+                        
+                        # Clear buffer
+                        self.device_data_buffer[device_id] = []
+                        
+                        print(f"Aggregated data for device {device_id}: {aggregated}")
+                
+            except Exception as e:
+                print(f"Error in data aggregation: {e}")
+    
+    def aggregate_device_data(self, data_buffer: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Aggregate device data buffer."""
+        if not data_buffer:
+            return {}
+        
+        # Example aggregation
+        aggregated = {
+            'count': len(data_buffer),
+            'period_start': min(d['timestamp'] for d in data_buffer),
+            'period_end': max(d['timestamp'] for d in data_buffer)
+        }
+        
+        # Aggregate numeric fields
+        numeric_fields = ['temperature', 'humidity', 'battery_level']
+        for field in numeric_fields:
+            values = [d[field] for d in data_buffer if field in d and isinstance(d[field], (int, float))]
+            if values:
+                aggregated[f'{field}_avg'] = sum(values) / len(values)
+                aggregated[f'{field}_min'] = min(values)
+                aggregated[f'{field}_max'] = max(values)
+        
+        return aggregated
+    
+    async def cloud_sync_task(self):
+        """Periodically sync with cloud."""
+        while True:
+            try:
+                await asyncio.sleep(600)  # Every 10 minutes
+                
+                # Send gateway statistics
+                stats_message = {
+                    'gateway_id': self.gateway_id,
+                    'stats': self.stats,
+                    'device_count': len(self.devices),
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                stats_topic = f"gateways/{self.gateway_id}/stats"
+                self.cloud_mqtt.publish(stats_topic, json.dumps(stats_message))
+                
+            except Exception as e:
+                print(f"Error in cloud sync: {e}")
+
+# Usage example
+async def main():
+    config = {
+        'redis_host': 'localhost',
+        'redis_port': 6379,
+        'local_mqtt_host': 'localhost',
+        'local_mqtt_port': 1883,
+        'cloud_mqtt_host': 'cloud.iot.example.com',
+        'cloud_mqtt_port': 8883
+    }
+    
+    gateway = EdgeGateway('gateway_001', config)
+    await gateway.initialize()
+    
+    # Keep running
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        print("Gateway stopped by user")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### IoT Security Implementation
+
+#### Device Security Framework
+```python
+# Example: IoT security implementation
+import hashlib
+import hmac
+import secrets
+import time
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
+
+class IoTSecurityManager:
+    """Security manager for IoT devices and communications."""
+    
+    def __init__(self, device_id: str):
+        self.device_id = device_id
+        self.device_private_key = None
+        self.device_public_key = None
+        self.symmetric_keys = {}
+        self.session_tokens = {}
+        
+        # Generate device identity keys
+        self.generate_device_keys()
+        
+        # Security policies
+        self.security_policies = {
+            'require_encryption': True,
+            'require_authentication': True,
+            'max_session_duration': 3600,  # 1 hour
+            'min_key_strength': 256
+        }
+    
+    def generate_device_keys(self):
+        """Generate RSA key pair for device identity."""
+        self.device_private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048
+        )
+        self.device_public_key = self.device_private_key.public_key()
+        
+        print(f"Generated RSA key pair for device {self.device_id}")
+    
+    def derive_symmetric_key(self, password: str, salt: bytes = None) -> bytes:
+        """Derive symmetric encryption key from password."""
+        if salt is None:
+            salt = secrets.token_bytes(16)
+        
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+        )
+        
+        key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        return key
+    
+    def encrypt_data(self, data: str, key: bytes) -> str:
+        """Encrypt data using symmetric encryption."""
+        fernet = Fernet(key)
+        encrypted_data = fernet.encrypt(data.encode())
+        return base64.urlsafe_b64encode(encrypted_data).decode()
+    
+    def decrypt_data(self, encrypted_data: str, key: bytes) -> str:
+        """Decrypt data using symmetric encryption."""
+        fernet = Fernet(key)
+        encrypted_bytes = base64.urlsafe_b64decode(encrypted_data.encode())
+        decrypted_data = fernet.decrypt(encrypted_bytes)
+        return decrypted_data.decode()
+    
+    def sign_message(self, message: str) -> str:
+        """Sign message using device private key."""
+        message_bytes = message.encode()
+        signature = self.device_private_key.sign(
+            message_bytes,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return base64.urlsafe_b64encode(signature).decode()
+    
+    def verify_signature(self, message: str, signature: str, public_key) -> bool:
+        """Verify message signature."""
+        try:
+            message_bytes = message.encode()
+            signature_bytes = base64.urlsafe_b64decode(signature.encode())
+            
+            public_key.verify(
+                signature_bytes,
+                message_bytes,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return True
+        except Exception:
+            return False
+    
+    def generate_session_token(self, device_id: str) -> str:
+        """Generate secure session token."""
+        token_data = {
+            'device_id': device_id,
+            'issued_at': int(time.time()),
+            'expires_at': int(time.time()) + self.security_policies['max_session_duration'],
+            'nonce': secrets.token_hex(16)
+        }
+        
+        token_string = f"{token_data['device_id']}:{token_data['issued_at']}:{token_data['expires_at']}:{token_data['nonce']}"
+        token_hash = hashlib.sha256(token_string.encode()).hexdigest()
+        
+        # Store token
+        self.session_tokens[token_hash] = token_data
+        
+        return token_hash
+    
+    def validate_session_token(self, token: str) -> bool:
+        """Validate session token."""
+        if token not in self.session_tokens:
+            return False
+        
+        token_data = self.session_tokens[token]
+        current_time = int(time.time())
+        
+        # Check expiration
+        if current_time > token_data['expires_at']:
+            del self.session_tokens[token]
+            return False
+        
+        return True
+    
+    def secure_device_communication(self, message: str, recipient_public_key) -> Dict[str, str]:
+        """Create secure communication package."""
+        # Generate session key
+        session_key = Fernet.generate_key()
+        
+        # Encrypt message with session key
+        encrypted_message = self.encrypt_data(message, session_key)
+        
+        # Encrypt session key with recipient's public key
+        encrypted_session_key = recipient_public_key.encrypt(
+            session_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        
+        # Sign the encrypted message
+        signature = self.sign_message(encrypted_message)
+        
+        # Create secure package
+        secure_package = {
+            'sender_id': self.device_id,
+            'encrypted_message': encrypted_message,
+            'encrypted_session_key': base64.urlsafe_b64encode(encrypted_session_key).decode(),
+            'signature': signature,
+            'timestamp': int(time.time())
+        }
+        
+        return secure_package
+    
+    def process_secure_communication(self, secure_package: Dict[str, str], sender_public_key) -> str:
+        """Process received secure communication package."""
+        try:
+            # Verify signature
+            if not self.verify_signature(
+                secure_package['encrypted_message'],
+                secure_package['signature'],
+                sender_public_key
+            ):
+                raise ValueError("Invalid signature")
+            
+            # Decrypt session key
+            encrypted_session_key = base64.urlsafe_b64decode(secure_package['encrypted_session_key'].encode())
+            session_key = self.device_private_key.decrypt(
+                encrypted_session_key,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+            
+            # Decrypt message
+            decrypted_message = self.decrypt_data(secure_package['encrypted_message'], session_key)
+            
+            return decrypted_message
+            
+        except Exception as e:
+            raise ValueError(f"Failed to process secure communication: {e}")
+    
+    def generate_device_attestation(self) -> Dict[str, str]:
+        """Generate device attestation for identity verification."""
+        attestation_data = {
+            'device_id': self.device_id,
+            'timestamp': int(time.time()),
+            'nonce': secrets.token_hex(16),
+            'firmware_hash': self.get_firmware_hash(),
+            'hardware_id': self.get_hardware_id()
+        }
+        
+        # Create attestation string
+        attestation_string = f"{attestation_data['device_id']}:{attestation_data['timestamp']}:{attestation_data['nonce']}:{attestation_data['firmware_hash']}:{attestation_data['hardware_id']}"
+        
+        # Sign attestation
+        signature = self.sign_message(attestation_string)
+        
+        attestation = {
+            'attestation_data': attestation_string,
+            'signature': signature,
+            'public_key': self.get_public_key_pem()
+        }
+        
+        return attestation
+    
+    def get_firmware_hash(self) -> str:
+        """Get hash of current firmware."""
+        # In practice, this would hash the actual firmware
+        return hashlib.sha256(f"firmware_{self.device_id}".encode()).hexdigest()
+    
+    def get_hardware_id(self) -> str:
+        """Get unique hardware identifier."""
+        # In practice, this would read from secure hardware
+        return hashlib.sha256(f"hardware_{self.device_id}".encode()).hexdigest()
+    
+    def get_public_key_pem(self) -> str:
+        """Get public key in PEM format."""
+        pem = self.device_public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        return pem.decode()
+
+# Example usage
+def example_secure_communication():
+    # Create two devices
+    device1 = IoTSecurityManager("device_001")
+    device2 = IoTSecurityManager("device_002")
+    
+    # Device 1 sends secure message to Device 2
+    message = "Hello from Device 1"
+    secure_package = device1.secure_device_communication(message, device2.device_public_key)
+    
+    print(f"Secure package: {secure_package}")
+    
+    # Device 2 receives and decrypts the message
+    decrypted_message = device2.process_secure_communication(secure_package, device1.device_public_key)
+    
+    print(f"Decrypted message: {decrypted_message}")
+    
+    # Generate device attestation
+    attestation = device1.generate_device_attestation()
+    print(f"Device attestation: {attestation}")
+
+if __name__ == "__main__":
+    example_secure_communication()
+```
+{% endblock %}
+
+{% block monitoring %}
+### IoT/Edge System Monitoring
+
+#### IoT Fleet Monitoring
+```python
+# Example: IoT fleet monitoring system
+class IoTFleetMonitor:
+    def __init__(self):
+        self.devices = {}
+        self.alerts = []
+        self.metrics = {}
+    
+    def monitor_device_fleet(self):
+        """Monitor entire IoT device fleet."""
+        fleet_metrics = {
+            'total_devices': len(self.devices),
+            'online_devices': sum(1 for d in self.devices.values() if d.status == 'online'),
+            'offline_devices': sum(1 for d in self.devices.values() if d.status == 'offline'),
+            'battery_low_devices': sum(1 for d in self.devices.values() if d.battery_level < 20),
+            'last_updated': datetime.now().isoformat()
+        }
+        
+        # Check for fleet-wide issues
+        if fleet_metrics['offline_devices'] > fleet_metrics['total_devices'] * 0.1:
+            self.generate_alert('FLEET_CONNECTIVITY', 'More than 10% of devices are offline')
+        
+        return fleet_metrics
+    
+    def monitor_connectivity_patterns(self):
+        """Monitor connectivity patterns and network health."""
+        connectivity_metrics = {
+            'network_latency': self.measure_network_latency(),
+            'packet_loss': self.measure_packet_loss(),
+            'bandwidth_utilization': self.measure_bandwidth_utilization(),
+            'connection_failures': self.count_connection_failures()
+        }
+        
+        return connectivity_metrics
+    
+    def monitor_edge_performance(self):
+        """Monitor edge computing performance."""
+        edge_metrics = {
+            'processing_latency': self.measure_processing_latency(),
+            'queue_depth': self.measure_queue_depth(),
+            'resource_utilization': self.measure_resource_utilization(),
+            'throughput': self.measure_throughput()
+        }
+        
+        return edge_metrics
+```
+
+#### Predictive Maintenance
+```python
+# Example: Predictive maintenance for IoT devices
+class PredictiveMaintenanceSystem:
+    def __init__(self):
+        self.device_health_models = {}
+        self.maintenance_schedules = {}
+    
+    def analyze_device_health(self, device_id: str, sensor_data: Dict[str, Any]):
+        """Analyze device health and predict maintenance needs."""
+        health_score = self.calculate_health_score(device_id, sensor_data)
+        
+        if health_score < 0.7:  # 70% threshold
+            self.schedule_maintenance(device_id, 'preventive')
+        elif health_score < 0.5:  # 50% threshold
+            self.schedule_maintenance(device_id, 'urgent')
+        
+        return health_score
+    
+    def calculate_health_score(self, device_id: str, sensor_data: Dict[str, Any]) -> float:
+        """Calculate overall device health score."""
+        # Implement ML-based health scoring
+        battery_score = min(sensor_data.get('battery_level', 100) / 100, 1.0)
+        temperature_score = 1.0 - abs(sensor_data.get('temperature', 25) - 25) / 50
+        connectivity_score = 1.0 if sensor_data.get('signal_strength', -50) > -70 else 0.5
+        
+        health_score = (battery_score + temperature_score + connectivity_score) / 3
+        return health_score
+```
+{% endblock %}
+
+{% block references %}
+### IoT/Edge References
+
+#### IoT Protocols and Standards
+- **MQTT**: Message Queuing Telemetry Transport protocol
+- **CoAP**: Constrained Application Protocol
+- **LoRaWAN**: Long Range Wide Area Network protocol
+- **Zigbee**: Low-power mesh networking standard
+- **Thread**: IPv6-based mesh networking protocol
+
+#### Edge Computing Platforms
+- **AWS IoT Greengrass**: Edge computing platform
+- **Azure IoT Edge**: Microsoft's edge computing solution
+- **Google Cloud IoT Edge**: Google's edge platform
+- **Apache Kafka**: Distributed streaming platform
+
+#### Security Frameworks
+- **IoT Security Foundation**: Best practices and guidelines
+- **NIST Cybersecurity Framework**: IoT security guidance
+- **Industrial Internet Consortium**: Security working group
+- **OCF Security**: Open Connectivity Foundation security
+
+#### Hardware Platforms
+- **Raspberry Pi**: Single-board computer platform
+- **Arduino**: Microcontroller platform
+- **ESP32**: Wi-Fi and Bluetooth microcontroller
+- **NVIDIA Jetson**: AI computing platform
+
+#### Connectivity Technologies
+- **Wi-Fi 6**: Latest wireless standard
+- **5G**: Fifth-generation cellular technology
+- **NB-IoT**: Narrowband Internet of Things
+- **LTE-M**: Long Term Evolution for Machines
+
+#### Development Tools
+- **PlatformIO**: Cross-platform IoT development
+- **Zephyr**: Real-time operating system
+- **FreeRTOS**: Real-time operating system
+- **Mbed OS**: ARM IoT operating system
+{% endblock %}

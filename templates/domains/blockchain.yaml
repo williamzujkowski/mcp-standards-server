@@ -1,0 +1,49 @@
+name: "Blockchain/Web3 Standard Template"
+description: "Template for blockchain and Web3 standards with smart contract security, DeFi protocols, and dApp development"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "domain-specific"
+domain: "blockchain"
+tags:
+  - "blockchain"
+  - "web3"
+  - "smart-contracts"
+  - "defi"
+  - "security"
+extends: "standards/technical.j2"
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+optional_variables:
+  - blockchain_networks
+  - smart_contract_languages
+  - consensus_mechanisms
+  - security_frameworks
+  - defi_protocols
+  - nft_standards
+  - nist_controls
+  - compliance_frameworks
+  - implementation_guides
+  - code_examples
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - smart_contract_development
+  - defi_protocol_development
+  - cross_chain_infrastructure
+  - nft_digital_asset_management
+  - web3_integration_dapp_development
+  - blockchain_security_auditing

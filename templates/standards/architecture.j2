@@ -1,0 +1,722 @@
+{% extends "standards/base.j2" %}
+
+{% block purpose %}
+This architecture standard defines the design principles, patterns, and guidelines for {{ title.lower() }}. It establishes consistent architectural approaches across all {{ domain }} systems and ensures scalable, maintainable, and secure solutions.
+
+**Architecture Focus Areas:**
+{% if architecture_patterns %}
+- **Architecture Patterns**: {{ architecture_patterns | join(', ') }}
+{% endif %}
+{% if design_principles %}
+- **Design Principles**: {{ design_principles | join(', ') }}
+{% endif %}
+{% if technology_stack %}
+- **Technology Stack**: {{ technology_stack | join(', ') }}
+{% endif %}
+- **Scalability**: {{ scalability_requirements.get('type', 'Horizontal scaling') }} with {{ scalability_requirements.get('target', 'high availability') }}
+- **Reliability**: {{ availability_requirements.get('target', '99.9%') }} uptime with {{ availability_requirements.get('rto', '< 1 hour') }} recovery time
+{% endblock %}
+
+{% block scope %}
+This architecture standard applies to:
+- All {{ domain }} system designs and implementations
+- New system development and existing system modifications
+- Integration architectures and API designs
+- Infrastructure and platform architectures
+- Security architecture and compliance requirements
+- Performance and scalability requirements
+{% endblock %}
+
+{% block implementation %}
+### Architecture Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+{% if compliance_frameworks %}
+**Compliance Frameworks:** {{ compliance_frameworks | join(', ') }}
+{% endif %}
+
+### Architecture Principles
+
+{% if design_principles %}
+{% for principle in design_principles %}
+#### {{ principle }}
+- **Definition**: Core principle for {{ domain }} architectures
+- **Rationale**: Ensures consistent and quality architecture decisions
+- **Implications**: Guides design choices and trade-offs
+- **Implementation**: Applied across all architecture layers
+
+{% endfor %}
+{% else %}
+#### Separation of Concerns
+- **Definition**: System components should have distinct responsibilities
+- **Rationale**: Improves maintainability and reduces complexity
+- **Implications**: Clear boundaries between system layers and components
+- **Implementation**: Layered architecture with defined interfaces
+
+#### Scalability by Design
+- **Definition**: Systems must be designed to handle growth
+- **Rationale**: Supports business growth and user adoption
+- **Implications**: Horizontal scaling capabilities and load distribution
+- **Implementation**: Microservices architecture with auto-scaling
+
+#### Security First
+- **Definition**: Security considerations integrated from the start
+- **Rationale**: Reduces vulnerabilities and compliance risks
+- **Implications**: Security controls at all architecture layers
+- **Implementation**: Zero-trust architecture with defense in depth
+
+#### Resilience and Reliability
+- **Definition**: Systems must be fault-tolerant and highly available
+- **Rationale**: Ensures business continuity and user satisfaction
+- **Implications**: Redundancy, failover, and disaster recovery capabilities
+- **Implementation**: Multi-region deployment with automated failover
+{% endif %}
+
+### Architecture Patterns
+
+{% if architecture_patterns %}
+{% for pattern in architecture_patterns %}
+#### {{ pattern }}
+**Description**: {{ pattern }} architectural pattern implementation
+**Use Cases**: Suitable for {{ domain }} systems requiring specific characteristics
+**Benefits**: Provides standardized approach to common architectural challenges
+**Implementation**: Reference implementation and guidelines available
+
+{% endfor %}
+{% else %}
+#### Microservices Architecture
+```mermaid
+graph TB
+    A[API Gateway] --> B[User Service]
+    A --> C[Order Service]
+    A --> D[Payment Service]
+    A --> E[Inventory Service]
+    
+    B --> F[User Database]
+    C --> G[Order Database]
+    D --> H[Payment Database]
+    E --> I[Inventory Database]
+    
+    J[Message Queue] --> B
+    J --> C
+    J --> D
+    J --> E
+    
+    K[Monitoring] --> A
+    K --> B
+    K --> C
+    K --> D
+    K --> E
+```
+
+**Benefits**:
+- Independent deployment and scaling
+- Technology diversity and team autonomy
+- Fault isolation and resilience
+- Better alignment with business domains
+
+**Implementation Guidelines**:
+- Service decomposition by business capability
+- Database per service pattern
+- API-first design with versioning
+- Distributed data management
+- Event-driven communication
+
+#### Event-Driven Architecture
+```mermaid
+graph LR
+    A[Event Producers] --> B[Event Broker]
+    B --> C[Event Consumers]
+    
+    D[Event Store] --> B
+    B --> E[Event Processors]
+    E --> F[Event Handlers]
+```
+
+**Benefits**:
+- Loose coupling between components
+- Scalability and responsiveness
+- Real-time data processing
+- Audit trail and event sourcing
+
+**Implementation Guidelines**:
+- Event schema design and versioning
+- Event ordering and deduplication
+- Error handling and retry mechanisms
+- Event store and replay capabilities
+
+#### Layered Architecture
+```mermaid
+graph TB
+    A[Presentation Layer] --> B[Application Layer]
+    B --> C[Business Logic Layer]
+    C --> D[Data Access Layer]
+    D --> E[Database Layer]
+    
+    F[Cross-cutting Concerns] --> A
+    F --> B
+    F --> C
+    F --> D
+```
+
+**Benefits**:
+- Clear separation of concerns
+- Maintainability and testability
+- Reusability and modularity
+- Standardized development approach
+
+**Implementation Guidelines**:
+- Layer-specific responsibilities
+- Interface-based communication
+- Dependency injection patterns
+- Cross-cutting concern handling
+{% endif %}
+
+### Technology Stack
+
+{% if technology_stack %}
+#### Core Technologies
+{% for category, technologies in technology_stack.items() %}
+**{{ category | title }}**:
+{% if technologies is iterable and technologies is not string %}
+{% for tech in technologies %}
+- {{ tech }}
+{% endfor %}
+{% else %}
+- {{ technologies }}
+{% endif %}
+
+{% endfor %}
+{% else %}
+#### Frontend Technologies
+- **Frameworks**: React, Vue.js, Angular
+- **State Management**: Redux, MobX, Vuex
+- **UI Libraries**: Material-UI, Bootstrap, Tailwind CSS
+- **Build Tools**: Webpack, Vite, Parcel
+
+#### Backend Technologies
+- **Languages**: Python, Java, Node.js, Go
+- **Frameworks**: Django, Spring Boot, Express.js, Gin
+- **API Technologies**: REST, GraphQL, gRPC
+- **Message Brokers**: RabbitMQ, Apache Kafka, Redis
+
+#### Database Technologies
+- **Relational**: PostgreSQL, MySQL, Oracle
+- **NoSQL**: MongoDB, Cassandra, DynamoDB
+- **Caching**: Redis, Memcached
+- **Search**: Elasticsearch, Solr
+
+#### Infrastructure Technologies
+- **Cloud Platforms**: AWS, Azure, Google Cloud
+- **Containerization**: Docker, Kubernetes
+- **CI/CD**: Jenkins, GitHub Actions, GitLab CI
+- **Monitoring**: Prometheus, Grafana, ELK Stack
+{% endif %}
+
+### Scalability Architecture
+
+{% if scalability_requirements %}
+#### Scalability Requirements
+{% for requirement, value in scalability_requirements.items() %}
+- **{{ requirement | title }}**: {{ value }}
+{% endfor %}
+{% else %}
+#### Horizontal Scaling
+```yaml
+scaling_configuration:
+  auto_scaling:
+    enabled: true
+    min_instances: 2
+    max_instances: 100
+    target_cpu_utilization: 70%
+    target_memory_utilization: 80%
+    
+  load_balancing:
+    type: "Application Load Balancer"
+    health_check_path: "/health"
+    health_check_interval: 30s
+    
+  database_scaling:
+    read_replicas: 3
+    sharding_strategy: "hash-based"
+    connection_pooling: true
+```
+
+#### Vertical Scaling
+```yaml
+resource_scaling:
+  cpu_scaling:
+    initial: "2 vCPUs"
+    maximum: "64 vCPUs"
+    scaling_trigger: "cpu_utilization > 80%"
+    
+  memory_scaling:
+    initial: "4 GB"
+    maximum: "256 GB"
+    scaling_trigger: "memory_utilization > 85%"
+    
+  storage_scaling:
+    type: "elastic_storage"
+    initial: "100 GB"
+    maximum: "10 TB"
+    auto_expand: true
+```
+{% endif %}
+
+### Availability and Reliability
+
+{% if availability_requirements %}
+#### Availability Requirements
+{% for requirement, value in availability_requirements.items() %}
+- **{{ requirement | title }}**: {{ value }}
+{% endfor %}
+{% else %}
+#### High Availability Design
+```mermaid
+graph TB
+    A[Load Balancer] --> B[Region 1]
+    A --> C[Region 2]
+    
+    B --> D[AZ 1a]
+    B --> E[AZ 1b]
+    
+    C --> F[AZ 2a]
+    C --> G[AZ 2b]
+    
+    D --> H[App Instance 1]
+    D --> I[App Instance 2]
+    
+    E --> J[App Instance 3]
+    E --> K[App Instance 4]
+    
+    F --> L[App Instance 5]
+    F --> M[App Instance 6]
+    
+    G --> N[App Instance 7]
+    G --> O[App Instance 8]
+```
+
+#### Disaster Recovery
+```yaml
+disaster_recovery:
+  rto: "< 1 hour"      # Recovery Time Objective
+  rpo: "< 15 minutes"  # Recovery Point Objective
+  
+  backup_strategy:
+    frequency: "continuous"
+    retention: "30 days"
+    cross_region: true
+    
+  failover_strategy:
+    type: "automated"
+    health_check_interval: "30 seconds"
+    failover_threshold: "3 failed checks"
+    
+  recovery_procedures:
+    - "Automated failover to secondary region"
+    - "Database restore from latest backup"
+    - "Application state synchronization"
+    - "Traffic redirection to recovered services"
+```
+{% endif %}
+
+### Security Architecture
+
+#### Zero Trust Architecture
+```mermaid
+graph TB
+    A[Identity Verification] --> B[Device Trust]
+    B --> C[Application Access]
+    C --> D[Data Protection]
+    
+    E[Policy Engine] --> A
+    E --> B
+    E --> C
+    E --> D
+    
+    F[Monitoring] --> E
+    G[Analytics] --> E
+```
+
+#### Security Controls
+```python
+# Example: Security architecture implementation
+class SecurityArchitecture:
+    def __init__(self):
+        self.auth_service = AuthenticationService()
+        self.authz_service = AuthorizationService()
+        self.encryption_service = EncryptionService()
+        self.audit_service = AuditService()
+    
+    def secure_api_endpoint(self, endpoint_func):
+        """Decorator to apply security controls to API endpoints."""
+        def wrapper(request, *args, **kwargs):
+            # Authentication
+            user = self.auth_service.authenticate(request)
+            if not user:
+                return {"error": "Authentication required"}, 401
+            
+            # Authorization
+            if not self.authz_service.authorize(user, request.path, request.method):
+                return {"error": "Access denied"}, 403
+            
+            # Input validation and sanitization
+            sanitized_request = self.sanitize_request(request)
+            
+            # Audit logging
+            self.audit_service.log_access(user, request.path, request.method)
+            
+            # Execute endpoint
+            response = endpoint_func(sanitized_request, *args, **kwargs)
+            
+            # Response encryption if needed
+            if self.requires_encryption(request.path):
+                response = self.encryption_service.encrypt_response(response)
+            
+            return response
+        
+        return wrapper
+    
+    def sanitize_request(self, request):
+        """Sanitize request data to prevent injection attacks."""
+        # Implement input validation and sanitization
+        return request
+    
+    def requires_encryption(self, path):
+        """Check if endpoint requires response encryption."""
+        sensitive_paths = ['/api/user/profile', '/api/payment', '/api/personal-data']
+        return any(sensitive_path in path for sensitive_path in sensitive_paths)
+```
+
+### Performance Architecture
+
+#### Performance Requirements
+```yaml
+performance_targets:
+  response_time:
+    api_endpoints: "< 200ms"
+    database_queries: "< 100ms"
+    page_load_time: "< 2 seconds"
+    
+  throughput:
+    api_requests: "10,000 requests/second"
+    database_transactions: "5,000 transactions/second"
+    concurrent_users: "100,000 users"
+    
+  resource_utilization:
+    cpu_usage: "< 80%"
+    memory_usage: "< 85%"
+    disk_io: "< 90%"
+```
+
+#### Performance Optimization
+```python
+# Example: Performance optimization techniques
+class PerformanceOptimization:
+    def __init__(self):
+        self.cache = CacheService()
+        self.db_pool = DatabaseConnectionPool()
+        self.cdn = CDNService()
+    
+    def optimize_database_queries(self, query_builder):
+        """Optimize database queries for performance."""
+        # Query optimization techniques
+        optimized_query = query_builder.with_indexes() \
+                                      .with_pagination() \
+                                      .with_connection_pooling() \
+                                      .with_query_cache()
+        
+        return optimized_query
+    
+    def implement_caching_strategy(self, cache_key, data_generator):
+        """Implement multi-level caching strategy."""
+        # Check L1 cache (in-memory)
+        data = self.cache.get_from_memory(cache_key)
+        if data:
+            return data
+        
+        # Check L2 cache (Redis)
+        data = self.cache.get_from_redis(cache_key)
+        if data:
+            self.cache.set_in_memory(cache_key, data, ttl=300)
+            return data
+        
+        # Generate data and cache at all levels
+        data = data_generator()
+        self.cache.set_in_redis(cache_key, data, ttl=3600)
+        self.cache.set_in_memory(cache_key, data, ttl=300)
+        
+        return data
+    
+    def optimize_static_assets(self, asset_path):
+        """Optimize static assets for performance."""
+        # Compress and optimize assets
+        compressed_asset = self.compress_asset(asset_path)
+        
+        # Upload to CDN
+        cdn_url = self.cdn.upload_asset(compressed_asset)
+        
+        # Set cache headers
+        cache_headers = {
+            'Cache-Control': 'public, max-age=31536000',
+            'ETag': self.generate_etag(compressed_asset)
+        }
+        
+        return {
+            'url': cdn_url,
+            'headers': cache_headers
+        }
+```
+
+### Integration Architecture
+
+#### API Design Standards
+```yaml
+api_design_standards:
+  rest_api:
+    versioning: "URI versioning (/v1/, /v2/)"
+    authentication: "OAuth 2.0 with JWT tokens"
+    response_format: "JSON with consistent structure"
+    error_handling: "HTTP status codes with error details"
+    
+  graphql_api:
+    schema_design: "Type-first approach with federation"
+    query_complexity: "Limited to prevent abuse"
+    caching: "Query-level caching with TTL"
+    real_time: "Subscriptions for real-time updates"
+    
+  grpc_api:
+    service_definition: "Protocol Buffers v3"
+    streaming: "Bidirectional streaming support"
+    load_balancing: "Client-side load balancing"
+    error_handling: "gRPC status codes"
+```
+
+#### Service Mesh Architecture
+```mermaid
+graph TB
+    A[Service A] --> B[Envoy Proxy A]
+    C[Service B] --> D[Envoy Proxy B]
+    E[Service C] --> F[Envoy Proxy C]
+    
+    B --> G[Service Mesh Control Plane]
+    D --> G
+    F --> G
+    
+    G --> H[Service Discovery]
+    G --> I[Load Balancing]
+    G --> J[Security Policies]
+    G --> K[Observability]
+```
+
+### Monitoring Architecture
+
+#### Observability Stack
+```yaml
+observability:
+  metrics:
+    collection: "Prometheus"
+    visualization: "Grafana"
+    alerting: "Prometheus Alertmanager"
+    
+  logging:
+    collection: "Fluentd"
+    storage: "Elasticsearch"
+    visualization: "Kibana"
+    
+  tracing:
+    collection: "Jaeger"
+    instrumentation: "OpenTelemetry"
+    analysis: "Distributed tracing"
+    
+  monitoring:
+    infrastructure: "Node Exporter"
+    applications: "Application metrics"
+    business: "Custom business metrics"
+```
+
+#### Health Check Architecture
+```python
+# Example: Health check implementation
+class HealthCheckArchitecture:
+    def __init__(self):
+        self.health_checks = {}
+        self.dependencies = {}
+    
+    def register_health_check(self, name, check_function, timeout=30):
+        """Register a health check."""
+        self.health_checks[name] = {
+            'function': check_function,
+            'timeout': timeout,
+            'last_check': None,
+            'status': 'Unknown'
+        }
+    
+    def register_dependency(self, name, check_function, critical=True):
+        """Register a dependency health check."""
+        self.dependencies[name] = {
+            'function': check_function,
+            'critical': critical,
+            'status': 'Unknown'
+        }
+    
+    def perform_health_check(self):
+        """Perform comprehensive health check."""
+        health_status = {
+            'status': 'Healthy',
+            'timestamp': datetime.now().isoformat(),
+            'checks': {},
+            'dependencies': {}
+        }
+        
+        # Check application health
+        for name, check in self.health_checks.items():
+            try:
+                result = check['function']()
+                health_status['checks'][name] = {
+                    'status': 'Healthy' if result else 'Unhealthy',
+                    'response_time': self.measure_response_time(check['function'])
+                }
+            except Exception as e:
+                health_status['checks'][name] = {
+                    'status': 'Error',
+                    'error': str(e)
+                }
+                health_status['status'] = 'Degraded'
+        
+        # Check dependencies
+        for name, dependency in self.dependencies.items():
+            try:
+                result = dependency['function']()
+                health_status['dependencies'][name] = {
+                    'status': 'Available' if result else 'Unavailable',
+                    'critical': dependency['critical']
+                }
+                
+                if not result and dependency['critical']:
+                    health_status['status'] = 'Unhealthy'
+            except Exception as e:
+                health_status['dependencies'][name] = {
+                    'status': 'Error',
+                    'error': str(e),
+                    'critical': dependency['critical']
+                }
+                
+                if dependency['critical']:
+                    health_status['status'] = 'Unhealthy'
+        
+        return health_status
+```
+{% endblock %}
+
+{% block monitoring %}
+### Architecture Monitoring
+
+#### Architecture Metrics
+```python
+# Example: Architecture monitoring metrics
+class ArchitectureMetrics:
+    def __init__(self):
+        self.metrics_collector = MetricsCollector()
+        self.architecture_health = {}
+    
+    def track_service_dependencies(self, service_name, dependencies):
+        """Track service dependency health."""
+        for dependency in dependencies:
+            metric_name = f"service_dependency_health_{service_name}_{dependency}"
+            health_score = self.check_dependency_health(dependency)
+            self.metrics_collector.gauge(metric_name, health_score)
+    
+    def track_architecture_compliance(self, component_name, compliance_score):
+        """Track architecture compliance scores."""
+        metric_name = f"architecture_compliance_{component_name}"
+        self.metrics_collector.gauge(metric_name, compliance_score)
+    
+    def track_scalability_metrics(self, component_name, metrics):
+        """Track scalability metrics."""
+        for metric_name, value in metrics.items():
+            full_metric_name = f"scalability_{component_name}_{metric_name}"
+            self.metrics_collector.gauge(full_metric_name, value)
+    
+    def generate_architecture_dashboard(self):
+        """Generate architecture monitoring dashboard."""
+        return {
+            'service_health': self.get_service_health_metrics(),
+            'dependency_health': self.get_dependency_health_metrics(),
+            'compliance_scores': self.get_compliance_scores(),
+            'scalability_metrics': self.get_scalability_metrics(),
+            'performance_metrics': self.get_performance_metrics()
+        }
+```
+
+#### Architecture Governance
+```yaml
+architecture_governance:
+  review_process:
+    frequency: "Monthly"
+    participants: ["Solution Architect", "Technical Lead", "Security Architect"]
+    deliverables: ["Architecture Review Report", "Compliance Assessment"]
+    
+  compliance_checking:
+    automated_checks: true
+    check_frequency: "Daily"
+    compliance_threshold: "95%"
+    
+  architecture_evolution:
+    change_approval: "Architecture Review Board"
+    impact_assessment: "Required for all changes"
+    migration_planning: "Phased approach with rollback plan"
+```
+{% endblock %}
+
+{% block references %}
+### Architecture References
+
+#### Architecture Frameworks
+- TOGAF (The Open Group Architecture Framework)
+- Zachman Framework
+- DoDAF (Department of Defense Architecture Framework)
+- SABSA (Sherwood Applied Business Security Architecture)
+
+#### Design Patterns
+- Gang of Four Design Patterns
+- Enterprise Integration Patterns
+- Microservices Patterns
+- Cloud Design Patterns
+
+#### Technology References
+{% if technology_stack %}
+{% for category, technologies in technology_stack.items() %}
+**{{ category | title }}**:
+{% if technologies is iterable and technologies is not string %}
+{% for tech in technologies %}
+- {{ tech }} Architecture Guide
+{% endfor %}
+{% else %}
+- {{ technologies }} Architecture Guide
+{% endif %}
+{% endfor %}
+{% endif %}
+
+#### Architecture Patterns
+{% if architecture_patterns %}
+{% for pattern in architecture_patterns %}
+- {{ pattern }} Pattern Documentation
+{% endfor %}
+{% endif %}
+
+#### Performance and Scalability
+- High Performance Browser Networking
+- Designing Data-Intensive Applications
+- Scalability Rules
+- The Art of Scalability
+
+#### Security Architecture
+- OWASP Architecture Guide
+- NIST Cybersecurity Framework
+- Zero Trust Architecture (NIST SP 800-207)
+- Cloud Security Alliance (CSA) Guidance
+{% endblock %}

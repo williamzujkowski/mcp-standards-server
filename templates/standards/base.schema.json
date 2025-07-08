@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Base Standard Metadata Schema",
+  "description": "Schema for base standard template metadata",
+  "type": "object",
+  "required": [
+    "title",
+    "version", 
+    "domain",
+    "type",
+    "description",
+    "author",
+    "created_date",
+    "updated_date"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "The title of the standard"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version number (e.g., 1.0.0)"
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["general", "ai_ml", "blockchain", "iot", "gaming", "api", "security", "cloud", "data"],
+      "description": "The domain or category of the standard"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["technical", "compliance", "process", "architecture"],
+      "description": "The type of standard"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000,
+      "description": "Detailed description of the standard"
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Author or organization responsible for the standard"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the standard was created"
+    },
+    "updated_date": {
+      "type": "string", 
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the standard was last updated"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      },
+      "uniqueItems": true,
+      "description": "Tags for categorizing and searching the standard"
+    },
+    "nist_controls": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}-\\d+$"
+      },
+      "uniqueItems": true,
+      "description": "Applicable NIST control identifiers (e.g., AC-1, AU-2)"
+    },
+    "compliance_frameworks": {
+      "type": "array", 
+      "items": {
+        "type": "string",
+        "enum": ["NIST", "ISO-27001", "SOC2", "PCI-DSS", "HIPAA", "GDPR", "CCPA", "FedRAMP", "FISMA"]
+      },
+      "uniqueItems": true,
+      "description": "Applicable compliance frameworks"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "moderate", "high"],
+      "default": "moderate",
+      "description": "Risk level classification"
+    },
+    "maturity_level": {
+      "type": "string",
+      "enum": ["planning", "developing", "testing", "production", "deprecated"],
+      "default": "developing", 
+      "description": "Maturity level of the standard"
+    },
+    "implementation_guides": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "description": "References to implementation guides"
+    },
+    "code_examples": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "description": "References to code examples"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "description": "Dependencies on other standards or systems"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": ["draft", "review", "approved", "rejected"],
+      "default": "draft",
+      "description": "Review and approval status"
+    },
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "description": "List of reviewers"
+    },
+    "approval_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the standard was approved"
+    }
+  },
+  "additionalProperties": true
+}

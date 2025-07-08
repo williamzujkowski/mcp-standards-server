@@ -1,0 +1,47 @@
+name: "API Design Standard Template"
+description: "Template for API design standards with REST, GraphQL, security, and documentation best practices"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "domain-specific"
+domain: "api"
+tags:
+  - "api"
+  - "rest"
+  - "graphql"
+  - "security"
+  - "documentation"
+extends: "standards/technical.j2"
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+optional_variables:
+  - api_types
+  - authentication_methods
+  - documentation_standards
+  - versioning_strategy
+  - performance_requirements
+  - security_requirements
+  - nist_controls
+  - compliance_frameworks
+  - implementation_guides
+  - code_examples
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - restful_api_design
+  - graphql_implementation
+  - api_gateway_configuration
+  - api_documentation_testing

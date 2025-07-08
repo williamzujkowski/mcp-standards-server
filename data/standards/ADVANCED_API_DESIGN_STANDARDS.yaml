@@ -1,0 +1,106 @@
+api_types:
+- rest
+- graphql
+- grpc
+- websocket
+- sse
+- webhook
+- rpc
+approval_date: null
+authentication_methods:
+- oauth2
+- jwt
+- api_keys
+- mutual_tls
+- basic_auth
+- bearer_tokens
+author: MCP Standards Team
+code_examples: []
+compliance_frameworks:
+- GDPR
+- CCPA
+- PCI DSS
+- HIPAA
+- OpenAPI
+- JSON:API
+- GraphQL Spec
+created_date: '2025-07-07T23:26:10.027417'
+data_formats:
+- json
+- xml
+- protobuf
+- msgpack
+- avro
+- yaml
+dependencies:
+- security_standards
+- performance_standards
+- data_governance_standards
+description: Comprehensive standards for advanced API design, including REST, GraphQL,
+  gRPC, and modern API patterns
+documentation_tools:
+- openapi_swagger
+- postman
+- insomnia
+- graphql_playground
+- redoc
+domain: api
+implementation_guides:
+- restful_api_design
+- graphql_schema_design
+- grpc_service_definition
+- api_security_implementation
+maturity_level: production
+monitoring_requirements:
+- response_time
+- error_rate
+- throughput
+- availability
+- rate_limit_usage
+nist_controls:
+- AC-1
+- AC-6
+- AU-2
+- AU-12
+- CM-2
+- CM-8
+- IA-2
+- IA-4
+- RA-3
+- RA-5
+- SA-3
+- SA-8
+- SC-7
+- SC-8
+- SC-12
+- SC-13
+- SI-3
+- SI-4
+rate_limiting_methods:
+- token_bucket
+- sliding_window
+- fixed_window
+- adaptive_limiting
+- circuit_breaker
+review_status: draft
+reviewers: []
+risk_level: moderate
+tags:
+- api
+- rest
+- graphql
+- grpc
+- microservices
+- rate-limiting
+- versioning
+- documentation
+title: Advanced API Design Standards
+type: technical
+updated_date: '2025-07-07T23:26:10.027426'
+version: 1.0.0
+versioning_strategies:
+- uri_versioning
+- header_versioning
+- accept_header
+- semantic_versioning
+- backwards_compatibility

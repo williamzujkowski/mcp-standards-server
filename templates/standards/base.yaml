@@ -1,0 +1,47 @@
+name: "Base Standard Template"
+description: "Base template for all standards with common sections and structure"
+version: "1.0.0"
+author: "MCP Standards Team"
+category: "base"
+tags:
+  - "base"
+  - "foundation"
+  - "template"
+extends: null
+required_variables:
+  - title
+  - version
+  - domain
+  - type
+  - description
+  - author
+  - created_date
+  - updated_date
+optional_variables:
+  - nist_controls
+  - compliance_frameworks
+  - risk_level
+  - maturity_level
+  - implementation_guides
+  - dependencies
+  - review_status
+  - reviewers
+  - approval_date
+sections:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix
+customization_points:
+  - purpose
+  - scope
+  - implementation
+  - compliance
+  - monitoring
+  - responsibilities
+  - references
+  - appendix

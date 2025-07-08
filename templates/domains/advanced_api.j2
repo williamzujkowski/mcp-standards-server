@@ -1,0 +1,2195 @@
+{% extends "standards/technical.j2" %}
+
+{% block purpose %}
+This Advanced API Design standard defines the requirements, guidelines, and best practices for {{ title.lower() }}. It provides comprehensive guidance for modern API development including RESTful services, GraphQL APIs, gRPC implementations, and advanced API patterns while ensuring security, performance, and maintainability.
+
+**API Design Focus Areas:**
+- **RESTful APIs**: HTTP-based service design and implementation
+- **GraphQL APIs**: Flexible query language and schema design
+- **gRPC Services**: High-performance RPC framework implementation
+- **API Security**: Authentication, authorization, and data protection
+- **Rate Limiting**: Traffic control and abuse prevention
+- **Documentation**: Comprehensive API documentation and testing
+{% endblock %}
+
+{% block scope %}
+This Advanced API Design standard applies to:
+- All public and internal API development
+- Microservices architecture and communication
+- Third-party API integrations
+- API gateway and proxy implementations
+- Service mesh and inter-service communication
+- API versioning and lifecycle management
+- Rate limiting and traffic management
+- API security and compliance requirements
+{% endblock %}
+
+{% block implementation %}
+### Advanced API Requirements
+
+{% if nist_controls %}
+**NIST Controls:** {{ nist_controls | join(', ') | format_nist_control }}
+{% endif %}
+
+**API Security Framework:** Authentication, authorization, and data protection
+**Performance Standards:** Response time, throughput, and scalability requirements
+**Documentation Standards:** OpenAPI, GraphQL schemas, and comprehensive guides
+
+### RESTful API Design
+
+#### REST API Architecture
+```mermaid
+graph TB
+    A[Client] --> B[API Gateway]
+    B --> C[Load Balancer]
+    C --> D[API Service 1]
+    C --> E[API Service 2]
+    C --> F[API Service 3]
+    D --> G[Database 1]
+    E --> H[Database 2]
+    F --> I[Cache Layer]
+    B --> J[Authentication Service]
+    B --> K[Rate Limiting]
+    B --> L[Monitoring]
+```
+
+#### RESTful API Implementation
+```python
+# Example: Advanced RESTful API with FastAPI
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
+import asyncio
+import redis
+import json
+import hashlib
+from sqlalchemy.orm import Session
+
+app = FastAPI(
+    title="Advanced API Service",
+    description="Comprehensive RESTful API with advanced features",
+    version="2.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
+
+# Security and middleware configuration
+security = HTTPBearer()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://trusted-domain.com"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["api.company.com", "*.company.com"]
+)
+
+# Redis for caching and rate limiting
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+# Data models
+class APIResponse(BaseModel):
+    success: bool
+    data: Optional[Any] = None
+    message: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    request_id: Optional[str] = None
+
+class UserModel(BaseModel):
+    id: Optional[int] = None
+    username: str = Field(..., min_length=3, max_length=50)
+    email: str = Field(..., regex=r'^[^@]+@[^@]+\.[^@]+$')
+    full_name: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class PaginationParams(BaseModel):
+    page: int = Field(1, ge=1)
+    size: int = Field(10, ge=1, le=100)
+    sort_by: Optional[str] = "id"
+    sort_order: Optional[str] = Field("asc", regex="^(asc|desc)$")
+
+class FilterParams(BaseModel):
+    search: Optional[str] = None
+    status: Optional[str] = None
+    created_after: Optional[datetime] = None
+    created_before: Optional[datetime] = None
+
+# Authentication and authorization
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and extract user information."""
+    token = credentials.credentials
+    
+    try:
+        # Verify token (implement your JWT verification logic)
+        user_data = await verify_jwt_token(token)
+        return user_data
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+async def verify_jwt_token(token: str) -> Dict[str, Any]:
+    """Verify JWT token and return user data."""
+    # Implement JWT verification logic
+    # This is a simplified example
+    return {"user_id": 1, "username": "user", "permissions": ["read", "write"]}
+
+# Rate limiting
+class RateLimiter:
+    def __init__(self, redis_client, requests_per_minute=60):
+        self.redis_client = redis_client
+        self.requests_per_minute = requests_per_minute
+    
+    async def is_allowed(self, identifier: str) -> bool:
+        """Check if request is allowed based on rate limit."""
+        key = f"rate_limit:{identifier}"
+        current_time = datetime.utcnow()
+        window_start = current_time.replace(second=0, microsecond=0)
+        
+        try:
+            # Get current request count for this minute
+            current_count = self.redis_client.get(key)
+            
+            if current_count is None:
+                # First request in this window
+                self.redis_client.setex(key, 60, 1)
+                return True
+            
+            current_count = int(current_count)
+            
+            if current_count >= self.requests_per_minute:
+                return False
+            
+            # Increment counter
+            self.redis_client.incr(key)
+            return True
+            
+        except Exception as e:
+            # If Redis is down, allow the request
+            print(f"Rate limiting error: {e}")
+            return True
+
+rate_limiter = RateLimiter(redis_client)
+
+async def check_rate_limit(user_data: Dict[str, Any] = Depends(verify_token)):
+    """Check rate limit for authenticated user."""
+    user_id = user_data["user_id"]
+    
+    if not await rate_limiter.is_allowed(f"user:{user_id}"):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please try again later."
+        )
+    
+    return user_data
+
+# Caching decorator
+def cache_response(expiry_seconds: int = 300):
+    """Decorator to cache API responses."""
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            # Generate cache key
+            cache_key = f"api_cache:{func.__name__}:{hashlib.md5(str(kwargs).encode()).hexdigest()}"
+            
+            # Try to get from cache
+            try:
+                cached_response = redis_client.get(cache_key)
+                if cached_response:
+                    return json.loads(cached_response)
+            except Exception as e:
+                print(f"Cache read error: {e}")
+            
+            # Execute function
+            result = await func(*args, **kwargs)
+            
+            # Cache the result
+            try:
+                redis_client.setex(cache_key, expiry_seconds, json.dumps(result, default=str))
+            except Exception as e:
+                print(f"Cache write error: {e}")
+            
+            return result
+        return wrapper
+    return decorator
+
+# API endpoints
+@app.get("/api/v2/users", response_model=APIResponse)
+@cache_response(expiry_seconds=60)
+async def get_users(
+    pagination: PaginationParams = Depends(),
+    filters: FilterParams = Depends(),
+    user_data: Dict[str, Any] = Depends(check_rate_limit),
+    db: Session = Depends(get_database_session)
+):
+    """Get users with pagination, filtering, and caching."""
+    
+    try:
+        # Build query with filters
+        query = db.query(User)
+        
+        if filters.search:
+            query = query.filter(User.username.contains(filters.search))
+        
+        if filters.status:
+            query = query.filter(User.status == filters.status)
+        
+        if filters.created_after:
+            query = query.filter(User.created_at >= filters.created_after)
+        
+        if filters.created_before:
+            query = query.filter(User.created_at <= filters.created_before)
+        
+        # Apply sorting
+        if pagination.sort_order == "desc":
+            query = query.order_by(getattr(User, pagination.sort_by).desc())
+        else:
+            query = query.order_by(getattr(User, pagination.sort_by))
+        
+        # Apply pagination
+        total_count = query.count()
+        users = query.offset((pagination.page - 1) * pagination.size).limit(pagination.size).all()
+        
+        # Format response
+        return APIResponse(
+            success=True,
+            data={
+                "users": [UserModel.from_orm(user) for user in users],
+                "pagination": {
+                    "page": pagination.page,
+                    "size": pagination.size,
+                    "total": total_count,
+                    "pages": (total_count + pagination.size - 1) // pagination.size
+                }
+            },
+            message="Users retrieved successfully"
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve users: {str(e)}"
+        )
+
+@app.post("/api/v2/users", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: UserModel,
+    current_user: Dict[str, Any] = Depends(check_rate_limit),
+    db: Session = Depends(get_database_session)
+):
+    """Create a new user with validation and error handling."""
+    
+    try:
+        # Check permissions
+        if "write" not in current_user.get("permissions", []):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to create users"
+            )
+        
+        # Check if user already exists
+        existing_user = db.query(User).filter(User.username == user_data.username).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this username already exists"
+            )
+        
+        # Create new user
+        new_user = User(**user_data.dict(exclude={"id"}))
+        new_user.created_at = datetime.utcnow()
+        new_user.updated_at = datetime.utcnow()
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Clear related caches
+        clear_user_caches()
+        
+        return APIResponse(
+            success=True,
+            data=UserModel.from_orm(new_user),
+            message="User created successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}"
+        )
+
+@app.put("/api/v2/users/{user_id}", response_model=APIResponse)
+async def update_user(
+    user_id: int,
+    user_data: UserModel,
+    current_user: Dict[str, Any] = Depends(check_rate_limit),
+    db: Session = Depends(get_database_session)
+):
+    """Update an existing user with optimistic locking."""
+    
+    try:
+        # Check permissions
+        if "write" not in current_user.get("permissions", []):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to update users"
+            )
+        
+        # Get existing user
+        existing_user = db.query(User).filter(User.id == user_id).first()
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Update user data
+        update_data = user_data.dict(exclude_unset=True, exclude={"id", "created_at"})
+        update_data["updated_at"] = datetime.utcnow()
+        
+        for field, value in update_data.items():
+            setattr(existing_user, field, value)
+        
+        db.commit()
+        db.refresh(existing_user)
+        
+        # Clear related caches
+        clear_user_caches()
+        
+        return APIResponse(
+            success=True,
+            data=UserModel.from_orm(existing_user),
+            message="User updated successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update user: {str(e)}"
+        )
+
+@app.delete("/api/v2/users/{user_id}", response_model=APIResponse)
+async def delete_user(
+    user_id: int,
+    current_user: Dict[str, Any] = Depends(check_rate_limit),
+    db: Session = Depends(get_database_session)
+):
+    """Delete a user with soft delete option."""
+    
+    try:
+        # Check permissions
+        if "delete" not in current_user.get("permissions", []):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to delete users"
+            )
+        
+        # Get existing user
+        existing_user = db.query(User).filter(User.id == user_id).first()
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Soft delete (set is_active to False)
+        existing_user.is_active = False
+        existing_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        # Clear related caches
+        clear_user_caches()
+        
+        return APIResponse(
+            success=True,
+            message="User deleted successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user: {str(e)}"
+        )
+
+# Health check endpoint
+@app.get("/api/health", response_model=APIResponse)
+async def health_check():
+    """Health check endpoint for monitoring."""
+    
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow(),
+        "version": "2.0.0",
+        "services": {
+            "database": check_database_health(),
+            "redis": check_redis_health(),
+            "external_apis": check_external_apis_health()
+        }
+    }
+    
+    # Determine overall health
+    all_healthy = all(service["status"] == "healthy" for service in health_status["services"].values())
+    
+    return APIResponse(
+        success=all_healthy,
+        data=health_status,
+        message="Health check completed"
+    )
+
+def clear_user_caches():
+    """Clear user-related caches."""
+    try:
+        keys = redis_client.keys("api_cache:get_users:*")
+        if keys:
+            redis_client.delete(*keys)
+    except Exception as e:
+        print(f"Cache clear error: {e}")
+
+def check_database_health():
+    """Check database connectivity and health."""
+    try:
+        # Implement database health check
+        return {"status": "healthy", "response_time_ms": 10}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
+def check_redis_health():
+    """Check Redis connectivity and health."""
+    try:
+        redis_client.ping()
+        return {"status": "healthy", "response_time_ms": 5}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
+def check_external_apis_health():
+    """Check external API dependencies."""
+    try:
+        # Implement external API health checks
+        return {"status": "healthy", "services_checked": 3}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
+# Database session dependency
+def get_database_session():
+    """Get database session for dependency injection."""
+    # Implement database session logic
+    pass
+```
+
+### GraphQL API Implementation
+
+#### GraphQL Schema Design
+```python
+# Example: Advanced GraphQL API with Strawberry
+import strawberry
+from typing import List, Optional, Union
+from dataclasses import dataclass
+from datetime import datetime
+import asyncio
+
+# GraphQL types
+@strawberry.type
+class User:
+    id: int
+    username: str
+    email: str
+    full_name: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+@strawberry.type
+class Post:
+    id: int
+    title: str
+    content: str
+    author_id: int
+    created_at: datetime
+    updated_at: datetime
+
+@strawberry.type
+class UserWithPosts:
+    user: User
+    posts: List[Post]
+    total_posts: int
+
+# Input types
+@strawberry.input
+class UserInput:
+    username: str
+    email: str
+    full_name: Optional[str] = None
+
+@strawberry.input
+class UserUpdateInput:
+    username: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+
+@strawberry.input
+class PostInput:
+    title: str
+    content: str
+    author_id: int
+
+# Pagination and filtering
+@strawberry.input
+class PaginationInput:
+    page: int = 1
+    size: int = 10
+
+@strawberry.input
+class UserFilterInput:
+    search: Optional[str] = None
+    is_active: Optional[bool] = None
+    created_after: Optional[datetime] = None
+
+@strawberry.type
+class PaginatedUsers:
+    users: List[User]
+    total: int
+    page: int
+    size: int
+    has_next: bool
+    has_previous: bool
+
+# Error handling
+@strawberry.type
+class GraphQLError:
+    message: str
+    code: str
+    path: Optional[List[str]] = None
+
+# Union types for responses
+UserResult = Union[User, GraphQLError]
+PostResult = Union[Post, GraphQLError]
+
+# Data loaders for N+1 problem prevention
+class DataLoaders:
+    def __init__(self):
+        self.user_loader = self.create_user_loader()
+        self.posts_by_user_loader = self.create_posts_by_user_loader()
+    
+    def create_user_loader(self):
+        async def load_users(user_ids: List[int]) -> List[User]:
+            # Batch load users from database
+            # This prevents N+1 query problems
+            users = await fetch_users_by_ids(user_ids)
+            return users
+        
+        return DataLoader(load_users)
+    
+    def create_posts_by_user_loader(self):
+        async def load_posts_by_user(user_ids: List[int]) -> List[List[Post]]:
+            # Batch load posts for multiple users
+            posts_map = await fetch_posts_by_user_ids(user_ids)
+            return [posts_map.get(user_id, []) for user_id in user_ids]
+        
+        return DataLoader(load_posts_by_user)
+
+# Query resolvers
+@strawberry.type
+class Query:
+    @strawberry.field
+    async def users(
+        self,
+        pagination: Optional[PaginationInput] = None,
+        filters: Optional[UserFilterInput] = None,
+        info: strawberry.Info = None
+    ) -> PaginatedUsers:
+        """Get paginated list of users with optional filtering."""
+        
+        # Apply default pagination
+        if pagination is None:
+            pagination = PaginationInput()
+        
+        # Build query with filters
+        query_params = {}
+        if filters:
+            if filters.search:
+                query_params['search'] = filters.search
+            if filters.is_active is not None:
+                query_params['is_active'] = filters.is_active
+            if filters.created_after:
+                query_params['created_after'] = filters.created_after
+        
+        # Execute query
+        users, total = await fetch_users_paginated(
+            page=pagination.page,
+            size=pagination.size,
+            filters=query_params
+        )
+        
+        return PaginatedUsers(
+            users=users,
+            total=total,
+            page=pagination.page,
+            size=pagination.size,
+            has_next=(pagination.page * pagination.size) < total,
+            has_previous=pagination.page > 1
+        )
+    
+    @strawberry.field
+    async def user(self, id: int, info: strawberry.Info = None) -> UserResult:
+        """Get user by ID."""
+        
+        try:
+            # Use data loader to fetch user
+            data_loaders = info.context.get("data_loaders")
+            user = await data_loaders.user_loader.load(id)
+            
+            if user is None:
+                return GraphQLError(
+                    message=f"User with ID {id} not found",
+                    code="USER_NOT_FOUND"
+                )
+            
+            return user
+        
+        except Exception as e:
+            return GraphQLError(
+                message=f"Failed to fetch user: {str(e)}",
+                code="INTERNAL_ERROR"
+            )
+    
+    @strawberry.field
+    async def user_with_posts(self, user_id: int, info: strawberry.Info = None) -> Optional[UserWithPosts]:
+        """Get user with their posts using data loaders."""
+        
+        data_loaders = info.context.get("data_loaders")
+        
+        # Load user and posts concurrently
+        user_task = data_loaders.user_loader.load(user_id)
+        posts_task = data_loaders.posts_by_user_loader.load(user_id)
+        
+        user, posts = await asyncio.gather(user_task, posts_task)
+        
+        if user is None:
+            return None
+        
+        return UserWithPosts(
+            user=user,
+            posts=posts,
+            total_posts=len(posts)
+        )
+
+# Mutation resolvers
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    async def create_user(self, input: UserInput, info: strawberry.Info = None) -> UserResult:
+        """Create a new user."""
+        
+        try:
+            # Validate permissions
+            current_user = info.context.get("current_user")
+            if not current_user or not has_permission(current_user, "create_user"):
+                return GraphQLError(
+                    message="Insufficient permissions",
+                    code="PERMISSION_DENIED"
+                )
+            
+            # Check if user already exists
+            existing_user = await fetch_user_by_username(input.username)
+            if existing_user:
+                return GraphQLError(
+                    message="User with this username already exists",
+                    code="USER_EXISTS"
+                )
+            
+            # Create user
+            user = await create_user_in_db(input)
+            
+            # Clear relevant caches
+            await clear_user_caches()
+            
+            return user
+        
+        except Exception as e:
+            return GraphQLError(
+                message=f"Failed to create user: {str(e)}",
+                code="INTERNAL_ERROR"
+            )
+    
+    @strawberry.mutation
+    async def update_user(self, id: int, input: UserUpdateInput, info: strawberry.Info = None) -> UserResult:
+        """Update an existing user."""
+        
+        try:
+            # Validate permissions
+            current_user = info.context.get("current_user")
+            if not current_user or not has_permission(current_user, "update_user"):
+                return GraphQLError(
+                    message="Insufficient permissions",
+                    code="PERMISSION_DENIED"
+                )
+            
+            # Get existing user
+            existing_user = await fetch_user_by_id(id)
+            if not existing_user:
+                return GraphQLError(
+                    message=f"User with ID {id} not found",
+                    code="USER_NOT_FOUND"
+                )
+            
+            # Update user
+            updated_user = await update_user_in_db(id, input)
+            
+            # Clear relevant caches
+            await clear_user_caches()
+            
+            return updated_user
+        
+        except Exception as e:
+            return GraphQLError(
+                message=f"Failed to update user: {str(e)}",
+                code="INTERNAL_ERROR"
+            )
+    
+    @strawberry.mutation
+    async def delete_user(self, id: int, info: strawberry.Info = None) -> bool:
+        """Delete a user (soft delete)."""
+        
+        try:
+            # Validate permissions
+            current_user = info.context.get("current_user")
+            if not current_user or not has_permission(current_user, "delete_user"):
+                raise GraphQLError(
+                    message="Insufficient permissions",
+                    code="PERMISSION_DENIED"
+                )
+            
+            # Soft delete user
+            success = await soft_delete_user(id)
+            
+            if success:
+                # Clear relevant caches
+                await clear_user_caches()
+            
+            return success
+        
+        except Exception as e:
+            return False
+
+# Subscription for real-time updates
+@strawberry.type
+class Subscription:
+    @strawberry.subscription
+    async def user_updates(self, user_id: Optional[int] = None) -> User:
+        """Subscribe to user updates."""
+        
+        async for user_update in get_user_update_stream(user_id):
+            yield user_update
+
+# Schema configuration
+schema = strawberry.Schema(
+    query=Query,
+    mutation=Mutation,
+    subscription=Subscription
+)
+
+# Context setup for authentication and data loaders
+async def get_context(request):
+    """Setup GraphQL context with authentication and data loaders."""
+    
+    # Extract user from JWT token
+    current_user = await extract_user_from_request(request)
+    
+    # Initialize data loaders
+    data_loaders = DataLoaders()
+    
+    return {
+        "current_user": current_user,
+        "data_loaders": data_loaders,
+        "request": request
+    }
+
+# Helper functions (implement these based on your database layer)
+async def fetch_users_by_ids(user_ids: List[int]) -> List[User]:
+    """Fetch users by IDs from database."""
+    pass
+
+async def fetch_posts_by_user_ids(user_ids: List[int]) -> dict:
+    """Fetch posts for multiple users."""
+    pass
+
+async def fetch_users_paginated(page: int, size: int, filters: dict) -> tuple:
+    """Fetch paginated users with filters."""
+    pass
+
+async def create_user_in_db(input: UserInput) -> User:
+    """Create user in database."""
+    pass
+
+async def update_user_in_db(id: int, input: UserUpdateInput) -> User:
+    """Update user in database."""
+    pass
+
+async def soft_delete_user(id: int) -> bool:
+    """Soft delete user in database."""
+    pass
+
+async def clear_user_caches():
+    """Clear user-related caches."""
+    pass
+```
+
+### gRPC Service Implementation
+
+#### Protocol Buffer Definitions
+```protobuf
+// Example: User service protocol buffer definition
+syntax = "proto3";
+
+package user.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// User service definition
+service UserService {
+  // Get user by ID
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  
+  // List users with pagination
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  
+  // Create new user
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  
+  // Update existing user
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  
+  // Delete user
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  
+  // Stream user updates
+  rpc StreamUserUpdates(StreamUserUpdatesRequest) returns (stream UserUpdateEvent);
+  
+  // Batch operations
+  rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse);
+  rpc BatchCreateUsers(BatchCreateUsersRequest) returns (BatchCreateUsersResponse);
+}
+
+// User message
+message User {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+  string full_name = 4;
+  bool is_active = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// Request/Response messages
+message GetUserRequest {
+  int64 id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 size = 2;
+  string search = 3;
+  bool is_active = 4;
+  google.protobuf.Timestamp created_after = 5;
+  google.protobuf.Timestamp created_before = 6;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+  bool has_next = 5;
+  bool has_previous = 6;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  string full_name = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+  string full_name = 4;
+  bool is_active = 5;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message DeleteUserRequest {
+  int64 id = 1;
+}
+
+message StreamUserUpdatesRequest {
+  int64 user_id = 1; // Optional: filter by specific user
+}
+
+message UserUpdateEvent {
+  enum EventType {
+    CREATED = 0;
+    UPDATED = 1;
+    DELETED = 2;
+  }
+  
+  EventType event_type = 1;
+  User user = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+message BatchGetUsersRequest {
+  repeated int64 ids = 1;
+}
+
+message BatchGetUsersResponse {
+  map<int64, User> users = 1;
+}
+
+message BatchCreateUsersRequest {
+  repeated CreateUserRequest requests = 1;
+}
+
+message BatchCreateUsersResponse {
+  repeated CreateUserResponse responses = 1;
+}
+```
+
+#### gRPC Server Implementation
+```python
+# Example: gRPC server implementation with Python
+import grpc
+from concurrent import futures
+import asyncio
+from typing import List, Dict, Any
+import logging
+from datetime import datetime
+
+# Generated protobuf classes
+from user_service_pb2 import (
+    User, GetUserResponse, ListUsersResponse, CreateUserResponse,
+    UpdateUserResponse, UserUpdateEvent, BatchGetUsersResponse,
+    BatchCreateUsersResponse
+)
+import user_service_pb2_grpc
+
+class UserServiceImpl(user_service_pb2_grpc.UserServiceServicer):
+    """gRPC User Service implementation."""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.user_update_subscribers = set()
+    
+    async def GetUser(self, request, context):
+        """Get user by ID."""
+        
+        try:
+            # Validate request
+            if request.id <= 0:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("User ID must be positive")
+                return GetUserResponse()
+            
+            # Fetch user from database
+            user_data = await self.fetch_user_by_id(request.id)
+            
+            if not user_data:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.id} not found")
+                return GetUserResponse()
+            
+            # Convert to protobuf User
+            user = self.create_user_protobuf(user_data)
+            
+            return GetUserResponse(user=user)
+        
+        except Exception as e:
+            self.logger.error(f"Error in GetUser: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+            return GetUserResponse()
+    
+    async def ListUsers(self, request, context):
+        """List users with pagination and filtering."""
+        
+        try:
+            # Validate pagination parameters
+            page = max(1, request.page)
+            size = min(max(1, request.size), 100)  # Limit page size
+            
+            # Build filter parameters
+            filters = {}
+            if request.search:
+                filters['search'] = request.search
+            if hasattr(request, 'is_active'):
+                filters['is_active'] = request.is_active
+            if request.created_after:
+                filters['created_after'] = request.created_after.ToDatetime()
+            if request.created_before:
+                filters['created_before'] = request.created_before.ToDatetime()
+            
+            # Fetch users from database
+            users_data, total = await self.fetch_users_paginated(page, size, filters)
+            
+            # Convert to protobuf Users
+            users = [self.create_user_protobuf(user_data) for user_data in users_data]
+            
+            return ListUsersResponse(
+                users=users,
+                total=total,
+                page=page,
+                size=size,
+                has_next=(page * size) < total,
+                has_previous=page > 1
+            )
+        
+        except Exception as e:
+            self.logger.error(f"Error in ListUsers: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+            return ListUsersResponse()
+    
+    async def CreateUser(self, request, context):
+        """Create a new user."""
+        
+        try:
+            # Validate request
+            if not request.username or not request.email:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Username and email are required")
+                return CreateUserResponse()
+            
+            # Check if user already exists
+            existing_user = await self.fetch_user_by_username(request.username)
+            if existing_user:
+                context.set_code(grpc.StatusCode.ALREADY_EXISTS)
+                context.set_details("User with this username already exists")
+                return CreateUserResponse()
+            
+            # Create user in database
+            user_data = await self.create_user_in_db({
+                'username': request.username,
+                'email': request.email,
+                'full_name': request.full_name
+            })
+            
+            # Convert to protobuf User
+            user = self.create_user_protobuf(user_data)
+            
+            # Notify subscribers
+            await self.notify_user_update(UserUpdateEvent.CREATED, user)
+            
+            return CreateUserResponse(user=user)
+        
+        except Exception as e:
+            self.logger.error(f"Error in CreateUser: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+            return CreateUserResponse()
+    
+    async def UpdateUser(self, request, context):
+        """Update an existing user."""
+        
+        try:
+            # Validate request
+            if request.id <= 0:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("User ID must be positive")
+                return UpdateUserResponse()
+            
+            # Get existing user
+            existing_user = await self.fetch_user_by_id(request.id)
+            if not existing_user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.id} not found")
+                return UpdateUserResponse()
+            
+            # Prepare update data
+            update_data = {}
+            if request.username:
+                update_data['username'] = request.username
+            if request.email:
+                update_data['email'] = request.email
+            if request.full_name:
+                update_data['full_name'] = request.full_name
+            if hasattr(request, 'is_active'):
+                update_data['is_active'] = request.is_active
+            
+            # Update user in database
+            user_data = await self.update_user_in_db(request.id, update_data)
+            
+            # Convert to protobuf User
+            user = self.create_user_protobuf(user_data)
+            
+            # Notify subscribers
+            await self.notify_user_update(UserUpdateEvent.UPDATED, user)
+            
+            return UpdateUserResponse(user=user)
+        
+        except Exception as e:
+            self.logger.error(f"Error in UpdateUser: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+            return UpdateUserResponse()
+    
+    async def DeleteUser(self, request, context):
+        """Delete a user (soft delete)."""
+        
+        try:
+            # Validate request
+            if request.id <= 0:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("User ID must be positive")
+                return
+            
+            # Get existing user
+            existing_user = await self.fetch_user_by_id(request.id)
+            if not existing_user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.id} not found")
+                return
+            
+            # Soft delete user
+            await self.soft_delete_user(request.id)
+            
+            # Create user protobuf for notification
+            user = self.create_user_protobuf(existing_user)
+            
+            # Notify subscribers
+            await self.notify_user_update(UserUpdateEvent.DELETED, user)
+        
+        except Exception as e:
+            self.logger.error(f"Error in DeleteUser: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+    
+    async def StreamUserUpdates(self, request, context):
+        """Stream user updates to clients."""
+        
+        try:
+            # Create a queue for this client
+            update_queue = asyncio.Queue()
+            self.user_update_subscribers.add(update_queue)
+            
+            try:
+                while True:
+                    # Wait for updates
+                    update_event = await update_queue.get()
+                    
+                    # Filter by user_id if specified
+                    if request.user_id and update_event.user.id != request.user_id:
+                        continue
+                    
+                    yield update_event
+            
+            except grpc.RpcError:
+                # Client disconnected
+                pass
+            finally:
+                # Clean up subscription
+                self.user_update_subscribers.discard(update_queue)
+        
+        except Exception as e:
+            self.logger.error(f"Error in StreamUserUpdates: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+    
+    async def BatchGetUsers(self, request, context):
+        """Batch get users by IDs."""
+        
+        try:
+            # Validate request
+            if not request.ids:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("At least one user ID is required")
+                return BatchGetUsersResponse()
+            
+            # Limit batch size
+            if len(request.ids) > 100:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Batch size cannot exceed 100")
+                return BatchGetUsersResponse()
+            
+            # Fetch users from database
+            users_data = await self.fetch_users_by_ids(list(request.ids))
+            
+            # Convert to protobuf Users and create map
+            users_map = {}
+            for user_data in users_data:
+                user = self.create_user_protobuf(user_data)
+                users_map[user.id] = user
+            
+            return BatchGetUsersResponse(users=users_map)
+        
+        except Exception as e:
+            self.logger.error(f"Error in BatchGetUsers: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+            return BatchGetUsersResponse()
+    
+    async def BatchCreateUsers(self, request, context):
+        """Batch create users."""
+        
+        try:
+            # Validate request
+            if not request.requests:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("At least one user creation request is required")
+                return BatchCreateUsersResponse()
+            
+            # Limit batch size
+            if len(request.requests) > 50:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Batch size cannot exceed 50")
+                return BatchCreateUsersResponse()
+            
+            responses = []
+            
+            # Process each creation request
+            for create_request in request.requests:
+                try:
+                    # Validate individual request
+                    if not create_request.username or not create_request.email:
+                        # Create error response
+                        error_response = CreateUserResponse()
+                        responses.append(error_response)
+                        continue
+                    
+                    # Check if user already exists
+                    existing_user = await self.fetch_user_by_username(create_request.username)
+                    if existing_user:
+                        # Create error response
+                        error_response = CreateUserResponse()
+                        responses.append(error_response)
+                        continue
+                    
+                    # Create user in database
+                    user_data = await self.create_user_in_db({
+                        'username': create_request.username,
+                        'email': create_request.email,
+                        'full_name': create_request.full_name
+                    })
+                    
+                    # Convert to protobuf User
+                    user = self.create_user_protobuf(user_data)
+                    
+                    # Create success response
+                    response = CreateUserResponse(user=user)
+                    responses.append(response)
+                    
+                    # Notify subscribers
+                    await self.notify_user_update(UserUpdateEvent.CREATED, user)
+                
+                except Exception as e:
+                    self.logger.error(f"Error creating user in batch: {e}")
+                    error_response = CreateUserResponse()
+                    responses.append(error_response)
+            
+            return BatchCreateUsersResponse(responses=responses)
+        
+        except Exception as e:
+            self.logger.error(f"Error in BatchCreateUsers: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Internal server error")
+            return BatchCreateUsersResponse()
+    
+    def create_user_protobuf(self, user_data: Dict[str, Any]) -> User:
+        """Convert user data to protobuf User."""
+        
+        user = User()
+        user.id = user_data['id']
+        user.username = user_data['username']
+        user.email = user_data['email']
+        user.full_name = user_data.get('full_name', '')
+        user.is_active = user_data.get('is_active', True)
+        
+        # Convert timestamps
+        if user_data.get('created_at'):
+            user.created_at.FromDatetime(user_data['created_at'])
+        if user_data.get('updated_at'):
+            user.updated_at.FromDatetime(user_data['updated_at'])
+        
+        return user
+    
+    async def notify_user_update(self, event_type: UserUpdateEvent.EventType, user: User):
+        """Notify all subscribers about user updates."""
+        
+        update_event = UserUpdateEvent(
+            event_type=event_type,
+            user=user
+        )
+        update_event.timestamp.FromDatetime(datetime.utcnow())
+        
+        # Send to all subscribers
+        for queue in self.user_update_subscribers.copy():
+            try:
+                await queue.put(update_event)
+            except Exception as e:
+                self.logger.error(f"Error notifying subscriber: {e}")
+                self.user_update_subscribers.discard(queue)
+    
+    # Database operations (implement these based on your database layer)
+    async def fetch_user_by_id(self, user_id: int) -> Dict[str, Any]:
+        """Fetch user by ID from database."""
+        pass
+    
+    async def fetch_user_by_username(self, username: str) -> Dict[str, Any]:
+        """Fetch user by username from database."""
+        pass
+    
+    async def fetch_users_paginated(self, page: int, size: int, filters: Dict[str, Any]) -> tuple:
+        """Fetch paginated users with filters."""
+        pass
+    
+    async def fetch_users_by_ids(self, user_ids: List[int]) -> List[Dict[str, Any]]:
+        """Fetch multiple users by IDs."""
+        pass
+    
+    async def create_user_in_db(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create user in database."""
+        pass
+    
+    async def update_user_in_db(self, user_id: int, update_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update user in database."""
+        pass
+    
+    async def soft_delete_user(self, user_id: int):
+        """Soft delete user in database."""
+        pass
+
+# Server setup
+async def serve():
+    """Start the gRPC server."""
+    
+    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+    
+    # Add service to server
+    user_service_pb2_grpc.add_UserServiceServicer_to_server(UserServiceImpl(), server)
+    
+    # Configure server address
+    listen_addr = '[::]:50051'
+    server.add_insecure_port(listen_addr)
+    
+    # Start server
+    logging.info(f"Starting gRPC server on {listen_addr}")
+    await server.start()
+    
+    try:
+        await server.wait_for_termination()
+    except KeyboardInterrupt:
+        # Graceful shutdown
+        await server.stop(grace=5)
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(serve())
+```
+
+### API Security Implementation
+
+#### Authentication and Authorization
+```python
+# Example: Advanced API security implementation
+import jwt
+import bcrypt
+import secrets
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta
+from functools import wraps
+import redis
+import hashlib
+
+class APISecurityManager:
+    def __init__(self, secret_key: str, redis_client: redis.Redis):
+        self.secret_key = secret_key
+        self.redis_client = redis_client
+        self.token_expiry = timedelta(hours=1)
+        self.refresh_token_expiry = timedelta(days=7)
+    
+    def generate_tokens(self, user_id: int, permissions: List[str]) -> Dict[str, str]:
+        """Generate access and refresh tokens."""
+        
+        # Access token payload
+        access_payload = {
+            'user_id': user_id,
+            'permissions': permissions,
+            'token_type': 'access',
+            'exp': datetime.utcnow() + self.token_expiry,
+            'iat': datetime.utcnow(),
+            'jti': secrets.token_urlsafe(32)
+        }
+        
+        # Refresh token payload
+        refresh_payload = {
+            'user_id': user_id,
+            'token_type': 'refresh',
+            'exp': datetime.utcnow() + self.refresh_token_expiry,
+            'iat': datetime.utcnow(),
+            'jti': secrets.token_urlsafe(32)
+        }
+        
+        # Generate tokens
+        access_token = jwt.encode(access_payload, self.secret_key, algorithm='HS256')
+        refresh_token = jwt.encode(refresh_payload, self.secret_key, algorithm='HS256')
+        
+        # Store token metadata in Redis
+        self.store_token_metadata(access_payload['jti'], user_id, 'access')
+        self.store_token_metadata(refresh_payload['jti'], user_id, 'refresh')
+        
+        return {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'token_type': 'Bearer',
+            'expires_in': int(self.token_expiry.total_seconds())
+        }
+    
+    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """Verify and decode JWT token."""
+        
+        try:
+            # Decode token
+            payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])
+            
+            # Check if token is blacklisted
+            if self.is_token_blacklisted(payload['jti']):
+                return None
+            
+            # Verify token metadata
+            if not self.verify_token_metadata(payload['jti'], payload['user_id']):
+                return None
+            
+            return payload
+        
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+    
+    def refresh_access_token(self, refresh_token: str) -> Optional[Dict[str, str]]:
+        """Refresh access token using refresh token."""
+        
+        # Verify refresh token
+        payload = self.verify_token(refresh_token)
+        if not payload or payload['token_type'] != 'refresh':
+            return None
+        
+        # Get user permissions
+        user_permissions = self.get_user_permissions(payload['user_id'])
+        
+        # Generate new access token
+        return self.generate_tokens(payload['user_id'], user_permissions)
+    
+    def revoke_token(self, token: str):
+        """Revoke (blacklist) a token."""
+        
+        try:
+            payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])
+            self.blacklist_token(payload['jti'])
+        except jwt.InvalidTokenError:
+            pass
+    
+    def store_token_metadata(self, jti: str, user_id: int, token_type: str):
+        """Store token metadata in Redis."""
+        
+        key = f"token:{jti}"
+        data = {
+            'user_id': user_id,
+            'token_type': token_type,
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        # Set expiry based on token type
+        expiry = self.refresh_token_expiry if token_type == 'refresh' else self.token_expiry
+        
+        self.redis_client.setex(key, int(expiry.total_seconds()), json.dumps(data))
+    
+    def verify_token_metadata(self, jti: str, user_id: int) -> bool:
+        """Verify token metadata exists and matches."""
+        
+        key = f"token:{jti}"
+        data = self.redis_client.get(key)
+        
+        if not data:
+            return False
+        
+        try:
+            metadata = json.loads(data)
+            return metadata['user_id'] == user_id
+        except (json.JSONDecodeError, KeyError):
+            return False
+    
+    def blacklist_token(self, jti: str):
+        """Add token to blacklist."""
+        
+        key = f"blacklist:{jti}"
+        self.redis_client.setex(key, int(self.refresh_token_expiry.total_seconds()), "1")
+    
+    def is_token_blacklisted(self, jti: str) -> bool:
+        """Check if token is blacklisted."""
+        
+        key = f"blacklist:{jti}"
+        return self.redis_client.exists(key)
+    
+    def get_user_permissions(self, user_id: int) -> List[str]:
+        """Get user permissions from database."""
+        # Implement based on your user management system
+        return ['read', 'write']
+
+# Rate limiting with different strategies
+class RateLimitingManager:
+    def __init__(self, redis_client: redis.Redis):
+        self.redis_client = redis_client
+    
+    def token_bucket_limit(self, identifier: str, capacity: int, refill_rate: int, tokens_requested: int = 1) -> bool:
+        """Token bucket rate limiting algorithm."""
+        
+        key = f"bucket:{identifier}"
+        now = datetime.utcnow().timestamp()
+        
+        # Get current bucket state
+        bucket_data = self.redis_client.hgetall(key)
+        
+        if bucket_data:
+            tokens = float(bucket_data.get(b'tokens', capacity))
+            last_refill = float(bucket_data.get(b'last_refill', now))
+        else:
+            tokens = capacity
+            last_refill = now
+        
+        # Calculate tokens to add based on time elapsed
+        time_elapsed = now - last_refill
+        tokens_to_add = time_elapsed * (refill_rate / 60)  # refill_rate per minute
+        tokens = min(capacity, tokens + tokens_to_add)
+        
+        # Check if request can be served
+        if tokens >= tokens_requested:
+            tokens -= tokens_requested
+            
+            # Update bucket state
+            self.redis_client.hset(key, mapping={
+                'tokens': tokens,
+                'last_refill': now
+            })
+            self.redis_client.expire(key, 3600)  # 1 hour expiry
+            
+            return True
+        
+        return False
+    
+    def sliding_window_limit(self, identifier: str, window_size: int, max_requests: int) -> bool:
+        """Sliding window rate limiting algorithm."""
+        
+        key = f"sliding:{identifier}"
+        now = datetime.utcnow().timestamp()
+        window_start = now - window_size
+        
+        # Remove old entries
+        self.redis_client.zremrangebyscore(key, 0, window_start)
+        
+        # Count current requests
+        current_requests = self.redis_client.zcard(key)
+        
+        if current_requests < max_requests:
+            # Add current request
+            self.redis_client.zadd(key, {str(now): now})
+            self.redis_client.expire(key, window_size + 1)
+            return True
+        
+        return False
+    
+    def adaptive_limit(self, identifier: str, base_limit: int, error_rate_threshold: float = 0.1) -> bool:
+        """Adaptive rate limiting based on error rate."""
+        
+        # Get recent error rate
+        error_rate = self.get_error_rate(identifier)
+        
+        # Adjust limit based on error rate
+        if error_rate > error_rate_threshold:
+            adjusted_limit = int(base_limit * 0.5)  # Reduce limit by 50%
+        else:
+            adjusted_limit = base_limit
+        
+        # Apply sliding window limit with adjusted rate
+        return self.sliding_window_limit(identifier, 60, adjusted_limit)
+    
+    def get_error_rate(self, identifier: str) -> float:
+        """Calculate error rate for identifier."""
+        
+        success_key = f"success:{identifier}"
+        error_key = f"error:{identifier}"
+        
+        success_count = self.redis_client.get(success_key) or 0
+        error_count = self.redis_client.get(error_key) or 0
+        
+        total_requests = int(success_count) + int(error_count)
+        
+        if total_requests == 0:
+            return 0.0
+        
+        return int(error_count) / total_requests
+
+# API key management
+class APIKeyManager:
+    def __init__(self, redis_client: redis.Redis):
+        self.redis_client = redis_client
+    
+    def generate_api_key(self, user_id: int, permissions: List[str], expires_in: Optional[int] = None) -> str:
+        """Generate a new API key."""
+        
+        # Generate secure API key
+        api_key = f"sk_{''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(32))}"
+        
+        # Store API key metadata
+        key_data = {
+            'user_id': user_id,
+            'permissions': json.dumps(permissions),
+            'created_at': datetime.utcnow().isoformat(),
+            'last_used': None,
+            'usage_count': 0
+        }
+        
+        key = f"apikey:{api_key}"
+        self.redis_client.hset(key, mapping=key_data)
+        
+        if expires_in:
+            self.redis_client.expire(key, expires_in)
+        
+        return api_key
+    
+    def verify_api_key(self, api_key: str) -> Optional[Dict[str, Any]]:
+        """Verify API key and return metadata."""
+        
+        key = f"apikey:{api_key}"
+        key_data = self.redis_client.hgetall(key)
+        
+        if not key_data:
+            return None
+        
+        # Update usage statistics
+        self.redis_client.hincrby(key, 'usage_count', 1)
+        self.redis_client.hset(key, 'last_used', datetime.utcnow().isoformat())
+        
+        return {
+            'user_id': int(key_data[b'user_id']),
+            'permissions': json.loads(key_data[b'permissions']),
+            'created_at': key_data[b'created_at'].decode(),
+            'usage_count': int(key_data[b'usage_count'])
+        }
+    
+    def revoke_api_key(self, api_key: str):
+        """Revoke an API key."""
+        
+        key = f"apikey:{api_key}"
+        self.redis_client.delete(key)
+    
+    def list_user_api_keys(self, user_id: int) -> List[Dict[str, Any]]:
+        """List all API keys for a user."""
+        
+        pattern = "apikey:*"
+        keys = self.redis_client.keys(pattern)
+        user_keys = []
+        
+        for key in keys:
+            key_data = self.redis_client.hgetall(key)
+            if key_data and int(key_data[b'user_id']) == user_id:
+                api_key = key.decode().replace('apikey:', '')
+                user_keys.append({
+                    'api_key': api_key[:8] + "..." + api_key[-4:],  # Masked key
+                    'created_at': key_data[b'created_at'].decode(),
+                    'last_used': key_data.get(b'last_used', b'').decode(),
+                    'usage_count': int(key_data[b'usage_count'])
+                })
+        
+        return user_keys
+```
+{% endblock %}
+
+{% block monitoring %}
+### Advanced API Monitoring
+
+#### API Performance Monitoring
+```python
+# Example: Advanced API monitoring system
+import time
+import asyncio
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+import logging
+import json
+
+@dataclass
+class APIMetrics:
+    endpoint: str
+    method: str
+    response_time: float
+    status_code: int
+    request_size: int
+    response_size: int
+    timestamp: datetime
+    user_id: Optional[int] = None
+    error_message: Optional[str] = None
+
+class APIMonitoringSystem:
+    def __init__(self, redis_client):
+        self.redis_client = redis_client
+        self.logger = logging.getLogger(__name__)
+        self.metrics_buffer = []
+        self.alert_thresholds = {
+            'response_time': 1000,  # ms
+            'error_rate': 0.05,     # 5%
+            'requests_per_minute': 1000
+        }
+    
+    async def record_request(self, metrics: APIMetrics):
+        """Record API request metrics."""
+        
+        # Add to buffer
+        self.metrics_buffer.append(metrics)
+        
+        # Flush buffer if full
+        if len(self.metrics_buffer) >= 100:
+            await self.flush_metrics()
+        
+        # Update real-time metrics
+        await self.update_realtime_metrics(metrics)
+        
+        # Check for alerts
+        await self.check_alert_conditions(metrics)
+    
+    async def flush_metrics(self):
+        """Flush metrics buffer to storage."""
+        
+        if not self.metrics_buffer:
+            return
+        
+        try:
+            # Store detailed metrics
+            for metric in self.metrics_buffer:
+                await self.store_detailed_metric(metric)
+            
+            # Update aggregated metrics
+            await self.update_aggregated_metrics(self.metrics_buffer)
+            
+            # Clear buffer
+            self.metrics_buffer.clear()
+            
+        except Exception as e:
+            self.logger.error(f"Error flushing metrics: {e}")
+    
+    async def store_detailed_metric(self, metric: APIMetrics):
+        """Store detailed metric in time series."""
+        
+        # Create time series key
+        timestamp = metric.timestamp.strftime("%Y%m%d%H%M")
+        key = f"metrics:detailed:{metric.endpoint}:{metric.method}:{timestamp}"
+        
+        # Store metric data
+        metric_data = {
+            'response_time': metric.response_time,
+            'status_code': metric.status_code,
+            'request_size': metric.request_size,
+            'response_size': metric.response_size,
+            'timestamp': metric.timestamp.isoformat(),
+            'user_id': metric.user_id,
+            'error_message': metric.error_message
+        }
+        
+        # Use Redis list to store metrics
+        self.redis_client.lpush(key, json.dumps(metric_data))
+        self.redis_client.expire(key, 86400)  # 24 hours
+    
+    async def update_realtime_metrics(self, metric: APIMetrics):
+        """Update real-time metrics."""
+        
+        # Update response time metrics
+        response_time_key = f"rt_metrics:{metric.endpoint}:{metric.method}"
+        self.redis_client.lpush(response_time_key, metric.response_time)
+        self.redis_client.ltrim(response_time_key, 0, 99)  # Keep last 100
+        self.redis_client.expire(response_time_key, 3600)  # 1 hour
+        
+        # Update request count
+        count_key = f"request_count:{metric.endpoint}:{metric.method}"
+        minute_key = metric.timestamp.strftime("%Y%m%d%H%M")
+        self.redis_client.hincrby(count_key, minute_key, 1)
+        self.redis_client.expire(count_key, 3600)  # 1 hour
+        
+        # Update error count
+        if metric.status_code >= 400:
+            error_key = f"error_count:{metric.endpoint}:{metric.method}"
+            self.redis_client.hincrby(error_key, minute_key, 1)
+            self.redis_client.expire(error_key, 3600)  # 1 hour
+    
+    async def update_aggregated_metrics(self, metrics: List[APIMetrics]):
+        """Update aggregated metrics."""
+        
+        # Group metrics by endpoint and method
+        grouped_metrics = {}
+        for metric in metrics:
+            key = f"{metric.endpoint}:{metric.method}"
+            if key not in grouped_metrics:
+                grouped_metrics[key] = []
+            grouped_metrics[key].append(metric)
+        
+        # Calculate aggregated statistics
+        for key, endpoint_metrics in grouped_metrics.items():
+            await self.calculate_endpoint_statistics(key, endpoint_metrics)
+    
+    async def calculate_endpoint_statistics(self, endpoint_key: str, metrics: List[APIMetrics]):
+        """Calculate statistics for an endpoint."""
+        
+        # Response time statistics
+        response_times = [m.response_time for m in metrics]
+        avg_response_time = sum(response_times) / len(response_times)
+        max_response_time = max(response_times)
+        min_response_time = min(response_times)
+        
+        # Error rate
+        error_count = sum(1 for m in metrics if m.status_code >= 400)
+        error_rate = error_count / len(metrics)
+        
+        # Request size statistics
+        request_sizes = [m.request_size for m in metrics]
+        avg_request_size = sum(request_sizes) / len(request_sizes)
+        
+        # Response size statistics
+        response_sizes = [m.response_size for m in metrics]
+        avg_response_size = sum(response_sizes) / len(response_sizes)
+        
+        # Store aggregated statistics
+        stats_key = f"stats:{endpoint_key}"
+        current_time = datetime.utcnow()
+        
+        stats_data = {
+            'avg_response_time': avg_response_time,
+            'max_response_time': max_response_time,
+            'min_response_time': min_response_time,
+            'error_rate': error_rate,
+            'request_count': len(metrics),
+            'avg_request_size': avg_request_size,
+            'avg_response_size': avg_response_size,
+            'timestamp': current_time.isoformat()
+        }
+        
+        self.redis_client.hset(stats_key, mapping=stats_data)
+        self.redis_client.expire(stats_key, 86400)  # 24 hours
+    
+    async def check_alert_conditions(self, metric: APIMetrics):
+        """Check if metric triggers any alerts."""
+        
+        # Response time alert
+        if metric.response_time > self.alert_thresholds['response_time']:
+            await self.trigger_alert('high_response_time', {
+                'endpoint': metric.endpoint,
+                'method': metric.method,
+                'response_time': metric.response_time,
+                'threshold': self.alert_thresholds['response_time']
+            })
+        
+        # Error rate alert
+        if metric.status_code >= 500:
+            await self.trigger_alert('server_error', {
+                'endpoint': metric.endpoint,
+                'method': metric.method,
+                'status_code': metric.status_code,
+                'error_message': metric.error_message
+            })
+    
+    async def trigger_alert(self, alert_type: str, alert_data: Dict[str, Any]):
+        """Trigger an alert."""
+        
+        alert = {
+            'type': alert_type,
+            'data': alert_data,
+            'timestamp': datetime.utcnow().isoformat(),
+            'severity': self.get_alert_severity(alert_type)
+        }
+        
+        # Store alert
+        alert_key = f"alerts:{alert_type}:{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        self.redis_client.setex(alert_key, 86400, json.dumps(alert))
+        
+        # Log alert
+        self.logger.warning(f"API Alert [{alert_type}]: {alert_data}")
+        
+        # Send notification (implement based on your notification system)
+        await self.send_alert_notification(alert)
+    
+    def get_alert_severity(self, alert_type: str) -> str:
+        """Get alert severity level."""
+        
+        severity_map = {
+            'high_response_time': 'warning',
+            'server_error': 'critical',
+            'high_error_rate': 'warning',
+            'rate_limit_exceeded': 'info'
+        }
+        
+        return severity_map.get(alert_type, 'info')
+    
+    async def send_alert_notification(self, alert: Dict[str, Any]):
+        """Send alert notification."""
+        # Implement notification logic (email, Slack, etc.)
+        pass
+    
+    async def get_endpoint_dashboard(self, endpoint: str, method: str) -> Dict[str, Any]:
+        """Get dashboard data for an endpoint."""
+        
+        # Get current statistics
+        stats_key = f"stats:{endpoint}:{method}"
+        stats = self.redis_client.hgetall(stats_key)
+        
+        # Get real-time response times
+        rt_key = f"rt_metrics:{endpoint}:{method}"
+        response_times = [float(x) for x in self.redis_client.lrange(rt_key, 0, -1)]
+        
+        # Get request counts for last hour
+        count_key = f"request_count:{endpoint}:{method}"
+        current_time = datetime.utcnow()
+        hourly_counts = []
+        
+        for i in range(60):
+            minute_time = current_time - timedelta(minutes=i)
+            minute_key = minute_time.strftime("%Y%m%d%H%M")
+            count = self.redis_client.hget(count_key, minute_key) or 0
+            hourly_counts.append({
+                'timestamp': minute_time.isoformat(),
+                'count': int(count)
+            })
+        
+        # Get recent alerts
+        alert_keys = self.redis_client.keys(f"alerts:*")
+        recent_alerts = []
+        
+        for key in alert_keys[-10:]:  # Last 10 alerts
+            alert_data = self.redis_client.get(key)
+            if alert_data:
+                recent_alerts.append(json.loads(alert_data))
+        
+        return {
+            'endpoint': endpoint,
+            'method': method,
+            'statistics': {
+                'avg_response_time': float(stats.get(b'avg_response_time', 0)),
+                'max_response_time': float(stats.get(b'max_response_time', 0)),
+                'min_response_time': float(stats.get(b'min_response_time', 0)),
+                'error_rate': float(stats.get(b'error_rate', 0)),
+                'request_count': int(stats.get(b'request_count', 0))
+            },
+            'realtime_response_times': response_times,
+            'hourly_request_counts': hourly_counts,
+            'recent_alerts': recent_alerts
+        }
+
+# API monitoring middleware
+class MonitoringMiddleware:
+    def __init__(self, monitoring_system: APIMonitoringSystem):
+        self.monitoring_system = monitoring_system
+    
+    async def __call__(self, request, call_next):
+        """Middleware to monitor API requests."""
+        
+        start_time = time.time()
+        request_size = self.get_request_size(request)
+        
+        # Process request
+        response = await call_next(request)
+        
+        # Calculate metrics
+        end_time = time.time()
+        response_time = (end_time - start_time) * 1000  # Convert to milliseconds
+        response_size = self.get_response_size(response)
+        
+        # Extract user information
+        user_id = getattr(request.state, 'user_id', None)
+        
+        # Create metrics object
+        metrics = APIMetrics(
+            endpoint=str(request.url.path),
+            method=request.method,
+            response_time=response_time,
+            status_code=response.status_code,
+            request_size=request_size,
+            response_size=response_size,
+            timestamp=datetime.utcnow(),
+            user_id=user_id,
+            error_message=getattr(response, 'error_message', None)
+        )
+        
+        # Record metrics
+        await self.monitoring_system.record_request(metrics)
+        
+        return response
+    
+    def get_request_size(self, request) -> int:
+        """Calculate request size."""
+        # Implement request size calculation
+        return 0
+    
+    def get_response_size(self, response) -> int:
+        """Calculate response size."""
+        # Implement response size calculation
+        return 0
+```
+
+#### API Analytics Dashboard
+```yaml
+# Example: API analytics dashboard configuration
+api_analytics:
+  dashboard_config:
+    refresh_interval: 30 # seconds
+    time_ranges:
+      - "1h"
+      - "6h"
+      - "24h"
+      - "7d"
+      - "30d"
+    
+    metrics:
+      - name: "Response Time"
+        type: "line_chart"
+        data_source: "response_time_metrics"
+        aggregation: "average"
+        
+      - name: "Request Volume"
+        type: "bar_chart"
+        data_source: "request_count_metrics"
+        aggregation: "sum"
+        
+      - name: "Error Rate"
+        type: "line_chart"
+        data_source: "error_rate_metrics"
+        aggregation: "percentage"
+        
+      - name: "Top Endpoints"
+        type: "table"
+        data_source: "endpoint_popularity"
+        limit: 10
+    
+    alerts:
+      - name: "High Response Time"
+        condition: "avg_response_time > 1000"
+        severity: "warning"
+        notification_channels: ["email", "slack"]
+        
+      - name: "High Error Rate"
+        condition: "error_rate > 0.05"
+        severity: "critical"
+        notification_channels: ["email", "slack", "pagerduty"]
+        
+      - name: "Rate Limit Breaches"
+        condition: "rate_limit_violations > 10"
+        severity: "info"
+        notification_channels: ["slack"]
+  
+  performance_targets:
+    response_time:
+      p50: 100  # ms
+      p95: 500  # ms
+      p99: 1000 # ms
+    
+    availability: 99.9 # percent
+    error_rate: 0.01   # 1%
+    throughput: 1000   # requests per second
+  
+  reporting:
+    daily_reports:
+      enabled: true
+      recipients: ["api-team@company.com"]
+      time: "09:00"
+      
+    weekly_reports:
+      enabled: true
+      recipients: ["engineering@company.com"]
+      day: "monday"
+      time: "09:00"
+      
+    monthly_reports:
+      enabled: true
+      recipients: ["leadership@company.com"]
+      day: 1
+      time: "09:00"
+```
+{% endblock %}
+
+{% block references %}
+### Advanced API Design References
+
+#### REST API Standards
+- **OpenAPI Specification**: API documentation standard
+- **JSON:API**: JSON-based API specification
+- **HAL**: Hypertext Application Language
+- **Richardson Maturity Model**: REST API maturity levels
+- **HTTP Status Codes**: Proper status code usage
+
+#### GraphQL Resources
+- **GraphQL Specification**: Official GraphQL spec
+- **Apollo GraphQL**: GraphQL platform and tools
+- **Relay**: Facebook's GraphQL client
+- **DataLoader**: Batching and caching for GraphQL
+- **GraphQL Best Practices**: Schema design guidelines
+
+#### gRPC and Protocol Buffers
+- **gRPC Documentation**: Official gRPC guides
+- **Protocol Buffers**: Google's serialization format
+- **gRPC-Web**: gRPC for web clients
+- **gRPC Reflection**: Service discovery for gRPC
+- **Buf**: Protocol buffer toolchain
+
+#### API Security
+- **OAuth 2.0**: Authorization framework
+- **OpenID Connect**: Identity layer on OAuth 2.0
+- **JWT**: JSON Web Tokens specification
+- **OWASP API Security**: API security best practices
+- **API Gateway Patterns**: Security and routing patterns
+
+#### API Documentation
+- **Swagger/OpenAPI**: Interactive API documentation
+- **Postman**: API development and testing
+- **Insomnia**: REST client and testing tool
+- **ReDoc**: OpenAPI documentation generator
+- **API Blueprint**: High-level API description language
+
+#### Monitoring and Analytics
+- **APM Tools**: Application performance monitoring
+- **API Analytics**: Request tracking and analysis
+- **Rate Limiting**: Traffic control strategies
+- **Circuit Breakers**: Fault tolerance patterns
+- **Distributed Tracing**: Request flow tracking
+{% endblock %}

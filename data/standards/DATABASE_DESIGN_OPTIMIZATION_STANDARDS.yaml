@@ -1,0 +1,415 @@
+standards:
+  database_design_optimization:
+    version: "1.0.0"
+    category: "Database and Data Management"
+    last_updated: "2024-01-15"
+    description: "Comprehensive standards for database design, optimization, and management"
+    
+    sections:
+      overview:
+        title: "Database Design and Optimization Overview"
+        description: "Fundamental principles for database design and performance optimization"
+        
+      schema_design:
+        title: "Database Schema Design"
+        standards:
+          - id: "DB_DESIGN_001"
+            title: "Normalization Standards"
+            description: "Follow normalized design patterns while balancing performance requirements"
+            priority: "critical"
+            implementation_examples:
+              - type: "sql"
+                title: "Normalized E-commerce Schema"
+                code: |
+                  CREATE TABLE customers (
+                      customer_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                      email VARCHAR(255) UNIQUE NOT NULL,
+                      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                  );
+                  
+                  CREATE TABLE orders (
+                      order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                      customer_id UUID NOT NULL REFERENCES customers(customer_id),
+                      order_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                      status VARCHAR(50) NOT NULL CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'))
+                  );
+            nist_mappings:
+              - "SC-8: Transmission Confidentiality and Integrity"
+              - "AC-4: Information Flow Enforcement"
+              
+          - id: "DB_DESIGN_002"
+            title: "Data Modeling Patterns"
+            description: "Choose appropriate data models based on use case requirements"
+            priority: "high"
+            implementation_examples:
+              - type: "nosql"
+                title: "Document Store Model"
+                code: |
+                  {
+                    "_id": "prod_12345",
+                    "name": "Premium Laptop",
+                    "category": "Electronics",
+                    "attributes": {
+                      "brand": "TechCorp",
+                      "processor": "Intel i7",
+                      "memory": "16GB"
+                    },
+                    "variants": [
+                      {
+                        "sku": "LAP-i7-16-512",
+                        "color": "Silver",
+                        "price": 1299.99,
+                        "inventory": 45
+                      }
+                    ]
+                  }
+            nist_mappings:
+              - "SA-8: Security Engineering Principles"
+              - "SC-28: Protection of Information at Rest"
+              
+      query_optimization:
+        title: "Query Optimization Techniques"
+        standards:
+          - id: "DB_OPT_001"
+            title: "Index Strategy"
+            description: "Design indexes based on query patterns and workload analysis"
+            priority: "critical"
+            implementation_examples:
+              - type: "sql"
+                title: "Comprehensive Indexing Strategy"
+                code: |
+                  -- Analyze query patterns first
+                  EXPLAIN (ANALYZE, BUFFERS) 
+                  SELECT c.email, COUNT(o.order_id) as order_count
+                  FROM customers c
+                  JOIN orders o ON c.customer_id = o.customer_id
+                  WHERE o.order_date >= '2024-01-01'
+                  GROUP BY c.customer_id, c.email;
+                  
+                  -- Create appropriate indexes
+                  CREATE INDEX idx_orders_date_customer ON orders(order_date, customer_id) 
+                  INCLUDE (total_amount);
+                  
+                  -- Partial index for active customers
+                  CREATE INDEX idx_customers_active ON customers(customer_id, email)
+                  WHERE deleted_at IS NULL;
+            nist_mappings:
+              - "SC-8: Transmission Confidentiality and Integrity"
+              - "SI-10: Information Input Validation"
+              
+          - id: "DB_OPT_002"
+            title: "Query Performance Tuning"
+            description: "Optimize queries through proper structure and execution planning"
+            priority: "high"
+            implementation_examples:
+              - type: "sql"
+                title: "Optimized Query Structure"
+                code: |
+                  -- Use CTEs for complex queries
+                  WITH recent_orders AS (
+                      SELECT order_id, customer_id, total_amount
+                      FROM orders
+                      WHERE order_date >= CURRENT_DATE - INTERVAL '30 days'
+                      AND status = 'delivered'
+                  ),
+                  customer_totals AS (
+                      SELECT 
+                          customer_id,
+                          COUNT(*) as order_count,
+                          SUM(total_amount) as total_spent
+                      FROM recent_orders
+                      GROUP BY customer_id
+                  )
+                  SELECT 
+                      c.email,
+                      ct.order_count,
+                      ct.total_spent
+                  FROM customer_totals ct
+                  JOIN customers c ON ct.customer_id = c.customer_id
+                  WHERE ct.total_spent > 500
+                  ORDER BY ct.total_spent DESC
+                  LIMIT 100;
+            nist_mappings:
+              - "SI-10: Information Input Validation"
+              - "AU-4: Audit Storage Capacity"
+              
+      technology_selection:
+        title: "Database Technology Selection"
+        standards:
+          - id: "DB_SELECT_001"
+            title: "SQL vs NoSQL Decision Matrix"
+            description: "Choose database technology based on specific requirements"
+            priority: "critical"
+            implementation_examples:
+              - type: "python"
+                title: "Database Selection Framework"
+                code: |
+                  class DatabaseSelector:
+                      def __init__(self):
+                          self.criteria_weights = {
+                              'consistency': 0.25,
+                              'scalability': 0.25,
+                              'flexibility': 0.20,
+                              'performance': 0.20,
+                              'ecosystem': 0.10
+                          }
+                      
+                      def evaluate_use_case(self, requirements):
+                          scores = {}
+                          
+                          if requirements.get('acid_compliance') == 'required':
+                              scores['postgresql'] = self._calculate_score({
+                                  'consistency': 10,
+                                  'scalability': 7,
+                                  'flexibility': 6,
+                                  'performance': 8,
+                                  'ecosystem': 9
+                              })
+                          
+                          return scores
+            nist_mappings:
+              - "SA-4: Acquisition Process"
+              - "SA-11: Developer Testing"
+              
+      migration_patterns:
+        title: "Database Migration Strategies"
+        standards:
+          - id: "DB_MIGRATE_001"
+            title: "Schema Migration Strategy"
+            description: "Implement versioned, reversible database migrations"
+            priority: "high"
+            implementation_examples:
+              - type: "python"
+                title: "Migration Framework"
+                code: |
+                  class DatabaseMigration:
+                      def __init__(self, version, description):
+                          self.version = version
+                          self.description = description
+                          self.executed_at = None
+                      
+                      def up(self, connection):
+                          """Apply migration"""
+                          raise NotImplementedError
+                      
+                      def down(self, connection):
+                          """Rollback migration"""
+                          raise NotImplementedError
+                  
+                  class AddCustomerTierMigration(DatabaseMigration):
+                      def __init__(self):
+                          super().__init__(
+                              version="20240115_001",
+                              description="Add customer tier system"
+                          )
+                      
+                      def up(self, connection):
+                          with connection.cursor() as cursor:
+                              cursor.execute("""
+                                  ALTER TABLE customers 
+                                  ADD COLUMN tier VARCHAR(20) DEFAULT 'bronze'
+                                  CHECK (tier IN ('bronze', 'silver', 'gold', 'platinum'))
+                              """)
+            nist_mappings:
+              - "CM-3: Configuration Change Control"
+              - "CM-4: Security Impact Analysis"
+              
+      performance_monitoring:
+        title: "Database Performance Monitoring"
+        standards:
+          - id: "DB_MONITOR_001"
+            title: "Query Performance Monitoring"
+            description: "Implement comprehensive query performance tracking"
+            priority: "high"
+            implementation_examples:
+              - type: "python"
+                title: "Performance Monitoring System"
+                code: |
+                  @dataclass
+                  class QueryMetrics:
+                      query_hash: str
+                      execution_time_ms: float
+                      rows_examined: int
+                      rows_returned: int
+                      index_used: Optional[str]
+                      lock_wait_time_ms: float
+                      temp_tables_created: int
+                  
+                  class PerformanceMonitor:
+                      def __init__(self, db_connection, threshold_ms=1000):
+                          self.connection = db_connection
+                          self.slow_query_threshold = threshold_ms
+                          self.metrics_buffer = []
+                      
+                      @contextmanager
+                      def monitor_query(self, query_description: str):
+                          start_time = time.time()
+                          try:
+                              yield
+                          finally:
+                              execution_time = (time.time() - start_time) * 1000
+                              # Record metrics...
+            nist_mappings:
+              - "AU-6: Audit Review, Analysis, and Reporting"
+              - "SI-4: Information System Monitoring"
+              
+      security_access_control:
+        title: "Database Security and Access Control"
+        standards:
+          - id: "DB_SEC_001"
+            title: "Database Security Implementation"
+            description: "Implement defense-in-depth security for database systems"
+            priority: "critical"
+            implementation_examples:
+              - type: "sql"
+                title: "Comprehensive Security Implementation"
+                code: |
+                  -- Create roles with least privilege
+                  CREATE ROLE app_read_only;
+                  GRANT CONNECT ON DATABASE production TO app_read_only;
+                  GRANT USAGE ON SCHEMA public TO app_read_only;
+                  GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_read_only;
+                  
+                  -- Row-level security
+                  ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+                  
+                  CREATE POLICY customer_isolation ON customers
+                      FOR ALL
+                      TO app_user
+                      USING (tenant_id = current_setting('app.current_tenant')::uuid);
+                  
+                  -- Encrypt sensitive columns
+                  CREATE EXTENSION IF NOT EXISTS pgcrypto;
+            nist_mappings:
+              - "AC-3: Access Enforcement"
+              - "AC-6: Least Privilege"
+              - "AU-3: Audit Record Content"
+              
+          - id: "DB_SEC_002"
+            title: "Data Masking and Anonymization"
+            description: "Implement data masking for non-production environments"
+            priority: "high"
+            implementation_examples:
+              - type: "python"
+                title: "Data Masking Framework"
+                code: |
+                  class DataMasker:
+                      def __init__(self, seed=None):
+                          self.faker = Faker()
+                          if seed:
+                              Faker.seed(seed)
+                          
+                          self.masking_rules = {
+                              'email': self._mask_email,
+                              'phone': self._mask_phone,
+                              'ssn': self._mask_ssn,
+                              'credit_card': self._mask_credit_card
+                          }
+                      
+                      def _mask_email(self, email: str) -> str:
+                          local, domain = email.split('@')
+                          if len(local) > 3:
+                              masked_local = local[0] + '*' * (len(local) - 2) + local[-1]
+                          else:
+                              masked_local = '*' * len(local)
+                          return f"{masked_local}@{domain}"
+            nist_mappings:
+              - "SC-28: Protection of Information at Rest"
+              - "MP-6: Media Sanitization"
+              
+      backup_disaster_recovery:
+        title: "Backup and Disaster Recovery"
+        standards:
+          - id: "DB_BACKUP_001"
+            title: "Backup Strategy Implementation"
+            description: "Implement comprehensive backup and recovery procedures"
+            priority: "critical"
+            implementation_examples:
+              - type: "python"
+                title: "Automated Backup System"
+                code: |
+                  class DatabaseBackupManager:
+                      def __init__(self, db_config, storage_config):
+                          self.db_config = db_config
+                          self.storage_config = storage_config
+                          self.s3_client = boto3.client('s3')
+                          self.retention_policies = {
+                              'daily': 7,
+                              'weekly': 4,
+                              'monthly': 12,
+                              'yearly': 7
+                          }
+                      
+                      def perform_backup(self, backup_type='daily'):
+                          timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                          backup_name = f"{self.db_config['database']}_{backup_type}_{timestamp}"
+                          
+                          try:
+                              backup_file = self._create_backup(backup_name)
+                              if not self._verify_backup(backup_file):
+                                  raise Exception("Backup verification failed")
+                              encrypted_file = self._encrypt_backup(backup_file)
+                              s3_key = self._upload_backup(encrypted_file, backup_type)
+                              return s3_key
+                          except Exception as e:
+                              self._handle_backup_failure(e, backup_name)
+                              raise
+            nist_mappings:
+              - "CP-9: Information System Backup"
+              - "CP-10: Information System Recovery and Reconstitution"
+
+    compliance_mappings:
+      regulatory:
+        - name: "GDPR"
+          requirements:
+            - "Right to erasure"
+            - "Data portability"
+            - "Privacy by design"
+        - name: "HIPAA"
+          requirements:
+            - "Encryption of ePHI"
+            - "Access controls"
+            - "Audit logs"
+        - name: "PCI DSS"
+          requirements:
+            - "Data retention policies"
+            - "Encryption requirements"
+            - "Access monitoring"
+        - name: "SOX"
+          requirements:
+            - "Change tracking"
+            - "Separation of duties"
+            - "Data integrity"
+      
+      industry_standards:
+        - name: "ISO 27001"
+          description: "Information security management"
+        - name: "NIST Cybersecurity Framework"
+          description: "Identify, Protect, Detect, Respond, Recover"
+        - name: "CIS Controls"
+          description: "Database security benchmarks"
+          
+    best_practices:
+      design_guidelines:
+        - "Aim for 3NF but denormalize strategically for performance"
+        - "Create indexes based on query patterns, not assumptions"
+        - "Use table partitioning for large datasets"
+        - "Always define appropriate constraints and foreign keys"
+        
+      performance_guidelines:
+        - "Use EXPLAIN plans and query analyzers"
+        - "Implement appropriate connection pooling"
+        - "Use application-level and database-level caching"
+        - "Track slow queries and resource usage"
+        
+      security_guidelines:
+        - "Implement least privilege access"
+        - "Encrypt data at rest and in transit"
+        - "Log all sensitive data access"
+        - "Use data masking in non-production environments"
+        
+      operational_guidelines:
+        - "Test restore procedures regularly"
+        - "Set up comprehensive monitoring and alerting"
+        - "Maintain up-to-date schema documentation"
+        - "Use version-controlled migrations"
