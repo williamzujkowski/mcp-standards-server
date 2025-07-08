@@ -1,0 +1,171 @@
+# MCP Cache Configuration Example
+# This file shows all available cache configuration options
+
+# Redis connection settings
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  password: null  # Set if Redis requires authentication
+  ssl: false
+  
+  # Connection pool settings
+  max_connections: 50
+  max_connections_per_process: 10
+  socket_keepalive: true
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay: 0.1
+  retry_backoff: 2.0
+  
+  # Default cache settings
+  default_ttl: 300  # 5 minutes
+  key_prefix: "mcp"
+  enable_compression: true
+  compression_threshold: 1024  # bytes
+  
+  # L1 cache settings (in-memory)
+  l1_max_size: 1000
+  l1_ttl: 30  # seconds
+  
+  # Circuit breaker settings
+  circuit_breaker_threshold: 5
+  circuit_breaker_timeout: 30
+  
+  # Monitoring
+  enable_metrics: true
+  slow_query_threshold: 0.1  # seconds
+
+# Cache warming configuration
+warm_on_startup: true
+warm_interval_seconds: 3600  # Re-warm every hour
+
+# Tool-specific cache configurations
+tools:
+  # Long-lived read-only data
+  get_standard_details:
+    strategy: long_ttl  # Options: no_cache, short_ttl, medium_ttl, long_ttl, permanent
+    ttl_seconds: 86400  # 24 hours
+    compress_threshold: 512
+    warm_on_startup: true
+    warm_args:
+      - standard_id: "secure-api-design"
+      - standard_id: "react-best-practices"
+      - standard_id: "python-coding-standards"
+    
+  list_available_standards:
+    strategy: medium_ttl
+    ttl_seconds: 1800  # 30 minutes
+    warm_on_startup: true
+    warm_args:
+      - {}  # List all
+      - category: "security"
+        limit: 100
+      - category: "api"
+        limit: 100
+    
+  # Frequently changing data
+  search_standards:
+    strategy: short_ttl
+    ttl_seconds: 300  # 5 minutes
+    compress_threshold: 2048
+    include_in_key:  # Only these args affect cache key
+      - query
+      - limit
+      - min_relevance
+      - filters
+    
+  get_standards_analytics:
+    strategy: short_ttl
+    ttl_seconds: 180  # 3 minutes
+    include_in_key:
+      - metric_type
+      - time_range
+      - standard_ids
+    
+  # Context-dependent operations
+  get_applicable_standards:
+    strategy: short_ttl
+    ttl_seconds: 600  # 10 minutes
+    compress_threshold: 1024
+    
+  suggest_improvements:
+    strategy: short_ttl
+    ttl_seconds: 600
+    compress_threshold: 2048
+    
+  # Token optimization (can be cached longer)
+  get_optimized_standard:
+    strategy: medium_ttl
+    ttl_seconds: 3600  # 1 hour
+    compress_threshold: 512
+    include_in_key:
+      - standard_id
+      - format_type
+      - token_budget
+      - required_sections
+    
+  estimate_token_usage:
+    strategy: long_ttl
+    ttl_seconds: 43200  # 12 hours
+    
+  # Cross-references (invalidated when regenerated)
+  get_cross_references:
+    strategy: medium_ttl
+    ttl_seconds: 1800
+    invalidate_on:  # These tools invalidate this cache
+      - generate_cross_references
+    
+  # Templates (rarely change)
+  list_templates:
+    strategy: long_ttl
+    ttl_seconds: 86400
+    warm_on_startup: true
+    warm_args:
+      - {}  # List all
+      - domain: "api"
+      - domain: "security"
+    
+  # Operations that should never be cached
+  sync_standards:
+    strategy: no_cache
+    
+  generate_standard:
+    strategy: no_cache
+    
+  validate_standard:
+    strategy: no_cache
+    
+  track_standards_usage:
+    strategy: no_cache
+    
+  generate_cross_references:
+    strategy: no_cache
+    
+  validate_against_standard:
+    strategy: short_ttl
+    ttl_seconds: 600
+    # Only cache if same code and standard
+    include_in_key:
+      - code
+      - standard
+      - language
+
+# Cache invalidation rules
+# When these tools are called, they invalidate related caches
+invalidation_rules:
+  sync_standards:
+    invalidates:
+      - get_standard_details
+      - list_available_standards
+      - search_standards
+      
+  generate_standard:
+    invalidates:
+      - list_available_standards
+      - search_standards
+      
+  generate_cross_references:
+    invalidates:
+      - get_cross_references

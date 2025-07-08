@@ -33,6 +33,8 @@ from .generators import StandardsGenerator
 
 # Import authentication, validation and error handling modules
 from .core.auth import get_auth_manager, AuthConfig
+# Import metrics module
+from .core.metrics import get_mcp_metrics, MCPMetrics
 from .core.validation import get_input_validator
 from .core.errors import (
     MCPError,
@@ -54,6 +56,10 @@ class MCPStandardsServer:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.server = Server("mcp-standards-server")
+        
+        # Initialize metrics collector
+        self.metrics = get_mcp_metrics()
+        self._active_connections = 0
         
         # Initialize auth manager
         auth_config = AuthConfig(**self.config.get("auth", {}))
@@ -112,9 +118,6 @@ class MCPStandardsServer:
         
         # Register tools
         self._register_tools()
-        
-        # Register initialization handler
-        self._register_initialization_handler()
         
     def _register_tools(self):
         """Register all MCP tools."""
@@ -368,6 +371,14 @@ class MCPStandardsServer:
                             "context": {"type": "object", "description": "Analysis context"}
                         }
                     }
+                ),
+                Tool(
+                    name="get_metrics_dashboard",
+                    description="Get performance metrics dashboard",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {}
+                    }
                 )
             ]
         
@@ -375,6 +386,13 @@ class MCPStandardsServer:
         async def call_tool(name: str, arguments: Dict[str, Any], **kwargs) -> List[TextContent]:
             """Handle tool calls with authentication and validation."""
             logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
+            
+            # Track request size
+            request_size = len(json.dumps(arguments).encode('utf-8'))
+            self.metrics.record_request_size(request_size, name)
+            
+            # Start timing the tool call
+            start_time = time.time()
             
             try:
                 # Extract authentication from request context if available
@@ -384,10 +402,12 @@ class MCPStandardsServer:
                 # Verify authentication if enabled
                 if self.auth_manager.is_enabled():
                     if not credential:
+                        self.metrics.record_auth_attempt("none", False)
                         raise AuthenticationError("Authentication required")
                     
                     if auth_type == "bearer":
                         is_valid, payload, error_msg = self.auth_manager.verify_token(credential)
+                        self.metrics.record_auth_attempt("bearer", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid token")
                         
@@ -399,12 +419,14 @@ class MCPStandardsServer:
                             )
                     elif auth_type == "api_key":
                         is_valid, user_id, error_msg = self.auth_manager.verify_api_key(credential)
+                        self.metrics.record_auth_attempt("api_key", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid API key")
                     
                     # Check rate limits
                     user_key = credential if credential else "anonymous"
                     if not self._check_rate_limit(user_key):
+                        self.metrics.record_rate_limit_hit(user_key, "standard")
                         raise RateLimitError(
                             limit=self.rate_limit_max_requests,
                             window=f"{self.rate_limit_window}s",
@@ -419,7 +441,7 @@ class MCPStandardsServer:
                     "progressive_load_standard", "estimate_token_usage", "get_sync_status",
                     "generate_standard", "validate_standard", "list_templates",
                     "get_cross_references", "generate_cross_references", "get_standards_analytics",
-                    "track_standards_usage", "get_recommendations"
+                    "track_standards_usage", "get_recommendations", "get_metrics_dashboard"
                 ]:
                     raise ToolNotFoundError(name)
                 
@@ -445,15 +467,26 @@ class MCPStandardsServer:
                 # Log successful execution
                 logger.debug(f"Tool {name} executed successfully")
                 
+                # Record successful tool call
+                duration = time.time() - start_time
+                self.metrics.record_tool_call(name, duration, True)
+                
+                # Track response size
+                response_text = json.dumps(result, indent=2)
+                response_size = len(response_text.encode('utf-8'))
+                self.metrics.record_response_size(response_size, name)
+                
                 # Return successful result
                 return [TextContent(
                     type="text",
-                    text=json.dumps(result, indent=2)
+                    text=response_text
                 )]
                 
             except MCPError as e:
                 # Handle structured errors
                 logger.error(f"MCP error in tool {name}: {e}", exc_info=True)
+                duration = time.time() - start_time
+                self.metrics.record_tool_call(name, duration, False, e.code.value)
                 return [TextContent(
                     type="text",
                     text=json.dumps(e.to_dict(), indent=2)
@@ -461,6 +494,8 @@ class MCPStandardsServer:
             except Exception as e:
                 # Handle unexpected errors
                 logger.error(f"Unexpected error in tool {name}: {e}", exc_info=True)
+                duration = time.time() - start_time
+                self.metrics.record_tool_call(name, duration, False, type(e).__name__)
                 error = MCPError(
                     code=ErrorCode.SYSTEM_INTERNAL_ERROR,
                     message=f"Internal error: {str(e)}",
@@ -581,6 +616,8 @@ class MCPStandardsServer:
                         arguments.get("analysis_type", "gaps"),
                         arguments.get("context")
                     )
+                elif name == "get_metrics_dashboard":
+                    return await self._get_metrics_dashboard()
                 else:
                     raise ToolNotFoundError(name)
                     
@@ -683,9 +720,13 @@ class MCPStandardsServer:
         standard_path = self.synchronizer.cache_dir / f"{standard_id}.json"
         
         if standard_path.exists():
+            # Record cache hit
+            self.metrics.record_cache_access("get_standard_details", True)
             with open(standard_path, 'r') as f:
                 return json.load(f)
         else:
+            # Record cache miss
+            self.metrics.record_cache_access("get_standard_details", False)
             raise MCPError(
                 code=ErrorCode.STANDARDS_NOT_FOUND,
                 message=f"Standard '{standard_id}' not found",
@@ -1238,33 +1279,10 @@ class MCPStandardsServer:
                 "error": str(e),
                 "analysis_type": analysis_type
             }
-            
-    def _register_initialization_handler(self):
-        """Register the initialization request handler."""
-        @self.server.initialize()
-        async def initialize(init_request: InitializeRequest) -> None:
-            """Handle MCP initialization with optional authentication."""
-            # Extract client info if available
-            client_info = init_request.client_info if hasattr(init_request, 'client_info') else {}
-            
-            # Check for authentication in initialization
-            if self.auth_manager.is_enabled():
-                # Look for auth token in client_info
-                auth_token = client_info.get('authToken')
-                api_key = client_info.get('apiKey')
-                
-                if auth_token:
-                    is_valid, payload, error_msg = self.auth_manager.verify_token(auth_token)
-                    if not is_valid:
-                        logger.warning(f"Invalid auth token during initialization: {error_msg}")
-                elif api_key:
-                    is_valid, user_id, error_msg = self.auth_manager.verify_api_key(api_key)
-                    if not is_valid:
-                        logger.warning(f"Invalid API key during initialization: {error_msg}")
-                else:
-                    logger.info("No authentication provided during initialization")
-            
-            logger.info(f"MCP server initialized with client: {client_info.get('name', 'Unknown')}")
+    
+    async def _get_metrics_dashboard(self) -> Dict[str, Any]:
+        """Get performance metrics dashboard."""
+        return self.metrics.get_dashboard_metrics()
     
     def _check_rate_limit(self, user_key: str) -> bool:
         """Check if user is within rate limits."""
@@ -1289,9 +1307,24 @@ class MCPStandardsServer:
     
     async def run(self):
         """Run the MCP server."""
-        async with stdio_server() as (read_stream, write_stream):
-            init_options = self.server.create_initialization_options()
-            await self.server.run(read_stream, write_stream, init_options)
+        # Start metrics export task
+        await self.metrics.collector.start_export_task()
+        
+        # Track connection
+        self._active_connections += 1
+        self.metrics.update_active_connections(self._active_connections)
+        
+        try:
+            async with stdio_server() as (read_stream, write_stream):
+                init_options = self.server.create_initialization_options()
+                await self.server.run(read_stream, write_stream, init_options)
+        finally:
+            # Stop metrics export task
+            await self.metrics.collector.stop_export_task()
+            
+            # Update active connections
+            self._active_connections = max(0, self._active_connections - 1)
+            self.metrics.update_active_connections(self._active_connections)
 
 
 async def main():

@@ -15,7 +15,7 @@ import json
 import time
 import hashlib
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Dict, Any, Optional, Tuple, Set, Union
 from dataclasses import dataclass, field
 from collections import defaultdict, Counter
 from datetime import datetime, timedelta
