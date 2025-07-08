@@ -983,6 +983,710 @@
         "team-collaboration-patterns"
       ],
       "tags": ["team", "collaboration"]
+    },
+    {
+      "id": "advanced-testing-projects",
+      "name": "Advanced Testing Standards",
+      "description": "Standards for comprehensive testing strategies and test automation",
+      "priority": 7,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "testing_focus",
+            "operator": "in",
+            "value": ["e2e", "integration", "performance", "security", "chaos"]
+          },
+          {
+            "field": "test_coverage_target",
+            "operator": "greater_than",
+            "value": 80
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "test automation"
+          },
+          {
+            "field": "tools",
+            "operator": "in",
+            "value": ["cypress", "playwright", "selenium", "k6", "jmeter"]
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["tdd", "bdd", "test-driven", "behavior-driven"]
+          }
+        ]
+      },
+      "standards": [
+        "ADVANCED_TESTING_STANDARDS",
+        "test-automation-patterns",
+        "test-data-management",
+        "performance-testing",
+        "security-testing"
+      ],
+      "tags": ["testing", "quality", "automation"]
+    },
+    {
+      "id": "security-review-audit",
+      "name": "Security Review and Audit Standards",
+      "description": "Standards for security assessments, reviews, and audits",
+      "priority": 3,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_phase",
+            "operator": "in",
+            "value": ["security_review", "audit", "assessment"]
+          },
+          {
+            "field": "compliance",
+            "operator": "in",
+            "value": ["soc2", "iso27001", "pci-dss", "hipaa"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "security audit"
+          },
+          {
+            "field": "security_requirements",
+            "operator": "contains",
+            "value": "penetration testing"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["vulnerability", "threat modeling", "security assessment"]
+          }
+        ]
+      },
+      "standards": [
+        "SECURITY_REVIEW_AUDIT_STANDARDS",
+        "security-scanning-tools",
+        "vulnerability-management",
+        "security-documentation",
+        "compliance-reporting"
+      ],
+      "tags": ["security", "audit", "compliance", "review"]
+    },
+    {
+      "id": "documentation-writing",
+      "name": "Documentation and Technical Writing Standards",
+      "description": "Standards for creating comprehensive documentation",
+      "priority": 25,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["documentation", "docs", "wiki", "knowledge_base"]
+          },
+          {
+            "field": "deliverables",
+            "operator": "contains",
+            "value": "documentation"
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "documentation"
+          },
+          {
+            "field": "tools",
+            "operator": "in",
+            "value": ["mkdocs", "sphinx", "docusaurus", "gitbook"]
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["readme", "api docs", "user guide", "developer guide"]
+          }
+        ]
+      },
+      "standards": [
+        "DOCUMENTATION_WRITING_STANDARDS",
+        "markdown-best-practices",
+        "api-documentation",
+        "diagram-standards",
+        "changelog-conventions"
+      ],
+      "tags": ["documentation", "writing", "communication"]
+    },
+    {
+      "id": "technical-content-creation",
+      "name": "Technical Content Creation Standards",
+      "description": "Standards for creating technical content, tutorials, and educational materials",
+      "priority": 28,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["tutorial", "course", "blog", "technical_content"]
+          },
+          {
+            "field": "content_type",
+            "operator": "in",
+            "value": ["tutorial", "how-to", "guide", "workshop"]
+          },
+          {
+            "field": "deliverables",
+            "operator": "contains",
+            "value": "tutorial"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["learning", "education", "training", "workshop"]
+          }
+        ]
+      },
+      "standards": [
+        "TECHNICAL_CONTENT_CREATION_STANDARDS",
+        "tutorial-structure",
+        "code-examples",
+        "interactive-content",
+        "media-standards"
+      ],
+      "tags": ["content", "education", "tutorials"]
+    },
+    {
+      "id": "project-planning",
+      "name": "Project Planning Standards",
+      "description": "Standards for project planning, estimation, and management",
+      "priority": 35,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_phase",
+            "operator": "in",
+            "value": ["planning", "initiation", "discovery"]
+          },
+          {
+            "field": "deliverables",
+            "operator": "contains",
+            "value": "project plan"
+          },
+          {
+            "field": "management_methodology",
+            "operator": "in",
+            "value": ["agile", "scrum", "kanban", "waterfall"]
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["roadmap", "milestone", "sprint", "estimation"]
+          }
+        ]
+      },
+      "standards": [
+        "PROJECT_PLANNING_STANDARDS",
+        "estimation-techniques",
+        "risk-management",
+        "resource-planning",
+        "milestone-tracking"
+      ],
+      "tags": ["planning", "management", "process"]
+    },
+    {
+      "id": "team-collaboration",
+      "name": "Team Collaboration Standards",
+      "description": "Standards for effective team collaboration and communication",
+      "priority": 38,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "team_size",
+            "operator": "greater_than",
+            "value": 5
+          },
+          {
+            "field": "distributed_team",
+            "operator": "equals",
+            "value": true
+          },
+          {
+            "field": "collaboration_tools",
+            "operator": "in",
+            "value": ["slack", "teams", "discord", "zoom"]
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["remote", "distributed", "collaboration", "communication"]
+          }
+        ]
+      },
+      "standards": [
+        "TEAM_COLLABORATION_STANDARDS",
+        "communication-protocols",
+        "meeting-standards",
+        "documentation-sharing",
+        "conflict-resolution"
+      ],
+      "tags": ["team", "collaboration", "communication"]
+    },
+    {
+      "id": "monitoring-incident-response",
+      "name": "Monitoring and Incident Response Standards",
+      "description": "Standards for monitoring, alerting, and incident management",
+      "priority": 12,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "production_system",
+            "operator": "equals",
+            "value": true
+          },
+          {
+            "field": "monitoring_tools",
+            "operator": "in",
+            "value": ["prometheus", "grafana", "datadog", "new_relic", "pagerduty"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "monitoring"
+          },
+          {
+            "field": "sla",
+            "operator": "exists"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["alerting", "on-call", "incident", "outage"]
+          }
+        ]
+      },
+      "standards": [
+        "MONITORING_INCIDENT_RESPONSE_STANDARDS",
+        "alerting-best-practices",
+        "incident-management",
+        "runbook-standards",
+        "post-mortem-process"
+      ],
+      "tags": ["monitoring", "operations", "incident-response"]
+    },
+    {
+      "id": "sre-practices",
+      "name": "Site Reliability Engineering Standards",
+      "description": "Standards for SRE practices and reliability engineering",
+      "priority": 10,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "team_type",
+            "operator": "in",
+            "value": ["sre", "devops", "platform"]
+          },
+          {
+            "field": "reliability_target",
+            "operator": "greater_than",
+            "value": 99
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "high availability"
+          },
+          {
+            "field": "slo",
+            "operator": "exists"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["sli", "slo", "error budget", "toil"]
+          }
+        ]
+      },
+      "standards": [
+        "SRE_STANDARDS",
+        "slo-definition",
+        "error-budget-policy",
+        "chaos-engineering",
+        "capacity-planning"
+      ],
+      "tags": ["sre", "reliability", "operations"]
+    },
+    {
+      "id": "business-continuity-dr",
+      "name": "Business Continuity and Disaster Recovery Standards",
+      "description": "Standards for business continuity planning and disaster recovery",
+      "priority": 6,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "criticality",
+            "operator": "in",
+            "value": ["mission-critical", "critical", "high"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "disaster recovery"
+          },
+          {
+            "field": "compliance",
+            "operator": "contains",
+            "value": "business continuity"
+          },
+          {
+            "field": "rto",
+            "operator": "less_than",
+            "value": 4
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["backup", "recovery", "failover", "replication"]
+          }
+        ]
+      },
+      "standards": [
+        "BUSINESS_CONTINUITY_DISASTER_RECOVERY_STANDARDS",
+        "backup-strategies",
+        "recovery-procedures",
+        "failover-patterns",
+        "dr-testing"
+      ],
+      "tags": ["disaster-recovery", "business-continuity", "resilience"]
+    },
+    {
+      "id": "accessibility-advanced",
+      "name": "Advanced Accessibility Standards",
+      "description": "Comprehensive accessibility standards beyond basic compliance",
+      "priority": 4,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "accessibility_level",
+            "operator": "in",
+            "value": ["wcag-aaa", "advanced", "comprehensive"]
+          },
+          {
+            "field": "target_audience",
+            "operator": "contains",
+            "value": "accessibility"
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "screen reader"
+          },
+          {
+            "field": "compliance",
+            "operator": "contains",
+            "value": "ada"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["aria", "assistive technology", "inclusive design"]
+          }
+        ]
+      },
+      "standards": [
+        "ADVANCED_ACCESSIBILITY_STANDARDS",
+        "wcag-aaa-compliance",
+        "aria-advanced-patterns",
+        "cognitive-accessibility",
+        "mobile-accessibility"
+      ],
+      "tags": ["accessibility", "a11y", "inclusive"]
+    },
+    {
+      "id": "internationalization-localization",
+      "name": "Internationalization and Localization Standards",
+      "description": "Standards for building globally accessible applications",
+      "priority": 15,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "target_markets",
+            "operator": "greater_than",
+            "value": 1
+          },
+          {
+            "field": "languages_supported",
+            "operator": "greater_than",
+            "value": 1
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "multi-language"
+          },
+          {
+            "field": "features",
+            "operator": "contains",
+            "value": "localization"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["i18n", "l10n", "translation", "locale"]
+          }
+        ]
+      },
+      "standards": [
+        "INTERNATIONALIZATION_LOCALIZATION_STANDARDS",
+        "i18n-architecture",
+        "translation-management",
+        "date-time-formatting",
+        "currency-handling"
+      ],
+      "tags": ["i18n", "l10n", "internationalization"]
+    },
+    {
+      "id": "data-privacy-compliance",
+      "name": "Data Privacy and Compliance Standards",
+      "description": "Standards for data privacy, protection, and regulatory compliance",
+      "priority": 2,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "compliance",
+            "operator": "in",
+            "value": ["gdpr", "ccpa", "pipeda", "lgpd"]
+          },
+          {
+            "field": "data_classification",
+            "operator": "in",
+            "value": ["pii", "phi", "sensitive", "confidential"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "data privacy"
+          },
+          {
+            "field": "features",
+            "operator": "contains",
+            "value": "user consent"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["privacy", "data protection", "consent", "right to be forgotten"]
+          }
+        ]
+      },
+      "standards": [
+        "DATA_PRIVACY_COMPLIANCE_STANDARDS",
+        "data-minimization",
+        "consent-management",
+        "data-retention",
+        "privacy-by-design"
+      ],
+      "tags": ["privacy", "compliance", "data-protection"]
+    },
+    {
+      "id": "developer-experience",
+      "name": "Developer Experience Standards",
+      "description": "Standards for creating excellent developer experiences",
+      "priority": 22,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_type",
+            "operator": "in",
+            "value": ["sdk", "library", "framework", "api", "developer_tool"]
+          },
+          {
+            "field": "target_audience",
+            "operator": "contains",
+            "value": "developers"
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "developer experience"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["dx", "api ergonomics", "sdk", "cli"]
+          }
+        ]
+      },
+      "standards": [
+        "DEVELOPER_EXPERIENCE_STANDARDS",
+        "api-ergonomics",
+        "sdk-design",
+        "cli-patterns",
+        "developer-documentation"
+      ],
+      "tags": ["dx", "developer-experience", "usability"]
+    },
+    {
+      "id": "performance-optimization",
+      "name": "Performance Optimization Standards",
+      "description": "Advanced performance optimization techniques and standards",
+      "priority": 9,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "performance_requirements",
+            "operator": "exists"
+          },
+          {
+            "field": "optimization_focus",
+            "operator": "in",
+            "value": ["speed", "memory", "bandwidth", "latency"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "performance optimization"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["optimization", "performance tuning", "profiling", "benchmarking"]
+          }
+        ]
+      },
+      "standards": [
+        "PERFORMANCE_OPTIMIZATION_STANDARDS",
+        "profiling-techniques",
+        "caching-strategies",
+        "lazy-loading",
+        "performance-budgets"
+      ],
+      "tags": ["performance", "optimization", "speed"]
+    },
+    {
+      "id": "code-review-practices",
+      "name": "Code Review Standards",
+      "description": "Standards for effective code review processes",
+      "priority": 32,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "development_process",
+            "operator": "contains",
+            "value": "code review"
+          },
+          {
+            "field": "team_size",
+            "operator": "greater_than",
+            "value": 2
+          },
+          {
+            "field": "quality_gates",
+            "operator": "contains",
+            "value": "peer review"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["pull request", "merge request", "peer review"]
+          }
+        ]
+      },
+      "standards": [
+        "CODE_REVIEW_STANDARDS",
+        "review-checklist",
+        "feedback-guidelines",
+        "review-automation",
+        "review-metrics"
+      ],
+      "tags": ["code-review", "quality", "collaboration"]
+    },
+    {
+      "id": "technical-debt-management",
+      "name": "Technical Debt Management Standards",
+      "description": "Standards for managing and reducing technical debt",
+      "priority": 26,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "project_age",
+            "operator": "greater_than",
+            "value": 2
+          },
+          {
+            "field": "refactoring_needed",
+            "operator": "equals",
+            "value": true
+          },
+          {
+            "field": "legacy_code",
+            "operator": "exists"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["refactoring", "legacy", "modernization", "tech debt"]
+          }
+        ]
+      },
+      "standards": [
+        "TECHNICAL_DEBT_MANAGEMENT_STANDARDS",
+        "refactoring-strategies",
+        "debt-tracking",
+        "modernization-patterns",
+        "risk-assessment"
+      ],
+      "tags": ["technical-debt", "refactoring", "maintenance"]
+    },
+    {
+      "id": "deployment-release",
+      "name": "Deployment and Release Standards",
+      "description": "Standards for deployment strategies and release management",
+      "priority": 18,
+      "conditions": {
+        "logic": "OR",
+        "conditions": [
+          {
+            "field": "deployment_strategy",
+            "operator": "in",
+            "value": ["blue-green", "canary", "rolling", "feature-flags"]
+          },
+          {
+            "field": "release_frequency",
+            "operator": "in",
+            "value": ["continuous", "daily", "weekly"]
+          },
+          {
+            "field": "requirements",
+            "operator": "contains",
+            "value": "zero downtime"
+          },
+          {
+            "field": "keywords",
+            "operator": "in",
+            "value": ["deployment", "release", "rollout", "rollback"]
+          }
+        ]
+      },
+      "standards": [
+        "DEPLOYMENT_RELEASE_STANDARDS",
+        "deployment-strategies",
+        "release-notes",
+        "rollback-procedures",
+        "feature-toggle-management"
+      ],
+      "tags": ["deployment", "release", "devops"]
     }
   ]
 }
