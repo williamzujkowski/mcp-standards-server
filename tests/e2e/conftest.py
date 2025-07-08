@@ -34,22 +34,39 @@ class MCPTestClient:
     async def connect(self):
         """Connect to the MCP server as an async context manager."""
         logger.debug("Connecting to MCP server...")
-        async with stdio_client(self.server_params) as (read, write):
-            self._read = read
-            self._write = write
-            async with ClientSession(read, write) as session:
-                self.session = session
+        try:
+            async with stdio_client(self.server_params) as (read, write):
+                self._read = read
+                self._write = write
                 try:
-                    # Initialize the session
-                    logger.debug("Initializing MCP session...")
-                    await session.initialize()
-                    logger.debug("MCP session initialized successfully")
-                    yield self
+                    async with ClientSession(read, write) as session:
+                        self.session = session
+                        try:
+                            # Initialize the session
+                            logger.debug("Initializing MCP session...")
+                            await session.initialize()
+                            logger.debug("MCP session initialized successfully")
+                            yield self
+                        finally:
+                            logger.debug("Closing MCP session...")
+                            self.session = None
+                except Exception as e:
+                    # Log but don't re-raise asyncio cancellation errors
+                    if "cancel scope" not in str(e):
+                        logger.error(f"Error in ClientSession: {e}")
+                        raise
+                    else:
+                        logger.warning(f"Ignoring asyncio cancellation error: {e}")
                 finally:
-                    logger.debug("Closing MCP session...")
-                    self.session = None
                     self._read = None
                     self._write = None
+        except Exception as e:
+            # Log but don't re-raise asyncio cancellation errors during cleanup
+            if "cancel scope" not in str(e):
+                logger.error(f"Error in stdio_client: {e}")
+                raise
+            else:
+                logger.warning(f"Ignoring asyncio cancellation error during cleanup: {e}")
                 
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
         """Call a tool on the MCP server."""

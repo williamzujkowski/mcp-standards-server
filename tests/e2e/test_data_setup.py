@@ -1,6 +1,7 @@
 """Set up test data for E2E tests."""
 
 import json
+import yaml
 from pathlib import Path
 
 
@@ -77,6 +78,55 @@ def setup_test_data(data_dir: Path):
                 },
                 "standards": ["react-18-patterns", "javascript-es6-standards"],
                 "tags": ["frontend", "react"]
+            },
+            {
+                "id": "javascript-web-rule",
+                "name": "JavaScript Web Application",
+                "priority": 5,
+                "conditions": {
+                    "logic": "AND",
+                    "conditions": [
+                        {
+                            "field": "project_type",
+                            "operator": "equals",
+                            "value": "web_application"
+                        },
+                        {
+                            "field": "language",
+                            "operator": "equals",
+                            "value": "javascript"
+                        }
+                    ]
+                },
+                "standards": ["javascript-es6-standards"],
+                "tags": ["frontend", "javascript"]
+            },
+            {
+                "id": "general-javascript-rule",
+                "name": "General JavaScript Projects",
+                "priority": 3,
+                "conditions": {
+                    "logic": "OR",
+                    "conditions": [
+                        {
+                            "field": "languages",
+                            "operator": "contains",
+                            "value": "javascript"
+                        },
+                        {
+                            "field": "language",
+                            "operator": "equals",
+                            "value": "javascript"
+                        },
+                        {
+                            "field": "project_type",
+                            "operator": "in",
+                            "value": ["web", "frontend", "fullstack"]
+                        }
+                    ]
+                },
+                "standards": ["javascript-es6-standards", "react-18-patterns"],
+                "tags": ["javascript", "web", "frontend"]
             }
         ]
     }
@@ -85,7 +135,7 @@ def setup_test_data(data_dir: Path):
     rules_file = meta_dir / "enhanced-selection-rules.json"
     rules_file.write_text(json.dumps(test_rules, indent=2))
     
-    # Create sync config
+    # Create sync config that points to local test data
     sync_config = {
         "repository": {
             "owner": "test",
@@ -96,8 +146,11 @@ def setup_test_data(data_dir: Path):
         "paths": {
             "standards": "standards/",
             "metadata": "metadata/"
+        },
+        "sync": {
+            "enabled": False  # Disable actual GitHub sync in tests
         }
     }
     
     sync_file = standards_dir / "sync_config.yaml"
-    sync_file.write_text(json.dumps(sync_config, indent=2))
+    sync_file.write_text(yaml.dump(sync_config, default_flow_style=False))
