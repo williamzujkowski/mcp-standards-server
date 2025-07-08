@@ -82,7 +82,7 @@ def setup_test_data(data_dir: Path):
     }
     
     # Write rules file
-    rules_file = meta_dir / "standard-selection-rules.json"
+    rules_file = meta_dir / "enhanced-selection-rules.json"
     rules_file.write_text(json.dumps(test_rules, indent=2))
     
     # Create sync config

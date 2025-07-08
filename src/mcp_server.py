@@ -27,7 +27,7 @@ from .core.standards.token_optimizer import (
 )
 from .core.standards.cross_referencer import CrossReferencer
 from .core.standards.analytics import StandardsAnalytics
-from .generators.engine import StandardsGenerator
+from .generators import StandardsGenerator
 
 
 logger = logging.getLogger(__name__)
