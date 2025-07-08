@@ -22,24 +22,21 @@ The MCP Standards Server CLI is designed to:
 
 ## Installation
 
-### Using pip
-
-```bash
-pip install mcp-standards-server
-```
-
-### Using pipx (recommended for CLI tools)
-
-```bash
-pipx install mcp-standards-server
-```
-
-### From Source
+### From Source (Currently Available)
 
 ```bash
 git clone https://github.com/williamzujkowski/mcp-standards-server
 cd mcp-standards-server
 pip install -e .
+```
+
+### Future Installation Methods
+
+Once published to PyPI:
+```bash
+pip install mcp-standards-server
+# or
+pipx install mcp-standards-server
 ```
 
 ## Basic Usage
@@ -51,11 +48,14 @@ mcp-standards sync
 # Check sync status
 mcp-standards status
 
-# Get applicable standards for a project
-mcp-standards query --project-type web --framework react
+# Generate a new standard from template
+mcp-standards generate --template technical --title "GraphQL Standards"
 
 # Clear cache
 mcp-standards cache --clear
+
+# List available templates
+mcp-standards generate list-templates
 ```
 
 ## Command Structure
@@ -77,12 +77,22 @@ mcp-standards [global-options] <command> [command-options]
 ### Available Commands
 
 - `sync`: Synchronize standards from repository
-- `status`: Show sync status and statistics
+- `status`: Show sync status and statistics  
 - `cache`: Manage local cache
 - `config`: Show or validate configuration
-- `query`: Query standards based on context
-- `validate`: Validate code against standards
-- `serve`: Start MCP server
+- `generate`: Generate standards from templates
+  - `list-templates`: List available templates
+  - `template-info`: Get template information
+  - `customize`: Create custom template
+  - `validate`: Validate existing standard
+
+### Additional Tools
+
+The following tools are available through separate entry points:
+
+- **MCP Server**: `python -m src.server`
+- **Web UI**: `python -m src.web` (if web UI is implemented)
+- **Query Tool**: Use the Python API or MCP server for querying standards
 
 ## Next Steps
 

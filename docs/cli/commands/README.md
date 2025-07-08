@@ -4,13 +4,21 @@ This section provides detailed documentation for all MCP Standards Server CLI co
 
 ## Command Index
 
+### Core Commands
+
 - [sync](./sync.md) - Synchronize standards from repository
 - [status](./status.md) - Show sync status and statistics
 - [cache](./cache.md) - Manage local cache
 - [config](./config.md) - Show or validate configuration
-- [query](./query.md) - Query standards based on context
-- [validate](./validate.md) - Validate code against standards
-- [serve](./serve.md) - Start MCP server
+- [generate](./generate.md) - Generate standards from templates
+
+### Planned Commands
+
+The following commands are documented but not yet fully implemented in the CLI:
+
+- [query](./query.md) - Query standards based on context (use Python API or MCP server)
+- [validate](./validate.md) - Validate code against standards (available as generate subcommand)
+- [serve](./serve.md) - Start MCP server (use `python -m src.server`)
 
 ## Global Options
 

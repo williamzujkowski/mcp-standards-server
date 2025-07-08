@@ -2,7 +2,11 @@
 
 The MCP Standards Server exposes several tools through the Model Context Protocol, enabling AI assistants and development tools to interact with standards programmatically.
 
-## Available Tools
+> **Note**: This documentation covers the primary tools most commonly used. The actual MCP server implementation includes additional tools for advanced features like token optimization, cross-referencing, and analytics. See the source code at `src/mcp_server.py` for the complete list of 20+ available tools.
+
+## Primary Tools
+
+These are the most commonly used tools for interacting with standards:
 
 ### 1. get_applicable_standards
 
@@ -330,61 +334,35 @@ Check project or code for compliance with specific requirements.
 }
 ```
 
-### 6. generate_compliant_code
+## Additional Tools
 
-Generate code that follows applicable standards.
+The MCP server includes many additional tools:
 
-#### Parameters
+### Standards Management
+- `list_available_standards` - List all available standards
+- `sync_standards` - Synchronize standards from repository
+- `get_sync_status` - Check synchronization status
 
-```typescript
-{
-  description: string;        // What to generate
-  language: string;           // Target language
-  framework?: string;         // Target framework
-  standards?: string[];       // Specific standards to follow
-  context?: {
-    existing_code?: string;   // Context code
-    project_type?: string;
-    requirements?: string[];
-  };
-}
-```
+### Token Optimization
+- `get_optimized_standard` - Get token-optimized version of standard
+- `auto_optimize_standards` - Automatically optimize based on context
+- `progressive_load_standard` - Load standard progressively
+- `estimate_token_usage` - Estimate tokens for standards
 
-#### Response
+### Standards Generation
+- `generate_standard` - Generate new standard from template
+- `validate_standard` - Validate standard structure
+- `list_templates` - List available templates
 
-```typescript
-{
-  code: string;               // Generated code
-  explanation: string;        // Explanation of design choices
-  standards_applied: string[];// Standards that were followed
-  alternatives?: [            // Alternative implementations
-    {
-      code: string;
-      description: string;
-      trade_offs: string;
-    }
-  ];
-  usage_example?: string;     // How to use the generated code
-}
-```
+### Cross-References & Analytics
+- `get_cross_references` - Get related standards
+- `generate_cross_references` - Generate cross-reference map
+- `get_standards_analytics` - Get usage analytics
+- `track_standards_usage` - Track standard usage
+- `get_recommendations` - Get personalized recommendations
 
-#### Example Usage
-
-```json
-{
-  "tool": "generate_compliant_code",
-  "arguments": {
-    "description": "Create a React button component with proper accessibility",
-    "language": "typescript",
-    "framework": "react",
-    "standards": ["react-18-patterns", "wcag-2.2-accessibility"],
-    "context": {
-      "project_type": "web-application",
-      "requirements": ["keyboard-navigation", "screen-reader-support"]
-    }
-  }
-}
-```
+### Code Improvement
+- `suggest_improvements` - Get improvement suggestions based on standards
 
 ## Error Handling
 
