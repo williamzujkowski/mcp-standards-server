@@ -15,7 +15,7 @@ from aiohttp.web import Request, Response
 from datetime import datetime
 
 from .core.health import health_check_endpoint, readiness_check, liveness_check
-from .core.performance.metrics import get_metrics_collector
+from .core.performance.metrics import get_performance_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -148,14 +148,15 @@ class HTTPServer:
     async def metrics(self, request: Request) -> Response:
         """Prometheus metrics endpoint."""
         try:
-            metrics_collector = get_metrics_collector()
+            metrics_collector = get_performance_monitor()
             
             # Generate Prometheus format metrics
-            metrics_data = await metrics_collector.export_prometheus()
+            metrics_data = metrics_collector.get_prometheus_metrics()
             
             return web.Response(
                 text=metrics_data,
-                content_type='text/plain; version=0.0.4; charset=utf-8'
+                content_type='text/plain; version=0.0.4',
+                charset='utf-8'
             )
         except Exception as e:
             logger.error(f"Metrics export failed: {e}")

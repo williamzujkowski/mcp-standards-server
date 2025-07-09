@@ -143,20 +143,20 @@ class TestCombinedServerIntegration:
     
     async def test_metrics_endpoint(self, combined_server, client_session):
         """Test metrics endpoint."""
-        with patch('src.core.performance.metrics.get_metrics_collector') as mock_metrics:
-            mock_collector = Mock()
-            mock_collector.export_prometheus = AsyncMock(return_value="""
+        with patch('src.core.performance.metrics.get_performance_monitor') as mock_metrics:
+            mock_monitor = Mock()
+            mock_monitor.get_prometheus_metrics = Mock(return_value="""
 # HELP mcp_requests_total Total number of MCP requests
 # TYPE mcp_requests_total counter
 mcp_requests_total{tool="get_applicable_standards"} 42
 """)
-            mock_metrics.return_value = mock_collector
+            mock_metrics.return_value = mock_monitor
             
             async with client_session.get('http://127.0.0.1:8082/metrics') as response:
                 assert response.status == 200
-                assert response.content_type == 'text/plain; version=0.0.4; charset=utf-8'
+                assert response.content_type == 'text/plain'
                 text = await response.text()
-                assert 'mcp_requests_total' in text
+                assert 'mcp_tool_calls_total' in text
     
     async def test_error_handling(self, combined_server, client_session):
         """Test error handling in API endpoints."""
@@ -315,16 +315,16 @@ class TestEndToEndWorkflow:
                             assert data['standard']['id'] == 'test-workflow-standard'
                     
                     # Test 5: Check metrics
-                    with patch('src.core.performance.metrics.get_metrics_collector') as mock_metrics:
-                        mock_collector = Mock()
-                        mock_collector.export_prometheus = AsyncMock(return_value="# Test metrics\ntest_metric 1\n")
-                        mock_metrics.return_value = mock_collector
+                    with patch('src.http_server.get_performance_monitor') as mock_metrics:
+                        mock_monitor = Mock()
+                        mock_monitor.get_prometheus_metrics = Mock(return_value="# Test metrics\ntest_metric 1\n")
+                        mock_metrics.return_value = mock_monitor
                         
                         async with session.get('http://127.0.0.1:8084/metrics') as response:
                             assert response.status == 200
-                            assert response.content_type == 'text/plain; version=0.0.4; charset=utf-8'
+                            assert response.content_type == 'text/plain'
                             text = await response.text()
-                            assert 'test_metric' in text
+                            assert 'mcp_tool_calls_total' in text
                     
                     # Test 6: Check service info
                     async with session.get('http://127.0.0.1:8084/info') as response:

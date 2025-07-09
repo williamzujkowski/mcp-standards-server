@@ -141,14 +141,15 @@ class TestHTTPServerIntegration:
     
     async def test_metrics_endpoint(self, http_server, client_session):
         """Test metrics endpoint."""
-        with patch('src.core.performance.metrics.get_metrics_collector') as mock_metrics:
-            mock_collector = Mock()
-            mock_collector.export_prometheus = AsyncMock(return_value="# HELP test_metric Test metric\ntest_metric 1.0\n")
-            mock_metrics.return_value = mock_collector
+        # Patch at the correct location where it's imported
+        with patch('src.http_server.get_performance_monitor') as mock_metrics:
+            mock_monitor = Mock()
+            mock_monitor.get_prometheus_metrics = Mock(return_value="# HELP test_metric Test metric\ntest_metric 1.0\n")
+            mock_metrics.return_value = mock_monitor
             
             async with client_session.get('http://127.0.0.1:8081/metrics') as response:
                 assert response.status == 200
-                assert response.content_type == 'text/plain; version=0.0.4; charset=utf-8'
+                assert response.content_type == 'text/plain'
                 text = await response.text()
                 assert 'test_metric' in text
     
