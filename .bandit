@@ -1,0 +1,66 @@
+[bandit]
+# Bandit configuration file for MCP Standards Server
+# Security scanning configuration for static analysis
+
+# Include patterns - scan these file types
+include = "*.py"
+
+# Skip test files and migrations from security scanning
+skips = B101,B601,B602,B603,B604,B605,B606,B607,B608,B609
+
+# Exclude specific paths from scanning
+exclude_dirs = tests/,migrations/,.venv/,venv/,env/
+
+# Test patterns to exclude (test-specific security exceptions)
+exclude = 
+    */tests/*
+    */test_*
+    test_*.py
+    conftest.py
+    *_test.py
+
+# Security levels
+# Severity levels: low, medium, high
+# Confidence levels: low, medium, high
+severity = medium
+confidence = medium
+
+# Output format options: json, txt, html, csv, xml
+format = json
+
+# Show only issues with these severity levels or higher
+assert_used = true
+
+# Additional bandit plugins
+plugins = 
+    B101,B102,B103,B104,B105,B106,B107,B108,B109,B110,
+    B111,B112,B201,B301,B302,B303,B304,B305,B306,B307,
+    B308,B309,B310,B311,B312,B313,B314,B315,B316,B317,
+    B318,B319,B320,B321,B322,B323,B324,B325,B401,B402,
+    B403,B404,B405,B406,B407,B408,B409,B410,B411,B412,
+    B413,B501,B502,B503,B504,B505,B506,B507,B601,B602,
+    B603,B604,B605,B606,B607,B608,B609,B610,B611,B701,
+    B702,B703
+
+# Skip these specific tests:
+# B101: Test for use of assert - Allow in test files
+# B601-B609: Shell injection tests - May have false positives in subprocess calls
+
+[bandit.blacklist_calls]
+# Custom blacklist for potentially dangerous function calls
+bad_name_sets = 
+    pickle,
+    marshal,
+    shelve,
+    eval,
+    exec,
+    subprocess_without_shell_equals_true
+
+[bandit.blacklist_imports]
+# Custom blacklist for potentially dangerous imports
+bad_import_sets = 
+    dbm,
+    dumbdbm,
+    pickle,
+    subprocess_popen,
+    urllib_urlopen
