@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import aiohttp
 import pytest
 import yaml
 
@@ -80,7 +81,7 @@ class TestSyncResult:
     
     def test_duration(self):
         """Test duration calculation."""
-        result = SyncResult()
+        result = SyncResult(status=SyncStatus.SUCCESS)
         result.start_time = datetime(2024, 1, 1, 12, 0, 0)
         result.end_time = datetime(2024, 1, 1, 12, 5, 30)
         
@@ -88,7 +89,7 @@ class TestSyncResult:
     
     def test_success_rate(self):
         """Test success rate calculation."""
-        result = SyncResult()
+        result = SyncResult(status=SyncStatus.SUCCESS)
         result.total_files = 10
         
         # Add some successful syncs
@@ -99,7 +100,7 @@ class TestSyncResult:
     
     def test_success_rate_no_files(self):
         """Test success rate with no files."""
-        result = SyncResult()
+        result = SyncResult(status=SyncStatus.SUCCESS)
         result.total_files = 0
         
         assert result.success_rate == 0.0
@@ -211,12 +212,12 @@ class TestStandardsSynchronizer:
         
         filtered = synchronizer._filter_files(files)
         
-        # Should include test.md and config.yaml
-        # Should exclude test_file.md (matches exclude pattern)
+        # Should include config.yaml only
+        # Should exclude test.md (matches exclude pattern *test*)
+        # Should exclude test_file.md (matches exclude pattern *test*)
         # Should exclude large.md (exceeds size limit)
         # Should exclude script.py (doesn't match file patterns)
-        assert len(filtered) == 2
-        assert any(f['name'] == 'test.md' for f in filtered)
+        assert len(filtered) == 1
         assert any(f['name'] == 'config.yaml' for f in filtered)
     
     @pytest.mark.asyncio

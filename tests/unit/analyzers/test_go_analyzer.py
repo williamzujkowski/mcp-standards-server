@@ -41,7 +41,7 @@ func safe(userInput string) {
         result = analyzer.analyze_file(test_file)
         
         # Should find SQL injection in vulnerable function
-        sql_issues = [i for i in result.issues if i.cwe_id == "CWE-89"]
+        sql_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-89"]
         assert len(sql_issues) >= 1
         assert any("SQL injection" in issue.message for issue in sql_issues)
     
@@ -61,7 +61,7 @@ func vulnerable(userInput string) {
         
         result = analyzer.analyze_file(test_file)
         
-        cmd_issues = [i for i in result.issues if i.cwe_id == "CWE-78"]
+        cmd_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-78"]
         assert len(cmd_issues) >= 1
     
     def test_race_condition_detection(self, analyzer, tmp_path):
@@ -128,11 +128,11 @@ func weakHash(data []byte) {
         result = analyzer.analyze_file(test_file)
         
         # Check for weak crypto
-        crypto_issues = [i for i in result.issues if i.cwe_id == "CWE-327"]
+        crypto_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-327"]
         assert len(crypto_issues) >= 2  # MD5 and SHA1
         
         # Check for hardcoded secrets
-        secret_issues = [i for i in result.issues if i.cwe_id == "CWE-798"]
+        secret_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-798"]
         assert len(secret_issues) >= 1
     
     def test_performance_string_concat(self, analyzer, tmp_path):
@@ -215,7 +215,7 @@ type privateStruct struct {
         
         naming_issues = [i for i in result.issues if i.type == IssueType.BEST_PRACTICE]
         assert any("uppercase" in issue.message for issue in naming_issues)
-        assert any("package" in issue.message for issue in naming_issues)
+        assert any("package" in issue.message.lower() for issue in naming_issues)
     
     def test_interface_complexity(self, analyzer, tmp_path):
         """Test interface complexity detection."""

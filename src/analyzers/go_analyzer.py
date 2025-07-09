@@ -59,45 +59,68 @@ class GoAnalyzer(BaseAnalyzer):
         """Analyze Go-specific security issues."""
         content = Path(result.file_path).read_text()
         
-        # SQL Injection
-        sql_patterns = [
-            (r'db\.(Query|Exec|QueryRow)\s*\([^,]+\+', "SQL injection via string concatenation"),
-            (r'fmt\.Sprintf.*?(SELECT|INSERT|UPDATE|DELETE)', "SQL injection via fmt.Sprintf"),
-            (r'database/sql.*?\+.*?request\.', "SQL injection from user input")
-        ]
+        # SQL Injection - look for string concatenation with SQL keywords
+        lines = content.split('\n')
+        sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE']
         
-        for pattern, message in sql_patterns:
-            matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+        for i, line in enumerate(lines, 1):
+            # Check for string concatenation with SQL keywords
+            if any(keyword in line.upper() for keyword in sql_keywords) and '+' in line:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
-                    message=message,
+                    message="SQL injection via string concatenation",
                     file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
+                    line_number=i,
+                    column_number=line.find('+'),
+                    code_snippet=line.strip(),
+                    recommendation="Use parameterized queries with placeholders",
+                    cwe_id="CWE-89",
+                    owasp_category="A03:2021 - Injection"
+                ))
+            
+            # Check for fmt.Sprintf with SQL keywords
+            if 'fmt.Sprintf' in line and any(keyword in line.upper() for keyword in sql_keywords):
+                result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
+                    severity=Severity.HIGH,
+                    message="SQL injection via fmt.Sprintf",
+                    file_path=result.file_path,
+                    line_number=i,
+                    column_number=line.find('fmt.Sprintf'),
+                    code_snippet=line.strip(),
                     recommendation="Use parameterized queries with placeholders",
                     cwe_id="CWE-89",
                     owasp_category="A03:2021 - Injection"
                 ))
         
-        # Command Injection
-        cmd_patterns = [
-            (r'exec\.Command\s*\([^,]+\+', "Command injection via string concatenation"),
-            (r'os\.system.*?\+', "Command injection in os.system"),
-            (r'syscall\.(Exec|ForkExec).*?\+', "Command injection in syscall")
-        ]
-        
-        for pattern, message in cmd_patterns:
-            matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+        # Command Injection - look for command execution with concatenation
+        for i, line in enumerate(lines, 1):
+            # Check for exec.Command with string concatenation
+            if 'exec.Command' in line and '+' in line:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
-                    message=message,
+                    message="Command injection via string concatenation",
                     file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
+                    line_number=i,
+                    column_number=line.find('exec.Command'),
+                    code_snippet=line.strip(),
+                    recommendation="Validate and sanitize all user input before using in commands",
+                    cwe_id="CWE-78",
+                    owasp_category="A03:2021 - Injection"
+                ))
+            
+            # Check for os.system with concatenation
+            if 'os.system' in line and '+' in line:
+                result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
+                    severity=Severity.CRITICAL,
+                    message="Command injection in os.system",
+                    file_path=result.file_path,
+                    line_number=i,
+                    column_number=line.find('os.system'),
+                    code_snippet=line.strip(),
                     recommendation="Validate and sanitize all user input before using in commands",
                     cwe_id="CWE-78",
                     owasp_category="A03:2021 - Injection"
@@ -114,28 +137,26 @@ class GoAnalyzer(BaseAnalyzer):
     
     def _analyze_race_conditions(self, content: str, result: AnalyzerResult) -> None:
         """Detect potential race conditions in goroutines."""
-        # Shared variable access without synchronization
-        goroutine_pattern = r'go\s+(?:func\s*\(.*?\)\s*{|[\w.]+\()'
-        goroutines = list(re.finditer(goroutine_pattern, content))
+        lines = content.split('\n')
         
-        if goroutines:
-            # Look for shared variable access
-            lines = content.split('\n')
-            for i, line in enumerate(lines):
-                # Simple heuristic: variable assignment outside of mutex
-                if re.search(r'^\s*\w+\s*=\s*', line) and not re.search(r'\.Lock\(\)', line):
-                    # Check if this is near a goroutine
-                    line_num = i + 1
-                    for g in goroutines:
-                        g_line = content[:g.start()].count('\n') + 1
-                        if abs(line_num - g_line) < 10:  # Within 10 lines
+        # Look for goroutines with shared variable access
+        for i, line in enumerate(lines, 1):
+            # Check for goroutine with variable assignment
+            if 'go func()' in line or 'go func(' in line:
+                # Look for variable assignment in the goroutine
+                for j in range(i, min(i + 10, len(lines) + 1)):
+                    if j - 1 < len(lines):
+                        next_line = lines[j - 1]
+                        # Check for assignment to a shared variable
+                        if re.search(r'\w+\s*=\s*\w+\s*\+', next_line) and not 'sync' in content:
                             result.add_issue(SecurityIssue(
+                                type=IssueType.SECURITY,
                                 severity=Severity.HIGH,
                                 message="Potential race condition: shared variable access without synchronization",
                                 file_path=result.file_path,
-                                line_number=line_num,
+                                line_number=j,
                                 column_number=1,
-                                code_snippet=line.strip(),
+                                code_snippet=next_line.strip(),
                                 recommendation="Use sync.Mutex or channels for synchronization",
                                 cwe_id="CWE-362"
                             ))
@@ -196,10 +217,16 @@ class GoAnalyzer(BaseAnalyzer):
         
         for import_name, (algo, cwe) in weak_crypto.items():
             if import_name in content:
-                line_num = content.find(import_name)
-                line_num = content[:line_num].count('\n') + 1
+                # Find the line number properly
+                lines = content.split('\n')
+                line_num = 1
+                for i, line in enumerate(lines, 1):
+                    if import_name in line:
+                        line_num = i
+                        break
                 
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=f"Use of weak cryptographic algorithm: {algo}",
                     file_path=result.file_path,
@@ -219,6 +246,7 @@ class GoAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -250,66 +278,79 @@ class GoAnalyzer(BaseAnalyzer):
     
     def _analyze_string_concat_loops(self, content: str, result: AnalyzerResult) -> None:
         """Detect inefficient string concatenation in loops."""
-        loop_pattern = r'for\s+.*?{([^}]+)}'
-        loops = re.finditer(loop_pattern, content, re.DOTALL)
+        lines = content.split('\n')
+        in_loop = False
+        loop_start_line = 0
         
-        for loop in loops:
-            loop_body = loop.group(1)
-            if '+=' in loop_body and ('"' in loop_body or "'" in loop_body):
-                line_num = content[:loop.start()].count('\n') + 1
-                
+        for i, line in enumerate(lines, 1):
+            # Check for loop start
+            if re.search(r'for\s+.*?{', line):
+                in_loop = True
+                loop_start_line = i
+            elif '}' in line and in_loop:
+                in_loop = False
+            elif in_loop and '+=' in line:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.MEDIUM,
                     message="String concatenation in loop - use strings.Builder",
                     file_path=result.file_path,
-                    line_number=line_num,
-                    column_number=1,
+                    line_number=i,
+                    column_number=line.find('+='),
                     recommendation="Use strings.Builder for efficient string concatenation",
                     impact="O(n²) complexity due to string immutability"
                 ))
     
     def _analyze_defer_in_loops(self, content: str, result: AnalyzerResult) -> None:
         """Detect defer statements in loops."""
-        loop_pattern = r'for\s+.*?{([^}]+)}'
-        loops = re.finditer(loop_pattern, content, re.DOTALL)
+        lines = content.split('\n')
+        in_loop = False
         
-        for loop in loops:
-            loop_body = loop.group(1)
-            if 'defer' in loop_body:
-                line_num = content[:loop.start()].count('\n') + 1
-                
+        for i, line in enumerate(lines, 1):
+            # Check for loop start
+            if re.search(r'for\s+.*?{', line):
+                in_loop = True
+            elif '}' in line and in_loop:
+                in_loop = False
+            elif in_loop and 'defer' in line:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.HIGH,
                     message="Defer in loop can cause memory accumulation",
                     file_path=result.file_path,
-                    line_number=line_num,
-                    column_number=1,
+                    line_number=i,
+                    column_number=line.find('defer'),
                     recommendation="Move defer outside the loop or use explicit cleanup",
                     impact="Memory usage grows with iteration count"
                 ))
     
     def _analyze_allocations(self, content: str, result: AnalyzerResult) -> None:
         """Detect unnecessary allocations."""
-        # Slice append without pre-allocation
-        append_pattern = r'var\s+\w+\s+\[\]\w+.*?for.*?append\s*\('
-        if re.search(append_pattern, content, re.DOTALL):
-            matches = re.finditer(r'var\s+(\w+)\s+\[\]', content)
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                var_name = match.group(1)
-                
-                # Check if there's an append in a loop after this
-                remaining = content[match.end():]
-                if re.search(rf'for.*?{var_name}\s*=\s*append\(', remaining[:500], re.DOTALL):
-                    result.add_issue(PerformanceIssue(
-                        severity=Severity.MEDIUM,
-                        message="Slice append without pre-allocation",
-                        file_path=result.file_path,
-                        line_number=line_num,
-                        column_number=1,
-                        recommendation=f"Pre-allocate slice with make({var_name}, 0, expectedSize)",
-                        impact="Multiple memory allocations and copies"
-                    ))
+        lines = content.split('\n')
+        slice_vars = {}
+        
+        for i, line in enumerate(lines, 1):
+            # Track slice variable declarations
+            slice_match = re.search(r'var\s+(\w+)\s+\[\]', line)
+            if slice_match:
+                var_name = slice_match.group(1)
+                slice_vars[var_name] = i
+            
+            # Check for append in loops
+            elif 'append(' in line:
+                for var_name, decl_line in slice_vars.items():
+                    if var_name in line and 'for' in content[content.find('\n'.join(lines[:i-5])):content.find(line)]:
+                        result.add_issue(PerformanceIssue(
+                            type=IssueType.PERFORMANCE,
+                            severity=Severity.MEDIUM,
+                            message="Slice append without pre-allocation",
+                            file_path=result.file_path,
+                            line_number=decl_line,
+                            column_number=1,
+                            recommendation=f"Pre-allocate slice with make({var_name}, 0, expectedSize)",
+                            impact="Multiple memory allocations and copies"
+                        ))
+                        break
     
     def _analyze_channel_usage(self, content: str, result: AnalyzerResult) -> None:
         """Analyze channel usage patterns."""
@@ -319,6 +360,7 @@ class GoAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.LOW,
                 message="Consider using buffered channels for better performance",
                 file_path=result.file_path,
@@ -338,6 +380,7 @@ class GoAnalyzer(BaseAnalyzer):
         for match_text, line, col in matches:
             if not re.search(r',\s*\d+\s*\)', match_text):
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message="Map created without size hint",
                     file_path=result.file_path,
@@ -366,34 +409,46 @@ class GoAnalyzer(BaseAnalyzer):
     
     def _analyze_naming_conventions(self, content: str, result: AnalyzerResult) -> None:
         """Check Go naming conventions."""
-        # Exported functions/types should be CamelCase
-        exported_pattern = r'^func\s+([a-z]\w*)\s*\('
-        matches = re.finditer(exported_pattern, content, re.MULTILINE)
+        lines = content.split('\n')
         
-        for match in matches:
-            func_name = match.group(1)
-            if func_name[0].islower() and not func_name.startswith('test'):
-                line_num = content[:match.start()].count('\n') + 1
-                
-                result.add_issue(Issue(
-                    type=IssueType.BEST_PRACTICE,
-                    severity=Severity.LOW,
-                    message=f"Exported function '{func_name}' should start with uppercase",
-                    file_path=result.file_path,
-                    line_number=line_num,
-                    column_number=1,
-                    recommendation="Use CamelCase for exported identifiers"
-                ))
+        for i, line in enumerate(lines, 1):
+            # Check for functions that should be exported (public)
+            func_match = re.search(r'func\s+([a-z]\w*)\s*\(', line)
+            if func_match:
+                func_name = func_match.group(1)
+                if func_name[0].islower() and not func_name.startswith('test') and func_name not in ['main', 'init']:
+                    # Check if this looks like it should be exported (contains words like "public")
+                    if 'public' in func_name.lower() or len(func_name) > 6:
+                        result.add_issue(Issue(
+                            type=IssueType.BEST_PRACTICE,
+                            severity=Severity.LOW,
+                            message=f"Function '{func_name}' should start with uppercase if exported",
+                            file_path=result.file_path,
+                            line_number=i,
+                            column_number=line.find('func'),
+                            recommendation="Use CamelCase for exported identifiers"
+                        ))
     
     def _analyze_package_comments(self, content: str, result: AnalyzerResult) -> None:
         """Check for package documentation."""
-        if content.startswith('package ') and not content.startswith('// Package'):
+        lines = content.split('\n')
+        package_line = None
+        has_package_comment = False
+        
+        for i, line in enumerate(lines):
+            if line.strip().startswith('package '):
+                package_line = i + 1
+                break
+            elif line.strip().startswith('// Package') or line.strip().startswith('/* Package'):
+                has_package_comment = True
+        
+        if package_line and not has_package_comment:
             result.add_issue(Issue(
                 type=IssueType.BEST_PRACTICE,
                 severity=Severity.LOW,
                 message="Package lacks documentation comment",
                 file_path=result.file_path,
-                line_number=1,
+                line_number=package_line,
                 column_number=1,
                 recommendation="Add '// Package <name> ...' comment before package declaration"
             ))

@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 import jsonschema
 from jsonschema import Draft7Validator
 
-from src.core.errors import ValidationError, ErrorCode
+from src.core.errors import ValidationError, ErrorCode, get_secure_error_handler
+from src.core.security import get_security_middleware
 
 
 # Common validation patterns
@@ -273,6 +274,7 @@ class InputValidator:
     
     def __init__(self):
         self.validators = TOOL_VALIDATORS
+        self.error_handler = get_secure_error_handler()
         
     def validate_tool_input(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -284,13 +286,17 @@ class InputValidator:
         Raises:
             ValidationError: If validation fails
         """
-        validator_class = self.validators.get(tool_name)
-        
-        if validator_class is None:
-            # Tool has no input requirements
-            return arguments
-            
         try:
+            # Apply security middleware validation first
+            security_middleware = get_security_middleware()
+            arguments = security_middleware.validate_and_sanitize_request(arguments)
+            
+            validator_class = self.validators.get(tool_name)
+            
+            if validator_class is None:
+                # Tool has no input requirements
+                return arguments
+                
             # Validate using Pydantic model
             validated = validator_class(**arguments)
             return validated.model_dump()
@@ -304,6 +310,14 @@ class InputValidator:
             raise ValidationError(
                 message=error_msg,
                 field=field,
+                code=ErrorCode.VALIDATION_INVALID_PARAMETERS
+            )
+        except Exception as e:
+            # Handle security validation errors
+            sanitized_message = self.error_handler.sanitize_error_message(str(e))
+            raise ValidationError(
+                message=sanitized_message,
+                field="security",
                 code=ErrorCode.VALIDATION_INVALID_PARAMETERS
             )
             

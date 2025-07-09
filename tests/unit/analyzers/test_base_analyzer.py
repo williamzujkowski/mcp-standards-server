@@ -27,6 +27,7 @@ class MockAnalyzer(BaseAnalyzer):
     def analyze_security(self, ast, result: AnalyzerResult):
         if "vulnerability" in ast.get("content", ""):
             result.add_issue(SecurityIssue(
+                type=IssueType.SECURITY,
                 severity=Severity.HIGH,
                 message="Mock vulnerability detected",
                 file_path=result.file_path,
@@ -38,6 +39,7 @@ class MockAnalyzer(BaseAnalyzer):
     def analyze_performance(self, ast, result: AnalyzerResult):
         if "slow" in ast.get("content", ""):
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.MEDIUM,
                 message="Mock performance issue",
                 file_path=result.file_path,
@@ -167,6 +169,7 @@ class TestSecurityIssue:
     def test_security_issue_creation(self):
         """Test creating security issue."""
         issue = SecurityIssue(
+            type=IssueType.SECURITY,
             severity=Severity.HIGH,
             message="SQL injection detected",
             file_path="/test/file.py",

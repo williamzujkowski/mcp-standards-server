@@ -54,19 +54,16 @@ class RateLimiter:
         window_start = current_time - self.window_seconds
         
         try:
+            # Simple sliding window using hash storage
+            request_times = self.redis_client.get(key) or []
+            
             # Remove old entries outside the window
-            self.redis_client.zremrangebyscore(key, 0, window_start)
+            request_times = [t for t in request_times if t > window_start]
             
-            # Count requests in current window
-            request_count = self.redis_client.zcard(key)
-            
-            if request_count >= self.max_requests:
+            if len(request_times) >= self.max_requests:
                 # Get oldest request time to calculate reset
-                oldest_request = self.redis_client.zrange(key, 0, 0, withscores=True)
-                if oldest_request:
-                    reset_time = int(oldest_request[0][1]) + self.window_seconds
-                else:
-                    reset_time = current_time + self.window_seconds
+                oldest_request = min(request_times) if request_times else current_time
+                reset_time = oldest_request + self.window_seconds
                     
                 limit_info = {
                     "remaining": 0,
@@ -77,11 +74,11 @@ class RateLimiter:
                 return False, limit_info
                 
             # Add current request
-            self.redis_client.zadd(key, {str(current_time): current_time})
-            self.redis_client.expire(key, self.window_seconds + 60)  # Expire after window + buffer
+            request_times.append(current_time)
+            self.redis_client.set(key, request_times, ttl=self.window_seconds + 60)
             
             limit_info = {
-                "remaining": self.max_requests - request_count - 1,
+                "remaining": self.max_requests - len(request_times),
                 "limit": self.max_requests,
                 "reset_time": current_time + self.window_seconds
             }
@@ -193,10 +190,10 @@ class AdaptiveRateLimiter:
         new_value = 1.0 if is_good_request else 0.0
         reputation = (1 - alpha) * reputation + alpha * new_value
         
-        self.redis_client.setex(
+        self.redis_client.set(
             reputation_key,
-            86400 * 7,  # 7 days
-            str(reputation)
+            str(reputation),
+            ttl=86400 * 7  # 7 days
         )
 
 

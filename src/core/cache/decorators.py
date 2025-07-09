@@ -44,8 +44,27 @@ def generate_cache_key(
     
     # Get function signature for proper argument mapping
     sig = inspect.signature(func)
-    bound_args = sig.bind(*args, **kwargs)
+    
+    # Handle bound methods vs unbound methods/functions
+    # If we have a bound method and args[0] looks like 'self', try without it
+    if hasattr(func, '__self__') and args and hasattr(args[0], func.__name__):
+        # This is likely a bound method being called with self explicitly passed
+        # Try binding without the first argument (self)
+        try:
+            bound_args = sig.bind(*args[1:], **kwargs)
+        except TypeError:
+            # If that fails, fall back to the original approach
+            bound_args = sig.bind(*args, **kwargs)
+    else:
+        # Standard case: unbound function or properly called bound method
+        bound_args = sig.bind(*args, **kwargs)
+    
     bound_args.apply_defaults()
+    
+    # For bound methods, add the 'self' object to arguments if include_self is True
+    if hasattr(func, '__self__') and config.include_self:
+        # Add the bound self as a special argument
+        bound_args.arguments['self'] = func.__self__
     
     # Build key from arguments
     arg_parts = []

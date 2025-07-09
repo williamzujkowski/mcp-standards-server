@@ -230,7 +230,7 @@ def mock_ml_dependencies(monkeypatch):
         neighbors = MockNeighborsModule()
         metrics = MockMetricsModule()
     
-    # Mock NLTK
+    # Mock NLTK - only mock specific components, not the entire module
     class MockNLTKStemModule:
         PorterStemmer = MockPorterStemmer
     
@@ -241,14 +241,9 @@ def mock_ml_dependencies(monkeypatch):
     class MockNLTKCorpusModule:
         stopwords = MockStopwords()
     
-    class MockNLTKModule:
-        stem = MockNLTKStemModule()
-        tokenize = MockNLTKTokenizeModule()
-        corpus = MockNLTKCorpusModule()
-        
-        @staticmethod
-        def download(*args, **kwargs):
-            pass  # No-op for downloads
+    # Create a mock download function
+    def mock_nltk_download(*args, **kwargs):
+        pass  # No-op for downloads
     
     # Mock fuzzywuzzy
     class MockFuzzyWuzzyModule:
@@ -261,10 +256,10 @@ def mock_ml_dependencies(monkeypatch):
     sys.modules['sklearn.neighbors'] = MockNeighborsModule()
     sys.modules['sklearn.metrics'] = MockMetricsModule()
     sys.modules['sklearn.metrics.pairwise'] = MockPairwiseModule()
-    sys.modules['nltk'] = MockNLTKModule()
-    sys.modules['nltk.stem'] = MockNLTKStemModule()
-    sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
-    sys.modules['nltk.corpus'] = MockNLTKCorpusModule()
+    # Don't replace NLTK modules globally - this causes import conflicts
+    # Let individual tests handle their own mocking
+    # sys.modules['nltk.stem'] = MockNLTKStemModule()
+    # sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
     sys.modules['fuzzywuzzy'] = MockFuzzyWuzzyModule()
     sys.modules['redis'] = type(sys)('redis')
     sys.modules['redis'].Redis = MockRedisClient
@@ -274,13 +269,18 @@ def mock_ml_dependencies(monkeypatch):
     if 'redis' in sys.modules:
         monkeypatch.setattr("redis.Redis", MockRedisClient)
     
+    # Mock NLTK download function specifically
+    try:
+        monkeypatch.setattr("nltk.download", mock_nltk_download)
+    except ImportError:
+        pass  # NLTK not installed
+    
     yield
     
     # Cleanup
     modules_to_clean = [
         'sentence_transformers', 'sklearn', 'sklearn.neighbors',
         'sklearn.metrics', 'sklearn.metrics.pairwise',
-        'nltk', 'nltk.stem', 'nltk.tokenize', 'nltk.corpus',
         'fuzzywuzzy', 'redis'
     ]
     for module in modules_to_clean:
