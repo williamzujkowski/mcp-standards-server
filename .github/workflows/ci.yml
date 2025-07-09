@@ -76,7 +76,7 @@ jobs:
     
     services:
       redis:
-        image: redis:${{ env.REDIS_VERSION }}-alpine
+        image: redis:7.2-alpine
         ports:
           - 6379:6379
         options: >-
@@ -149,7 +149,7 @@ jobs:
     
     services:
       redis:
-        image: redis:${{ env.REDIS_VERSION }}-alpine
+        image: redis:7.2-alpine
         ports:
           - 6379:6379
         options: >-
