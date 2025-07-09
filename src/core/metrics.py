@@ -337,6 +337,9 @@ class MCPMetrics:
         self.ACTIVE_CONNECTIONS = "mcp_active_connections"
         self.REQUEST_SIZE = "mcp_request_size_bytes"
         self.RESPONSE_SIZE = "mcp_response_size_bytes"
+        self.ERRORS_TOTAL = "mcp_errors_total"
+        self.HTTP_REQUESTS_TOTAL = "mcp_http_requests_total"
+        self.HTTP_REQUEST_DURATION = "mcp_http_request_duration_seconds"
         
     def record_tool_call(self, tool_name: str, duration: float, success: bool, error_type: Optional[str] = None):
         """Record metrics for a tool call."""
@@ -383,6 +386,41 @@ class MCPMetrics:
         """Record response size."""
         labels = {"tool": tool_name}
         self.collector.histogram(self.RESPONSE_SIZE, size, labels=labels)
+    
+    def record_error(self, error_type: str, error_code: str, function: Optional[str] = None):
+        """Record an error occurrence."""
+        labels = {"error_type": error_type, "error_code": error_code}
+        if function:
+            labels["function"] = function
+        self.collector.increment(self.ERRORS_TOTAL, labels=labels)
+    
+    def record_http_request(self, method: str, path: str, status: int, duration: float, error: bool = False):
+        """Record HTTP request metrics."""
+        labels = {
+            "method": method,
+            "path": path,
+            "status": str(status),
+            "error": str(error).lower()
+        }
+        self.collector.increment(self.HTTP_REQUESTS_TOTAL, labels=labels)
+        self.collector.record_duration(self.HTTP_REQUEST_DURATION, duration, labels=labels)
+    
+    def record_operation(self, operation: str, success: bool, error_type: Optional[str] = None, labels: Optional[Dict[str, str]] = None):
+        """Record operation metrics."""
+        operation_labels = {
+            "operation": operation,
+            "success": str(success).lower()
+        }
+        if error_type:
+            operation_labels["error_type"] = error_type
+        if labels:
+            operation_labels.update(labels)
+        
+        self.collector.increment(f"{operation}_total", labels=operation_labels)
+    
+    def record_duration(self, metric: str, duration: float, labels: Optional[Dict[str, str]] = None):
+        """Record duration metric."""
+        self.collector.record_duration(metric, duration, labels=labels)
         
     def get_dashboard_metrics(self) -> Dict[str, Any]:
         """Get metrics formatted for dashboard display."""

@@ -14,9 +14,12 @@ from typing import Optional
 
 from .mcp_server import MCPStandardsServer
 from .http_server import start_http_server
+from .core.logging_config import init_logging, get_logger
+from .core.decorators import with_error_handling, with_logging
+from .core.errors import ErrorCode
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CombinedServer:
@@ -27,6 +30,10 @@ class CombinedServer:
         self.mcp_server = None
         self.http_runner = None
         self.running = False
+        self.start_time = None
+        
+        # Initialize logging
+        init_logging()
         
         # Setup signal handlers
         self.setup_signal_handlers()
@@ -40,19 +47,18 @@ class CombinedServer:
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
     
+    @with_error_handling(error_code=ErrorCode.SYSTEM_INTERNAL_ERROR)
+    @with_logging(level=logging.INFO)
     async def start_http_server(self):
         """Start the HTTP server for health checks and monitoring."""
-        try:
-            http_host = os.environ.get("HTTP_HOST", "0.0.0.0")
-            http_port = int(os.environ.get("HTTP_PORT", "8080"))
-            
-            self.http_runner = await start_http_server(http_host, http_port)
-            logger.info(f"HTTP server started on http://{http_host}:{http_port}")
-            
-        except Exception as e:
-            logger.error(f"Failed to start HTTP server: {e}")
-            raise
+        http_host = os.environ.get("HTTP_HOST", "0.0.0.0")
+        http_port = int(os.environ.get("HTTP_PORT", "8080"))
+        
+        self.http_runner = await start_http_server(http_host, http_port)
+        logger.info(f"HTTP server started on http://{http_host}:{http_port}")
     
+    @with_error_handling(error_code=ErrorCode.SYSTEM_INTERNAL_ERROR)
+    @with_logging(level=logging.INFO)
     async def start_mcp_server(self):
         """Start the MCP server."""
         try:

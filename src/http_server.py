@@ -16,8 +16,12 @@ from datetime import datetime
 
 from .core.health import health_check_endpoint, readiness_check, liveness_check
 from .core.performance.metrics import get_performance_monitor
+from .core.middleware.error_middleware import setup_error_handling
+from .core.decorators import with_error_handling, with_logging, with_metrics
+from .core.errors import ErrorCode
+from .core.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class HTTPServer:
@@ -31,7 +35,7 @@ class HTTPServer:
         self.setup_middleware()
     
     def setup_middleware(self):
-        """Setup middleware for logging and CORS."""
+        """Setup middleware for error handling, logging, and CORS."""
         
         @web.middleware
         async def cors_middleware(request: Request, handler):
@@ -42,30 +46,11 @@ class HTTPServer:
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
             return response
         
-        @web.middleware
-        async def logging_middleware(request: Request, handler):
-            """Log requests."""
-            start_time = datetime.now()
-            
-            try:
-                response = await handler(request)
-                duration = (datetime.now() - start_time).total_seconds()
-                
-                logger.info(
-                    f"{request.method} {request.path} - "
-                    f"{response.status} - {duration:.3f}s"
-                )
-                return response
-            except Exception as e:
-                duration = (datetime.now() - start_time).total_seconds()
-                logger.error(
-                    f"{request.method} {request.path} - "
-                    f"ERROR: {e} - {duration:.3f}s"
-                )
-                raise
+        # Setup comprehensive error handling
+        setup_error_handling(self.app)
         
+        # Add CORS middleware
         self.app.middlewares.append(cors_middleware)
-        self.app.middlewares.append(logging_middleware)
     
     def setup_routes(self):
         """Setup HTTP routes."""
