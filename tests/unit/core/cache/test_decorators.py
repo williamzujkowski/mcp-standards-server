@@ -108,10 +108,15 @@ class TestCacheResultDecorator:
         cache = Mock(spec=RedisCache)
         cache.get.return_value = None
         cache.set.return_value = True
-        cache.async_get.return_value = asyncio.Future()
-        cache.async_get.return_value.set_result(None)
-        cache.async_set.return_value = asyncio.Future()
-        cache.async_set.return_value.set_result(True)
+        
+        # Create proper async coroutines for async methods
+        async def async_get(key):
+            return None
+        async def async_set(key, value, ttl=None):
+            return True
+            
+        cache.async_get = async_get
+        cache.async_set = async_set
         return cache
         
     def test_sync_function_cache_miss(self, mock_cache):
@@ -150,6 +155,25 @@ class TestCacheResultDecorator:
     @pytest.mark.asyncio
     async def test_async_function_cache_miss(self, mock_cache):
         """Test async function with cache miss."""
+        # Track cache calls
+        get_called = False
+        set_called = False
+        set_args = None
+        
+        async def async_get_track(key):
+            nonlocal get_called
+            get_called = True
+            return None  # Cache miss
+        
+        async def async_set_track(key, value, ttl=None):
+            nonlocal set_called, set_args
+            set_called = True
+            set_args = (key, value, ttl)
+            return True
+        
+        mock_cache.async_get = async_get_track
+        mock_cache.async_set = async_set_track
+        
         @cache_result("test", ttl=120, cache=mock_cache)
         async def async_expensive_func(value: str) -> str:
             return f"async_computed:{value}"
@@ -158,15 +182,27 @@ class TestCacheResultDecorator:
         assert result == "async_computed:world"
         
         # Check async cache interactions
-        assert mock_cache.async_get.called
-        assert mock_cache.async_set.called
+        assert get_called
+        assert set_called
+        assert set_args is not None
+        assert set_args[1] == "async_computed:world"  # value
+        assert set_args[2] == 120  # ttl
         
     @pytest.mark.asyncio
     async def test_async_function_cache_hit(self, mock_cache):
         """Test async function with cache hit."""
-        future = asyncio.Future()
-        future.set_result("async_cached:world")
-        mock_cache.async_get.return_value = future
+        # Override the async_get to return cached value
+        async def async_get_cached(key):
+            return "async_cached:world"
+        mock_cache.async_get = async_get_cached
+        
+        # Track if async_set was called
+        set_called = False
+        async def async_set_track(key, value, ttl=None):
+            nonlocal set_called
+            set_called = True
+            return True
+        mock_cache.async_set = async_set_track
         
         @cache_result("test", cache=mock_cache)
         async def async_expensive_func(value: str) -> str:
@@ -176,8 +212,7 @@ class TestCacheResultDecorator:
         assert result == "async_cached:world"
         
         # Should not call set on cache hit
-        assert mock_cache.async_get.called
-        assert not mock_cache.async_set.called
+        assert not set_called
         
     def test_condition_function(self, mock_cache):
         """Test conditional caching."""
@@ -267,10 +302,15 @@ class TestInvalidateCacheDecorator:
         cache = Mock(spec=RedisCache)
         cache.delete.return_value = True
         cache.delete_pattern.return_value = 5
-        cache.async_delete.return_value = asyncio.Future()
-        cache.async_delete.return_value.set_result(True)
-        cache.async_delete_pattern.return_value = asyncio.Future()
-        cache.async_delete_pattern.return_value.set_result(5)
+        
+        # Create proper async coroutines for async methods
+        async def async_delete(key):
+            return True
+        async def async_delete_pattern(pattern):
+            return 5
+            
+        cache.async_delete = async_delete
+        cache.async_delete_pattern = async_delete_pattern
         return cache
         
     def test_invalidate_specific_keys(self, mock_cache):
@@ -323,11 +363,6 @@ class TestInvalidateCacheDecorator:
     @pytest.mark.asyncio
     async def test_async_invalidation(self, mock_cache):
         """Test async function invalidation."""
-        # Fix the async mock
-        async def async_delete_pattern(pattern):
-            return 5
-        mock_cache.async_delete_pattern = async_delete_pattern
-        
         @invalidate_cache(prefix="async", cache=mock_cache)
         async def async_update():
             return "async updated"
@@ -415,7 +450,7 @@ class TestUtilityFunctions:
         """Test cache_key utility function."""
         key = cache_key("user", 123, role="admin", active=True)
         assert isinstance(key, str)
-        assert len(key) == 32  # MD5 hash
+        assert len(key) == 64  # SHA-256 hash
         
         # Same arguments should produce same key
         key2 = cache_key("user", 123, role="admin", active=True)

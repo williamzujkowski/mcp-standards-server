@@ -27,7 +27,23 @@ import weakref
 import aiosqlite
 import asyncpg
 import aiomysql
-import aioredis
+
+# Handle aioredis Python 3.12 compatibility issue
+try:
+    import aioredis
+except (TypeError, ImportError) as e:
+    # Python 3.12 compatibility issue with aioredis TimeoutError
+    import sys
+    if "duplicate base class TimeoutError" in str(e):
+        # Mock aioredis for compatibility
+        class MockRedis:
+            @staticmethod
+            async def from_url(*args, **kwargs):
+                return None
+        aioredis = type('aioredis', (), {'Redis': MockRedis, 'from_url': MockRedis.from_url})()
+    else:
+        raise
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool

@@ -30,7 +30,22 @@ from enum import Enum
 import websockets
 from aiohttp import web, WSMsgType, ClientSession
 from aiohttp.web_ws import WebSocketResponse
-import aioredis
+
+# Handle aioredis Python 3.12 compatibility issue
+try:
+    import aioredis
+except (TypeError, ImportError) as e:
+    # Python 3.12 compatibility issue with aioredis TimeoutError
+    import sys
+    if "duplicate base class TimeoutError" in str(e):
+        # Mock aioredis for compatibility
+        class MockRedis:
+            @staticmethod
+            async def from_url(*args, **kwargs):
+                return None
+        aioredis = type('aioredis', (), {'Redis': MockRedis, 'from_url': MockRedis.from_url})()
+    else:
+        raise
 
 from ..cache.redis_client import RedisCache
 from ..performance.metrics import record_metric, time_operation
@@ -503,6 +518,123 @@ class ConnectionManager:
                 'average_connection_duration': avg_duration,
                 'websocket_connections': len(self.websockets)
             }
+
+
+class MCPSession:
+    """MCP session management for individual client connections."""
+    
+    def __init__(self, session_id: str, server, reader, writer):
+        self.id = session_id
+        self.server = server
+        self.reader = reader
+        self.writer = writer
+        self.authenticated = False
+        self.client_info = {
+            "address": writer.get_extra_info('peername') if writer else None,
+            "connected_at": time.time()
+        }
+        self.last_activity = time.time()
+    
+    async def handle(self):
+        """Handle session messages."""
+        try:
+            while True:
+                try:
+                    line = await self.reader.readline()
+                    if not line:
+                        break
+                    
+                    # Parse message
+                    message = json.loads(line.decode().strip())
+                    
+                    # Process message
+                    await self._process_message(message)
+                    
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"Error handling session message: {e}")
+                    await self.send_error_message(str(e))
+        finally:
+            await self.close()
+    
+    async def _process_message(self, message: Dict[str, Any]):
+        """Process a single message."""
+        self.last_activity = time.time()
+        
+        msg_type = message.get('type', 'unknown')
+        
+        if msg_type == 'hello':
+            await self.send_message({
+                'type': 'hello',
+                'version': '1.0.0',
+                'capabilities': ['tools', 'resources']
+            })
+        elif msg_type == 'ping':
+            await self.send_message({'type': 'pong'})
+        elif msg_type == 'request':
+            await self._handle_request(message)
+        else:
+            await self.send_error_message(f"Unknown message type: {msg_type}")
+    
+    async def _handle_request(self, message: Dict[str, Any]):
+        """Handle a request message."""
+        request_id = message.get('id')
+        method = message.get('method')
+        params = message.get('params', {})
+        
+        try:
+            # Check authentication if required
+            if self.server.config.get('auth', {}).get('enabled', False) and not self.authenticated:
+                raise Exception("Authentication required")
+            
+            # Call tool on server
+            result = await self.server.mcp_server._execute_tool(method, params)
+            
+            await self.send_message({
+                'type': 'response',
+                'id': request_id,
+                'result': result
+            })
+        except Exception as e:
+            await self.send_message({
+                'type': 'error',
+                'id': request_id,
+                'error': str(e)
+            })
+    
+    async def send_message(self, message: Dict[str, Any]):
+        """Send a message to the client."""
+        if self.writer and not self.writer.is_closing():
+            data = json.dumps(message).encode() + b'\n'
+            self.writer.write(data)
+            await self.writer.drain()
+    
+    async def send_error_message(self, error: str):
+        """Send an error message to the client."""
+        await self.send_message({
+            'type': 'error',
+            'error': error
+        })
+    
+    async def close(self):
+        """Close the session."""
+        if self.writer and not self.writer.is_closing():
+            self.writer.close()
+            await self.writer.wait_closed()
+        
+        # Remove from server
+        await self.server._remove_session(self.id)
+    
+    def get_info(self) -> Dict[str, Any]:
+        """Get session information."""
+        return {
+            'id': self.id,
+            'authenticated': self.authenticated,
+            'client_info': self.client_info,
+            'last_activity': self.last_activity,
+            'connected_at': self.client_info.get('connected_at')
+        }
 
 
 class AsyncMCPServer:

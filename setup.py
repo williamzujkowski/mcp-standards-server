@@ -45,6 +45,12 @@ setup(
         "fuzzywuzzy>=0.18.0",
         "python-Levenshtein>=0.12.0",  # For better fuzzy matching performance
         "PyJWT>=2.8.0",  # For JWT authentication
+        # Database dependencies with Python 3.12 compatibility
+        "aioredis>=2.0.1,<3.0.0",  # Use compatible version
+        "aiosqlite>=0.19.0",
+        "asyncpg>=0.29.0",
+        "aiomysql>=0.2.0",
+        "sqlalchemy>=2.0.0",
     ],
     extras_require={
         "test": [

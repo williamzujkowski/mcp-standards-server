@@ -1308,6 +1308,40 @@ class MCPStandardsServer:
         """Get performance metrics dashboard."""
         return self.metrics.get_dashboard_metrics()
     
+    def _get_semantic_search_engine(self):
+        """Get semantic search engine instance."""
+        return self.search
+    
+    def _validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate input data."""
+        return self.input_validator.validate(data)
+    
+    def _filter_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        """Filter response for privacy."""
+        return self.privacy_filter.filter(response)
+    
+    async def _cross_reference_standards(self, standard_id: str) -> Dict[str, Any]:
+        """Get cross-references for a standard."""
+        return await self.cross_referencer.get_references(standard_id)
+    
+    async def _get_analytics(self) -> Dict[str, Any]:
+        """Get analytics data."""
+        return await self.analytics.get_analytics()
+    
+    async def _get_compliance_mapping(self, standard_id: str, framework: str = "nist") -> Dict[str, Any]:
+        """Get compliance mapping for a standard."""
+        # This is a placeholder implementation
+        return {
+            "standard_id": standard_id,
+            "framework": framework,
+            "mappings": []
+        }
+    
+    @property
+    def rate_limiter(self):
+        """Get rate limiter for backwards compatibility."""
+        return self
+    
     def _check_rate_limit(self, user_key: str) -> bool:
         """Check if user is within rate limits."""
         now = time.time()
