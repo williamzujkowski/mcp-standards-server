@@ -1,0 +1,88 @@
+site_name: MCP Standards Server
+site_description: A comprehensive LLM context management system using Model Context Protocol (MCP)
+site_url: https://mcp-standards-server.readthedocs.io/
+repo_url: https://github.com/williamzujkowski/mcp-standards-server
+repo_name: williamzujkowski/mcp-standards-server
+
+nav:
+  - Home: index.md
+  - Installation: guides/installation.md
+  - API Reference: 
+    - MCP Tools: api/mcp-tools.md
+  - Reference: reference/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.annotate
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_submodules: false
+  - git-revision-date-localized:
+      type: datetime
+      fallback_to_build_date: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/williamzujkowski/mcp-standards-server
+  version:
+    provider: mike
+    default: latest
+
+watch:
+  - src/
+  - docs/
+  - README.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js

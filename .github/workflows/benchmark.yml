@@ -55,11 +55,13 @@ jobs:
             ${{ runner.os }}-pip-
       
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
       
       - name: Run benchmarks
+        timeout-minutes: 30
         env:
           REDIS_URL: redis://localhost:6379
           MCP_TEST_MODE: "true"
@@ -159,12 +161,14 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
           pip install memory-profiler pympler tracemalloc-ng
       
       - name: Run memory benchmarks
+        timeout-minutes: 20
         env:
           REDIS_URL: redis://localhost:6379
           MCP_TEST_MODE: "true"
@@ -232,12 +236,14 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
-          pip install locust
+          pip install locust==2.20.0
       
       - name: Start MCP server
+        timeout-minutes: 5
         env:
           REDIS_URL: redis://localhost:6379
           MCP_TEST_MODE: "true"
@@ -247,6 +253,7 @@ jobs:
           sleep 10  # Wait for server to start
       
       - name: Run load tests
+        timeout-minutes: 25
         run: |
           # Run different load scenarios
           python benchmarks/load/stress_test.py --users 10 --duration 60 --output load-test-10users.json
@@ -325,11 +332,13 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
       
       - name: Run benchmarks on PR branch
+        timeout-minutes: 20
         env:
           REDIS_URL: redis://localhost:6379
         run: |
@@ -341,6 +350,7 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
       
       - name: Run benchmarks on base branch
+        timeout-minutes: 20
         env:
           REDIS_URL: redis://localhost:6379
         run: |

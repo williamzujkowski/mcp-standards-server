@@ -59,19 +59,19 @@ jobs:
             
             if (total < 10) {
               label = 'size/XS';
-              comment = '=L This PR is tiny! (< 10 lines)';
+              comment = 'ðŸ”¥ This PR is tiny! (< 10 lines)';
             } else if (total < 50) {
               label = 'size/S';
-              comment = ' This PR is small. (< 50 lines)';
+              comment = 'âœ… This PR is small. (< 50 lines)';
             } else if (total < 200) {
               label = 'size/M';
-              comment = '=Ê This PR is medium-sized. (< 200 lines)';
+              comment = 'ðŸ“Š This PR is medium-sized. (< 200 lines)';
             } else if (total < 500) {
               label = 'size/L';
-              comment = '  This PR is large. (< 500 lines) Consider breaking it down.';
+              comment = 'âš ï¸ This PR is large. (< 500 lines) Consider breaking it down.';
             } else {
               label = 'size/XL';
-              comment = '=¨ This PR is very large! (>= 500 lines) Please consider breaking it into smaller PRs.';
+              comment = 'ðŸš¨ This PR is very large! (>= 500 lines) Please consider breaking it into smaller PRs.';
             }
             
             // Add size label
@@ -150,13 +150,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: context.issue.number,
-                  body: `  **Breaking Change Detected**
-                  
-This PR appears to contain breaking changes. Please ensure you have:
-- [ ] Documented the breaking changes in the PR description
-- [ ] Updated the migration guide
-- [ ] Bumped the major version number
-- [ ] Added deprecation warnings where appropriate`
+                  body: "ðŸš¨ **Breaking Change Detected**\\n\\nThis PR appears to contain breaking changes. Please ensure you have:\\n- [ ] Documented the breaking changes in the PR description\\n- [ ] Updated the migration guide\\n- [ ] Bumped the major version number\\n- [ ] Added deprecation warnings where appropriate"
                 });
               }
             }
@@ -196,26 +190,26 @@ This PR appears to contain breaking changes. Please ensure you have:
       - name: Check for missing tests
         if: steps.changed-files.outputs.src_any_changed == 'true'
         run: |
-          echo "## >ê Test Coverage Check" >> $GITHUB_STEP_SUMMARY
+          echo "## ðŸ§ª Test Coverage Check" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.changed-files.outputs.tests_any_changed }}" != "true" ]; then
-            echo "  Source files were modified but no test files were changed." >> $GITHUB_STEP_SUMMARY
+            echo "âš ï¸ Source files were modified but no test files were changed." >> $GITHUB_STEP_SUMMARY
             echo "Please ensure all changes are properly tested." >> $GITHUB_STEP_SUMMARY
             exit 1
           else
-            echo " Test files were updated along with source changes." >> $GITHUB_STEP_SUMMARY
+            echo "âœ… Test files were updated along with source changes." >> $GITHUB_STEP_SUMMARY
           fi
       
       - name: Check for missing docs
         if: steps.changed-files.outputs.src_any_changed == 'true' || steps.changed-files.outputs.config_any_changed == 'true'
         run: |
-          echo "## =Ú Documentation Check" >> $GITHUB_STEP_SUMMARY
+          echo "## ðŸ“š Documentation Check" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.changed-files.outputs.docs_any_changed }}" != "true" ]; then
-            echo "  Code or configuration was modified but no documentation was updated." >> $GITHUB_STEP_SUMMARY
+            echo "âš ï¸ Code or configuration was modified but no documentation was updated." >> $GITHUB_STEP_SUMMARY
             echo "Please update relevant documentation if needed." >> $GITHUB_STEP_SUMMARY
           else
-            echo " Documentation was updated." >> $GITHUB_STEP_SUMMARY
+            echo "âœ… Documentation was updated." >> $GITHUB_STEP_SUMMARY
           fi
 
   auto-label:
