@@ -695,3 +695,8 @@ def init_cache(config: CacheConfig) -> RedisCache:
     global _global_cache
     _global_cache = RedisCache(config)
     return _global_cache
+
+
+def get_redis_client() -> RedisCache:
+    """Get Redis client (alias for get_cache for backward compatibility)."""
+    return get_cache()

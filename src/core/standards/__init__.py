@@ -21,6 +21,11 @@ from .token_optimizer import (
     estimate_token_savings
 )
 
+from .engine import (
+    StandardsEngine,
+    StandardsEngineConfig
+)
+
 __all__ = [
     # Rule Engine
     'RuleEngine',
@@ -38,5 +43,8 @@ __all__ = [
     'CompressionResult',
     'DynamicLoader',
     'create_token_optimizer',
-    'estimate_token_savings'
+    'estimate_token_savings',
+    # Standards Engine
+    'StandardsEngine',
+    'StandardsEngineConfig'
 ]

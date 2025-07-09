@@ -8,7 +8,7 @@ import time
 from typing import Dict, Optional, Tuple
 from datetime import datetime, timedelta
 
-from src.core.redis_client import get_redis_client
+from src.core.cache.redis_client import get_redis_client
 from src.core.errors import RateLimitError
 
 
