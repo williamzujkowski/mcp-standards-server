@@ -1,16 +1,34 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 15s          # How frequently to scrape targets
+  evaluation_interval: 15s      # How frequently to evaluate rules
+  scrape_timeout: 10s          # How long until a scrape request times out
+  
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'mcp-standards-monitor'
+    environment: 'production'
 
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+  - "/etc/prometheus/rules/*.yml"
 
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  # Prometheus self-monitoring
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "prometheus"
 
   # MCP Standards Server metrics
   - job_name: "mcp-standards-server"
@@ -19,11 +37,42 @@ scrape_configs:
     metrics_path: "/metrics"
     scrape_interval: 10s
     scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mcp-server"
 
-  # Redis metrics (if redis_exporter is added)
+  # Redis metrics (requires redis_exporter)
   - job_name: "redis"
     static_configs:
-      - targets: ["redis:6379"]
+      - targets: ["redis-exporter:9121"]
     metrics_path: "/metrics"
     scrape_interval: 15s
     scrape_timeout: 5s
+
+  # ChromaDB metrics
+  - job_name: "chromadb"
+    static_configs:
+      - targets: ["chromadb:8000"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Node exporter for system metrics
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: hostname
+        replacement: '${1}'
+
+  # Cadvisor for container metrics
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "cadvisor"

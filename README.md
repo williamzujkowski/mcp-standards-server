@@ -1,5 +1,11 @@
 # MCP Standards Server
 
+[![CI](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/ci.yml/badge.svg)](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/ci.yml)
+[![Release](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/release.yml/badge.svg)](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/release.yml)
+[![Benchmark](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/benchmark.yml/badge.svg)](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/benchmark.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 A Model Context Protocol (MCP) server that provides intelligent, context-aware access to development standards. This system enables LLMs to automatically select and apply appropriate standards based on project requirements.
 
 ## Features

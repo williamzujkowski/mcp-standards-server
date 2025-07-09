@@ -1,0 +1,90 @@
+name: Performance Benchmark
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+      
+      chromadb:
+        image: chromadb/chroma:latest
+        ports:
+          - 8000:8000
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-bench-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-bench-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-benchmark
+      
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('stopwords')"
+      
+      - name: Run performance benchmarks
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          CHROMADB_URL: http://localhost:8000
+        run: |
+          pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark_results.json
+      
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.event_name == 'push'
+        with:
+          name: Python Benchmark
+          tool: 'pytest'
+          output-file-path: benchmark_results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          comment-on-alert: true
+          alert-threshold: '150%'
+          comment-always: true
+          fail-on-alert: false
+      
+      - name: Comment PR with benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.event_name == 'pull_request'
+        with:
+          name: Python Benchmark
+          tool: 'pytest'
+          output-file-path: benchmark_results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-always: true
+          save-data-file: false
+          comment-on-alert: true
+          alert-threshold: '120%'

@@ -1,0 +1,119 @@
+groups:
+  - name: mcp_standards_server_alerts
+    interval: 30s
+    rules:
+      # Service availability alerts
+      - alert: MCPServerDown
+        expr: up{job="mcp-standards-server"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: mcp-standards-server
+        annotations:
+          summary: "MCP Standards Server is down"
+          description: "MCP Standards Server instance {{ $labels.instance }} has been down for more than 5 minutes."
+      
+      - alert: HighErrorRate
+        expr: rate(app_error_count_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% (current: {{ $value | humanizePercentage }}) for instance {{ $labels.instance }}"
+      
+      # Performance alerts
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(app_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 2 seconds (current: {{ $value }}s) for instance {{ $labels.instance }}"
+      
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="mcp-standards-server"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% (current: {{ $value }}%) for instance {{ $labels.instance }}"
+      
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="mcp-standards-server"} / 1024 / 1024 / 1024 > 2
+        for: 10m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 2GB (current: {{ $value }}GB) for instance {{ $labels.instance }}"
+      
+      # Redis alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance {{ $labels.instance }} has been down for more than 5 minutes."
+      
+      - alert: RedisCacheMissRateHigh
+        expr: rate(app_cache_misses_total[5m]) / (rate(app_cache_hits_total[5m]) + rate(app_cache_misses_total[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High cache miss rate"
+          description: "Cache miss rate is above 50% (current: {{ $value | humanizePercentage }}) for instance {{ $labels.instance }}"
+      
+      # MCP specific alerts
+      - alert: MCPToolErrorsHigh
+        expr: rate(mcp_tool_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High MCP tool error rate"
+          description: "MCP tool error rate is above 10% (current: {{ $value | humanizePercentage }}) for tool {{ $labels.tool }}"
+      
+      - alert: StandardsSyncFailed
+        expr: increase(standards_sync_failures_total[1h]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "Standards synchronization failures"
+          description: "Standards sync has failed {{ $value }} times in the last hour"
+      
+      # Search performance alerts
+      - alert: SearchLatencyHigh
+        expr: histogram_quantile(0.95, rate(search_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-standards-server
+        annotations:
+          summary: "High search latency"
+          description: "95th percentile search latency is above 1 second (current: {{ $value }}s)"
+      
+      # System resource alerts
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 10m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10% (current: {{ $value | humanizePercentage }}) on {{ $labels.instance }}"
