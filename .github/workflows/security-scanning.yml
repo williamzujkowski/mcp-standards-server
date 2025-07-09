@@ -1,0 +1,271 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, develop, complete_overhaul ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scans nightly at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  dependency-security-scan:
+    name: Python Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install security scanning tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit[toml]
+
+    - name: Run Safety - Python dependency vulnerability scan
+      run: |
+        # Scan main project dependencies
+        safety check --json --output safety-report.json || true
+        safety check --short-report
+        
+        # Scan web backend dependencies
+        if [ -f "web/backend/requirements.txt" ]; then
+          echo "Scanning web backend dependencies..."
+          safety check --file web/backend/requirements.txt --json --output safety-web-backend.json || true
+          safety check --file web/backend/requirements.txt --short-report
+        fi
+      continue-on-error: false
+
+    - name: Upload Safety reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: safety-reports
+        path: |
+          safety-*.json
+        retention-days: 30
+
+    - name: Run Bandit - Static Application Security Testing
+      run: |
+        # Run Bandit on source code
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ -f txt -o bandit-report.txt || true
+        
+        # Display summary
+        echo "=== Bandit Security Scan Summary ==="
+        bandit -r src/ --severity-level medium --confidence-level medium
+      continue-on-error: false
+
+    - name: Upload Bandit reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: bandit-reports
+        path: |
+          bandit-*.json
+          bandit-*.txt
+        retention-days: 30
+
+  filesystem-security-scan:
+    name: Filesystem and Container Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        exit-code: '1'  # Fail on vulnerabilities
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run Trivy with JSON output for artifacts
+      uses: aquasecurity/trivy-action@master
+      if: always()
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'json'
+        output: 'trivy-results.json'
+        severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+
+    - name: Upload Trivy reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: trivy-reports
+        path: |
+          trivy-results.*
+        retention-days: 30
+
+  sast-code-scanning:
+    name: Static Application Security Testing (SAST)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Semgrep Security Analysis
+      uses: semgrep/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/python
+          p/owasp-top-ten
+          p/cwe-top-25
+        generateSarif: "1"
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+    - name: Upload Semgrep results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: semgrep.sarif
+
+    - name: Upload Semgrep reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: semgrep-reports
+        path: |
+          semgrep.sarif
+          semgrep.json
+        retention-days: 30
+
+  docker-security-scan:
+    name: Docker Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'  # Skip for scheduled runs
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker image for scanning
+      run: |
+        if [ -f "Dockerfile" ]; then
+          docker build -t mcp-standards-server:latest .
+        elif [ -f "web/deployment/Dockerfile.backend" ]; then
+          docker build -f web/deployment/Dockerfile.backend -t mcp-standards-server:latest .
+        else
+          echo "No Dockerfile found, skipping Docker security scan"
+          exit 0
+        fi
+
+    - name: Run Trivy container scan
+      uses: aquasecurity/trivy-action@master
+      if: success()
+      with:
+        image-ref: 'mcp-standards-server:latest'
+        format: 'sarif'
+        output: 'trivy-container-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Upload container scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-container-results.sarif'
+
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-security-scan, filesystem-security-scan, sast-code-scanning]
+    if: always()
+    
+    steps:
+    - name: Download all security reports
+      uses: actions/download-artifact@v4
+
+    - name: Generate security summary
+      run: |
+        echo "# Security Scan Summary" > security-summary.md
+        echo "" >> security-summary.md
+        echo "## Scan Results" >> security-summary.md
+        echo "- **Dependency Scan**: ${{ needs.dependency-security-scan.result }}" >> security-summary.md
+        echo "- **Filesystem Scan**: ${{ needs.filesystem-security-scan.result }}" >> security-summary.md
+        echo "- **SAST Code Scan**: ${{ needs.sast-code-scanning.result }}" >> security-summary.md
+        echo "" >> security-summary.md
+        
+        # Count findings if reports exist
+        if [ -f "safety-reports/safety-report.json" ]; then
+          SAFETY_ISSUES=$(jq '.vulnerabilities | length' safety-reports/safety-report.json 2>/dev/null || echo "0")
+          echo "- **Safety Issues Found**: $SAFETY_ISSUES" >> security-summary.md
+        fi
+        
+        if [ -f "bandit-reports/bandit-report.json" ]; then
+          BANDIT_ISSUES=$(jq '.results | length' bandit-reports/bandit-report.json 2>/dev/null || echo "0")
+          echo "- **Bandit Issues Found**: $BANDIT_ISSUES" >> security-summary.md
+        fi
+        
+        echo "" >> security-summary.md
+        echo "## Next Steps" >> security-summary.md
+        echo "- Review security findings in the GitHub Security tab" >> security-summary.md
+        echo "- Address any high or critical severity issues" >> security-summary.md
+        echo "- Update dependencies with known vulnerabilities" >> security-summary.md
+        
+        cat security-summary.md
+
+    - name: Comment on PR with security summary
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('security-summary.md')) {
+            const summary = fs.readFileSync('security-summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔒 Security Scan Results\n\n${summary}`
+            });
+          }
+
+    - name: Upload security summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-summary
+        path: security-summary.md
+        retention-days: 30
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      with:
+        fail-on-severity: high
+        allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+        deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0

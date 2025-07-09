@@ -109,7 +109,7 @@ class MCPStandardsServer:
             try:
                 from .core.standards.semantic_search import SemanticSearch
                 self.search = SemanticSearch(
-                    model_name=self.config.get("search_model", "sentence-transformers/all-MiniLM-L6-v2")
+                    embedding_model=self.config.get("search_model", "all-MiniLM-L6-v2")
                 )
             except ImportError:
                 logger.warning("Semantic search disabled: sentence-transformers not installed")

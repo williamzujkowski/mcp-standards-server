@@ -797,7 +797,9 @@ class TokenOptimizer:
         ]
         
         key_string = '|'.join(key_parts)
-        return hashlib.md5(key_string.encode()).hexdigest()
+        # Use SHA-256 with application-specific salt
+        salted_key = f"mcp_token_opt_v1:{key_string}"
+        return hashlib.sha256(salted_key.encode()).hexdigest()
 
 
 class DynamicLoader:

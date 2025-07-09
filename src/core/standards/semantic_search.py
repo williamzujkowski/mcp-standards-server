@@ -21,7 +21,7 @@ from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 import re
 from pathlib import Path
-import pickle
+import base64
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -210,10 +210,32 @@ class EmbeddingCache:
         # Redis cache for distributed systems (optional)
         self.redis_client = None
         try:
-            self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+            self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
             self.redis_client.ping()
         except:
             logger.info("Redis not available, using file-based cache only")
+    
+    def _serialize_embedding(self, embedding: np.ndarray) -> bytes:
+        """Serialize numpy array to bytes safely."""
+        # Convert to base64-encoded string for safe storage
+        return base64.b64encode(embedding.tobytes()).decode('ascii') + f'|{embedding.dtype}|{"x".join(map(str, embedding.shape))}'
+    
+    def _deserialize_embedding(self, data: Union[str, bytes]) -> np.ndarray:
+        """Deserialize bytes to numpy array safely."""
+        if isinstance(data, bytes):
+            data = data.decode('ascii')
+        
+        # Parse the serialized format
+        parts = data.split('|')
+        if len(parts) != 3:
+            raise ValueError("Invalid embedding format")
+        
+        array_bytes = base64.b64decode(parts[0])
+        dtype = np.dtype(parts[1])
+        shape = tuple(map(int, parts[2].split('x')))
+        
+        # Reconstruct the array
+        return np.frombuffer(array_bytes, dtype=dtype).reshape(shape)
     
     def get_embedding(self, text: str, use_cache: bool = True) -> np.ndarray:
         """Get embedding for text with caching."""
@@ -232,16 +254,15 @@ class EmbeddingCache:
                 try:
                     cached = self.redis_client.get(f"emb:{cache_key}")
                     if cached:
-                        return pickle.loads(cached.encode('latin-1'))
+                        return self._deserialize_embedding(cached)
                 except:
                     pass
             
             # Check file cache
-            cache_file = self.cache_dir / f"{cache_key}.pkl"
+            cache_file = self.cache_dir / f"{cache_key}.npy"
             if cache_file.exists():
                 try:
-                    with open(cache_file, 'rb') as f:
-                        return pickle.load(f)
+                    return np.load(cache_file)
                 except:
                     pass
         
@@ -300,16 +321,15 @@ class EmbeddingCache:
             try:
                 cached = self.redis_client.get(f"emb:{cache_key}")
                 if cached:
-                    return pickle.loads(cached.encode('latin-1'))
+                    return self._deserialize_embedding(cached)
             except:
                 pass
         
         # File cache
-        cache_file = self.cache_dir / f"{cache_key}.pkl"
+        cache_file = self.cache_dir / f"{cache_key}.npy"
         if cache_file.exists():
             try:
-                with open(cache_file, 'rb') as f:
-                    return pickle.load(f)
+                return np.load(cache_file)
             except:
                 pass
         
@@ -326,16 +346,15 @@ class EmbeddingCache:
                 self.redis_client.setex(
                     f"emb:{cache_key}",
                     int(self.cache_ttl.total_seconds()),
-                    pickle.dumps(embedding).decode('latin-1')
+                    self._serialize_embedding(embedding)
                 )
             except:
                 pass
         
         # File cache
-        cache_file = self.cache_dir / f"{cache_key}.pkl"
+        cache_file = self.cache_dir / f"{cache_key}.npy"
         try:
-            with open(cache_file, 'wb') as f:
-                pickle.dump(embedding, f)
+            np.save(cache_file, embedding)
         except:
             pass
     
@@ -351,11 +370,12 @@ class EmbeddingCache:
                 pass
         
         # Clear file cache
-        for cache_file in self.cache_dir.glob("*.pkl"):
-            try:
-                cache_file.unlink()
-            except:
-                pass
+        for pattern in ["*.npy", "*.pkl"]:
+            for cache_file in self.cache_dir.glob(pattern):
+                try:
+                    cache_file.unlink()
+                except:
+                    pass
 
 
 class FuzzyMatcher:

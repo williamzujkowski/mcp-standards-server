@@ -205,30 +205,85 @@ def mock_github_api(monkeypatch):
 def mock_ml_dependencies(monkeypatch):
     """Mock ML dependencies for tests."""
     import sys
-    from tests.mocks import MockSentenceTransformer, MockNearestNeighbors
+    from tests.mocks import MockSentenceTransformer
+    from tests.mocks.semantic_search_mocks import (
+        MockRedisClient, MockNLTKComponents, MockPorterStemmer,
+        MockStopwords, MockFuzz, MockProcess, MockCosineSimilarity,
+        MockNearestNeighbors
+    )
     
     # Mock sentence-transformers
     class MockSentenceTransformersModule:
         SentenceTransformer = MockSentenceTransformer
     
-    # Mock sklearn.neighbors
+    # Mock sklearn
+    class MockPairwiseModule:
+        cosine_similarity = MockCosineSimilarity.cosine_similarity
+    
+    class MockMetricsModule:
+        pairwise = MockPairwiseModule()
+    
     class MockNeighborsModule:
         NearestNeighbors = MockNearestNeighbors
     
     class MockSklearnModule:
         neighbors = MockNeighborsModule()
+        metrics = MockMetricsModule()
+    
+    # Mock NLTK
+    class MockNLTKStemModule:
+        PorterStemmer = MockPorterStemmer
+    
+    class MockNLTKTokenizeModule:
+        word_tokenize = MockNLTKComponents.word_tokenize
+        sent_tokenize = MockNLTKComponents.sent_tokenize
+    
+    class MockNLTKCorpusModule:
+        stopwords = MockStopwords()
+    
+    class MockNLTKModule:
+        stem = MockNLTKStemModule()
+        tokenize = MockNLTKTokenizeModule()
+        corpus = MockNLTKCorpusModule()
+        
+        @staticmethod
+        def download(*args, **kwargs):
+            pass  # No-op for downloads
+    
+    # Mock fuzzywuzzy
+    class MockFuzzyWuzzyModule:
+        fuzz = MockFuzz()
+        process = MockProcess()
     
     # Patch the imports
     sys.modules['sentence_transformers'] = MockSentenceTransformersModule()
     sys.modules['sklearn'] = MockSklearnModule()
     sys.modules['sklearn.neighbors'] = MockNeighborsModule()
+    sys.modules['sklearn.metrics'] = MockMetricsModule()
+    sys.modules['sklearn.metrics.pairwise'] = MockPairwiseModule()
+    sys.modules['nltk'] = MockNLTKModule()
+    sys.modules['nltk.stem'] = MockNLTKStemModule()
+    sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
+    sys.modules['nltk.corpus'] = MockNLTKCorpusModule()
+    sys.modules['fuzzywuzzy'] = MockFuzzyWuzzyModule()
+    sys.modules['redis'] = type(sys)('redis')
+    sys.modules['redis'].Redis = MockRedisClient
     
+    # Apply monkeypatches
     monkeypatch.setattr("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+    if 'redis' in sys.modules:
+        monkeypatch.setattr("redis.Redis", MockRedisClient)
     
     yield
     
     # Cleanup
-    for module in ['sentence_transformers', 'sklearn', 'sklearn.neighbors']:
+    modules_to_clean = [
+        'sentence_transformers', 'sklearn', 'sklearn.neighbors',
+        'sklearn.metrics', 'sklearn.metrics.pairwise',
+        'nltk', 'nltk.stem', 'nltk.tokenize', 'nltk.corpus',
+        'fuzzywuzzy', 'redis'
+    ]
+    for module in modules_to_clean:
         if module in sys.modules:
             del sys.modules[module]
 

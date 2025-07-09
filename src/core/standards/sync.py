@@ -277,7 +277,7 @@ class StandardsSynchronizer:
                     result.status = SyncStatus.FAILED
                     result.message = "Failed to sync any files"
                 
-        except ClientError as e:
+        except (ClientError, asyncio.TimeoutError) as e:
             result.status = SyncStatus.NETWORK_ERROR
             result.message = f"Network error: {str(e)}"
             logger.error(f"Network error during sync: {e}")
@@ -328,6 +328,9 @@ class StandardsSynchronizer:
                 else:
                     logger.error(f"Failed to list repository: {response.status}")
                     
+        except (ClientError, asyncio.TimeoutError):
+            # Re-raise network errors to be handled by sync()
+            raise
         except Exception as e:
             logger.error(f"Error listing repository files: {e}")
         
@@ -359,6 +362,9 @@ class StandardsSynchronizer:
                         elif item['type'] == 'dir':
                             subfiles = await self._list_directory(session, item['path'])
                             files.extend(subfiles)
+        except (ClientError, asyncio.TimeoutError):
+            # Re-raise network errors to be handled by sync()
+            raise
         except Exception as e:
             logger.error(f"Error listing directory {path}: {e}")
         
@@ -407,10 +413,25 @@ class StandardsSynchronizer:
                 logger.debug(f"File {file_path} is up to date")
                 return True
         
-        # Determine local path
+        # Determine local path with security validation
         repo_path = Path(self.config['repository']['path'])
-        relative_path = Path(file_path).relative_to(repo_path)
+        try:
+            relative_path = Path(file_path).relative_to(repo_path)
+        except ValueError:
+            logger.error(f"Path {file_path} is outside repository path {repo_path}")
+            return False
+            
         local_path = self.cache_dir / relative_path
+        
+        # Security check: ensure resolved path is within cache directory
+        try:
+            resolved_path = local_path.resolve()
+            cache_dir_resolved = self.cache_dir.resolve()
+            # Check if the resolved path is within the cache directory
+            resolved_path.relative_to(cache_dir_resolved)
+        except (ValueError, RuntimeError):
+            logger.error(f"Path traversal attempt detected: {file_path}")
+            return False
         
         # Download file
         try:
