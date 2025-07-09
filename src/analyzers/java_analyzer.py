@@ -117,6 +117,7 @@ class JavaAnalyzer(BaseAnalyzer):
                     line_num = content[:method_start].count('\n') + 1
                     
                     result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
                         severity=Severity.HIGH,
                         message="Endpoint lacks authorization checks",
                         file_path=result.file_path,
@@ -139,11 +140,13 @@ class JavaAnalyzer(BaseAnalyzer):
         }
         
         for algo, recommendation in weak_algorithms.items():
-            pattern = rf'({algo}|{algo.lower()})'
+            # Use word boundaries to avoid false positives
+            pattern = rf'\b({algo}|{algo.lower()})\b'
             matches = self.find_pattern_matches(content, [pattern])
             
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=f"Use of weak cryptographic algorithm: {algo}",
                     file_path=result.file_path,
@@ -167,6 +170,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -180,27 +184,58 @@ class JavaAnalyzer(BaseAnalyzer):
     
     def _analyze_injection_vulnerabilities(self, content: str, result: AnalyzerResult) -> None:
         """Analyze injection vulnerabilities."""
-        # SQL Injection
-        sql_patterns = [
-            (r'(createQuery|createNativeQuery|prepareStatement)\s*\([^)]*\+', "SQL injection via string concatenation"),
-            (r'String\s+sql\s*=.*?\+.*?(request\.get|params\.get)', "SQL injection from user input"),
-            (r'jdbcTemplate\.(query|update|execute)\s*\([^)]*\+', "SQL injection in JdbcTemplate")
-        ]
+        lines = content.split('\n')
         
-        for pattern, message in sql_patterns:
-            matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+        # SQL Injection - line by line analysis
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
+            
+            # Check for string concatenation in SQL statements
+            if '+' in stripped_line and any(keyword in stripped_line.lower() for keyword in ['select', 'insert', 'update', 'delete', 'sql']):
+                if any(method in stripped_line for method in ['createQuery', 'createNativeQuery', 'prepareStatement', 'jdbcTemplate', 'query', 'execute']):
+                    result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
+                        severity=Severity.CRITICAL,
+                        message="SQL injection via string concatenation",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find('+'),
+                        code_snippet=stripped_line,
+                        recommendation="Use parameterized queries or prepared statements",
+                        cwe_id="CWE-89",
+                        owasp_category="A03:2021 - Injection"
+                    ))
+            
+            # Check for SQL variable assignment with concatenation
+            if 'String' in stripped_line and ('sql' in stripped_line.lower() or 'query' in stripped_line.lower()) and '+' in stripped_line:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
-                    message=message,
+                    message="SQL injection via string concatenation in variable assignment",
                     file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
+                    line_number=i,
+                    column_number=stripped_line.find('+'),
+                    code_snippet=stripped_line,
                     recommendation="Use parameterized queries or prepared statements",
                     cwe_id="CWE-89",
                     owasp_category="A03:2021 - Injection"
                 ))
+            
+            # Check for user input concatenation
+            if '+' in stripped_line and any(input_source in stripped_line for input_source in ['request.get', 'params.get', 'getParameter']):
+                if any(keyword in stripped_line.lower() for keyword in ['select', 'insert', 'update', 'delete', 'sql', 'query']):
+                    result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
+                        severity=Severity.CRITICAL,
+                        message="SQL injection from user input concatenation",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find('+'),
+                        code_snippet=stripped_line,
+                        recommendation="Use parameterized queries or prepared statements",
+                        cwe_id="CWE-89",
+                        owasp_category="A03:2021 - Injection"
+                    ))
         
         # LDAP Injection
         ldap_patterns = [
@@ -212,6 +247,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=message,
                     file_path=result.file_path,
@@ -233,6 +269,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -269,6 +306,7 @@ class JavaAnalyzer(BaseAnalyzer):
                 
                 if not any(re.search(pat, method_body) for pat in validation_patterns):
                     result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
                         severity=Severity.MEDIUM,
                         message=f"Missing validation for parameter: {param_name}",
                         file_path=result.file_path,
@@ -292,6 +330,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=message,
                     file_path=result.file_path,
@@ -317,6 +356,7 @@ class JavaAnalyzer(BaseAnalyzer):
                 for lib, message in vulnerable_libs.items():
                     if lib in node.value:
                         result.add_issue(SecurityIssue(
+                            type=IssueType.SECURITY,
                             severity=Severity.HIGH,
                             message=f"Potentially vulnerable dependency: {message}",
                             file_path=result.file_path,
@@ -339,6 +379,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.MEDIUM,
                     message=message,
                     file_path=result.file_path,
@@ -352,23 +393,52 @@ class JavaAnalyzer(BaseAnalyzer):
     
     def _analyze_integrity_failures(self, content: str, result: AnalyzerResult) -> None:
         """Analyze software and data integrity failures."""
-        # Unsafe deserialization
-        deserialize_patterns = [
-            (r'ObjectInputStream.*readObject\(\)', "Unsafe deserialization detected"),
-            (r'@JsonTypeInfo.*defaultImpl', "Potentially unsafe JSON deserialization"),
-            (r'XMLDecoder.*readObject', "Unsafe XML deserialization")
-        ]
+        lines = content.split('\n')
         
-        for pattern, message in deserialize_patterns:
-            matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
+            
+            # Check for ObjectInputStream.readObject()
+            if 'ObjectInputStream' in stripped_line or 'readObject()' in stripped_line:
+                if 'readObject(' in stripped_line:
+                    result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
+                        severity=Severity.CRITICAL,
+                        message="Unsafe deserialization detected",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find('readObject'),
+                        code_snippet=stripped_line,
+                        recommendation="Avoid deserializing untrusted data",
+                        cwe_id="CWE-502",
+                        owasp_category="A08:2021 - Integrity Failures"
+                    ))
+            
+            # Check for @JsonTypeInfo with defaultImpl
+            if '@JsonTypeInfo' in stripped_line and 'defaultImpl' in stripped_line:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
-                    message=message,
+                    message="Potentially unsafe JSON deserialization",
                     file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
+                    line_number=i,
+                    column_number=stripped_line.find('@JsonTypeInfo'),
+                    code_snippet=stripped_line,
+                    recommendation="Avoid deserializing untrusted data",
+                    cwe_id="CWE-502",
+                    owasp_category="A08:2021 - Integrity Failures"
+                ))
+            
+            # Check for XMLDecoder.readObject
+            if 'XMLDecoder' in stripped_line and 'readObject' in stripped_line:
+                result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
+                    severity=Severity.CRITICAL,
+                    message="Unsafe XML deserialization",
+                    file_path=result.file_path,
+                    line_number=i,
+                    column_number=stripped_line.find('XMLDecoder'),
+                    code_snippet=stripped_line,
                     recommendation="Avoid deserializing untrusted data",
                     cwe_id="CWE-502",
                     owasp_category="A08:2021 - Integrity Failures"
@@ -387,6 +457,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=message,
                     file_path=result.file_path,
@@ -410,6 +481,7 @@ class JavaAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=message,
                     file_path=result.file_path,
@@ -442,23 +514,37 @@ class JavaAnalyzer(BaseAnalyzer):
     
     def _analyze_memory_management(self, content: str, result: AnalyzerResult) -> None:
         """Analyze memory management issues."""
-        # Memory leaks - unclosed resources
-        resource_patterns = [
-            (r'new\s+FileInputStream\s*\([^)]+\)(?!.*\.close\(\))', "FileInputStream not closed"),
-            (r'new\s+FileOutputStream\s*\([^)]+\)(?!.*\.close\(\))', "FileOutputStream not closed"),
-            (r'Connection\s+\w+\s*=.*getConnection\(\)(?!.*\.close\(\))', "Database connection not closed")
-        ]
+        lines = content.split('\n')
         
-        for pattern, message in resource_patterns:
-            matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+        # Memory leaks - unclosed resources (simple line-by-line check)
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
+            
+            # Check for FileInputStream/FileOutputStream creation
+            if 'new FileInputStream(' in stripped_line or 'new FileOutputStream(' in stripped_line:
+                resource_type = 'FileInputStream' if 'FileInputStream' in stripped_line else 'FileOutputStream'
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.HIGH,
-                    message=f"Resource leak: {message}",
+                    message=f"Resource leak: {resource_type} not closed - use try-with-resources",
                     file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
+                    line_number=i,
+                    column_number=stripped_line.find('new'),
+                    code_snippet=stripped_line,
+                    recommendation="Use try-with-resources or ensure resources are closed",
+                    impact="Memory leak and resource exhaustion"
+                ))
+            
+            # Check for database connection creation
+            if 'getConnection()' in stripped_line and ('Connection' in stripped_line or 'conn' in stripped_line.lower()):
+                result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
+                    severity=Severity.HIGH,
+                    message="Resource leak: Database connection not closed",
+                    file_path=result.file_path,
+                    line_number=i,
+                    column_number=stripped_line.find('getConnection'),
+                    code_snippet=stripped_line,
                     recommendation="Use try-with-resources or ensure resources are closed",
                     impact="Memory leak and resource exhaustion"
                 ))
@@ -469,6 +555,7 @@ class JavaAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.MEDIUM,
                 message="Large array allocation in loop",
                 file_path=result.file_path,
@@ -481,55 +568,83 @@ class JavaAnalyzer(BaseAnalyzer):
     
     def _analyze_collection_usage(self, content: str, result: AnalyzerResult) -> None:
         """Analyze collection usage patterns."""
-        # ArrayList vs LinkedList
-        linkedlist_random = r'LinkedList.*\.get\s*\(\s*\d+\s*\)'
-        matches = self.find_pattern_matches(content, [linkedlist_random])
+        lines = content.split('\n')
         
-        for match_text, line, col in matches:
-            result.add_issue(PerformanceIssue(
-                severity=Severity.MEDIUM,
-                message="Random access on LinkedList is O(n)",
-                file_path=result.file_path,
-                line_number=line,
-                column_number=col,
-                code_snippet=match_text,
-                recommendation="Use ArrayList for random access",
-                impact="O(n) time complexity for get operations"
-            ))
+        # Track LinkedList variables and detect .get() usage
+        linkedlist_vars = set()
         
-        # HashMap without initial capacity
-        hashmap_pattern = r'new\s+HashMap\s*<[^>]+>\s*\(\s*\)'
-        matches = self.find_pattern_matches(content, [hashmap_pattern])
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
+            
+            # Find LinkedList variable declarations
+            if 'LinkedList' in stripped_line and '=' in stripped_line:
+                # Extract variable name
+                parts = stripped_line.split('=')[0].strip().split()
+                if len(parts) >= 2:
+                    var_name = parts[-1]
+                    linkedlist_vars.add(var_name)
+            
+            # Check for .get() calls on LinkedList variables
+            for var_name in linkedlist_vars:
+                if f'{var_name}.get(' in stripped_line:
+                    result.add_issue(PerformanceIssue(
+                        type=IssueType.PERFORMANCE,
+                        severity=Severity.MEDIUM,
+                        message="Random access on LinkedList is O(n)",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find(f'{var_name}.get'),
+                        code_snippet=stripped_line,
+                        recommendation="Use ArrayList for random access",
+                        impact="O(n) time complexity for get operations"
+                    ))
         
-        for match_text, line, col in matches:
-            result.add_issue(PerformanceIssue(
-                severity=Severity.LOW,
-                message="HashMap created without initial capacity",
-                file_path=result.file_path,
-                line_number=line,
-                column_number=col,
-                code_snippet=match_text,
-                recommendation="Specify initial capacity to avoid resizing",
-                impact="Multiple resize operations during growth"
-            ))
+        # HashMap without initial capacity - check line by line
+        lines = content.split('\n')
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
+            if 'new HashMap<' in stripped_line and '()' in stripped_line:
+                result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
+                    severity=Severity.LOW,
+                    message="HashMap created without initial capacity",
+                    file_path=result.file_path,
+                    line_number=i,
+                    column_number=stripped_line.find('new HashMap'),
+                    code_snippet=stripped_line,
+                    recommendation="Specify initial capacity to avoid resizing",
+                    impact="Multiple resize operations during growth"
+                ))
     
     def _analyze_string_operations(self, content: str, result: AnalyzerResult) -> None:
         """Analyze string operation performance."""
-        # String concatenation in loops
-        string_concat_loop = r'for\s*\([^)]*\)\s*{[^}]*\+\s*=\s*"[^"]*"'
-        matches = self.find_pattern_matches(content, [string_concat_loop])
+        lines = content.split('\n')
+        in_loop = False
         
-        for match_text, line, col in matches:
-            result.add_issue(PerformanceIssue(
-                severity=Severity.MEDIUM,
-                message="String concatenation in loop",
-                file_path=result.file_path,
-                line_number=line,
-                column_number=col,
-                code_snippet=match_text,
-                recommendation="Use StringBuilder for string concatenation in loops",
-                impact="O(n²) time complexity due to string immutability"
-            ))
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
+            
+            # Track if we're in a loop
+            if any(keyword in stripped_line for keyword in ['for (', 'while (', 'do {']):
+                in_loop = True
+            elif stripped_line.startswith('}'):
+                in_loop = False
+            
+            # Check for string concatenation in loops (both with literals and variables)
+            if in_loop and '+=' in stripped_line:
+                # Check if it's likely string concatenation (variable names suggest strings)
+                if any(keyword in stripped_line.lower() for keyword in ['result', 'string', 'text', 'msg', 'message', '"', "'"]):
+                    result.add_issue(PerformanceIssue(
+                        type=IssueType.PERFORMANCE,
+                        severity=Severity.MEDIUM,
+                        message="String concatenation in loop",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find('+='),
+                        code_snippet=stripped_line,
+                        recommendation="Use StringBuilder for string concatenation in loops",
+                        impact="O(n²) time complexity due to string immutability"
+                    ))
     
     def _analyze_thread_safety(self, content: str, result: AnalyzerResult) -> None:
         """Analyze thread safety issues."""
@@ -539,6 +654,7 @@ class JavaAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.HIGH,
                 message="SimpleDateFormat is not thread-safe",
                 file_path=result.file_path,
@@ -551,22 +667,33 @@ class JavaAnalyzer(BaseAnalyzer):
     
     def _analyze_database_operations(self, content: str, result: AnalyzerResult) -> None:
         """Analyze database operation performance."""
-        # N+1 query problem
-        if 'for' in content and ('repository.' in content or 'dao.' in content):
-            n_plus_one = r'for\s*\([^)]*\)\s*{[^}]*(repository|dao)\.\w+\('
-            matches = self.find_pattern_matches(content, [n_plus_one])
+        lines = content.split('\n')
+        in_loop = False
+        
+        for i, line in enumerate(lines, 1):
+            stripped_line = line.strip()
             
-            for match_text, line, col in matches:
-                result.add_issue(PerformanceIssue(
-                    severity=Severity.HIGH,
-                    message="Potential N+1 query problem",
-                    file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
-                    recommendation="Use JOIN fetch or batch loading",
-                    impact="Database performance degradation"
-                ))
+            # Track if we're in a loop
+            if any(keyword in stripped_line for keyword in ['for (', 'while (', 'do {']):
+                in_loop = True
+            elif stripped_line.startswith('}'):
+                in_loop = False
+            
+            # Check for repository/dao calls in loops
+            if in_loop and any(pattern in stripped_line for pattern in ['repository.', 'dao.', 'Repository.']):
+                # Check if it's a query method (find, get, load, etc.)
+                if any(method in stripped_line for method in ['find', 'get', 'load', 'select', 'query']):
+                    result.add_issue(PerformanceIssue(
+                        type=IssueType.PERFORMANCE,
+                        severity=Severity.HIGH,
+                        message="Potential N+1 query problem",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find('repository') if 'repository' in stripped_line else stripped_line.find('dao'),
+                        code_snippet=stripped_line,
+                        recommendation="Use JOIN fetch or batch loading",
+                        impact="Database performance degradation"
+                    ))
     
     def analyze_best_practices(self, ast: ASTNode, result: AnalyzerResult) -> None:
         """Analyze Java best practices and design patterns."""
@@ -643,21 +770,33 @@ class JavaAnalyzer(BaseAnalyzer):
     def _analyze_spring_practices(self, content: str, result: AnalyzerResult) -> None:
         """Analyze Spring Framework best practices."""
         if '@Component' in content or '@Service' in content or '@Repository' in content:
-            # Field injection vs constructor injection
-            field_injection = r'@Autowired\s+private'
-            matches = self.find_pattern_matches(content, [field_injection])
+            lines = content.split('\n')
+            autowired_next = False
             
-            for match_text, line, col in matches:
-                result.add_issue(Issue(
-                    type=IssueType.BEST_PRACTICE,
-                    severity=Severity.MEDIUM,
-                    message="Field injection detected",
-                    file_path=result.file_path,
-                    line_number=line,
-                    column_number=col,
-                    code_snippet=match_text,
-                    recommendation="Use constructor injection for better testability"
-                ))
+            for i, line in enumerate(lines, 1):
+                stripped_line = line.strip()
+                
+                # Check for @Autowired annotation
+                if '@Autowired' in stripped_line:
+                    autowired_next = True
+                    continue
+                
+                # Check if the next line after @Autowired is a private field
+                if autowired_next and 'private' in stripped_line and (';' in stripped_line or '=' in stripped_line):
+                    result.add_issue(Issue(
+                        type=IssueType.BEST_PRACTICE,
+                        severity=Severity.MEDIUM,
+                        message="Field injection detected",
+                        file_path=result.file_path,
+                        line_number=i,
+                        column_number=stripped_line.find('private'),
+                        code_snippet=stripped_line,
+                        recommendation="Use constructor injection for better testability"
+                    ))
+                    autowired_next = False
+                elif stripped_line and not stripped_line.startswith('//'):
+                    # Reset if we encounter any non-comment line that's not private field
+                    autowired_next = False
     
     def _analyze_exception_handling(self, content: str, result: AnalyzerResult) -> None:
         """Analyze exception handling practices."""

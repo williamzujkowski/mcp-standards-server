@@ -22,3 +22,13 @@ requests>=2.25.0
 
 # Security dependencies
 PyJWT>=2.8.0
+
+# Performance monitoring and profiling
+pympler>=0.9.0
+prometheus_client>=0.15.0
+memory_profiler>=0.60.0
+msgpack>=1.0.0
+
+# Additional utilities
+faiss-cpu>=1.7.0  # For vector index optimization
+psutil>=5.9.0     # For system monitoring

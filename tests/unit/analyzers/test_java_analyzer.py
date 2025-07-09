@@ -44,7 +44,7 @@ public class UserController {
         
         result = analyzer.analyze_file(test_file)
         
-        access_issues = [i for i in result.issues if i.cwe_id == "CWE-862"]
+        access_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-862"]
         assert len(access_issues) >= 1
         assert any("authorization" in issue.message.lower() for issue in access_issues)
     
@@ -70,11 +70,11 @@ public class CryptoUtil {
         result = analyzer.analyze_file(test_file)
         
         # Check weak algorithms
-        crypto_issues = [i for i in result.issues if i.cwe_id == "CWE-327"]
+        crypto_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-327"]
         assert len(crypto_issues) >= 2  # MD5 and DES
         
         # Check hardcoded secrets
-        secret_issues = [i for i in result.issues if i.cwe_id == "CWE-798"]
+        secret_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-798"]
         assert len(secret_issues) >= 2  # password and API key
     
     def test_sql_injection_detection(self, analyzer, tmp_path):
@@ -104,7 +104,7 @@ public class UserDao {
         
         result = analyzer.analyze_file(test_file)
         
-        sql_issues = [i for i in result.issues if i.cwe_id == "CWE-89"]
+        sql_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-89"]
         assert len(sql_issues) >= 2
         assert all(i.severity == Severity.CRITICAL for i in sql_issues)
     
@@ -127,7 +127,7 @@ public class DataProcessor {
         
         result = analyzer.analyze_file(test_file)
         
-        deserialize_issues = [i for i in result.issues if i.cwe_id == "CWE-502"]
+        deserialize_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-502"]
         assert len(deserialize_issues) >= 2
     
     def test_logging_sensitive_data(self, analyzer, tmp_path):
@@ -149,7 +149,7 @@ public class AuthService {
         
         result = analyzer.analyze_file(test_file)
         
-        log_issues = [i for i in result.issues if i.cwe_id == "CWE-532"]
+        log_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-532"]
         assert len(log_issues) >= 2
     
     def test_resource_leak_detection(self, analyzer, tmp_path):
@@ -325,9 +325,9 @@ public class VulnerableController {
         result = analyzer.analyze_file(test_file)
         
         # Should have issues from different OWASP categories
-        owasp_issues = [i for i in result.issues if hasattr(i, 'owasp_category')]
+        owasp_issues = [i for i in result.issues if hasattr(i, 'owasp_category') and i.owasp_category]
         assert len(owasp_issues) >= 2
         
-        categories = {i.owasp_category for i in owasp_issues if i.owasp_category}
+        categories = {i.owasp_category for i in owasp_issues}
         assert "A05:2021" in str(categories)
         assert "A10:2021" in str(categories)

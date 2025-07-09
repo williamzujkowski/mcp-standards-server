@@ -88,7 +88,7 @@ class RustAnalyzer(BaseAnalyzer):
         self._analyze_ownership_issues(content, result)
         
         # Concurrency safety
-        self._analyze_concurrency_safety(content, result)
+        self._analyze_concurrency_safety(content, ast, result)
         
         # Cryptographic issues
         self._analyze_crypto_usage(content, result)
@@ -122,6 +122,7 @@ class RustAnalyzer(BaseAnalyzer):
             # Check for common unsafe patterns
             if 'raw' in unsafe_content or '*const' in unsafe_content or '*mut' in unsafe_content:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message="Raw pointer manipulation in unsafe block",
                     file_path=result.file_path,
@@ -134,6 +135,7 @@ class RustAnalyzer(BaseAnalyzer):
             
             if 'transmute' in unsafe_content:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message="Use of std::mem::transmute is extremely dangerous",
                     file_path=result.file_path,
@@ -145,6 +147,7 @@ class RustAnalyzer(BaseAnalyzer):
             
             if 'get_unchecked' in unsafe_content:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message="Unchecked array/slice access can cause undefined behavior",
                     file_path=result.file_path,
@@ -183,6 +186,7 @@ class RustAnalyzer(BaseAnalyzer):
             after_drop = content[drop_match.end():]
             if re.search(rf'\b{var_name}\b', after_drop[:500]):  # Check next 500 chars
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=f"Potential use-after-free: '{var_name}' used after drop",
                     file_path=result.file_path,
@@ -196,20 +200,19 @@ class RustAnalyzer(BaseAnalyzer):
         box_pattern = r'Box::new\s*\([^)]+\)'
         box_matches = self.find_pattern_matches(content, [box_pattern])
         
-        for match_text, line, col in box_matches:
-            # Check if Box is leaked via into_raw without from_raw
-            if 'into_raw' in content:
-                line_content = content.split('\n')[line - 1]
-                if 'into_raw' in line_content and 'from_raw' not in content:
-                    result.add_issue(Issue(
-                        type=IssueType.MEMORY_SAFETY,
-                        severity=Severity.HIGH,
-                        message="Potential memory leak: Box::into_raw without corresponding from_raw",
-                        file_path=result.file_path,
-                        line_number=line,
-                        column_number=col,
-                        recommendation="Ensure Box::from_raw is called to reclaim memory"
-                    ))
+        # Check for Box::into_raw without corresponding from_raw function call
+        if 'into_raw' in content and not re.search(r'Box::from_raw\s*\(', content):
+            into_raw_matches = self.find_pattern_matches(content, [r'Box::into_raw'])
+            for match_text, line, col in into_raw_matches:
+                result.add_issue(Issue(
+                    type=IssueType.MEMORY_SAFETY,
+                    severity=Severity.HIGH,
+                    message="Potential memory leak: Box::into_raw without corresponding from_raw",
+                    file_path=result.file_path,
+                    line_number=line,
+                    column_number=col,
+                    recommendation="Ensure Box::from_raw is called to reclaim memory"
+                ))
     
     def _analyze_ownership_issues(self, content: str, result: AnalyzerResult) -> None:
         """Analyze ownership and borrowing issues."""
@@ -240,6 +243,7 @@ class RustAnalyzer(BaseAnalyzer):
         
         if len(clone_matches) > 5:  # Arbitrary threshold
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.MEDIUM,
                 message=f"Excessive use of clone() ({len(clone_matches)} occurrences)",
                 file_path=result.file_path,
@@ -249,7 +253,7 @@ class RustAnalyzer(BaseAnalyzer):
                 impact="Unnecessary memory allocations and copies"
             ))
     
-    def _analyze_concurrency_safety(self, content: str, result: AnalyzerResult) -> None:
+    def _analyze_concurrency_safety(self, content: str, ast: ASTNode, result: AnalyzerResult) -> None:
         """Analyze concurrency and thread safety issues."""
         # Static mutable variables
         static_mut_pattern = r'static\s+mut\s+\w+'
@@ -257,6 +261,7 @@ class RustAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(SecurityIssue(
+                type=IssueType.SECURITY,
                 severity=Severity.HIGH,
                 message="Static mutable variable is not thread-safe",
                 file_path=result.file_path,
@@ -268,7 +273,7 @@ class RustAnalyzer(BaseAnalyzer):
             ))
         
         # Rc in multi-threaded context
-        if 'thread::spawn' in content and 'Rc<' in content:
+        if 'thread::spawn' in content and ('Rc<' in content or 'Rc::new' in content):
             result.add_issue(Issue(
                 type=IssueType.CONCURRENCY,
                 severity=Severity.HIGH,
@@ -309,6 +314,7 @@ class RustAnalyzer(BaseAnalyzer):
                 matches = self.find_pattern_matches(content, [pattern])
                 for match_text, line, col in matches:
                     result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
                         severity=Severity.HIGH,
                         message=message,
                         file_path=result.file_path,
@@ -329,6 +335,7 @@ class RustAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -401,6 +408,7 @@ class RustAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message=message,
                     file_path=result.file_path,
@@ -415,8 +423,9 @@ class RustAnalyzer(BaseAnalyzer):
         vec_push_loop = r'let\s+mut\s+(\w+)\s*=\s*Vec::new\(\);.*?for.*?\.push\('
         if re.search(vec_push_loop, content, re.DOTALL):
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.MEDIUM,
-                message="Vec::push in loop without pre-allocated capacity",
+                message="Vec::push in loop without pre-allocated capacity causes multiple reallocations",
                 file_path=result.file_path,
                 line_number=1,
                 column_number=1,
@@ -429,7 +438,6 @@ class RustAnalyzer(BaseAnalyzer):
         # Inefficient iterator chains
         inefficient_patterns = [
             (r'\.filter\([^)]+\)\.count\(\)\s*==\s*0', "Use .any() or .all() instead of .filter().count() == 0"),
-            (r'\.map\([^)]+\)\.collect::<Vec<_>>\(\)\.into_iter\(\)', "Unnecessary collect and into_iter"),
             (r'for\s+_\s+in\s+0\.\.\w+', "Use (0..n).for_each() or repeat patterns")
         ]
         
@@ -437,6 +445,7 @@ class RustAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message=message,
                     file_path=result.file_path,
@@ -446,6 +455,21 @@ class RustAnalyzer(BaseAnalyzer):
                     recommendation="Use more efficient iterator methods",
                     impact="Unnecessary iterations or allocations"
                 ))
+        
+        # Check for multiline collect()->into_iter pattern
+        if '.collect::<Vec<_>>' in content and '.into_iter()' in content:
+            # Simple heuristic - if both patterns exist in the same function-like scope
+            result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
+                severity=Severity.LOW,
+                message="Unnecessary collect and into_iter",
+                file_path=result.file_path,
+                line_number=1,
+                column_number=1,
+                code_snippet="collect::<Vec<_>>().into_iter()",
+                recommendation="Use more efficient iterator methods",
+                impact="Unnecessary iterations or allocations"
+            ))
     
     def _analyze_string_operations(self, content: str, result: AnalyzerResult) -> None:
         """Analyze string operation performance."""
@@ -455,6 +479,7 @@ class RustAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.MEDIUM,
                 message="String concatenation in loop",
                 file_path=result.file_path,
@@ -478,6 +503,7 @@ class RustAnalyzer(BaseAnalyzer):
             
             if 'for' in context or 'iter' in context:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message="HashMap created without capacity hint",
                     file_path=result.file_path,
@@ -497,7 +523,7 @@ class RustAnalyzer(BaseAnalyzer):
         if async_fns:
             blocking_patterns = [
                 (r'std::thread::sleep', "Blocking sleep in async context"),
-                (r'\.read_to_string\(\)', "Blocking I/O in async context"),
+                (r'(?:std::fs::)?read_to_string\(', "Blocking I/O in async context"),
                 (r'\.write_all\(\)', "Blocking I/O in async context")
             ]
             
@@ -505,6 +531,7 @@ class RustAnalyzer(BaseAnalyzer):
                 matches = self.find_pattern_matches(content, [pattern])
                 for match_text, line, col in matches:
                     result.add_issue(PerformanceIssue(
+                        type=IssueType.PERFORMANCE,
                         severity=Severity.HIGH,
                         message=message,
                         file_path=result.file_path,

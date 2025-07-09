@@ -71,7 +71,11 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         arrow_pattern = re.compile(r'(?:export\s+)?const\s+(\w+)\s*(?::\s*[^=]+)?\s*=\s*(?:async\s+)?\([^)]*\)\s*(?::\s*[^=]+)?\s*=>')
         for match in arrow_pattern.finditer(content):
             fn_name = match.group(1)
-            fn_node = ASTNode("arrow_function", fn_name)
+            # Check if this is a React component (starts with uppercase)
+            if fn_name[0].isupper():
+                fn_node = ASTNode("react_component", fn_name)
+            else:
+                fn_node = ASTNode("arrow_function", fn_name)
             fn_node.metadata['line'] = content[:match.start()].count('\n') + 1
             fn_node.metadata['is_async'] = 'async' in match.group(0)
             root.add_child(fn_node)
@@ -117,6 +121,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(SecurityIssue(
+                type=IssueType.SECURITY,
                 severity=Severity.HIGH,
                 message="Use of dangerouslySetInnerHTML can lead to XSS",
                 file_path=result.file_path,
@@ -141,6 +146,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.HIGH,
                     message=f"{message} can lead to XSS",
                     file_path=result.file_path,
@@ -161,6 +167,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.MEDIUM,
                     message=message,
                     file_path=result.file_path,
@@ -173,17 +180,52 @@ class TypeScriptAnalyzer(BaseAnalyzer):
     
     def _analyze_injection_vulnerabilities(self, content: str, result: AnalyzerResult) -> None:
         """Analyze injection vulnerabilities."""
-        # SQL injection patterns
+        # Look for template literals and string concatenation in SQL-like strings
+        lines = content.split('\n')
+        
+        # SQL injection patterns - look for template literals and concatenation in SQL strings
+        for line_num, line in enumerate(lines, 1):
+            # Template literals with SQL keywords
+            if re.search(r'`[^`]*(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)[^`]*\$\{', line, re.IGNORECASE):
+                result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
+                    severity=Severity.CRITICAL,
+                    message="SQL injection via template literals",
+                    file_path=result.file_path,
+                    line_number=line_num,
+                    column_number=1,
+                    code_snippet=line.strip(),
+                    recommendation="Use parameterized queries",
+                    cwe_id="CWE-89",
+                    owasp_category="A03:2021 - Injection"
+                ))
+            
+            # String concatenation with SQL keywords  
+            if re.search(r'["\'][^"\']*(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)[^"\']*["\'][^;]*\+', line, re.IGNORECASE):
+                result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
+                    severity=Severity.CRITICAL,
+                    message="SQL injection via string concatenation",
+                    file_path=result.file_path,
+                    line_number=line_num,
+                    column_number=1,
+                    code_snippet=line.strip(),
+                    recommendation="Use parameterized queries",
+                    cwe_id="CWE-89",
+                    owasp_category="A03:2021 - Injection"
+                ))
+        
+        # Additional patterns for query/execute calls
         sql_patterns = [
-            (r'query\s*\([^)]*\$\{', "SQL injection via template literals"),
-            (r'query\s*\([^)]*\+', "SQL injection via string concatenation"),
-            (r'execute\s*\([^)]*\$\{', "SQL injection in execute")
+            (r'\.query\s*\([^)]*\$\{', "SQL injection via template literals in query call"),
+            (r'\.execute\s*\([^)]*\$\{', "SQL injection via template literals in execute call")
         ]
         
         for pattern, message in sql_patterns:
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -205,6 +247,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -281,6 +324,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                 matches = self.find_pattern_matches(content, [pattern])
                 for match_text, line, col in matches:
                     result.add_issue(SecurityIssue(
+                        type=IssueType.SECURITY,
                         severity=Severity.MEDIUM,
                         message=f"{message} is vulnerable to XSS",
                         file_path=result.file_path,
@@ -292,20 +336,24 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                     ))
         
         # Missing authentication checks
-        if 'router' in content.lower() or 'route' in content.lower():
+        if 'router' in content.lower() or 'route' in content.lower() or 'app.' in content.lower():
             # Look for route definitions without auth middleware
-            route_pattern = r'(?:get|post|put|delete|patch)\s*\([\'"][^\'"]+'
-            routes = self.find_pattern_matches(content, [route_pattern])
+            route_patterns = [
+                r'(?:router|app|express)\.(?:get|post|put|delete|patch)\s*\([\'"][^\'\"]+',
+            ]
+            routes = []
+            for pattern in route_patterns:
+                routes.extend(self.find_pattern_matches(content, [pattern]))
             
-            auth_keywords = ['auth', 'authenticated', 'requireAuth', 'isAuthenticated', 'checkAuth']
+            auth_keywords = ['requireAuth', 'isAuthenticated', 'checkAuth', 'authenticate', 'authorize']
             
             for match_text, line, col in routes:
-                # Check if auth is mentioned nearby
-                context_start = max(0, line - 3)
-                context_end = min(len(content.split('\n')), line + 3)
-                context = '\n'.join(content.split('\n')[context_start:context_end])
+                # Check if auth middleware is mentioned in the route line (not in comments)
+                route_line = content.split('\n')[line - 1]
+                # Remove comments from the line
+                route_line_no_comments = re.sub(r'//.*$', '', route_line)
                 
-                if not any(keyword in context for keyword in auth_keywords):
+                if not any(keyword in route_line_no_comments for keyword in auth_keywords):
                     result.add_issue(Issue(
                         type=IssueType.BEST_PRACTICE,
                         severity=Severity.LOW,
@@ -331,6 +379,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.CRITICAL,
                     message=message,
                     file_path=result.file_path,
@@ -350,6 +399,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(SecurityIssue(
+                    type=IssueType.SECURITY,
                     severity=Severity.MEDIUM,
                     message=message,
                     file_path=result.file_path,
@@ -409,6 +459,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             comp_name = comp.value
             if not re.search(rf'memo\s*\(\s*{comp_name}\s*\)', content):
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message=f"Component '{comp_name}' could benefit from React.memo",
                     file_path=result.file_path,
@@ -424,6 +475,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.LOW,
                 message="Inline function in JSX prop",
                 file_path=result.file_path,
@@ -436,15 +488,22 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         
         # Missing dependency arrays in hooks
         hook_patterns = [
-            (r'useEffect\s*\(\s*\(\)\s*=>[^,]+\)', "useEffect without dependency array"),
-            (r'useMemo\s*\(\s*\(\)\s*=>[^,]+\)', "useMemo without dependency array"),
-            (r'useCallback\s*\(\s*\([^)]*\)\s*=>[^,]+\)', "useCallback without dependency array")
+            (r'useEffect\s*\([^)]+\)(?!\s*,)', "useEffect without dependency array"),
+            (r'useMemo\s*\([^)]+\)(?!\s*,)', "useMemo without dependency array"),
+            (r'useCallback\s*\([^)]+\)(?!\s*,)', "useCallback without dependency array")
         ]
         
         for pattern, message in hook_patterns:
-            matches = self.find_pattern_matches(content, [pattern])
+            # Use find_pattern_matches but with DOTALL for multi-line
+            matches = []
+            regex = re.compile(pattern, re.IGNORECASE | re.DOTALL)
+            for match in regex.finditer(content):
+                line_num = content[:match.start()].count('\n') + 1
+                matches.append((match.group(), line_num, match.start()))
+            
             for match_text, line, col in matches:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.MEDIUM,
                     message=message,
                     file_path=result.file_path,
@@ -456,13 +515,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                 ))
         
         # Large lists without virtualization
-        if 'map' in content and ('li>' in content or '<tr' in content):
+        if 'map' in content and ('<li' in content or '<tr' in content):
             # Simple heuristic: if mapping over array to render list items
-            list_pattern = r'\.map\s*\([^)]+\)\s*(?:=>|{)'
+            list_pattern = r'\.map\s*\('
             matches = self.find_pattern_matches(content, [list_pattern])
             
             if len(matches) > 0 and 'react-window' not in content and 'react-virtual' not in content:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message="Consider virtualization for large lists",
                     file_path=result.file_path,
@@ -480,6 +540,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.LOW,
                 message="Multiple array iterations can be combined",
                 file_path=result.file_path,
@@ -501,6 +562,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message=message,
                     file_path=result.file_path,
@@ -513,12 +575,41 @@ class TypeScriptAnalyzer(BaseAnalyzer):
     
     def _analyze_async_patterns(self, content: str, result: AnalyzerResult) -> None:
         """Analyze async/await patterns."""
-        # Sequential awaits that could be parallel
+        # Sequential awaits that could be parallel - search for consecutive await lines
+        lines = content.split('\n')
+        
+        for i, line in enumerate(lines):
+            if 'await' in line and i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                # Check if next line also contains await (possibly with variable assignment)
+                if ('await' in next_line and 
+                    not 'try' in lines[max(0, i-2):i+2] and  # Not in try-catch
+                    not '.catch' in line and not '.catch' in next_line):  # Not using .catch
+                    
+                    result.add_issue(PerformanceIssue(
+                        type=IssueType.PERFORMANCE,
+                        severity=Severity.MEDIUM,
+                        message="Sequential awaits could be parallelized",
+                        file_path=result.file_path,
+                        line_number=i + 1,
+                        column_number=1,
+                        code_snippet=line.strip() + "; " + next_line,
+                        recommendation="Use Promise.all() for independent async operations",
+                        impact="Increased latency"
+                    ))
+                    break  # Only report the first instance per function
+        
+        # Use original pattern as fallback
         sequential_await = r'await\s+\w+\([^)]*\);\s*\n\s*(?:const|let|var)?\s*\w*\s*=?\s*await'
-        matches = self.find_pattern_matches(content, [sequential_await])
+        matches = []
+        regex = re.compile(sequential_await, re.IGNORECASE | re.DOTALL)
+        for match in regex.finditer(content):
+            line_num = content[:match.start()].count('\n') + 1
+            matches.append((match.group(), line_num, match.start()))
         
         for match_text, line, col in matches:
             result.add_issue(PerformanceIssue(
+                type=IssueType.PERFORMANCE,
                 severity=Severity.MEDIUM,
                 message="Sequential awaits could be parallelized",
                 file_path=result.file_path,
@@ -569,9 +660,9 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         """Analyze bundle size issues."""
         # Large library imports
         large_lib_patterns = [
-            (r'import\s+\*\s+as\s+_\s+from\s+[\'"]lodash[\'"]', "Import entire lodash library"),
-            (r'import\s+moment\s+from\s+[\'"]moment[\'"]', "Moment.js is large (use date-fns)"),
-            (r'import\s+\*\s+from\s+[\'"]rxjs[\'"]', "Import entire RxJS library")
+            (r'import\s+\*\s+as\s+_\s+from\s+[\'"]lodash[\'"]', "Import entire lodash library increases bundle size"),
+            (r'import\s+moment\s+from\s+[\'"]moment[\'"]', "Moment.js is large and increases bundle size (use date-fns)"),
+            (r'import\s+\*\s+(?:as\s+\w+\s+)?from\s+[\'"]rxjs[\'"]', "Import entire RxJS library increases bundle size")
         ]
         
         content = Path(result.file_path).read_text()
@@ -579,6 +670,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             matches = self.find_pattern_matches(content, [pattern])
             for match_text, line, col in matches:
                 result.add_issue(PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
                     severity=Severity.MEDIUM,
                     message=message,
                     file_path=result.file_path,
@@ -606,7 +698,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         self._analyze_modern_features(content, result)
         
         # Testing patterns
-        self._analyze_testing_patterns(content, result)
+        self._analyze_testing_patterns(content, result, ast)
     
     def _analyze_ts_config(self, content: str, result: AnalyzerResult) -> None:
         """Analyze TypeScript configuration best practices."""
@@ -666,7 +758,29 @@ class TypeScriptAnalyzer(BaseAnalyzer):
     
     def _analyze_error_handling(self, content: str, result: AnalyzerResult) -> None:
         """Analyze error handling patterns."""
-        # Empty catch blocks
+        # Empty catch blocks - search for catch blocks and check if they're effectively empty
+        catch_pattern = r'catch\s*\([^)]*\)\s*\{[^}]*\}'
+        catch_matches = list(re.finditer(catch_pattern, content, re.DOTALL))
+        
+        for match in catch_matches:
+            # Extract the catch body and check if it's empty (only whitespace/comments)
+            body = match.group().split('{', 1)[1].rsplit('}', 1)[0]
+            clean_body = re.sub(r'//.*', '', body).strip()  # Remove comments and whitespace
+            
+            if not clean_body:  # Empty catch block
+                line_num = content[:match.start()].count('\n') + 1
+                result.add_issue(Issue(
+                    type=IssueType.ERROR_HANDLING,
+                    severity=Severity.HIGH,
+                    message="Empty catch block",
+                    file_path=result.file_path,
+                    line_number=line_num,
+                    column_number=1,
+                    code_snippet=match.group(),
+                    recommendation="Handle or log errors appropriately"
+                ))
+        
+        # Original pattern for simple cases
         empty_catch = r'catch\s*\([^)]*\)\s*{\s*}'
         matches = self.find_pattern_matches(content, [empty_catch])
         
@@ -733,7 +847,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                     recommendation="Use modern ES6+ syntax"
                 ))
     
-    def _analyze_testing_patterns(self, content: str, result: AnalyzerResult) -> None:
+    def _analyze_testing_patterns(self, content: str, result: AnalyzerResult, ast: ASTNode = None) -> None:
         """Analyze testing patterns."""
         # Check if this is a test file
         if '.test.' in result.file_path or '.spec.' in result.file_path:
@@ -765,11 +879,11 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             base_name = Path(result.file_path).stem
             if not base_name.startswith('index') and not base_name.endswith('.d'):
                 # This is a heuristic - in practice, you'd check if test file exists
-                if len(ast.children) > 5:  # File has substantial content
+                if ast and len(ast.children) >= 5:  # File has substantial content
                     result.add_issue(Issue(
                         type=IssueType.BEST_PRACTICE,
                         severity=Severity.LOW,
-                        message="Consider adding tests for this module",
+                        message="Consider adding test coverage for this module",
                         file_path=result.file_path,
                         line_number=1,
                         column_number=1,
