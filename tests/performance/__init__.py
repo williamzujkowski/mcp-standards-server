@@ -1,1 +1,1 @@
-"""Performance test package for standards synchronization."""
+"""Performance tests for semantic search."""
