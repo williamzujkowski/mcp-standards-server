@@ -73,7 +73,10 @@ def mock_redis():
 @pytest.fixture
 def mcp_cache(mock_redis):
     """Create MCP cache with mock Redis."""
-    return MCPCache(redis_cache=mock_redis)
+    cache = MCPCache(redis_cache=mock_redis, enable_metrics=True)
+    # Ensure metrics are initialized
+    cache.metrics = CacheMetrics()
+    return cache
 
 
 class TestMCPCache:
@@ -130,6 +133,9 @@ class TestMCPCache:
         tool_name = "test_tool"
         args = {"arg1": "value1"}
         response = {"result": "success"}
+        
+        # Configure the tool for caching
+        mcp_cache.configure_tool(tool_name, strategy=CacheStrategy.SHORT_TTL)
         
         # Cache miss
         result = await mcp_cache.get(tool_name, args)
@@ -197,6 +203,9 @@ class TestMCPCache:
         args1 = {"arg1": "value1"}
         args2 = {"arg1": "value2"}
         response = {"result": "success"}
+        
+        # Configure the tool for caching
+        mcp_cache.configure_tool(tool_name, strategy=CacheStrategy.SHORT_TTL)
         
         # Cache two entries
         await mcp_cache.set(tool_name, args1, response)

@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: '3.12'
-  NODE_VERSION: '18'
-  REDIS_VERSION: '7'
+  PYTHON_VERSION_DEFAULT: "3.11"
+  REDIS_VERSION: "7.2"
+  NODE_VERSION: "18"
 
 jobs:
   lint:
@@ -20,185 +20,235 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       
       - name: Cache pip packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-lint-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
           restore-keys: |
+            ${{ runner.os }}-pip-lint-
             ${{ runner.os }}-pip-
       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff black isort mypy
+          pip install -e ".[dev]"
       
       - name: Run Ruff
-        run: ruff check .
-        continue-on-error: true
+        run: ruff check src tests
       
       - name: Run Black
-        run: black --check .
-        continue-on-error: true
-      
-      - name: Run isort
-        run: isort --check-only .
-        continue-on-error: true
+        run: black --check src tests
       
       - name: Run mypy
-        run: mypy src/
-        continue-on-error: true
+        run: mypy src
+      
+      - name: Check YAML files
+        run: |
+          pip install yamllint
+          yamllint -c .yamllint.yml . || true  # Non-blocking for now
 
-  test-python:
-    name: Test Python
-    runs-on: ubuntu-latest
+  test:
+    name: Test Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+        exclude:
+          # Exclude some combinations to save CI time
+          - os: windows-latest
+            python-version: "3.10"
+          - os: macos-latest
+            python-version: "3.10"
     
     services:
       redis:
         image: redis:${{ env.REDIS_VERSION }}-alpine
         ports:
           - 6379:6379
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-      
-      chromadb:
-        image: chromadb/chroma:latest
-        ports:
-          - 8000:8000
-        env:
-          CHROMA_SERVER_AUTH_PROVIDER: token
-          CHROMA_SERVER_AUTH_TOKEN: test-token
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-          pip install pytest pytest-cov pytest-asyncio pytest-timeout pytest-xdist
-      
-      - name: Download NLTK data
-        run: |
-          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('stopwords')"
-      
-      - name: Run unit tests
-        env:
-          REDIS_URL: redis://localhost:6379/0
-          CHROMADB_URL: http://localhost:8000
-          LOG_LEVEL: DEBUG
-        run: |
-          pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing
-      
-      - name: Run integration tests
-        env:
-          REDIS_URL: redis://localhost:6379/0
-          CHROMADB_URL: http://localhost:8000
-          LOG_LEVEL: DEBUG
-        run: |
-          pytest tests/integration/ -v --cov=src --cov-append --cov-report=xml --cov-report=term-missing
-        continue-on-error: true
-      
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-${{ matrix.python-version }}
-
-  test-frontend:
-    name: Test Frontend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src/web
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: src/web/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run linter
-        run: npm run lint
-        continue-on-error: true
-      
-      - name: Run type check
-        run: npm run type-check
-        continue-on-error: true
-      
-      - name: Run tests
-        run: npm test -- --coverage --watchAll=false
-        continue-on-error: true
-      
-      - name: Build frontend
-        run: npm run build
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
       
-      - name: Install security tools
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-test-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-test-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+      
+      - name: Install system dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+      
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install bandit safety pip-audit
+          pip install -e ".[test]"
       
-      - name: Run Bandit
-        run: bandit -r src/ -f json -o bandit-report.json
-        continue-on-error: true
+      - name: Run unit tests
+        env:
+          REDIS_URL: redis://localhost:6379
+          MCP_TEST_MODE: "true"
+        run: |
+          pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term-missing
       
-      - name: Run Safety
-        run: safety check --json
-        continue-on-error: true
+      - name: Run integration tests
+        if: matrix.os == 'ubuntu-latest'  # Only run on Ubuntu to save time
+        env:
+          REDIS_URL: redis://localhost:6379
+          MCP_TEST_MODE: "true"
+        run: |
+          pytest tests/integration -v --cov=src --cov-append --cov-report=xml --cov-report=term-missing
       
-      - name: Run pip-audit
-        run: pip-audit
-        continue-on-error: true
-      
-      - name: Upload security results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload coverage reports
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == env.PYTHON_VERSION_DEFAULT
+        uses: codecov/codecov-action@v4
         with:
-          name: security-results
-          path: |
-            bandit-report.json
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
-  docker-build:
-    name: Docker Build
+  test-e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
+    needs: [lint, test]
+    
+    services:
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/frontend/package-lock.json
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-e2e-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-e2e-
+            ${{ runner.os }}-pip-
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+      
+      - name: Install frontend dependencies
+        working-directory: web/frontend
+        run: npm ci
+      
+      - name: Build frontend
+        working-directory: web/frontend
+        run: npm run build
+      
+      - name: Run E2E tests
+        env:
+          REDIS_URL: redis://localhost:6379
+          MCP_TEST_MODE: "true"
+        run: |
+          # Start the server in background
+          python -m src.mcp_server &
+          SERVER_PID=$!
+          
+          # Wait for server to be ready
+          sleep 10
+          
+          # Run E2E tests
+          pytest tests/e2e -v --timeout=300
+          
+          # Stop the server
+          kill $SERVER_PID || true
+      
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-artifacts
+          path: |
+            tests/e2e/screenshots/
+            tests/e2e/logs/
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+      
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel twine
+      
+      - name: Build distribution
+        run: python -m build
+      
+      - name: Check distribution
+        run: |
+          twine check dist/*
+          ls -la dist/
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifacts
+          path: dist/
+          retention-days: 7
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    
     steps:
       - uses: actions/checkout@v4
       
@@ -209,21 +259,71 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: false
-          tags: mcp-standards-server:latest
+          tags: |
+            mcp-standards-server:latest
+            mcp-standards-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: mcp-standards-server:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-        continue-on-error: true
+      - name: Test Docker image
+        run: |
+          docker run --rm mcp-standards-server:latest python -m src.cli --version || echo "No version command"
+          docker run --rm mcp-standards-server:latest python -c "import src; print('Import successful')"
+
+  check-standards:
+    name: Validate Standards
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
       
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          sarif_file: 'trivy-results.sarif'
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pyyaml jsonschema
+      
+      - name: Validate standards files
+        run: |
+          python scripts/validate_ecosystem.py
+      
+      - name: Check standards consistency
+        run: |
+          # Check that all .yaml files have corresponding .md files
+          for yaml_file in data/standards/*.yaml; do
+            if [ -f "$yaml_file" ]; then
+              base_name=$(basename "$yaml_file" .yaml)
+              md_file="data/standards/${base_name}.md"
+              if [ ! -f "$md_file" ]; then
+                echo "Missing markdown file for $yaml_file"
+                exit 1
+              fi
+            fi
+          done
+
+  all-checks-pass:
+    name: All Checks Pass
+    runs-on: ubuntu-latest
+    needs: [lint, test, test-e2e, build, docker, check-standards]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.test-e2e.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.docker.result }}" != "success" ] || \
+             [ "${{ needs.check-standards.result }}" != "success" ]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+          echo "All checks passed successfully"

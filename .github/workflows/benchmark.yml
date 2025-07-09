@@ -1,90 +1,421 @@
-name: Performance Benchmark
+name: Benchmark
 
 on:
+  pull_request:
+    branches: [ main, develop ]
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  schedule:
+    # Run benchmarks every day at 3 AM UTC
+    - cron: '0 3 * * *'
   workflow_dispatch:
+    inputs:
+      comparison_branch:
+        description: 'Branch to compare against'
+        required: false
+        default: 'main'
 
-permissions:
-  contents: write
-  deployments: write
-  pull-requests: write
+env:
+  PYTHON_VERSION: "3.11"
+  REDIS_VERSION: "7.2"
 
 jobs:
-  benchmark:
-    name: Run Benchmarks
+  performance-benchmarks:
+    name: Performance Benchmarks
     runs-on: ubuntu-latest
     
     services:
       redis:
-        image: redis:7-alpine
+        image: redis:${{ env.REDIS_VERSION }}-alpine
         ports:
           - 6379:6379
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for comparisons
       
-      chromadb:
-        image: chromadb/chroma:latest
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-benchmark-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-benchmark-
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test,performance]"
+      
+      - name: Run benchmarks
+        env:
+          REDIS_URL: redis://localhost:6379
+          MCP_TEST_MODE: "true"
+        run: |
+          # Run all benchmarks
+          python benchmarks/run_benchmarks.py --output-dir benchmark-results
+          
+          # Run specific benchmark suites
+          python benchmarks/analyzer_performance.py --json > benchmark-results/analyzer.json
+          python benchmarks/cache_performance.py --json > benchmark-results/cache.json
+          python benchmarks/semantic_search_benchmark.py --json > benchmark-results/search.json
+          python benchmarks/token_optimization_benchmark.py --json > benchmark-results/token.json
+      
+      - name: Process benchmark results
+        run: |
+          python - << 'EOF'
+          import json
+          import os
+          
+          results_dir = "benchmark-results"
+          summary = []
+          
+          for filename in os.listdir(results_dir):
+              if filename.endswith('.json'):
+                  with open(os.path.join(results_dir, filename)) as f:
+                      data = json.load(f)
+                      
+                      # Extract key metrics
+                      if 'benchmarks' in data:
+                          for bench in data['benchmarks']:
+                              summary.append({
+                                  'name': bench.get('name', 'Unknown'),
+                                  'mean_time': bench.get('stats', {}).get('mean', 0),
+                                  'stddev': bench.get('stats', {}).get('stddev', 0),
+                                  'min': bench.get('stats', {}).get('min', 0),
+                                  'max': bench.get('stats', {}).get('max', 0),
+                              })
+          
+          # Write summary
+          with open('benchmark-summary.json', 'w') as f:
+              json.dump(summary, f, indent=2)
+          
+          # Create markdown summary
+          with open('benchmark-summary.md', 'w') as f:
+              f.write("# Benchmark Results\n\n")
+              f.write("| Test | Mean Time | Std Dev | Min | Max |\n")
+              f.write("|------|-----------|---------|-----|-----|\n")
+              
+              for bench in summary:
+                  f.write(f"| {bench['name']} | {bench['mean_time']:.4f}s | {bench['stddev']:.4f}s | {bench['min']:.4f}s | {bench['max']:.4f}s |\n")
+          EOF
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: |
+            benchmark-results/
+            benchmark-summary.json
+            benchmark-summary.md
+      
+      - name: Store benchmark result
+        if: github.ref == 'refs/heads/main'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: benchmark-summary.json
+          external-data-json-path: ./cache/benchmark-data.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@maintainers'
+
+  memory-benchmarks:
+    name: Memory Usage Benchmarks
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}-alpine
         ports:
-          - 8000:8000
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
       - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-bench-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-bench-
+          python-version: ${{ env.PYTHON_VERSION }}
       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install pytest pytest-benchmark
+          pip install -e ".[test,performance]"
+          pip install memory-profiler pympler tracemalloc-ng
       
-      - name: Download NLTK data
-        run: |
-          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('stopwords')"
-      
-      - name: Run performance benchmarks
+      - name: Run memory benchmarks
         env:
-          REDIS_URL: redis://localhost:6379/0
-          CHROMADB_URL: http://localhost:8000
+          REDIS_URL: redis://localhost:6379
+          MCP_TEST_MODE: "true"
         run: |
-          pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark_results.json
+          # Run memory profiling
+          python benchmarks/memory/memory_usage.py --output memory-profile.json
+          python benchmarks/memory/leak_detection.py --output leak-report.json
+          python benchmarks/memory/allocation_tracking.py --output allocation-report.json
       
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        if: github.event_name == 'push'
+      - name: Analyze memory usage
+        run: |
+          echo "## Memory Usage Analysis" >> $GITHUB_STEP_SUMMARY
+          python - << 'EOF'
+          import json
+          
+          # Load memory profile
+          with open('memory-profile.json') as f:
+              profile = json.load(f)
+          
+          print(f"Peak memory usage: {profile.get('peak_memory_mb', 0):.2f} MB")
+          print(f"Average memory usage: {profile.get('avg_memory_mb', 0):.2f} MB")
+          
+          # Check for leaks
+          with open('leak-report.json') as f:
+              leaks = json.load(f)
+          
+          if leaks.get('potential_leaks'):
+              print("\n⚠️ Potential memory leaks detected:")
+              for leak in leaks['potential_leaks'][:5]:
+                  print(f"- {leak['location']}: {leak['growth_mb']:.2f} MB growth")
+          else:
+              print("\n✅ No memory leaks detected")
+          EOF >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload memory reports
+        uses: actions/upload-artifact@v4
         with:
-          name: Python Benchmark
-          tool: 'pytest'
-          output-file-path: benchmark_results.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          comment-on-alert: true
-          alert-threshold: '150%'
-          comment-always: true
-          fail-on-alert: false
+          name: memory-reports-${{ github.sha }}
+          path: |
+            memory-profile.json
+            leak-report.json
+            allocation-report.json
+
+  load-testing:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
       
-      - name: Comment PR with benchmark results
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test,performance]"
+          pip install locust
+      
+      - name: Start MCP server
+        env:
+          REDIS_URL: redis://localhost:6379
+          MCP_TEST_MODE: "true"
+        run: |
+          python -m src.mcp_server &
+          echo $! > server.pid
+          sleep 10  # Wait for server to start
+      
+      - name: Run load tests
+        run: |
+          # Run different load scenarios
+          python benchmarks/load/stress_test.py --users 10 --duration 60 --output load-test-10users.json
+          python benchmarks/load/stress_test.py --users 50 --duration 60 --output load-test-50users.json
+          python benchmarks/load/stress_test.py --users 100 --duration 60 --output load-test-100users.json
+          
+          # Run breaking point test
+          python benchmarks/load/breaking_point.py --output breaking-point.json
+      
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+      
+      - name: Generate load test report
+        run: |
+          echo "## Load Test Results" >> $GITHUB_STEP_SUMMARY
+          python - << 'EOF'
+          import json
+          import glob
+          
+          for file in glob.glob('load-test-*.json'):
+              with open(file) as f:
+                  data = json.load(f)
+              
+              users = file.split('-')[2].replace('users.json', '')
+              print(f"\n### {users} Concurrent Users")
+              print(f"- Requests/sec: {data.get('requests_per_sec', 0):.2f}")
+              print(f"- Avg response time: {data.get('avg_response_time', 0):.2f}ms")
+              print(f"- 95th percentile: {data.get('p95_response_time', 0):.2f}ms")
+              print(f"- Error rate: {data.get('error_rate', 0):.2%}")
+          
+          # Breaking point
+          with open('breaking-point.json') as f:
+              bp = json.load(f)
+          
+          print(f"\n### Breaking Point Analysis")
+          print(f"- Max sustainable users: {bp.get('max_users', 0)}")
+          print(f"- Breaking point response time: {bp.get('breaking_response_time', 0):.2f}ms")
+          EOF >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results-${{ github.sha }}
+          path: |
+            load-test-*.json
+            breaking-point.json
+
+  comparison-benchmark:
+    name: Performance Comparison
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    services:
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test,performance]"
+      
+      - name: Run benchmarks on PR branch
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: |
+          python benchmarks/run_benchmarks.py --output-dir pr-benchmarks
+      
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      
+      - name: Run benchmarks on base branch
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: |
+          python benchmarks/run_benchmarks.py --output-dir base-benchmarks
+      
+      - name: Compare results
+        run: |
+          python scripts/detect_performance_regression.py \
+            --base base-benchmarks \
+            --head pr-benchmarks \
+            --threshold 10 \
+            --output comparison-report.md
+      
+      - name: Comment on PR
         if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
-          name: Python Benchmark
-          tool: 'pytest'
-          output-file-path: benchmark_results.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          comment-always: true
-          save-data-file: false
-          comment-on-alert: true
-          alert-threshold: '120%'
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('comparison-report.md', 'utf8');
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## Performance Comparison Report')
+            );
+            
+            const body = `## Performance Comparison Report\n\n${report}`;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  benchmark-summary:
+    name: Benchmark Summary
+    runs-on: ubuntu-latest
+    needs: [performance-benchmarks, memory-benchmarks, load-testing]
+    if: always()
+    
+    steps:
+      - name: Create summary
+        run: |
+          echo "# 📊 Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Job Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance Benchmarks: ${{ needs.performance-benchmarks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory Benchmarks: ${{ needs.memory-benchmarks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Load Testing: ${{ needs.load-testing.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.performance-benchmarks.result }}" = "failure" ] || \
+             [ "${{ needs.memory-benchmarks.result }}" = "failure" ] || \
+             [ "${{ needs.load-testing.result }}" = "failure" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## ⚠️ Some benchmarks failed!" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the individual job results above." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ All benchmarks completed successfully!" >> $GITHUB_STEP_SUMMARY
+          fi

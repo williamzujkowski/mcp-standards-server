@@ -223,7 +223,7 @@ class TestStandardsSynchronizer:
     @pytest.mark.asyncio
     async def test_download_file(self, synchronizer):
         """Test file download with retries."""
-        url = "https://example.com/file.md"
+        url = "https://raw.githubusercontent.com/test/repo/main/file.md"
         content = b"# Test Content"
         
         with patch('aiohttp.ClientSession.get') as mock_get:
@@ -243,7 +243,7 @@ class TestStandardsSynchronizer:
     @pytest.mark.asyncio
     async def test_download_file_retry(self, synchronizer):
         """Test file download with retry on failure."""
-        url = "https://example.com/file.md"
+        url = "https://raw.githubusercontent.com/test/repo/main/file.md"
         content = b"# Test Content"
         
         with patch('aiohttp.ClientSession.get') as mock_get:
@@ -274,7 +274,7 @@ class TestStandardsSynchronizer:
         file_info = {
             'path': 'docs/standards/test.md',
             'sha': 'abc123',
-            'download_url': 'https://example.com/test.md',
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md',
             'size': 1000
         }
         
@@ -311,7 +311,7 @@ class TestStandardsSynchronizer:
         file_info = {
             'path': file_path,
             'sha': 'abc123',  # Same SHA
-            'download_url': 'https://example.com/test.md'
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md'
         }
         
         with patch.object(synchronizer, '_download_file') as mock_download:

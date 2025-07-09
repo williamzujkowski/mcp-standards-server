@@ -139,14 +139,15 @@ def track_performance(request):
 
 
 # Cleanup fixtures
-@pytest.fixture(autouse=True)
-def cleanup_after_test():
-    """Cleanup after each test."""
+@pytest.fixture(autouse=True, scope="function")
+def cleanup_after_test(request):
+    """Cleanup after each test - only when needed."""
     yield
     
-    # Force garbage collection
-    import gc
-    gc.collect()
+    # Only force GC for memory-intensive tests
+    if request.node.get_closest_marker("memory_intensive"):
+        import gc
+        gc.collect()
     
     # Clear any test caches
     if hasattr(asyncio, "_test_cache"):
@@ -180,6 +181,14 @@ def custom_assertions():
     return CustomAssertions()
 
 
+# Apply ML mocks for tests that need them
+@pytest.fixture
+def use_ml_mocks(mock_ml_dependencies):
+    """Ensure ML dependencies are mocked for tests that need them."""
+    # Just by depending on mock_ml_dependencies, we ensure it's initialized
+    pass
+
+
 # Test doubles and mocks
 @pytest.fixture
 def mock_github_api(monkeypatch):
@@ -201,9 +210,9 @@ def mock_github_api(monkeypatch):
     return mock_api
 
 
-@pytest.fixture(autouse=True)
-def mock_ml_dependencies(monkeypatch):
-    """Mock ML dependencies for tests."""
+@pytest.fixture(scope="session", autouse=True)
+def mock_ml_dependencies():
+    """Mock ML dependencies for tests - session scoped for performance."""
     import sys
     from tests.mocks import MockSentenceTransformer
     from tests.mocks.semantic_search_mocks import (
@@ -264,28 +273,29 @@ def mock_ml_dependencies(monkeypatch):
     sys.modules['redis'] = type(sys)('redis')
     sys.modules['redis'].Redis = MockRedisClient
     
-    # Apply monkeypatches
-    monkeypatch.setattr("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
-    if 'redis' in sys.modules:
-        monkeypatch.setattr("redis.Redis", MockRedisClient)
+    # Since this is session-scoped, we can't use monkeypatch
+    # Apply patches at module level
+    import sentence_transformers
+    sentence_transformers.SentenceTransformer = MockSentenceTransformer
+    
+    # Apply Redis patch if available
+    try:
+        import redis
+        redis.Redis = MockRedisClient
+    except ImportError:
+        pass
     
     # Mock NLTK download function specifically
     try:
-        monkeypatch.setattr("nltk.download", mock_nltk_download)
+        import nltk
+        nltk.download = mock_nltk_download
     except ImportError:
         pass  # NLTK not installed
     
     yield
     
-    # Cleanup
-    modules_to_clean = [
-        'sentence_transformers', 'sklearn', 'sklearn.neighbors',
-        'sklearn.metrics', 'sklearn.metrics.pairwise',
-        'fuzzywuzzy', 'redis'
-    ]
-    for module in modules_to_clean:
-        if module in sys.modules:
-            del sys.modules[module]
+    # Skip cleanup for session-scoped fixture to avoid overhead
+    # Cleanup will happen at end of test session
 
 
 # Pytest plugins configuration

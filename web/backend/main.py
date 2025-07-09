@@ -222,6 +222,63 @@ async def get_tags():
         logger.error(f"Error fetching tags: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/export/bulk")
+async def export_bulk_standards(request: Dict[str, Any]):
+    """Export multiple standards in various formats"""
+    try:
+        engine = app.state.engine
+        standard_ids = request.get("standards", [])
+        format = request.get("format", "json")
+        
+        if not standard_ids:
+            # Export all standards if none specified
+            all_standards = await engine.get_all_standards()
+            standard_ids = [s.id for s in all_standards]
+        
+        standards_data = []
+        for standard_id in standard_ids:
+            standard = await engine.get_standard_by_id(standard_id)
+            if standard:
+                standards_data.append({
+                    "id": standard.id,
+                    "title": standard.title,
+                    "description": standard.description,
+                    "category": standard.category,
+                    "subcategory": standard.subcategory,
+                    "tags": standard.tags,
+                    "priority": standard.priority,
+                    "version": standard.version,
+                    "examples": standard.examples,
+                    "rules": standard.rules,
+                    "metadata": standard.metadata,
+                    "created_at": standard.created_at,
+                    "updated_at": standard.updated_at
+                })
+        
+        if format == "json":
+            export_data = {
+                "exportDate": datetime.now().isoformat(),
+                "totalStandards": len(standards_data),
+                "standards": standards_data
+            }
+            
+            # Save to temporary file
+            temp_file = Path(f"/tmp/standards-export-{datetime.now().timestamp()}.json")
+            temp_file.write_text(json.dumps(export_data, indent=2))
+            
+            return FileResponse(
+                path=str(temp_file),
+                filename=f"standards-export-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json",
+                media_type="application/json"
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported format for bulk export")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error bulk exporting standards: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/export/{standard_id}")
 async def export_standard(standard_id: str, format: str = "markdown"):
     """Export a standard in various formats"""
@@ -267,8 +324,34 @@ async def export_standard(standard_id: str, format: str = "markdown"):
                 filename=f"{standard_id}.md",
                 media_type="text/markdown"
             )
+        elif format == "json":
+            # Export as JSON
+            export_data = {
+                "id": standard.id,
+                "title": standard.title,
+                "description": standard.description,
+                "category": standard.category,
+                "subcategory": standard.subcategory,
+                "tags": standard.tags,
+                "priority": standard.priority,
+                "version": standard.version,
+                "examples": standard.examples,
+                "rules": standard.rules,
+                "metadata": standard.metadata,
+                "created_at": standard.created_at,
+                "updated_at": standard.updated_at
+            }
+            
+            temp_file = Path(f"/tmp/{standard_id}.json")
+            temp_file.write_text(json.dumps(export_data, indent=2))
+            
+            return FileResponse(
+                path=str(temp_file),
+                filename=f"{standard_id}.json",
+                media_type="application/json"
+            )
         else:
-            raise HTTPException(status_code=400, detail="Unsupported format")
+            raise HTTPException(status_code=400, detail="Unsupported format. Supported formats: markdown, json")
     except HTTPException:
         raise
     except Exception as e:

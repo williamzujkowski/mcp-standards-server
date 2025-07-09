@@ -86,7 +86,7 @@ class TestPathTraversalPrevention:
                 file_info = {
                     'path': 'docs/standards/malicious_link/secret.txt',
                     'sha': 'abc123',
-                    'download_url': 'https://example.com/secret.txt'
+                    'download_url': 'https://raw.githubusercontent.com/test/repo/main/secret.txt'
                 }
                 
                 with patch.object(secure_synchronizer, '_download_file', return_value=b'secret'):
@@ -149,7 +149,7 @@ class TestContentValidation:
         file_info = {
             'path': 'docs/standards/test.md',
             'sha': 'github_sha',
-            'download_url': 'https://example.com/test.md',
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md',
             'size': len(content)
         }
         
@@ -208,7 +208,7 @@ class TestContentValidation:
                 'name': test_file['path'],
                 'size': test_file['size'],
                 'sha': 'test_sha',
-                'download_url': f'https://example.com/{test_file["path"]}'
+                'download_url': f'https://raw.githubusercontent.com/test/repo/main/{test_file["path"]}'
             }
             
             # Test filtering
@@ -264,7 +264,7 @@ class TestContentValidation:
                 'name': test_file['name'],
                 'size': len(test_file['content']),
                 'sha': 'test_sha',
-                'download_url': f'https://example.com/{test_file["name"]}'
+                'download_url': f'https://raw.githubusercontent.com/test/repo/main/{test_file["name"]}'
             }
             
             # Test pattern-based filtering
@@ -296,7 +296,7 @@ class TestContentValidation:
                 'path': f'docs/standards/test{i}.md',
                 'name': f'test{i}.md',
                 'sha': f'sha{i}',
-                'download_url': f'https://example.com/test{i}.md',
+                'download_url': f'https://raw.githubusercontent.com/test/repo/main/test{i}.md',
                 'size': len(content) if len(content) < 1048576 else 1048576
             }
             
@@ -566,7 +566,7 @@ class TestSecureFileOperations:
         file_info = {
             'path': 'docs/standards/important.md',
             'sha': 'abc123',
-            'download_url': 'https://example.com/important.md'
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/important.md'
         }
         
         write_attempted = False
@@ -620,7 +620,7 @@ class TestSecureFileOperations:
         file_info = {
             'path': 'docs/standards/existing.md',
             'sha': 'original_sha',
-            'download_url': 'https://example.com/existing.md'
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/existing.md'
         }
         
         # Create original file

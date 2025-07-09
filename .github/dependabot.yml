@@ -1,4 +1,3 @@
-# Dependabot configuration for automated dependency updates
 version: 2
 updates:
   # Python dependencies
@@ -7,43 +6,66 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@maintainers"
     labels:
       - "dependencies"
       - "python"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    pull-request-branch-name:
-      separator: "-"
-    reviewers:
-      - "williamzujkowski"
+    groups:
+      development-dependencies:
+        patterns:
+          - "pytest*"
+          - "black"
+          - "ruff"
+          - "mypy"
+          - "coverage*"
+        update-types:
+          - "minor"
+          - "patch"
+      core-dependencies:
+        patterns:
+          - "pydantic"
+          - "redis"
+          - "aiohttp"
+          - "mcp"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
-      # Ignore major version updates for critical packages
-      - dependency-name: "redis"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "chromadb"
+      # Don't update major versions automatically
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   
-  # JavaScript dependencies for frontend
+  # Frontend dependencies (if applicable)
   - package-ecosystem: "npm"
-    directory: "/src/web"
+    directory: "/web/frontend"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@maintainers"
     labels:
       - "dependencies"
       - "javascript"
-      - "frontend"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
+    groups:
+      react-dependencies:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      development-dependencies:
+        patterns:
+          - "eslint*"
+          - "prettier*"
+          - "@testing-library/*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
-      # Ignore major version updates for React
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   
   # GitHub Actions
@@ -52,24 +74,27 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 3
+      time: "03:00"
+    reviewers:
+      - "@maintainers"
     labels:
       - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "ci"
-      include: "scope"
+      - "ci"
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+          - "docker/*"
   
-  # Docker dependencies
+  # Docker base images
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 3
+      time: "03:00"
+    reviewers:
+      - "@maintainers"
     labels:
       - "dependencies"
       - "docker"
-    commit-message:
-      prefix: "build"
-      include: "scope"

@@ -1,0 +1,349 @@
+name: Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run at 2 AM UTC every Monday
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-check:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit pip-audit
+          pip install -r requirements.txt
+      
+      - name: Run Safety check
+        run: |
+          safety check --json --output safety-report.json || true
+          if [ -f safety-report.json ]; then
+            echo "## Safety Check Results" >> $GITHUB_STEP_SUMMARY
+            python -c "
+import json
+with open('safety-report.json') as f:
+    data = json.load(f)
+    if data:
+        print(f'Found {len(data)} vulnerabilities')
+        for vuln in data[:10]:  # Show first 10
+            print(f'- {vuln.get(\"package\", \"Unknown\")}: {vuln.get(\"vulnerability\", \"Unknown\")}')
+    else:
+        print('No vulnerabilities found')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Run pip-audit
+        run: |
+          pip-audit --format json --output pip-audit-report.json || true
+          if [ -f pip-audit-report.json ]; then
+            echo "## Pip Audit Results" >> $GITHUB_STEP_SUMMARY
+            python -c "
+import json
+with open('pip-audit-report.json') as f:
+    data = json.load(f)
+    vulns = data.get('vulnerabilities', [])
+    if vulns:
+        print(f'Found {len(vulns)} vulnerabilities')
+        for vuln in vulns[:10]:  # Show first 10
+            print(f'- {vuln.get(\"name\", \"Unknown\")}: {vuln.get(\"id\", \"Unknown\")}')
+    else:
+        print('No vulnerabilities found')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload dependency check results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-results
+          path: |
+            safety-report.json
+            pip-audit-report.json
+
+  code-scanning:
+    name: Code Security Scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit[toml]
+      
+      - name: Run Bandit security scan
+        run: |
+          bandit -r src/ -f json -o bandit-report.json || true
+          
+          # Generate summary
+          echo "## Bandit Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          python -c "
+import json
+with open('bandit-report.json') as f:
+    data = json.load(f)
+    results = data.get('results', [])
+    metrics = data.get('metrics', {})
+    print(f'Total issues: {len(results)}')
+    print(f'High severity: {metrics.get(\"SEVERITY.HIGH\", 0)}')
+    print(f'Medium severity: {metrics.get(\"SEVERITY.MEDIUM\", 0)}')
+    print(f'Low severity: {metrics.get(\"SEVERITY.LOW\", 0)}')
+    
+    if results:
+        print('\n### Top Issues:')
+        for issue in results[:5]:
+            print(f'- [{issue.get(\"test_id\")}] {issue.get(\"issue_text\")} in {issue.get(\"filename\")}:{issue.get(\"line_number\")}')
+          " >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload Bandit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-results
+          path: bandit-report.json
+
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/python
+            p/django
+            p/r2c-security-audit
+          generateSarif: true
+      
+      - name: Upload SARIF file
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: docker build -t mcp-standards-server:scan .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mcp-standards-server:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'  # Don't fail the build
+      
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Run Trivy in table format for summary
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mcp-standards-server:scan'
+          format: 'json'
+          output: 'trivy-results.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+      
+      - name: Create summary
+        run: |
+          echo "## Container Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          python -c "
+import json
+with open('trivy-results.json') as f:
+    data = json.load(f)
+    results = data.get('Results', [])
+    
+    vuln_count = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0}
+    for result in results:
+        vulns = result.get('Vulnerabilities', [])
+        for vuln in vulns:
+            severity = vuln.get('Severity', 'UNKNOWN')
+            if severity in vuln_count:
+                vuln_count[severity] += 1
+    
+    print(f'Critical: {vuln_count[\"CRITICAL\"]}')
+    print(f'High: {vuln_count[\"HIGH\"]}')
+    print(f'Medium: {vuln_count[\"MEDIUM\"]}')
+          " >> $GITHUB_STEP_SUMMARY
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install license checker
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-licenses
+      
+      - name: Check licenses
+        run: |
+          pip-licenses --format=json --output-file=licenses.json
+          
+          echo "## License Check Results" >> $GITHUB_STEP_SUMMARY
+          python -c "
+import json
+with open('licenses.json') as f:
+    licenses = json.load(f)
+    
+    # Count license types
+    license_count = {}
+    for pkg in licenses:
+        lic = pkg.get('License', 'Unknown')
+        license_count[lic] = license_count.get(lic, 0) + 1
+    
+    print(f'Total packages: {len(licenses)}')
+    print('\n### License Distribution:')
+    for lic, count in sorted(license_count.items(), key=lambda x: x[1], reverse=True)[:10]:
+        print(f'- {lic}: {count}')
+    
+    # Check for problematic licenses
+    problematic = ['GPL', 'AGPL', 'LGPL']
+    issues = []
+    for pkg in licenses:
+        lic = pkg.get('License', '')
+        if any(p in lic for p in problematic):
+            issues.append(f'{pkg.get(\"Name\")}: {lic}')
+    
+    if issues:
+        print('\n###   Packages with restrictive licenses:')
+        for issue in issues:
+            print(f'- {issue}')
+          " >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+
+  secrets-scan:
+    name: Secrets Scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better detection
+      
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --json --output trufflehog-results.json
+      
+      - name: Scan for hardcoded secrets
+        run: |
+          # Simple grep-based checks for common patterns
+          echo "## Hardcoded Secrets Check" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for potential API keys
+          if grep -r -E "(api[_-]?key|apikey)" --include="*.py" --include="*.js" --include="*.ts" src/ | grep -v -E "(os\.environ|process\.env|config\.|settings\.)"; then
+            echo "  Potential hardcoded API keys found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo " No hardcoded API keys found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for potential passwords
+          if grep -r -E "password\s*=\s*[\"'][^\"']+[\"']" --include="*.py" --include="*.js" --include="*.ts" src/ | grep -v -E "(os\.environ|process\.env|config\.|settings\.|test|example)"; then
+            echo "  Potential hardcoded passwords found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo " No hardcoded passwords found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  security-report:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-check, code-scanning, semgrep, container-scan, license-check, secrets-scan]
+    if: always()
+    
+    steps:
+      - name: Create security summary
+        run: |
+          echo "# = Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check job results
+          echo "## Job Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependency Check: ${{ needs.dependency-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Scanning: ${{ needs.code-scanning.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Semgrep: ${{ needs.semgrep.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Container Scan: ${{ needs.container-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- License Check: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Secrets Scan: ${{ needs.secrets-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [ "${{ needs.dependency-check.result }}" = "failure" ] || \
+             [ "${{ needs.code-scanning.result }}" = "failure" ] || \
+             [ "${{ needs.semgrep.result }}" = "failure" ] || \
+             [ "${{ needs.container-scan.result }}" = "failure" ] || \
+             [ "${{ needs.secrets-scan.result }}" = "failure" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## L Security checks failed!" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the individual job results above." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "##  All security checks passed!" >> $GITHUB_STEP_SUMMARY
+          fi

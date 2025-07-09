@@ -29,7 +29,7 @@ A Model Context Protocol (MCP) server that provides intelligent, context-aware a
 
 ## Requirements
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - Redis (optional, for caching)
 - Node.js 16+ (optional, for web UI)
 
@@ -42,19 +42,51 @@ A Model Context Protocol (MCP) server that provides intelligent, context-aware a
 git clone https://github.com/williamzujkowski/mcp-standards-server.git
 cd mcp-standards-server
 
+# Create and activate virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
 # Install in development mode
 pip install -e .
 
-# Or install with all dependencies
-pip install -e ".[full]"
+# Or install with specific feature sets:
+pip install -e ".[full]"         # All features including web API
+pip install -e ".[test]"         # Testing tools only
+pip install -e ".[dev]"          # Development tools (linting, formatting)
+pip install -e ".[performance]"  # Performance monitoring tools
 
-# For development with testing tools
-pip install -e ".[test]"
+# Install all development dependencies
+pip install -e ".[dev,test,performance,visualization,full]"
 
-# Install Redis (optional, for caching)
-# macOS: brew install redis
-# Ubuntu: sudo apt-get install redis-server
-# Windows: Use WSL or Docker
+# Install Redis (optional but recommended for caching)
+# macOS: 
+brew install redis
+brew services start redis
+
+# Ubuntu/Debian:
+sudo apt-get update
+sudo apt-get install redis-server
+sudo systemctl start redis-server
+
+# Windows (using WSL2):
+wsl --install  # If not already installed
+# Then follow Ubuntu instructions inside WSL
+
+# Or use Docker:
+docker run -d -p 6379:6379 redis:alpine
+```
+
+### Verifying Installation
+
+```bash
+# Check CLI is installed correctly
+mcp-standards --version
+
+# Verify MCP server can start
+python -m src --help
+
+# Run basic tests
+pytest tests/unit/core/standards/test_rule_engine.py -v
 ```
 
 ### Basic Usage
@@ -83,14 +115,64 @@ print(f"Selected standards: {result['resolved_standards']}")
 ### Running the MCP Server
 
 ```bash
-# Start the MCP server
-python -m src.server
+# Start the MCP server (stdio mode for tool integration)
+python -m src
 
 # Or use the CLI
 mcp-standards --help
 
-# Run the web UI
-mcp-standards web
+# Start MCP server with specific options
+mcp-standards serve --stdio         # For direct tool integration
+mcp-standards serve --port 3000     # HTTP server mode
+mcp-standards serve --daemon        # Run as background service
+
+# Start the web UI (requires separate setup)
+cd web && ./start.sh
+```
+
+### MCP Tools Available
+
+The MCP server exposes the following tools for LLM integration:
+
+- **get_applicable_standards**: Get relevant standards based on project context
+- **validate_against_standard**: Check code compliance with specific standards
+- **suggest_improvements**: Get improvement recommendations
+- **search_standards**: Semantic search across all standards
+- **get_compliance_mapping**: Map standards to NIST controls
+- **analyze_code**: Analyze code files for standard compliance
+- **get_standard_content**: Retrieve full or compressed standard content
+
+### MCP Integration Examples
+
+```python
+# Example: Using with MCP client
+import mcp
+
+# Connect to the MCP server
+async with mcp.Client("stdio://python -m src") as client:
+    # Get applicable standards for a project
+    result = await client.call_tool(
+        "get_applicable_standards",
+        context={
+            "project_type": "web_application",
+            "framework": "react",
+            "requirements": ["accessibility", "security"]
+        }
+    )
+    
+    # Validate code against standards
+    validation = await client.call_tool(
+        "validate_against_standard",
+        code_path="./src",
+        standard_id="react-18-patterns"
+    )
+    
+    # Search for specific guidance
+    search_results = await client.call_tool(
+        "search_standards",
+        query="authentication best practices",
+        limit=5
+    )
 ```
 
 ### Using the Universal Project Kickstart
@@ -123,6 +205,76 @@ mcp-standards cache --clear
 ```
 
 Configure synchronization in `data/standards/sync_config.yaml`.
+
+### Generating Standards
+
+Create new standards using the built-in generation system:
+
+```bash
+# List available templates
+mcp-standards generate list-templates
+
+# Generate a new standard interactively
+mcp-standards generate --interactive
+
+# Generate from a specific template
+mcp-standards generate --template standards/technical.j2 --title "My New Standard"
+
+# Generate domain-specific standard
+mcp-standards generate --domain ai_ml --title "ML Pipeline Standards"
+
+# Validate an existing standard
+mcp-standards generate validate path/to/standard.md
+```
+
+### Web UI
+
+The project includes a React-based web UI for browsing and testing standards:
+
+```bash
+# Start the web UI
+cd web
+./start.sh
+
+# Or run components separately:
+# Backend API
+cd web/backend
+pip install -r requirements.txt
+python main.py
+
+# Frontend
+cd web/frontend
+npm install
+npm start
+```
+
+The web UI provides:
+- Standards browser with search and filtering
+- Rule testing interface
+- Real-time updates via WebSocket
+- Standards analytics dashboard
+
+Access the UI at http://localhost:3000 (frontend) and API at http://localhost:8000 (backend).
+
+### Additional CLI Commands
+
+The enhanced CLI provides additional functionality:
+
+```bash
+# Query standards based on project context
+mcp-standards query --project-type web --framework react --language javascript
+
+# Validate code against standards
+mcp-standards validate src/ --format json --severity warning
+
+# Auto-fix code issues (preview mode)
+mcp-standards validate src/ --fix --dry-run
+
+# Configuration management
+mcp-standards config --init        # Initialize configuration
+mcp-standards config --show        # Display current config
+mcp-standards config --validate    # Validate config file
+```
 
 ## Rule Configuration
 
@@ -197,18 +349,21 @@ mcp-standards-server/
 │   ├── core/
 │   │   ├── mcp/              # MCP server implementation
 │   │   ├── standards/        # Standards engine & storage
-│   │   └── compliance/       # NIST compliance mapping
+│   │   └── cache/            # Redis caching layer
 │   ├── analyzers/            # Language-specific analyzers
 │   ├── generators/           # Standards generation system
-│   ├── cli/                  # CLI interface
-│   └── web/                  # React/TypeScript UI
+│   └── cli/                  # CLI interface
+├── web/                      # React/TypeScript UI (separate app)
+│   ├── frontend/            # React application
+│   └── backend/             # FastAPI backend
 ├── data/
 │   └── standards/            # 25 comprehensive standards
 │       ├── meta/            # Rule engine configuration
-│       └── cache/           # Redis-backed cache
+│       └── cache/           # Local file cache
 ├── templates/                # Standard generation templates
 ├── tests/                    # Comprehensive test suite
-└── benchmarks/              # Performance benchmarking
+├── benchmarks/              # Performance benchmarking
+└── docs/                    # Documentation
 ```
 
 ## Testing
@@ -222,8 +377,77 @@ pytest
 # Run with coverage
 pytest --cov=src --cov-report=term-missing
 
+# Run specific test categories
+pytest tests/unit/          # Unit tests only
+pytest tests/integration/   # Integration tests
+pytest tests/e2e/          # End-to-end tests
+
 # Run specific test file
 pytest tests/unit/core/standards/test_rule_engine.py
+
+# Run performance tests
+python run_performance_tests.py
+
+# Run tests in parallel (faster)
+python run_tests_parallel.py
+```
+
+## Development Workflow
+
+### Setting Up Development Environment
+
+```bash
+# Clone the repository
+git clone https://github.com/williamzujkowski/mcp-standards-server.git
+cd mcp-standards-server
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in development mode with all dependencies
+pip install -e ".[dev,test,performance,visualization,full]"
+
+# Install pre-commit hooks (if available)
+pre-commit install
+```
+
+### Running Benchmarks
+
+```bash
+# Run all benchmarks
+python benchmarks/run_benchmarks.py
+
+# Run specific benchmark suites
+python benchmarks/analyzer_performance.py
+python benchmarks/semantic_search_benchmark.py
+python benchmarks/token_optimization_benchmark.py
+
+# Generate performance reports
+python benchmarks/run_benchmarks.py --report
+```
+
+## CI/CD Integration
+
+The project uses GitHub Actions for continuous integration:
+
+- **CI Badge**: Runs tests on every push and pull request
+- **Release Badge**: Automates releases to PyPI
+- **Benchmark Badge**: Tracks performance metrics over time
+
+### Using in Your CI/CD Pipeline
+
+```yaml
+# Example GitHub Actions workflow
+- name: Validate Standards
+  run: |
+    pip install mcp-standards-server
+    mcp-standards validate . --format sarif --output results.sarif
+    
+- name: Upload SARIF results
+  uses: github/codeql-action/upload-sarif@v2
+  with:
+    sarif_file: results.sarif
 ```
 
 ## Contributing
@@ -244,12 +468,50 @@ pytest tests/unit/core/standards/test_rule_engine.py
 ### Technical Documentation
 - [Claude Integration Guide](CLAUDE.md) - Main system documentation
 - [Rule Engine Documentation](src/core/standards/README_RULE_ENGINE.md)
-- [API Documentation](./docs/api/mcp-tools.md)
+- [API Documentation](./docs/site/api/mcp-tools.md)
 - [Project Plan](project_plan.md)
+- [Web UI Documentation](./web/README.md)
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Redis connection errors**: Ensure Redis is running or disable caching:
+   ```bash
+   export MCP_STANDARDS_NO_CACHE=true
+   ```
+
+2. **Import errors**: Make sure you installed in development mode:
+   ```bash
+   pip install -e .
+   ```
+
+3. **MCP server not starting**: Check for port conflicts:
+   ```bash
+   lsof -i :3000  # Check if port is in use
+   ```
+
+### Environment Variables
+
+The following environment variables can be used to configure the server:
+
+- `MCP_STANDARDS_CONFIG`: Path to custom configuration file
+- `MCP_STANDARDS_CACHE_DIR`: Override default cache directory
+- `MCP_STANDARDS_NO_CACHE`: Disable caching (set to `true`)
+- `MCP_STANDARDS_LOG_LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR)
+- `REDIS_URL`: Custom Redis connection URL
+- `NO_COLOR`: Disable colored output in CLI
+
+## Performance Tips
+
+1. **Enable Redis caching** for better performance with large codebases
+2. **Use token optimization** when working with LLMs with limited context
+3. **Run analyzers in parallel** for faster code validation
+4. **Use the rule engine** for efficient standard selection
 
 ## Acknowledgments
 

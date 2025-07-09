@@ -105,9 +105,10 @@ class MCPTestClient:
             raise
 
 
-@pytest.fixture(scope="function")
-async def mcp_server(tmp_path):
-    """Fixture to start and stop MCP server for tests."""
+@pytest.fixture(scope="session")
+async def mcp_server(tmp_path_factory):
+    """Fixture to start and stop MCP server for tests - session scoped for performance."""
+    tmp_path = tmp_path_factory.mktemp("mcp_test_data")
     logger.info(f"Starting MCP server with tmp_path: {tmp_path}")
     
     # Set up test data
@@ -154,8 +155,8 @@ async def mcp_server(tmp_path):
         stderr=asyncio.subprocess.PIPE
     )
     
-    # Monitor server startup
-    startup_timeout = 5.0
+    # Monitor server startup with reduced timeout
+    startup_timeout = 3.0
     start_time = time.time()
     server_ready = False
     

@@ -90,7 +90,7 @@ mcp-standards [global-options] <command> [command-options]
 
 The following tools are available through separate entry points:
 
-- **MCP Server**: `python -m src.server`
+- **MCP Server**: `python -m src`
 - **Web UI**: `python -m src.web` (if web UI is implemented)
 - **Query Tool**: Use the Python API or MCP server for querying standards
 

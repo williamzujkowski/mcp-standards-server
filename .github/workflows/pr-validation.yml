@@ -1,0 +1,228 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate-pr:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            doesn't start with an uppercase character.
+      
+      - name: Check PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+            
+            let label = '';
+            let comment = '';
+            
+            if (total < 10) {
+              label = 'size/XS';
+              comment = '=L This PR is tiny! (< 10 lines)';
+            } else if (total < 50) {
+              label = 'size/S';
+              comment = ' This PR is small. (< 50 lines)';
+            } else if (total < 200) {
+              label = 'size/M';
+              comment = '=Ê This PR is medium-sized. (< 200 lines)';
+            } else if (total < 500) {
+              label = 'size/L';
+              comment = '  This PR is large. (< 500 lines) Consider breaking it down.';
+            } else {
+              label = 'size/XL';
+              comment = '=¨ This PR is very large! (>= 500 lines) Please consider breaking it into smaller PRs.';
+            }
+            
+            // Add size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [label]
+            });
+            
+            // Remove other size labels
+            const labels = ['size/XS', 'size/S', 'size/M', 'size/L', 'size/XL'];
+            for (const l of labels) {
+              if (l !== label) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    name: l
+                  });
+                } catch (e) {
+                  // Label might not exist, ignore
+                }
+              }
+            }
+            
+            // Update PR summary
+            const summary = `
+            ## PR Statistics
+            - **Additions:** ${additions}
+            - **Deletions:** ${deletions}
+            - **Total Changes:** ${total}
+            
+            ${comment}
+            `;
+            
+            core.summary.addRaw(summary).write();
+      
+      - name: Check for breaking changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            
+            const title = pr.title.toLowerCase();
+            const body = (pr.body || '').toLowerCase();
+            
+            const breakingIndicators = [
+              'breaking change',
+              'breaking:',
+              'breaks:',
+              'incompatible',
+              '!:',
+            ];
+            
+            const hasBreaking = breakingIndicators.some(indicator => 
+              title.includes(indicator) || body.includes(indicator)
+            );
+            
+            if (hasBreaking) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['breaking-change']
+              });
+              
+              // Check if breaking changes are documented
+              if (!body.includes('breaking') || body.length < 100) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: `  **Breaking Change Detected**
+                  
+This PR appears to contain breaking changes. Please ensure you have:
+- [ ] Documented the breaking changes in the PR description
+- [ ] Updated the migration guide
+- [ ] Bumped the major version number
+- [ ] Added deprecation warnings where appropriate`
+                });
+              }
+            }
+
+  check-files:
+    name: Check Files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files_yaml: |
+            docs:
+              - 'docs/**'
+              - '*.md'
+            src:
+              - 'src/**'
+              - '!src/**/*.test.py'
+            tests:
+              - 'tests/**'
+              - 'src/**/*.test.py'
+            config:
+              - '*.toml'
+              - '*.ini'
+              - '*.yaml'
+              - '*.yml'
+              - 'requirements*.txt'
+            workflows:
+              - '.github/workflows/**'
+      
+      - name: Check for missing tests
+        if: steps.changed-files.outputs.src_any_changed == 'true'
+        run: |
+          echo "## >ê Test Coverage Check" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.changed-files.outputs.tests_any_changed }}" != "true" ]; then
+            echo "  Source files were modified but no test files were changed." >> $GITHUB_STEP_SUMMARY
+            echo "Please ensure all changes are properly tested." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo " Test files were updated along with source changes." >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Check for missing docs
+        if: steps.changed-files.outputs.src_any_changed == 'true' || steps.changed-files.outputs.config_any_changed == 'true'
+        run: |
+          echo "## =Ú Documentation Check" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.changed-files.outputs.docs_any_changed }}" != "true" ]; then
+            echo "  Code or configuration was modified but no documentation was updated." >> $GITHUB_STEP_SUMMARY
+            echo "Please update relevant documentation if needed." >> $GITHUB_STEP_SUMMARY
+          else
+            echo " Documentation was updated." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  auto-label:
+    name: Auto Label PR
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"

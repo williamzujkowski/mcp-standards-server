@@ -302,7 +302,8 @@ class TestSemanticSearchRelevance:
         print(json.dumps(avg_metrics, indent=2))
         
         # Quality assertions
-        assert avg_metrics["precision@5"] >= 0.6, "Average precision@5 too low"
+        # Note: With only 2 relevant documents per query, max precision@5 is 0.4
+        assert avg_metrics["precision@5"] >= 0.4, "Average precision@5 too low"
         assert avg_metrics["recall@5"] >= 0.7, "Average recall@5 too low"
         assert avg_metrics["ndcg@5"] >= 0.6, "Average NDCG@5 too low"
         assert avg_metrics["mrr"] >= 0.7, "Average MRR too low"

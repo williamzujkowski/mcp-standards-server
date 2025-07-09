@@ -168,7 +168,7 @@ All originally planned features have been successfully implemented and expanded 
 pip install -e .
 
 # Start the server
-python -m src.server
+python -m src
 
 # Or use the CLI
 mcp-standards --help

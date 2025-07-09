@@ -18,7 +18,7 @@ The following commands are documented but not yet fully implemented in the CLI:
 
 - [query](./query.md) - Query standards based on context (use Python API or MCP server)
 - [validate](./validate.md) - Validate code against standards (available as generate subcommand)
-- [serve](./serve.md) - Start MCP server (use `python -m src.server`)
+- [serve](./serve.md) - Start MCP server (use `python -m src`)
 
 ## Global Options
 

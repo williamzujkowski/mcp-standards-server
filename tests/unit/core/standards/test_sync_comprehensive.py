@@ -72,7 +72,7 @@ class TestErrorHandling:
         file_info = {
             'path': 'docs/standards/test.md',
             'sha': 'abc123',
-            'download_url': 'https://example.com/test.md',
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md',
             'size': 1000
         }
         
@@ -92,7 +92,7 @@ class TestErrorHandling:
         file_info = {
             'path': 'docs/standards/test.md',
             'sha': 'abc123',
-            'download_url': 'https://example.com/test.md'
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md'
         }
         
         with patch.object(synchronizer, '_download_file', return_value=b"content"):
@@ -214,7 +214,7 @@ class TestEdgeCases:
             {
                 'path': f'docs/standards/file{i}.md',
                 'sha': f'sha{i}',
-                'download_url': f'https://example.com/file{i}.md',
+                'download_url': f'https://raw.githubusercontent.com/test/repo/main/file{i}.md',
                 'size': 100
             }
             for i in range(10)
@@ -662,7 +662,7 @@ class TestSecurityValidation:
         file_info = {
             'path': 'docs/standards/test.md',
             'sha': 'abc123',
-            'download_url': 'https://example.com/test.md',
+            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md',
             'size': 1000
         }
         
@@ -961,7 +961,7 @@ def large_file_list():
             'name': f'file{i}.md',
             'sha': f'sha{i}',
             'size': 1000 + (i * 100),
-            'download_url': f'https://example.com/file{i}.md'
+            'download_url': f'https://raw.githubusercontent.com/test/repo/main/file{i}.md'
         }
         for i in range(1000)
     ]

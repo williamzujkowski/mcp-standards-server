@@ -524,27 +524,47 @@ class SemanticSearch:
                     # Re-preprocess with corrected query
                     search_query = self.preprocessor.preprocess(corrected_query)
             
-            # Generate query embedding with expanded terms
-            expanded_query = ' '.join(search_query.tokens + search_query.expanded_terms)
-            query_embedding = self.embedding_cache.get_embedding(expanded_query)
+            # Generate query embedding - use original query for primary embedding
+            # Only include top relevant synonyms to avoid dilution
+            primary_query = ' '.join(search_query.tokens)
+            query_embedding = self.embedding_cache.get_embedding(primary_query)
             
-            # Calculate similarities
+            # Generate secondary embedding with limited expansion (top 3 synonyms only)
+            limited_expansion = search_query.expanded_terms[:3] if search_query.expanded_terms else []
+            if limited_expansion:
+                expanded_query = ' '.join(search_query.tokens + limited_expansion)
+                expanded_embedding = self.embedding_cache.get_embedding(expanded_query)
+                # Blend embeddings with more weight on original
+                query_embedding = 0.8 * query_embedding + 0.2 * expanded_embedding
+            
+            # Calculate similarities with hybrid approach
             similarities = self._calculate_similarities(
                 query_embedding,
                 search_query,
                 filters
             )
             
-            # Get top results
-            top_indices = np.argsort(similarities)[-top_k:][::-1]
+            # Get top results - get more than needed to account for filtering
+            top_k_extended = min(top_k * 2, len(similarities))
+            top_indices = np.argsort(similarities)[-top_k_extended:][::-1]
             
             # Create initial results
             results = []
+            score_threshold = 0.05  # Lower threshold for better recall
+            prev_score = None
+            
             for idx in top_indices:
                 doc_id = list(self.documents.keys())[idx]
                 score = float(similarities[idx])
                 
-                if score > 0:  # Only include positive scores
+                # Only apply score drop detection for focused queries (not general searches)
+                if prev_score is not None and len(results) >= 3 and len(search_query.tokens) >= 4:
+                    score_drop = (prev_score - score) / prev_score if prev_score > 0 else 1.0
+                    # If score drops by more than 50%, consider stopping
+                    if score_drop > 0.5 and score < 0.3:
+                        break
+                
+                if score > score_threshold:
                     result = SearchResult(
                         id=doc_id,
                         content=self.documents[doc_id],
@@ -552,6 +572,11 @@ class SemanticSearch:
                         metadata=self.document_metadata.get(doc_id, {})
                     )
                     results.append(result)
+                    prev_score = score
+                    
+                    # Stop when we have enough results
+                    if len(results) >= top_k:
+                        break
             
             # Apply re-ranking if enabled
             if rerank and len(results) > 1:
@@ -596,8 +621,123 @@ class SemanticSearch:
         doc_ids = list(self.documents.keys())
         doc_embeddings = np.vstack([self.document_embeddings[doc_id] for doc_id in doc_ids])
         
-        # Calculate base similarities
-        similarities = cosine_similarity([query_embedding], doc_embeddings)[0]
+        # Calculate semantic similarities
+        semantic_similarities = cosine_similarity([query_embedding], doc_embeddings)[0]
+        
+        # Calculate keyword matching scores with improved logic
+        keyword_scores = np.zeros(len(doc_ids))
+        for i, doc_id in enumerate(doc_ids):
+            content_lower = self.documents[doc_id].lower()
+            doc_tokens = set(word_tokenize(content_lower))
+            metadata = self.document_metadata.get(doc_id, {})
+            
+            # Score based on query token matches
+            matches = 0
+            exact_matches = 0
+            
+            for token in search_query.tokens:
+                # Check content for exact word match
+                if token in doc_tokens:
+                    matches += 1.0
+                    exact_matches += 1
+                # Check for substring match (less weight)
+                elif token in content_lower:
+                    matches += 0.5
+                
+                # Also check metadata (important for categorization)
+                metadata_match = False
+                for field, value in metadata.items():
+                    if isinstance(value, str) and token in value.lower():
+                        matches += 0.5
+                        metadata_match = True
+                        break
+                    elif isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, str) and token in item.lower():
+                                matches += 0.5
+                                metadata_match = True
+                                break
+                        if metadata_match:
+                            break
+            
+            # Bonus for documents that contain multiple query terms close together
+            if len(search_query.tokens) > 1:
+                # Check if all tokens appear within a window
+                words = content_lower.split()
+                for window_start in range(len(words) - len(search_query.tokens) + 1):
+                    window = words[window_start:window_start + 20]  # 20-word window
+                    if all(token in window for token in search_query.tokens):
+                        matches += 0.5  # Proximity bonus
+                        break
+            
+            # Normalize by number of query tokens
+            if search_query.tokens:
+                keyword_scores[i] = min(matches / len(search_query.tokens), 1.0)
+                
+        
+        # Identify critical terms (usually nouns or key concepts)
+        # For compound queries like "security best practices", "security" is critical
+        critical_terms = []
+        if len(search_query.tokens) >= 2:
+            # Consider first term as critical if it's not a common word
+            common_words = {'best', 'good', 'new', 'top', 'all', 'how', 'what', 'when', 'where', 'why'}
+            for token in search_query.tokens:
+                if token not in common_words and len(token) > 3:
+                    critical_terms.append(token)
+                    break  # Just take the first critical term
+        
+        # Check if documents contain critical terms
+        has_critical_term = np.zeros(len(doc_ids), dtype=bool)
+        for i, doc_id in enumerate(doc_ids):
+            content_lower = self.documents[doc_id].lower()
+            doc_tokens = set(word_tokenize(content_lower))
+            metadata = self.document_metadata.get(doc_id, {})
+            
+            # Check if any critical term is present
+            for term in critical_terms:
+                if term in doc_tokens or term in content_lower:
+                    has_critical_term[i] = True
+                    break
+                # Also check metadata
+                for field, value in metadata.items():
+                    if isinstance(value, str) and term in value.lower():
+                        has_critical_term[i] = True
+                        break
+                    elif isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, str) and term in item.lower():
+                                has_critical_term[i] = True
+                                break
+        
+        # Combine semantic and keyword scores with critical term requirement
+        min_keyword_threshold = 0.2  # Lowered threshold for better recall
+        
+        combined_similarities = np.zeros(len(doc_ids))
+        for i in range(len(doc_ids)):
+            # Apply critical term penalty only for certain types of queries
+            # For single-word queries or very short queries, don't apply critical term filtering
+            apply_critical_filter = len(search_query.tokens) >= 3 and len(critical_terms) > 0
+            
+            # Moderate penalty if missing critical terms (not too harsh)
+            critical_multiplier = 1.0
+            if apply_critical_filter and not has_critical_term[i]:
+                critical_multiplier = 0.5  # Reduced from 0.3 to 0.5 for better semantic matching
+            
+            if keyword_scores[i] == 0:
+                # No keyword matches - moderate penalty for better semantic matching
+                combined_similarities[i] = semantic_similarities[i] * 0.3 * critical_multiplier
+            elif keyword_scores[i] < min_keyword_threshold:
+                # Poor keyword matches - mild penalty  
+                combined_similarities[i] = semantic_similarities[i] * 0.5 * critical_multiplier
+            else:
+                # Good keyword matches - balanced weighting
+                # Balance semantic and keyword signals
+                keyword_weight = 0.5 if keyword_scores[i] > 0.5 else 0.4
+                semantic_weight = 1.0 - keyword_weight
+                combined_similarities[i] = ((semantic_weight * semantic_similarities[i] + 
+                                           keyword_weight * keyword_scores[i]) * critical_multiplier)
+        
+        similarities = combined_similarities
         
         # Apply boolean operators
         if search_query.boolean_operators:
@@ -622,21 +762,36 @@ class SemanticSearch:
         
         for i, doc_id in enumerate(doc_ids):
             content = self.documents[doc_id].lower()
+            tokens = set(word_tokenize(content))
             
-            # Apply NOT operators
+            # Apply NOT operators - exclude documents containing the term
             for not_term in operators.get('NOT', []):
-                if not_term in content:
+                # For NOT, only check whole word matches to avoid false positives
+                # (e.g., "java" should not match "javascript")
+                if not_term in tokens:
                     modified_similarities[i] = 0
             
-            # Apply AND operators
+            # Apply AND operators - both terms must be present
             for term1, term2 in operators.get('AND', []):
-                if not (term1 in content and term2 in content):
-                    modified_similarities[i] *= 0.5  # Penalize but don't eliminate
+                # Check if both terms exist as whole words or substrings
+                term1_present = term1 in tokens or term1 in content
+                term2_present = term2 in tokens or term2 in content
+                
+                if not (term1_present and term2_present):
+                    modified_similarities[i] = 0  # Exclude documents without both terms
             
-            # Apply OR operators (boost if either term present)
+            # Apply OR operators - at least one term must be present
             for term1, term2 in operators.get('OR', []):
-                if term1 in content or term2 in content:
-                    modified_similarities[i] *= 1.2  # Boost score
+                term1_present = term1 in tokens or term1 in content
+                term2_present = term2 in tokens or term2 in content
+                
+                if term1_present or term2_present:
+                    # Boost based on how many terms are present
+                    boost = 1.5 if (term1_present and term2_present) else 1.25
+                    modified_similarities[i] *= boost
+                else:
+                    # Neither term present - penalize
+                    modified_similarities[i] *= 0.3
         
         return modified_similarities
     
@@ -671,39 +826,96 @@ class SemanticSearch:
         """Re-rank results based on additional factors."""
         # Calculate additional scoring factors
         for result in results:
-            # Term frequency boost
+            content_lower = result.content.lower()
+            initial_score = result.score  # Preserve initial score
+            
+            # Exact match boost - check if exact query appears
+            exact_match_score = 1.0 if search_query.original.lower() in content_lower else 0.0
+            
+            # Term frequency boost with position weighting
             term_freq_score = self._calculate_term_frequency_score(
                 result.content,
+                search_query.tokens
+            )
+            
+            # Phrase proximity score - bonus for terms appearing close together
+            proximity_score = self._calculate_proximity_score(
+                content_lower,
+                search_query.tokens
+            )
+            
+            # Title/beginning boost - check if terms appear early in document
+            position_score = self._calculate_position_score(
+                content_lower,
                 search_query.tokens
             )
             
             # Recency boost (if timestamp in metadata)
             recency_score = self._calculate_recency_score(result.metadata)
             
-            # Combine scores
-            result.score = (
-                result.score * 0.7 +  # Original semantic similarity
-                term_freq_score * 0.2 +  # Term frequency
-                recency_score * 0.1  # Recency
+            # Metadata match boost
+            metadata_score = self._calculate_metadata_score(
+                result.metadata,
+                search_query.tokens
             )
             
-            # Add explanation
+            # Combine scores with better weighting
+            new_score = (
+                initial_score * 0.4 +      # Semantic similarity (reduced from 0.7)
+                exact_match_score * 0.2 + # Exact match bonus
+                term_freq_score * 0.15 +  # Term frequency
+                proximity_score * 0.1 +   # Term proximity
+                position_score * 0.05 +   # Position importance
+                metadata_score * 0.05 +   # Metadata relevance
+                recency_score * 0.05      # Recency
+            )
+            
+            # Cap the new score - allow reasonable boost for documents with good matches
+            # This prevents documents with very low initial relevance from jumping too high
+            max_boost = 2.0  # Increased from 1.5 to allow more flexibility
+            result.score = min(new_score, initial_score * max_boost)
+            
+            # Add detailed explanation
             result.explanation = (
                 f"Semantic: {result.score:.3f}, "
-                f"Term Freq: {term_freq_score:.3f}, "
-                f"Recency: {recency_score:.3f}"
+                f"Exact: {exact_match_score:.3f}, "
+                f"TermFreq: {term_freq_score:.3f}, "
+                f"Proximity: {proximity_score:.3f}, "
+                f"Position: {position_score:.3f}"
             )
+            
         
         # Re-sort by new scores
         return sorted(results, key=lambda x: x.score, reverse=True)
     
     def _calculate_term_frequency_score(self, content: str, terms: List[str]) -> float:
-        """Calculate term frequency score."""
+        """Calculate term frequency score with improved weighting."""
         content_lower = content.lower()
-        total_occurrences = sum(content_lower.count(term) for term in terms)
+        content_tokens = word_tokenize(content_lower)
         
-        # Normalize by content length
-        return min(total_occurrences / (len(content_lower.split()) + 1), 1.0)
+        # Count exact word matches and substring matches separately
+        exact_matches = 0
+        substring_matches = 0
+        
+        for term in terms:
+            # Count exact word matches
+            exact_matches += content_tokens.count(term)
+            # Count substring matches (excluding exact matches)
+            substring_matches += content_lower.count(term) - content_tokens.count(term)
+        
+        # Weight exact matches more than substring matches
+        weighted_occurrences = exact_matches + (substring_matches * 0.5)
+        
+        # Normalize by content length with diminishing returns
+        doc_length = len(content_tokens)
+        if doc_length == 0:
+            return 0.0
+        
+        # Use log normalization to prevent very long documents from dominating
+        normalized_score = weighted_occurrences / (1 + np.log(doc_length))
+        
+        # Cap at 1.0 but allow high frequency to show
+        return min(normalized_score, 1.0)
     
     def _calculate_recency_score(self, metadata: Dict[str, Any]) -> float:
         """Calculate recency score based on timestamp."""
@@ -718,6 +930,122 @@ class SemanticSearch:
             return np.exp(-days_old / 30)  # Half-life of 30 days
         except:
             return 0.5
+    
+    def _calculate_proximity_score(self, content: str, terms: List[str]) -> float:
+        """Calculate score based on proximity of query terms to each other."""
+        if len(terms) < 2:
+            return 0.5  # Neutral score for single term queries
+        
+        # Find positions of all terms
+        term_positions = defaultdict(list)
+        words = content.split()
+        
+        for i, word in enumerate(words):
+            for term in terms:
+                if term in word:
+                    term_positions[term].append(i)
+        
+        # If not all terms are present, return low score
+        if len(term_positions) < len(terms):
+            return 0.0
+        
+        # Calculate minimum distance between different terms
+        min_distances = []
+        term_list = list(term_positions.keys())
+        
+        for i in range(len(term_list)):
+            for j in range(i + 1, len(term_list)):
+                term1_positions = term_positions[term_list[i]]
+                term2_positions = term_positions[term_list[j]]
+                
+                # Find minimum distance between any occurrence of term1 and term2
+                min_dist = float('inf')
+                for pos1 in term1_positions:
+                    for pos2 in term2_positions:
+                        min_dist = min(min_dist, abs(pos1 - pos2))
+                
+                min_distances.append(min_dist)
+        
+        if not min_distances:
+            return 0.5
+        
+        # Convert distances to score (closer = higher score)
+        avg_min_distance = np.mean(min_distances)
+        
+        # Use exponential decay - terms within 5 words get high score
+        proximity_score = np.exp(-avg_min_distance / 5)
+        
+        return min(proximity_score, 1.0)
+    
+    def _calculate_position_score(self, content: str, terms: List[str]) -> float:
+        """Calculate score based on where terms appear in document."""
+        words = content.split()
+        doc_length = len(words)
+        
+        if doc_length == 0:
+            return 0.0
+        
+        # Find earliest position of any query term
+        earliest_position = doc_length
+        
+        for i, word in enumerate(words):
+            for term in terms:
+                if term in word:
+                    earliest_position = min(earliest_position, i)
+                    break
+        
+        # Convert position to score (earlier = higher score)
+        # First 10% of document gets high score
+        position_ratio = earliest_position / doc_length
+        
+        if position_ratio <= 0.1:
+            return 1.0
+        elif position_ratio <= 0.3:
+            return 0.8
+        elif position_ratio <= 0.5:
+            return 0.6
+        else:
+            return 0.4
+    
+    def _calculate_metadata_score(self, metadata: Dict[str, Any], terms: List[str]) -> float:
+        """Calculate score based on term matches in metadata."""
+        if not metadata:
+            return 0.0
+        
+        matches = 0
+        total_fields = 0
+        
+        # Check each metadata field for term matches
+        important_fields = ['title', 'category', 'tags', 'description', 'summary']
+        
+        for field, value in metadata.items():
+            if isinstance(value, str):
+                value_lower = value.lower()
+                field_importance = 2.0 if field in important_fields else 1.0
+                
+                for term in terms:
+                    if term in value_lower:
+                        matches += field_importance
+                
+                total_fields += field_importance
+            elif isinstance(value, list):
+                # Handle list fields like tags
+                field_importance = 2.0 if field in important_fields else 1.0
+                
+                for item in value:
+                    if isinstance(item, str):
+                        item_lower = item.lower()
+                        for term in terms:
+                            if term in item_lower:
+                                matches += field_importance
+                                break
+                
+                total_fields += field_importance
+        
+        if total_fields == 0:
+            return 0.0
+        
+        return min(matches / total_fields, 1.0)
     
     def _generate_highlights(self, content: str, terms: List[str]) -> List[str]:
         """Generate highlighted snippets."""

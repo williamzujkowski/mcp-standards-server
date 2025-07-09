@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
@@ -11,37 +11,209 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  packages: write
+env:
+  PYTHON_VERSION: "3.11"
 
 jobs:
-  build-and-publish:
-    name: Build and Publish
+  validate-version:
+    name: Validate Version
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      version_number: ${{ steps.get_version.outputs.version_number }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          
+          # Validate version format
+          if ! echo "$VERSION" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'; then
+            echo "Invalid version format: $VERSION"
+            echo "Expected format: vX.Y.Z[-prerelease][+build]"
+            exit 1
+          fi
+          
+          VERSION_NUMBER="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "Version number: $VERSION_NUMBER"
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: validate-version
+    
+    services:
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test,dev]"
+          pip install build wheel twine
+      
+      - name: Run tests
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: |
+          pytest tests/unit tests/integration -v --tb=short
+      
+      - name: Build package
+        run: python -m build
+      
+      - name: Check package
+        run: |
+          twine check dist/*
+          ls -la dist/
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ needs.validate-version.outputs.version }}
+          path: dist/
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-version, build-and-test]
+    permissions:
+      contents: write
+    
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Need full history for changelog
       
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-      
-      - name: Install build tools
+      - name: Generate changelog
+        id: changelog
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG="${{ needs.validate-version.outputs.version }}"
+          
+          echo "# Changelog for $CURRENT_TAG" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "## Changes since $PREV_TAG" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            
+            # Generate commit list
+            echo "### Commits" >> CHANGELOG.md
+            git log --pretty=format:"- %s (%h)" "$PREV_TAG".."$CURRENT_TAG" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            
+            # Extract conventional commits
+            echo "" >> CHANGELOG.md
+            echo "### Features" >> CHANGELOG.md
+            git log --pretty=format:"%s|%h" "$PREV_TAG".."$CURRENT_TAG" | grep -E "^feat(\(.+\))?:" | sed 's/|/ (/' | sed 's/$/)/' | sed 's/^/- /' >> CHANGELOG.md || echo "- No new features" >> CHANGELOG.md
+            
+            echo "" >> CHANGELOG.md
+            echo "### Bug Fixes" >> CHANGELOG.md
+            git log --pretty=format:"%s|%h" "$PREV_TAG".."$CURRENT_TAG" | grep -E "^fix(\(.+\))?:" | sed 's/|/ (/' | sed 's/$/)/' | sed 's/^/- /' >> CHANGELOG.md || echo "- No bug fixes" >> CHANGELOG.md
+            
+            echo "" >> CHANGELOG.md
+            echo "### Documentation" >> CHANGELOG.md
+            git log --pretty=format:"%s|%h" "$PREV_TAG".."$CURRENT_TAG" | grep -E "^docs(\(.+\))?:" | sed 's/|/ (/' | sed 's/$/)/' | sed 's/^/- /' >> CHANGELOG.md || echo "- No documentation updates" >> CHANGELOG.md
+          else
+            echo "Initial release" >> CHANGELOG.md
+          fi
+          
+          # Store changelog in output
+          {
+            echo 'changelog<<EOF'
+            cat CHANGELOG.md
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
       
-      - name: Build distribution
-        run: python -m build
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ needs.validate-version.outputs.version }}
+          path: dist/
       
-      - name: Check distribution
-        run: twine check dist/*
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate-version.outputs.version }}
+          name: Release ${{ needs.validate-version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: ${{ contains(needs.validate-version.outputs.version, '-') }}
+          files: |
+            dist/*
+          generate_release_notes: true
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [validate-version, build-and-test, create-release]
+    environment:
+      name: pypi
+      url: https://pypi.org/project/mcp-standards-server/
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ needs.validate-version.outputs.version }}
+          path: dist/
+      
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+          verbose: true
+
+  publish-docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [validate-version, build-and-test, create-release]
+    permissions:
+      packages: write
+      contents: read
+    
+    steps:
+      - uses: actions/checkout@v4
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -50,66 +222,95 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Extract version
-        id: version
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION=${GITHUB_REF#refs/tags/}
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "VERSION_SHORT=${VERSION#v}" >> $GITHUB_OUTPUT
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/mcp-standards-server
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.validate-version.outputs.version_number }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.validate-version.outputs.version_number }}
+            type=semver,pattern={{major}},value=${{ needs.validate-version.outputs.version_number }}
+            type=raw,value=latest,enable=${{ !contains(needs.validate-version.outputs.version, '-') }}
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
-          labels: |
-            org.opencontainers.image.title=MCP Standards Server
-            org.opencontainers.image.description=Model Context Protocol server for development standards
-            org.opencontainers.image.url=${{ github.event.repository.html_url }}
-            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
-            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.licenses=MIT
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: github.event_name == 'push'
+          build-args: |
+            VERSION=${{ needs.validate-version.outputs.version_number }}
+
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [validate-version, create-release]
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
         with:
-          draft: false
-          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
-          files: |
-            dist/*
-          generate_release_notes: true
-          body: |
-            ## Docker Image
-            
-            ```bash
-            docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
-            ```
-            
-            ## Installation
-            
-            ```bash
-            pip install mcp-standards-server==${{ steps.version.outputs.VERSION_SHORT }}
-            ```
-            
-            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
       
-      - name: Publish to PyPI
-        if: github.event_name == 'push' && !contains(steps.version.outputs.VERSION, '-')
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Update version in docs
         run: |
-          twine upload dist/*
-        continue-on-error: true
+          VERSION="${{ needs.validate-version.outputs.version_number }}"
+          
+          # Update version in README
+          sed -i "s/version: .*/version: $VERSION/" README.md || true
+          
+          # Update version in pyproject.toml
+          sed -i "s/version = .*/version = \"$VERSION\"/" pyproject.toml
+          
+          # Update version in docs
+          find docs -name "*.md" -type f -exec sed -i "s/mcp-standards-server==.*/mcp-standards-server==$VERSION/g" {} \;
+          find docs -name "*.md" -type f -exec sed -i "s/version .*/version $VERSION/g" {} \;
+      
+      - name: Commit version updates
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add -A
+            git commit -m "chore: update version to ${{ needs.validate-version.outputs.version_number }} [skip ci]"
+            git push
+          fi
+
+  notify-release:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [validate-version, create-release, publish-pypi, publish-docker]
+    if: always()
+    
+    steps:
+      - name: Send notification
+        run: |
+          if [ "${{ needs.create-release.result }}" = "success" ] && \
+             [ "${{ needs.publish-pypi.result }}" = "success" ] && \
+             [ "${{ needs.publish-docker.result }}" = "success" ]; then
+            echo "✅ Release ${{ needs.validate-version.outputs.version }} completed successfully!"
+            echo "📦 PyPI: https://pypi.org/project/mcp-standards-server/"
+            echo "🐳 Docker Hub: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/mcp-standards-server"
+            echo "📚 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-version.outputs.version }}"
+          else
+            echo "❌ Release ${{ needs.validate-version.outputs.version }} failed!"
+            echo "Check the workflow logs for details."
+            exit 1
+          fi

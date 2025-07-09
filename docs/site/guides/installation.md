@@ -64,7 +64,7 @@ npm run build
 
 ```bash
 # Start the MCP server
-python -m src.server
+python -m src
 
 # Or use the CLI
 mcp-standards --help
@@ -118,13 +118,13 @@ After installation, verify everything is working:
 
 ```bash
 # Show help
-python -m src.cli.main --help
+python -m src --help
 
 # Or if installed in development mode
 mcp-standards --help
 
 # Test the server
-python -m src.server
+python -m src
 ```
 
 Expected output:
@@ -243,7 +243,7 @@ If `mcp-standards` is not found after installation:
 
 3. **Use python -m**:
    ```bash
-   python -m src.cli.main --help
+   python -m src --help
    ```
 
 ### Permission Denied

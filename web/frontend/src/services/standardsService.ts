@@ -51,5 +51,15 @@ export const StandardsService = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  async exportBulkStandards(standardIds: string[], format: string = 'json'): Promise<Blob> {
+    const response = await api.post('/api/export/bulk', {
+      standards: standardIds,
+      format
+    }, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
