@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from contextlib import asynccontextmanager
 from functools import wraps
 import hashlib
-import pickle
+import base64
 
 import redis
 from redis import asyncio as aioredis
@@ -121,6 +121,28 @@ class RedisCache:
             'errors': 0,
             'slow_queries': 0
         }
+    
+    def _get_json_encoder(self):
+        """Get JSON encoder that handles common Python types."""
+        class ExtendedJSONEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, (set, frozenset)):
+                    return {"__type__": "set", "values": list(obj)}
+                elif isinstance(obj, bytes):
+                    return {"__type__": "bytes", "data": base64.b64encode(obj).decode('ascii')}
+                # Don't try to serialize arbitrary objects for security reasons
+                return super().default(obj)
+        return ExtendedJSONEncoder
+    
+    def _json_object_hook(self, obj):
+        """JSON decoder hook to reconstruct special types."""
+        if isinstance(obj, dict) and "__type__" in obj:
+            type_name = obj["__type__"]
+            if type_name == "set":
+                return set(obj["values"])
+            elif type_name == "bytes":
+                return base64.b64decode(obj["data"].encode('ascii'))
+        return obj
         
     @property
     def sync_pool(self) -> redis.ConnectionPool:
@@ -155,15 +177,25 @@ class RedisCache:
         return self._async_pool
         
     def _serialize(self, value: Any) -> bytes:
-        """Serialize value for storage."""
+        """Serialize value for storage with secure methods."""
         try:
-            # Try msgpack first (faster)
+            # Try msgpack first (faster and safer)
             data = msgpack.packb(value, use_bin_type=True)
-            serializer = 'msgpack'
+            serializer = 'm'  # msgpack
         except (TypeError, msgpack.exceptions.PackException):
-            # Fall back to pickle
-            data = pickle.dumps(value)
-            serializer = 'pickle'
+            # Fall back to JSON for all types
+            try:
+                # Convert to JSON-serializable format
+                json_data = json.dumps(value, cls=self._get_json_encoder())
+                data = json_data.encode('utf-8')
+                serializer = 'j'  # json
+            except (TypeError, ValueError) as e:
+                # For types that can't be serialized, raise an error
+                raise TypeError(
+                    f"Cannot serialize object of type {type(value).__name__}. "
+                    f"Only msgpack and JSON serializable types are supported. "
+                    f"Consider implementing a custom serialization method. Error: {e}"
+                )
             
         # Compress if needed
         if self.config.enable_compression and len(data) > self.config.compression_threshold:
@@ -174,7 +206,7 @@ class RedisCache:
             return b'U' + serializer.encode() + data
             
     def _deserialize(self, data: bytes) -> Any:
-        """Deserialize value from storage."""
+        """Deserialize value from storage with security checks."""
         if not data:
             return None
             
@@ -187,11 +219,24 @@ class RedisCache:
             import zlib
             payload = zlib.decompress(payload)
             
-        # Deserialize
+        # Deserialize based on serializer type
         if serializer == 'm':
             return msgpack.unpackb(payload, raw=False)
+        elif serializer == 'j':
+            # JSON deserialization with object hook
+            return json.loads(payload.decode('utf-8'), object_hook=self._json_object_hook)
+        elif serializer == 'p':
+            # Pickle is no longer supported for security reasons
+            logger.error(
+                "Attempted to deserialize pickled data. This is no longer supported for security reasons. "
+                "Please re-cache the data using msgpack or JSON serialization."
+            )
+            raise ValueError(
+                "Pickle deserialization is disabled for security reasons. "
+                "Please clear the cache and re-populate it with secure serialization."
+            )
         else:
-            return pickle.loads(payload)
+            raise ValueError(f"Unknown serializer type: {serializer}")
             
     def _build_key(self, key: str) -> str:
         """Build full cache key with prefix."""
@@ -231,10 +276,10 @@ class RedisCache:
         """Decorator for metrics collection."""
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(self, *args, **kwargs):
                 start_time = time.time()
                 try:
-                    result = func(*args, **kwargs)
+                    result = func(self, *args, **kwargs)
                     return result
                 finally:
                     duration = time.time() - start_time
@@ -243,10 +288,10 @@ class RedisCache:
                         logger.warning(f"Slow {operation} operation: {duration:.3f}s")
                         
             @wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(self, *args, **kwargs):
                 start_time = time.time()
                 try:
-                    result = await func(*args, **kwargs)
+                    result = await func(self, *args, **kwargs)
                     return result
                 finally:
                     duration = time.time() - start_time
@@ -259,9 +304,9 @@ class RedisCache:
         
     # Sync methods
     
-    @_with_metrics("get")
     def get(self, key: str) -> Optional[Any]:
         """Get value from cache (sync)."""
+        start_time = time.time()
         full_key = self._build_key(key)
         
         # Check L1 cache first
@@ -291,10 +336,15 @@ class RedisCache:
         except RedisError:
             logger.warning(f"Redis get failed for key: {key}, using L1 only")
             return None
+        finally:
+            duration = time.time() - start_time
+            if duration > self.config.slow_query_threshold:
+                self._metrics['slow_queries'] += 1
+                logger.warning(f"Slow get operation: {duration:.3f}s")
             
-    @_with_metrics("set")
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in cache (sync)."""
+        start_time = time.time()
         full_key = self._build_key(key)
         ttl = ttl or self.config.default_ttl
         
@@ -313,6 +363,11 @@ class RedisCache:
         except RedisError:
             logger.warning(f"Redis set failed for key: {key}, value cached in L1 only")
             return False
+        finally:
+            duration = time.time() - start_time
+            if duration > self.config.slow_query_threshold:
+                self._metrics['slow_queries'] += 1
+                logger.warning(f"Slow set operation: {duration:.3f}s")
             
     def delete(self, key: str) -> bool:
         """Delete value from cache (sync)."""
@@ -428,9 +483,9 @@ class RedisCache:
             
     # Async methods
     
-    @_with_metrics("async_get")
     async def async_get(self, key: str) -> Optional[Any]:
         """Get value from cache (async)."""
+        start_time = time.time()
         full_key = self._build_key(key)
         
         # Check L1 cache first
@@ -464,10 +519,15 @@ class RedisCache:
             self._metrics['errors'] += 1
             logger.warning(f"Redis async_get failed for key: {key}, using L1 only")
             return None
+        finally:
+            duration = time.time() - start_time
+            if duration > self.config.slow_query_threshold:
+                self._metrics['slow_queries'] += 1
+                logger.warning(f"Slow async_get operation: {duration:.3f}s")
             
-    @_with_metrics("async_set")
     async def async_set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in cache (async)."""
+        start_time = time.time()
         full_key = self._build_key(key)
         ttl = ttl or self.config.default_ttl
         
@@ -490,6 +550,11 @@ class RedisCache:
             self._metrics['errors'] += 1
             logger.warning(f"Redis async_set failed for key: {key}, value cached in L1 only")
             return False
+        finally:
+            duration = time.time() - start_time
+            if duration > self.config.slow_query_threshold:
+                self._metrics['slow_queries'] += 1
+                logger.warning(f"Slow async_set operation: {duration:.3f}s")
             
     async def async_delete(self, key: str) -> bool:
         """Delete value from cache (async)."""
@@ -604,11 +669,13 @@ class RedisCache:
         
     @staticmethod
     def generate_cache_key(*args, **kwargs) -> str:
-        """Generate a cache key from arguments."""
+        """Generate a cache key from arguments using SHA-256."""
         key_parts = [str(arg) for arg in args]
         key_parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))
         key_string = ":".join(key_parts)
-        return hashlib.md5(key_string.encode()).hexdigest()
+        # Use SHA-256 with application-specific salt
+        salted_key = f"mcp_cache_v1:{key_string}"
+        return hashlib.sha256(salted_key.encode()).hexdigest()
 
 
 # Global cache instance (can be initialized in app startup)

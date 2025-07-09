@@ -83,7 +83,9 @@ def generate_cache_key(
         arg_parts.append(f"{param_name}:{value_str}")
         
     if arg_parts:
-        key_parts.append(hashlib.md5(":".join(arg_parts).encode()).hexdigest())
+        # Use SHA-256 with application-specific salt for cache keys
+        salted_args = f"mcp_cache_args_v1:{':'.join(arg_parts)}"
+        key_parts.append(hashlib.sha256(salted_args.encode()).hexdigest())
         
     return ":".join(key_parts)
 
