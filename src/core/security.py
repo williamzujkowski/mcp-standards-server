@@ -7,9 +7,10 @@ Provides request size limits, security headers, and enhanced security features.
 import logging
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from .errors import ErrorCode, SecurityError, get_secure_error_handler
 

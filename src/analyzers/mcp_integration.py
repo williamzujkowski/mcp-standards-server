@@ -1,6 +1,7 @@
 """MCP integration for language analyzers."""
 
 from pathlib import Path
+from typing import Any
 
 from ..core.mcp.models import MCPTool, ToolResult
 from .base import AnalyzerPlugin, AnalyzerResult
