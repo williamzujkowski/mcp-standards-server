@@ -2,6 +2,7 @@
 
 import re
 from pathlib import Path
+from typing import Optional
 
 from .ast_utils import ASTNode
 from .base import (
@@ -165,14 +166,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in dom_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.HIGH,
                         message=f"{message} can lead to XSS",
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Use textContent or React state instead",
@@ -188,14 +189,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in url_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.MEDIUM,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Validate and sanitize URLs before use",
@@ -268,14 +269,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in sql_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.CRITICAL,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Use parameterized queries",
@@ -292,14 +293,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in cmd_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.CRITICAL,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Validate and escape shell arguments",
@@ -335,14 +336,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in assertion_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     Issue(
                         type=IssueType.TYPE_SAFETY,
                         severity=Severity.LOW,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Add proper type guards or validation",
@@ -383,14 +384,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
             for pattern, message in storage_patterns:
                 matches = self.find_pattern_matches(content, [pattern])
-                for match_text, line, col in matches:
+                for match_text, line_num, col in matches:
                     result.add_issue(
                         SecurityIssue(
                             type=IssueType.SECURITY,
                             severity=Severity.MEDIUM,
                             message=f"{message} is vulnerable to XSS",
                             file_path=result.file_path,
-                            line_number=line,
+                            line_number=line_num,
                             column_number=col,
                             code_snippet=match_text,
                             recommendation="Use httpOnly cookies for sensitive tokens",
@@ -435,7 +436,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                             severity=Severity.LOW,
                             message="Route might lack authentication check",
                             file_path=result.file_path,
-                            line_number=line,
+                            line_number=line_num,
                             column_number=col,
                             code_snippet=match_text,
                             recommendation="Ensure all protected routes have authentication",
@@ -463,14 +464,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in secret_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.CRITICAL,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text[:50] + "...",
                         recommendation="Use environment variables for secrets",
@@ -488,14 +489,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in console_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.MEDIUM,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Remove sensitive data from logs",
@@ -605,14 +606,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                 line_num = content[: match.start()].count("\n") + 1
                 matches.append((match.group(), line_num, match.start()))
 
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     PerformanceIssue(
                         type=IssueType.PERFORMANCE,
                         severity=Severity.MEDIUM,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text[:50] + "...",
                         recommendation="Add dependency array to optimize hook execution",
@@ -677,14 +678,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in inefficient_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     PerformanceIssue(
                         type=IssueType.PERFORMANCE,
                         severity=Severity.LOW,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Use more efficient alternatives",
@@ -733,14 +734,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             line_num = content[: match.start()].count("\n") + 1
             matches.append((match.group(), line_num, match.start()))
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 PerformanceIssue(
                     type=IssueType.PERFORMANCE,
                     severity=Severity.MEDIUM,
                     message="Sequential awaits could be parallelized",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Use Promise.all() for independent async operations",
@@ -807,14 +808,14 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         content = Path(result.file_path).read_text()
         for pattern, message in large_lib_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     PerformanceIssue(
                         type=IssueType.PERFORMANCE,
                         severity=Severity.MEDIUM,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Use specific imports to reduce bundle size",
@@ -965,7 +966,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
         for pattern, message in promise_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 # Check if it's inside try-catch
                 lines = content.split("\n")
                 context_start = max(0, line - 5)
@@ -978,7 +979,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                             severity=Severity.MEDIUM,
                             message=message,
                             file_path=result.file_path,
-                            line_number=line,
+                            line_number=line_num,
                             column_number=col,
                             code_snippet=match_text[:50] + "...",
                             recommendation="Add .catch() or use try-catch with async/await",
@@ -1013,7 +1014,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                 )
 
     def _analyze_testing_patterns(
-        self, content: str, result: AnalyzerResult, ast: ASTNode = None
+        self, content: str, result: AnalyzerResult, ast: Optional[ASTNode] = None
     ) -> None:
         """Analyze testing patterns."""
         # Check if this is a test file

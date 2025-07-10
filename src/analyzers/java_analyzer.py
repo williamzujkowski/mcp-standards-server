@@ -153,7 +153,7 @@ class JavaAnalyzer(BaseAnalyzer):
             pattern = rf"\b({algo}|{algo.lower()})\b"
             matches = self.find_pattern_matches(content, [pattern])
 
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -182,7 +182,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in secret_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -302,7 +302,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in ldap_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -329,7 +329,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in cmd_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -398,7 +398,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in cors_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -458,7 +458,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in password_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -544,7 +544,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in log_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
@@ -573,7 +573,7 @@ class JavaAnalyzer(BaseAnalyzer):
 
         for pattern, message in ssrf_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,

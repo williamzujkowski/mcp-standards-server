@@ -1,26 +1,26 @@
 """AST parsing utilities for different languages."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Dict, Union, Callable
 
 
 class ASTNode:
     """Generic AST node representation."""
 
     def __init__(
-        self, node_type: str, value: Any = None, children: list["ASTNode"] = None
+        self, node_type: str, value: Any = None, children: Optional[list["ASTNode"]] = None
     ):
         self.type = node_type
         self.value = value
         self.children = children or []
-        self.parent = None
-        self.metadata = {}
+        self.parent: Optional["ASTNode"] = None
+        self.metadata: Dict[str, Any] = {}
 
         # Set parent references
         for child in self.children:
             child.parent = self
 
-    def add_child(self, child: "ASTNode"):
+    def add_child(self, child: "ASTNode") -> None:
         """Add a child node."""
         child.parent = self
         self.children.append(child)
@@ -75,10 +75,10 @@ class ASTParser(ABC):
 class PatternMatcher:
     """Pattern matching utilities for AST analysis."""
 
-    def __init__(self):
-        self.patterns = {}
+    def __init__(self) -> None:
+        self.patterns: Dict[str, Callable[[ASTNode], bool]] = {}
 
-    def register_pattern(self, name: str, pattern_func):
+    def register_pattern(self, name: str, pattern_func: Callable[[ASTNode], bool]) -> None:
         """Register a pattern matching function."""
         self.patterns[name] = pattern_func
 
@@ -90,9 +90,9 @@ class PatternMatcher:
 
     def find_matches(self, ast: ASTNode, pattern_name: str) -> list[ASTNode]:
         """Find all nodes matching a pattern."""
-        results = []
+        results: list[ASTNode] = []
 
-        def traverse(node):
+        def traverse(node: ASTNode) -> None:
             if self.match(node, pattern_name):
                 results.append(node)
             for child in node.children:
@@ -105,8 +105,8 @@ class PatternMatcher:
 class SecurityPatternDetector:
     """Detect security patterns in AST."""
 
-    def __init__(self):
-        self.detectors = {
+    def __init__(self) -> None:
+        self.detectors: Dict[str, Callable[[ASTNode], list[ASTNode]]] = {
             "sql_injection": self._detect_sql_injection,
             "xss": self._detect_xss,
             "path_traversal": self._detect_path_traversal,
@@ -117,9 +117,9 @@ class SecurityPatternDetector:
             "race_condition": self._detect_race_condition,
         }
 
-    def detect_all(self, ast: ASTNode) -> dict[str, list[ASTNode]]:
+    def detect_all(self, ast: ASTNode) -> Dict[str, list[ASTNode]]:
         """Run all security detectors."""
-        results = {}
+        results: Dict[str, list[ASTNode]] = {}
         for name, detector in self.detectors.items():
             matches = detector(ast)
             if matches:
@@ -261,8 +261,8 @@ class SecurityPatternDetector:
 class PerformancePatternDetector:
     """Detect performance anti-patterns in AST."""
 
-    def __init__(self):
-        self.detectors = {
+    def __init__(self) -> None:
+        self.detectors: Dict[str, Callable[[ASTNode], list[ASTNode]]] = {
             "n_plus_one": self._detect_n_plus_one,
             "inefficient_loop": self._detect_inefficient_loop,
             "memory_leak": self._detect_memory_leak,

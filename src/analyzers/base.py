@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, cast
 
 
 class IssueType(Enum):
@@ -72,7 +72,7 @@ class SecurityIssue(Issue):
     cwe_id: str | None = None
     owasp_category: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.type = IssueType.SECURITY
 
 
@@ -97,7 +97,7 @@ class AnalyzerResult:
     ast_hash: str | None = None
     analysis_time: float = 0.0
 
-    def add_issue(self, issue: Issue):
+    def add_issue(self, issue: Issue) -> None:
         """Add an issue to the results."""
         self.issues.append(issue)
 
@@ -135,9 +135,9 @@ class AnalyzerResult:
 class BaseAnalyzer(ABC):
     """Base analyzer class with common patterns and utilities."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.patterns = self._load_patterns()
-        self._cache = {}
+        self._cache: dict[str, Any] = {}
 
     @property
     @abstractmethod
@@ -341,10 +341,10 @@ class AnalyzerPlugin:
     _analyzers: dict[str, type] = {}
 
     @classmethod
-    def register(cls, language: str):
+    def register(cls, language: str) -> Callable[[type], type]:
         """Decorator to register an analyzer."""
 
-        def decorator(analyzer_class):
+        def decorator(analyzer_class: type) -> type:
             cls._analyzers[language.lower()] = analyzer_class
             return analyzer_class
 
@@ -355,7 +355,7 @@ class AnalyzerPlugin:
         """Get analyzer instance for a language."""
         analyzer_class = cls._analyzers.get(language.lower())
         if analyzer_class:
-            return analyzer_class()
+            return cast(BaseAnalyzer, analyzer_class())
         return None
 
     @classmethod
