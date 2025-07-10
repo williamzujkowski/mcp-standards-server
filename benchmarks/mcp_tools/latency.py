@@ -5,6 +5,13 @@ import random
 import time
 from collections import defaultdict
 from typing import Any
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+
 
 from src.mcp_server import MCPStandardsServer
 

@@ -8,6 +8,13 @@ import string
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+
 
 from src.core.cache import CacheConfig, RedisCache, cache_result
 
