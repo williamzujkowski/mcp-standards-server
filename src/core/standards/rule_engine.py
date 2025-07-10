@@ -301,7 +301,9 @@ class RuleEngine:
                                 "rules": [
                                     r["rule_id"]
                                     for r in matched_rules
-                                    if "standards" in r and isinstance(r["standards"], list) and standard in r["standards"]
+                                    if "standards" in r
+                                    and isinstance(r["standards"], list)
+                                    and standard in r["standards"]
                                 ],
                             }
                         )
@@ -395,7 +397,11 @@ class RuleEngine:
         Returns:
             Dictionary representing the decision tree structure
         """
-        tree: dict[str, Any] = {"type": "root", "total_rules": len(self.rules), "branches": []}
+        tree: dict[str, Any] = {
+            "type": "root",
+            "total_rules": len(self.rules),
+            "branches": [],
+        }
 
         # Group rules by common patterns
         grouped: dict[tuple[str, ...], list[StandardRule]] = {}

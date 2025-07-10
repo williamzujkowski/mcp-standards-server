@@ -326,7 +326,7 @@ class StandardsValidator:
             "valid": True,
             "errors": [],
             "warnings": [],
-            "checks": {}
+            "checks": {},
         }
 
         # Validate metadata
