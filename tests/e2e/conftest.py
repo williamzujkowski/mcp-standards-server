@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 import time
-from types import TracebackType
 from pathlib import Path
 from typing import Any
 
@@ -38,36 +37,36 @@ class MCPTestClient:
             # Store the context managers
             self._stdio_cm = stdio_client(self.server_params)
             self._read, self._write = await self._stdio_cm.__aenter__()
-            
+
             try:
                 self._session_cm = ClientSession(self._read, self._write)
                 self.session = await self._session_cm.__aenter__()
-                
+
                 # Initialize the session
                 logger.debug("Initializing MCP session...")
                 await self.session.initialize()
                 logger.debug("MCP session initialized successfully")
                 return self
-                
+
             except Exception as e:
                 # Clean up session if it was created
                 if hasattr(self, '_session_cm'):
                     try:
                         await self._session_cm.__aexit__(type(e), e, e.__traceback__)
-                    except:
+                    except Exception:
                         pass
                 # Clean up stdio
                 await self._stdio_cm.__aexit__(type(e), e, e.__traceback__)
                 raise
-                
+
         except Exception as e:
             logger.error(f"Error connecting to MCP server: {e}")
             raise
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         logger.debug("Closing MCP session...")
-        
+
         # Close session first
         if hasattr(self, '_session_cm') and self._session_cm:
             try:
@@ -77,7 +76,7 @@ class MCPTestClient:
             finally:
                 self.session = None
                 self._session_cm = None
-        
+
         # Close stdio connection
         if hasattr(self, '_stdio_cm') and self._stdio_cm:
             try:
