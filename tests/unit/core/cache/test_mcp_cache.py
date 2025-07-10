@@ -18,23 +18,19 @@ class MockRedisCache:
 
     def __init__(self):
         self.data = {}
-        self.call_count = {
-            'get': 0,
-            'set': 0,
-            'delete': 0
-        }
+        self.call_count = {"get": 0, "set": 0, "delete": 0}
 
     async def async_get(self, key: str):
-        self.call_count['get'] += 1
+        self.call_count["get"] += 1
         return self.data.get(key)
 
     async def async_set(self, key: str, value, ttl=None):
-        self.call_count['set'] += 1
+        self.call_count["set"] += 1
         self.data[key] = value
         return True
 
     async def async_delete(self, key: str):
-        self.call_count['delete'] += 1
+        self.call_count["delete"] += 1
         if key in self.data:
             del self.data[key]
             return True
@@ -45,7 +41,7 @@ class MockRedisCache:
         deleted = 0
         keys_to_delete = []
         for key in self.data:
-            if pattern.endswith('*') and key.startswith(pattern[:-1]):
+            if pattern.endswith("*") and key.startswith(pattern[:-1]):
                 keys_to_delete.append(key)
 
         for key in keys_to_delete:
@@ -82,44 +78,32 @@ class TestMCPCache:
     def test_cache_key_generation(self, mcp_cache):
         """Test cache key generation."""
         # Basic key generation
-        key = mcp_cache.generate_cache_key(
-            "test_tool",
-            {"arg1": "value1", "arg2": 123}
-        )
+        key = mcp_cache.generate_cache_key("test_tool", {"arg1": "value1", "arg2": 123})
         assert key.startswith("mcp:tool:test_tool:")
 
         # Same arguments should generate same key
         key2 = mcp_cache.generate_cache_key(
-            "test_tool",
-            {"arg2": 123, "arg1": "value1"}  # Different order
+            "test_tool", {"arg2": 123, "arg1": "value1"}  # Different order
         )
         assert key == key2
 
         # Different arguments should generate different keys
         key3 = mcp_cache.generate_cache_key(
-            "test_tool",
-            {"arg1": "value2", "arg2": 123}
+            "test_tool", {"arg1": "value2", "arg2": 123}
         )
         assert key != key3
 
     def test_cache_key_with_config(self, mcp_cache):
         """Test cache key generation with custom config."""
-        config = ToolCacheConfig(
-            tool_name="test_tool",
-            include_in_key=["arg1"]
-        )
+        config = ToolCacheConfig(tool_name="test_tool", include_in_key=["arg1"])
 
         # Only arg1 should be included
         key1 = mcp_cache.generate_cache_key(
-            "test_tool",
-            {"arg1": "value1", "arg2": 123},
-            config
+            "test_tool", {"arg1": "value1", "arg2": 123}, config
         )
 
         key2 = mcp_cache.generate_cache_key(
-            "test_tool",
-            {"arg1": "value1", "arg2": 456},  # Different arg2
-            config
+            "test_tool", {"arg1": "value1", "arg2": 456}, config  # Different arg2
         )
 
         assert key1 == key2  # Should be same since arg2 is not included
@@ -154,10 +138,7 @@ class TestMCPCache:
     async def test_no_cache_strategy(self, mcp_cache):
         """Test NO_CACHE strategy."""
         # Configure tool with NO_CACHE
-        mcp_cache.configure_tool(
-            "no_cache_tool",
-            strategy=CacheStrategy.NO_CACHE
-        )
+        mcp_cache.configure_tool("no_cache_tool", strategy=CacheStrategy.NO_CACHE)
 
         args = {"arg1": "value1"}
         response = {"result": "success"}
@@ -177,10 +158,7 @@ class TestMCPCache:
         large_response = {"data": "x" * 2000}
 
         # Configure with low compression threshold
-        mcp_cache.configure_tool(
-            "compress_tool",
-            compress_threshold=100
-        )
+        mcp_cache.configure_tool("compress_tool", compress_threshold=100)
 
         args = {"arg1": "value1"}
 
@@ -225,10 +203,9 @@ class TestMCPCache:
     async def test_invalidation_cascade(self, mcp_cache):
         """Test invalidation cascade."""
         # Configure tools with invalidation relationships
-        mcp_cache.configure_tool(
-            "reader_tool",
-            invalidate_on=["writer_tool"]
-        )
+        mcp_cache.configure_tool("reader_tool", invalidate_on=["writer_tool"])
+        # Configure writer_tool to be cacheable (needed for invalidation to trigger)
+        mcp_cache.configure_tool("writer_tool", strategy=CacheStrategy.SHORT_TTL)
         mcp_cache._build_invalidation_map()
 
         # Cache some data
@@ -245,12 +222,7 @@ class TestMCPCache:
         """Test cache warming."""
         # Configure tool for warming
         mcp_cache.configure_tool(
-            "warm_tool",
-            warm_on_startup=True,
-            warm_args=[
-                {"id": 1},
-                {"id": 2}
-            ]
+            "warm_tool", warm_on_startup=True, warm_args=[{"id": 1}, {"id": 2}]
         )
 
         # Mock executor
@@ -372,14 +344,11 @@ class TestDefaultConfigurations:
             "get_standard_details": ToolCacheConfig(
                 tool_name="get_standard_details",
                 strategy=CacheStrategy.SHORT_TTL,
-                ttl_seconds=60
+                ttl_seconds=60,
             )
         }
 
-        cache = MCPCache(
-            redis_cache=MockRedisCache(),
-            custom_configs=custom_configs
-        )
+        cache = MCPCache(redis_cache=MockRedisCache(), custom_configs=custom_configs)
 
         config = cache.tool_configs["get_standard_details"]
         assert config.strategy == CacheStrategy.SHORT_TTL
@@ -393,11 +362,7 @@ async def test_background_warming():
     cache = MCPCache(redis_cache=mock_redis)
 
     # Configure tool for warming
-    cache.configure_tool(
-        "background_tool",
-        warm_on_startup=True,
-        warm_args=[{"id": 1}]
-    )
+    cache.configure_tool("background_tool", warm_on_startup=True, warm_args=[{"id": 1}])
 
     call_count = 0
 
