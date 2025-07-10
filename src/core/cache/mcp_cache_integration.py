@@ -311,7 +311,7 @@ class MCPCacheMiddleware:
 
 def integrate_cache_with_mcp_server(
     mcp_server: Any, cache_config: dict[str, Any] | None = None
-) -> "MCPCacheIntegration":
+) -> MCPCacheMiddleware:
     """Integrate caching with an MCP server instance.
 
     Args:
