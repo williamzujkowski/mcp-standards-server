@@ -107,7 +107,7 @@ class ServerConfig:
     """Configuration for the async MCP server."""
     
     # Server settings
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8080
     max_connections: int = 1000
     connection_timeout: float = 300.0  # 5 minutes

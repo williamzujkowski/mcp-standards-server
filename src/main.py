@@ -51,7 +51,7 @@ class CombinedServer:
     @with_logging(level=logging.INFO)
     async def start_http_server(self):
         """Start the HTTP server for health checks and monitoring."""
-        http_host = os.environ.get("HTTP_HOST", "0.0.0.0")
+        http_host = os.environ.get("HTTP_HOST", "127.0.0.1")
         http_port = int(os.environ.get("HTTP_PORT", "8080"))
         
         self.http_runner = await start_http_server(http_host, http_port)

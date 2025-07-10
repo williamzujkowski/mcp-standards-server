@@ -108,14 +108,14 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
+        uses: semgrep/semgrep-action@v1
         with:
           config: >-
             p/security-audit
             p/python
             p/django
             p/r2c-security-audit
-          generateSarif: true
+          generateSarif: "1"
       
       - name: Upload SARIF file
         if: always()

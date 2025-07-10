@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 class HTTPServer:
     """HTTP server for health checks and monitoring."""
     
-    def __init__(self, host: str = "0.0.0.0", port: int = 8080):
+    def __init__(self, host: str = "127.0.0.1", port: int = 8080):
         self.host = host
         self.port = port
         self.app = web.Application()
@@ -299,7 +299,7 @@ class HTTPServer:
 
 async def start_http_server(host: str = None, port: int = None) -> web.AppRunner:
     """Start the HTTP server with environment variable support."""
-    host = host or os.environ.get("HTTP_HOST", "0.0.0.0")
+    host = host or os.environ.get("HTTP_HOST", "127.0.0.1")
     port = port or int(os.environ.get("HTTP_PORT", "8080"))
     
     server = HTTPServer(host, port)
