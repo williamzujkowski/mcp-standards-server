@@ -269,7 +269,7 @@ class TestLoadPerformance:
 
         # 20% validation requests
         sample_code = "const Component = () => <div>Hello</div>;"
-        for i in range(20):
+        for _i in range(20):
             tasks.append(validate_code(sample_code, "react-18-patterns"))
 
         # Execute mixed workload

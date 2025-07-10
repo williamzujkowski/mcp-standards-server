@@ -77,7 +77,7 @@ class PerformanceMetrics:
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
 
         # Latency over time
-        ax1.plot(self.timestamps, [l * 1000 for l in self.latencies])
+        ax1.plot(self.timestamps, [latency * 1000 for latency in self.latencies])
         ax1.set_ylabel('Latency (ms)')
         ax1.set_title('Search Latency Over Time')
         ax1.grid(True)
@@ -278,9 +278,9 @@ class TestSemanticSearchThroughput:
             queries_per_thread = 100
             total_queries = num_threads * queries_per_thread
 
-            def worker(thread_id):
+            def worker(thread_id, queries_count=queries_per_thread):
                 times = []
-                for i in range(queries_per_thread):
+                for i in range(queries_count):
                     query = f"thread {thread_id} query {i}"
                     start = time.perf_counter()
                     engine.search(query, top_k=5)
@@ -591,7 +591,7 @@ class TestSemanticSearchScalability:
                   f"P@5={metrics['precision_at_5']:.2f}")
 
         # Quality should remain high regardless of scale
-        for size, metrics in quality_metrics.items():
+        for _size, metrics in quality_metrics.items():
             assert metrics["precision_at_5"] >= 0.8  # At least 80% recall at 5
 
 

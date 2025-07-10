@@ -14,7 +14,7 @@ import pytest
 # Mock aioredis to avoid import errors in Python 3.12
 sys.modules['aioredis'] = MagicMock()
 
-from src.core.mcp.async_server import AsyncMCPServer, MCPSession
+from src.core.mcp.async_server import AsyncMCPServer, MCPSession  # noqa: E402
 
 
 class TestAsyncMCPServer:

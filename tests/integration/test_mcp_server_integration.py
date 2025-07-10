@@ -295,7 +295,7 @@ class TestMCPServerIntegration:
             mock_auth.return_value = None  # No user authenticated
 
             # Test that protected operations require authentication
-            with pytest.raises(Exception):  # Should raise authentication error
+            with pytest.raises(RuntimeError):  # Should raise authentication error
                 await mcp_server._get_applicable_standards(
                     project_context={"languages": ["python"]},
                     requirements=["code_quality"]
@@ -318,7 +318,7 @@ class TestMCPServerIntegration:
     async def test_input_validation(self, mcp_server):
         """Test input validation."""
         # Test with invalid input
-        with pytest.raises(Exception):  # Should raise validation error
+        with pytest.raises(ValueError):  # Should raise validation error
             await mcp_server._get_applicable_standards(
                 project_context="invalid_context",  # Should be dict
                 requirements=["code_quality"]

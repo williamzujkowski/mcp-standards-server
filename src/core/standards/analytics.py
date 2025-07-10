@@ -441,7 +441,7 @@ class StandardsAnalytics:
         technologies = Counter()
         frameworks = Counter()
 
-        for std_id, standard in standards.items():
+        for _std_id, standard in standards.items():
             domain = standard.get('domain', 'unknown')
             domains[domain] += 1
 
@@ -775,11 +775,11 @@ class StandardsAnalytics:
             'created_date': 'Add creation date for tracking'
         }
 
-        for field, suggestion in required_fields.items():
-            if not standard.get(field):
+        for field_name, suggestion in required_fields.items():
+            if not standard.get(field_name):
                 issues.append({
                     'aspect': 'completeness',
-                    'description': f"Missing {field}",
+                    'description': f"Missing {field_name}",
                     'effort': 'low',
                     'steps': [suggestion]
                 })

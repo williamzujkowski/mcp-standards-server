@@ -305,7 +305,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         tsignore_pattern = r'@ts-ignore'
         matches = self.find_pattern_matches(content, [tsignore_pattern])
 
-        for match_text, line, col in matches:
+        for _match_text, line, col in matches:
             result.add_issue(Issue(
                 type=IssueType.TYPE_SAFETY,
                 severity=Severity.MEDIUM,

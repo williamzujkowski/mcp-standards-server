@@ -268,17 +268,17 @@ class MetadataSchema:
 
         # Check required fields
         required = schema.get("required", [])
-        for field in required:
-            if field not in data:
-                errors.append(f"Required field '{field}' is missing")
+        for field_name in required:
+            if field_name not in data:
+                errors.append(f"Required field '{field_name}' is missing")
 
         # Check field types
         properties = schema.get("properties", {})
-        for field, value in data.items():
-            if field in properties:
-                field_schema = properties[field]
+        for field_name, value in data.items():
+            if field_name in properties:
+                field_schema = properties[field_name]
                 if not cls._validate_field_type(value, field_schema):
-                    errors.append(f"Field '{field}' has invalid type")
+                    errors.append(f"Field '{field_name}' has invalid type")
 
         return {"valid": len(errors) == 0, "errors": errors}
 

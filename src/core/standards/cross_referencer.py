@@ -291,9 +291,9 @@ class CrossReferencer:
         text_content = []
 
         # Extract text from common fields
-        for field in ["description", "purpose", "scope", "guidelines"]:
-            if field in standard:
-                text_content.append(str(standard[field]))
+        for field_name in ["description", "purpose", "scope", "guidelines"]:
+            if field_name in standard:
+                text_content.append(str(standard[field_name]))
 
         # Extract from sections if they exist
         if "sections" in standard:

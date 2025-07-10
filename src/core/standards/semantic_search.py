@@ -1018,10 +1018,10 @@ class SemanticSearch:
         # Check each metadata field for term matches
         important_fields = ['title', 'category', 'tags', 'description', 'summary']
 
-        for field, value in metadata.items():
+        for field_name, value in metadata.items():
             if isinstance(value, str):
                 value_lower = value.lower()
-                field_importance = 2.0 if field in important_fields else 1.0
+                field_importance = 2.0 if field_name in important_fields else 1.0
 
                 for term in terms:
                     if term in value_lower:

@@ -490,13 +490,13 @@ class TestSemanticSearchErrorRecovery:
                 nonlocal fail_count
                 if fail_count < 2:
                     fail_count += 1
-                    raise Exception("Model loading failed")
+                    raise RuntimeError("Model loading failed")
                 super().__init__(*args, **kwargs)
 
         with patch('sentence_transformers.SentenceTransformer', FailingThenSucceedingModel):
             # First two attempts should fail
             for _i in range(2):
-                with pytest.raises(Exception):
+                with pytest.raises(RuntimeError):
                     create_search_engine()
 
             # Third attempt should succeed

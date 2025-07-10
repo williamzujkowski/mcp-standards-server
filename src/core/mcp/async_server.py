@@ -299,7 +299,7 @@ class RequestBatcher:
                 request_groups[method].append(item)
 
             # Process each group
-            for method, items in request_groups.items():
+            for _method, items in request_groups.items():
                 try:
                     # For now, process individually
                     # In a real implementation, you'd optimize for bulk operations

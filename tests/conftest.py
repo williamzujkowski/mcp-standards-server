@@ -102,9 +102,8 @@ def skip_on_ci(request):
 def skip_without_mcp(request):
     """Skip tests that require MCP when it's not available."""
     if request.node.get_closest_marker("mcp"):
-        try:
-            import mcp
-        except ImportError:
+        import importlib.util
+        if importlib.util.find_spec("mcp") is None:
             pytest.skip("MCP not installed")
 
 
