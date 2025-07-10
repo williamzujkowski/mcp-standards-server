@@ -97,14 +97,18 @@ class MetricsCollector:
         if labels:
             self._labels[key] = labels
 
-    def gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
+    def gauge(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ) -> None:
         """Set a gauge metric."""
         key = self._make_key(name, labels)
         self._gauges[key] = value
         if labels:
             self._labels[key] = labels
 
-    def histogram(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
+    def histogram(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ) -> None:
         """Record a histogram value."""
         key = self._make_key(name, labels)
         self._histograms[key].append(MetricPoint(time.time(), value, labels or {}))

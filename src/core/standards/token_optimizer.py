@@ -897,7 +897,9 @@ class DynamicLoader:
     def __init__(self, optimizer: TokenOptimizer):
         self.optimizer = optimizer
         self._loaded_sections: defaultdict[str, set[str]] = defaultdict(set)
-        self._loading_history: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+        self._loading_history: defaultdict[str, list[dict[str, Any]]] = defaultdict(
+            list
+        )
 
     def load_section(
         self, standard_id: str, section_id: str, budget: TokenBudget

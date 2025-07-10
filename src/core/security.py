@@ -339,7 +339,9 @@ class SecurityMiddleware:
             }
 
 
-def security_middleware(config: SecurityConfig | None = None) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def security_middleware(
+    config: SecurityConfig | None = None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for applying security middleware to functions."""
     middleware = SecurityMiddleware(config)
 
