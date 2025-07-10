@@ -54,3 +54,4 @@ data/standards/sync_metadata.json
 # Temporary files
 *.tmp
 *.bak.coverage.framework.*
+benchmark_results/
