@@ -1,0 +1,7 @@
+# Development dependencies - auto-generated from pyproject.toml
+# To install: pip install -r requirements-dev.txt
+
+# Install the package in editable mode with all extras
+-e .[dev,test,performance,visualization]
+
+# This file exists for convenience. All dependencies are managed in pyproject.toml

@@ -1,41 +1,13 @@
-# Core dependencies for MCP Standards Server
-mcp>=0.1.0
-pydantic>=2.0
-redis>=4.0.0
-PyYAML>=6.0
-chromadb>=0.4.0
-sentence-transformers>=2.2.0
-tiktoken>=0.4.0
-tree-sitter>=0.20.0
-aiofiles>=23.0.0
-jsonschema>=4.0.0
-aiohttp>=3.9.0
-scikit-learn>=1.0.0
-numpy>=1.21.0
-nltk>=3.8.0
-fuzzywuzzy>=0.18.0
-python-Levenshtein>=0.12.0
+# This file is auto-generated from pyproject.toml
+# To install dependencies, use: pip install -e .
+# To install with development dependencies: pip install -e ".[dev]"
+# To install with all extras: pip install -e ".[dev,test,performance,visualization,full]"
 
-# Database dependencies with Python 3.12 compatibility
-aioredis>=2.0.1,<3.0.0  # Use compatible version
-aiosqlite>=0.19.0
-asyncpg>=0.29.0
-aiomysql>=0.2.0
-sqlalchemy>=2.0.0
+# All dependencies are now managed in pyproject.toml
+# This file exists for backward compatibility
 
-# Dependencies for review automation
-PyGithub>=1.58.0
-requests>=2.25.0
+# To regenerate a flat requirements file from pyproject.toml, run:
+# pip-compile pyproject.toml -o requirements.txt
 
-# Security dependencies
-PyJWT>=2.8.0
-
-# Performance monitoring and profiling
-pympler>=0.9.0
-prometheus_client>=0.15.0
-memory_profiler>=0.60.0
-msgpack>=1.0.0
-
-# Additional utilities
-faiss-cpu>=1.7.0  # For vector index optimization
-psutil>=5.9.0     # For system monitoring
+# For production installation:
+-e .

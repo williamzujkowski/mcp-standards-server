@@ -5,14 +5,28 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mcp-standards-server"
 version = "0.1.0"
-description = "MCP Standards Server for code compliance"
+description = "A Model Context Protocol server for intelligent access to development standards"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+authors = [
+    {name = "William Zujkowski"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "mcp>=0.1.0",
+    # Core dependencies
+    "mcp>=0.1.0",  # Model Context Protocol SDK - critical dependency
     "pydantic>=2.0",
-    "redis>=4.0",
+    "redis>=4.0.0",
     "PyYAML>=6.0",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
@@ -25,15 +39,33 @@ dependencies = [
     "numpy>=1.21.0",
     "nltk>=3.8.0",
     "fuzzywuzzy>=0.18.0",
-    "python-Levenshtein>=0.12.0",
-    "PyJWT>=2.8.0",
-    "msgpack>=1.0.0",
-    "prometheus_client>=0.16.0",
-    "pympler>=1.0.0",
-    "memory-profiler>=0.60.0",
-    "faiss-cpu>=1.7.0",
-    "psutil>=5.9.0",
+    "python-Levenshtein>=0.12.0",  # For better fuzzy matching performance
+    "PyJWT>=2.8.0",  # For JWT authentication
+    # Database dependencies with Python 3.12 compatibility
+    "aioredis>=2.0.1,<3.0.0",  # Use compatible version
+    "aiosqlite>=0.19.0",
+    "asyncpg>=0.29.0",
+    "aiomysql>=0.2.0",
+    "sqlalchemy>=2.0.0",
+    # GitHub integration dependencies
+    "PyGithub>=1.58.0",
+    "requests>=2.25.0",
+    # Performance monitoring and profiling dependencies
+    "prometheus_client>=0.16.0",  # For metrics collection
+    "pympler>=1.0.0",  # For memory profiling
+    "memory-profiler>=0.60.0",  # For memory analysis
+    "faiss-cpu>=1.7.0",  # For vector operations
+    "psutil>=5.9.0",  # For system monitoring
+    "msgpack>=1.0.0",  # For efficient serialization
 ]
+
+[project.urls]
+Homepage = "https://github.com/williamzujkowski/mcp-standards-server"
+Repository = "https://github.com/williamzujkowski/mcp-standards-server"
+Issues = "https://github.com/williamzujkowski/mcp-standards-server/issues"
+
+[project.scripts]
+mcp-standards = "src.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -61,7 +93,18 @@ performance = [
     "memory-profiler>=0.60.0",
     "psutil>=5.9.0",
     "pympler>=1.0.0",
+    "tracemalloc-ng>=1.0.0",
     "pytest-memprof>=0.2.0",
+]
+visualization = [
+    "matplotlib>=3.5.0",  # For benchmark plots
+]
+full = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "faiss-cpu>=1.7.0",
+    "annoy>=1.17.0",
+    "matplotlib>=3.5.0",
 ]
 
 [tool.pytest.ini_options]
@@ -145,3 +188,12 @@ check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.yaml", "*.yml", "*.md"]
