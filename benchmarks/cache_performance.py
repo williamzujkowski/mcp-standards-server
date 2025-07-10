@@ -5,11 +5,11 @@ import json
 import random
 import statistics
 import string
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any
-import sys
 from pathlib import Path
+from typing import Any
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))

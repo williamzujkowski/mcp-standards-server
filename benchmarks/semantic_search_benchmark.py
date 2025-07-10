@@ -5,11 +5,9 @@ Performance benchmark for enhanced semantic search.
 import random
 import shutil
 import statistics
+import sys
 import tempfile
 import time
-from pathlib import Path
-
-import sys
 from pathlib import Path
 
 # Optional matplotlib imports - gracefully handle missing dependency
@@ -350,7 +348,7 @@ class SemanticSearchBenchmark:
     def generate_report(self):
         """Generate a visual benchmark report."""
         print("\n=== Generating Benchmark Report ===")
-        
+
         if not MATPLOTLIB_AVAILABLE:
             print("WARNING: matplotlib not available. Skipping visual report generation.")
             return

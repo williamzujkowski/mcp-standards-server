@@ -1,9 +1,8 @@
 """Benchmark script for language analyzers."""
 
 import statistics
-import time
-from pathlib import Path
 import sys
+import time
 from pathlib import Path
 
 # Add project root to Python path

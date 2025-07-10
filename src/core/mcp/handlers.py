@@ -182,14 +182,14 @@ class StandardsHandler:
                 )
                 if not standard:
                     return {"error": f"Standard not found: {args.get('standard_id')}"}
-                
+
                 # Apply token optimization if available
                 if hasattr(self.standards_engine, "token_optimizer") and self.standards_engine.token_optimizer:
                     format_type_str = args.get("format", "condensed")
-                    
+
                     # Import and convert to enum
                     from ..standards.token_optimizer import StandardFormat
-                    
+
                     # Map string to enum
                     format_map = {
                         "full": StandardFormat.FULL,
@@ -198,7 +198,7 @@ class StandardsHandler:
                         "summary": StandardFormat.SUMMARY,
                     }
                     format_type = format_map.get(format_type_str, StandardFormat.CONDENSED)
-                    
+
                     # Convert Standard to dict for optimizer
                     standard_dict = {
                         "id": standard.id,
@@ -226,9 +226,9 @@ class StandardsHandler:
 
             elif tool_name == "validate_against_standard":
                 standard_id = args.get("standard_id")
-                code = args.get("code")
-                file_path = args.get("file_path")
-                
+                _code = args.get("code")  # Not used in stub implementation
+                _file_path = args.get("file_path")  # Not used in stub implementation
+
                 # Basic validation stub - would need analyzer integration
                 result = {
                     "standard_id": standard_id,
@@ -242,7 +242,7 @@ class StandardsHandler:
             elif tool_name == "get_compliance_mapping":
                 standard_ids = args.get("standard_ids", [])
                 control_id = args.get("control_id")
-                
+
                 # Get compliance mappings from standards metadata
                 mappings = []
                 for std_id in standard_ids:
@@ -256,7 +256,7 @@ class StandardsHandler:
                                         "control_id": control,
                                         "standard_title": standard.title,
                                     })
-                
+
                 return {"result": mappings}
 
             else:

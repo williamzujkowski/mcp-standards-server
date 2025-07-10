@@ -104,7 +104,7 @@ class StandardsEngine:
 
             # Load from JSON files in cache directory
             cache_dir = self.data_dir / "cache"
-            
+
             for json_file in cache_dir.glob("*.json"):
                 if json_file.name in ["sync_metadata.json", "import_metadata.json"]:
                     continue
@@ -141,12 +141,12 @@ class StandardsEngine:
                                 self._standards_cache[standard.id] = standard
                         else:
                             # Single standard file format
-                            category = data.get("category", 
+                            category = data.get("category",
                                 json_file.stem.replace("_STANDARDS", "")
                                 .replace("_", " ")
                                 .title()
                             )
-                            
+
                             standard = Standard(
                                 id=data.get("id", json_file.stem.lower()),
                                 title=data.get("name", data.get("title", json_file.stem)),
@@ -396,7 +396,7 @@ class StandardsEngine:
 
         # Use rule engine to determine applicable standards
         evaluation_result = self.rule_engine.evaluate(project_context)
-        
+
         # Get matched standards from evaluation result
         applicable = []
         for matched_rule in evaluation_result.get("matched_rules", []):

@@ -4,9 +4,10 @@
 import json
 from pathlib import Path
 
+
 def enhance_standards():
     """Add more detailed content to test standards."""
-    
+
     # Enhanced standards with full content
     enhanced_standards = {
         "react-18-patterns": {
@@ -155,13 +156,13 @@ def enhance_standards():
             }
         }
     }
-    
+
     # Write enhanced standards to both locations
     locations = [
         Path("/tmp/test_standards_data/standards/cache"),
         Path("/home/william/git/mcp-standards-server/data/standards/cache")
     ]
-    
+
     for location in locations:
         if location.exists():
             for std_id, std_data in enhanced_standards.items():

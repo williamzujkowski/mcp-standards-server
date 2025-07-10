@@ -41,7 +41,7 @@ class PerformanceDashboard:
         if not MATPLOTLIB_AVAILABLE:
             print("WARNING: matplotlib not available. Dashboard visualization disabled.")
             return None
-        
+
         fig = plt.figure(figsize=(16, 10))
         fig.suptitle('MCP Standards Server - Performance Dashboard', fontsize=16)
 
@@ -263,7 +263,7 @@ class PerformanceDashboard:
         if not MATPLOTLIB_AVAILABLE:
             print("WARNING: matplotlib not available. Cannot save snapshot.")
             return
-        
+
         if self.figures:
             self.figures[0].savefig(filepath, dpi=150, bbox_inches='tight')
 

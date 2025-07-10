@@ -11,7 +11,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-import pytest
 import pytest_asyncio
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client

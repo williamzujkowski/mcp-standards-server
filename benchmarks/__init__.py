@@ -11,6 +11,7 @@ from .framework import (
     BenchmarkVisualizer,
     RegressionDetector,
 )
+from .load import StressTestBenchmark
 from .mcp_tools import (
     MCPColdStartBenchmark,
     MCPLatencyBenchmark,
@@ -23,7 +24,6 @@ from .memory import (
     MemoryGrowthBenchmark,
     MemoryUsageBenchmark,
 )
-from .load import StressTestBenchmark
 from .monitoring import (
     AlertSystem,
     MetricsCollector,
@@ -33,7 +33,7 @@ from .monitoring import (
 __all__ = [
     # Framework
     "BaseBenchmark",
-    "BenchmarkResult", 
+    "BenchmarkResult",
     "BenchmarkSuite",
     "BenchmarkVisualizer",
     "RegressionDetector",

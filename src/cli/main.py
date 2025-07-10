@@ -331,14 +331,14 @@ def cmd_generate(args: argparse.Namespace) -> int:
     """Handle generate command."""
     try:
         # Import generate commands
-        from generators.quality_assurance import QualityAssuranceSystem
-        from generators.validator import StandardsValidator
         from cli.commands.generate import (
             StandardMetadata,
             StandardsGenerator,
             _interactive_standard_creation,
             _interactive_template_customization,
         )
+        from generators.quality_assurance import QualityAssuranceSystem
+        from generators.validator import StandardsValidator
 
         generator = StandardsGenerator()
 
