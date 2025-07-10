@@ -241,7 +241,9 @@ class MetricCollector:
         if self.config.enable_alerting:
             self._check_thresholds(name, value)
 
-    async def _store_metric_in_redis(self, name: str, metric_value: MetricValue) -> None:
+    async def _store_metric_in_redis(
+        self, name: str, metric_value: MetricValue
+    ) -> None:
         """Store metric in Redis."""
         try:
             key = f"{self.config.redis_key_prefix}:{name}:{int(metric_value.timestamp)}"
@@ -690,7 +692,9 @@ class PerformanceMonitor:
         """Add alert callback."""
         self.collector.add_alert_callback(callback)
 
-    def time_operation(self, metric_name: str, labels: dict[str, str] | None = None) -> None:
+    def time_operation(
+        self, metric_name: str, labels: dict[str, str] | None = None
+    ) -> None:
         """Context manager for timing operations."""
         return TimingContext(self, metric_name, labels)
 
@@ -828,7 +832,9 @@ class TimingContext:
 class Benchmark:
     """Performance benchmark."""
 
-    def __init__(self, name: str, operation: Callable, monitor: PerformanceMonitor) -> None:
+    def __init__(
+        self, name: str, operation: Callable, monitor: PerformanceMonitor
+    ) -> None:
         self.name = name
         self.operation = operation
         self.monitor = monitor
@@ -922,7 +928,9 @@ async def shutdown_performance_monitor() -> None:
 
 
 # Convenience functions
-def record_metric(name: str, value: float, labels: dict[str, str] | None = None) -> None:
+def record_metric(
+    name: str, value: float, labels: dict[str, str] | None = None
+) -> None:
     """Record a metric using global monitor."""
     monitor = get_performance_monitor()
     monitor.record_metric(name, value, labels)

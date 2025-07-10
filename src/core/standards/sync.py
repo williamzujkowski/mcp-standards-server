@@ -144,7 +144,9 @@ class GitHubRateLimiter:
 class StandardsSynchronizer:
     """Main synchronizer for standards files."""
 
-    def __init__(self, config_path: Path | None = None, cache_dir: Path | None = None) -> None:
+    def __init__(
+        self, config_path: Path | None = None, cache_dir: Path | None = None
+    ) -> None:
         """
         Initialize the synchronizer.
 

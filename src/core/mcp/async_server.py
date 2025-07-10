@@ -650,7 +650,9 @@ class MCPSession:
 class AsyncMCPServer:
     """Async MCP server with enhanced performance."""
 
-    def __init__(self, config: ServerConfig | None = None, standards_engine=None) -> None:
+    def __init__(
+        self, config: ServerConfig | None = None, standards_engine=None
+    ) -> None:
         self.config = config or ServerConfig()
         self.standards_engine = standards_engine
 

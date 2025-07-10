@@ -185,7 +185,9 @@ class BatchProcessor:
                 logger.error(f"Error in search batch processing: {e}")
                 await asyncio.sleep(0.1)
 
-    async def _process_embedding_batch(self, batch: list[tuple[str, asyncio.Future]]) -> None:
+    async def _process_embedding_batch(
+        self, batch: list[tuple[str, asyncio.Future]]
+    ) -> None:
         """Process a batch of embedding requests."""
         # This would be implemented with actual embedding model calls
         # For now, we'll simulate the processing
