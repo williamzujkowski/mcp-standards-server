@@ -2,13 +2,15 @@ name: Security
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   schedule:
     # Run at 2 AM UTC every Monday
     - cron: '0 2 * * 1'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

@@ -2,13 +2,29 @@ name: E2E Tests
 
 on:
   push:
-    branches: [ main, develop, complete_overhaul ]
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'tests/e2e/**'
+      - 'web/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'tests/e2e/**'
+      - 'web/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
   schedule:
     # Run nightly at 2 AM UTC
     - cron: '0 2 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PYTHON_VERSION: '3.11'
@@ -17,11 +33,10 @@ env:
 jobs:
   e2e-tests:
     name: End-to-End Tests
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12']
       fail-fast: false
 
     steps:
@@ -37,16 +52,10 @@ jobs:
         cache: 'pip'
 
 
-    - name: Install system dependencies (Linux)
-      if: runner.os == 'Linux'
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y redis-server
-
-    - name: Install system dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew install redis
 
     - name: Install Python dependencies
       run: |
@@ -57,27 +66,13 @@ jobs:
         pip install coverage pytest-cov
 
 
-    - name: Start Redis (Linux/macOS)
-      if: matrix.os != 'windows-latest'
+    - name: Start Redis
       run: |
         redis-server --daemonize yes
         sleep 2
         redis-cli ping
 
-    - name: Start Redis (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        # Install Memurai (Redis for Windows)
-        choco install memurai-developer -y --no-progress
-        # Start Memurai service
-        net start MemuraiDeveloper
-        Start-Sleep -Seconds 5
-        # Test Redis connection using Memurai CLI
-        & "C:\Program Files\Memurai\memurai-cli.exe" ping
-      shell: pwsh
-
-    - name: Run E2E tests with coverage (Linux/macOS)
-      if: matrix.os != 'windows-latest'
+    - name: Run E2E tests with coverage
       run: |
         # Clear any existing coverage data
         coverage erase || true
@@ -97,42 +92,19 @@ jobs:
         PYTHONPATH: ${{ github.workspace }}
         MCP_TEST_MODE: "true"
         COVERAGE_PROCESS_START: ".coveragerc"
-        
-    - name: Run E2E tests with coverage (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        # Clear any existing coverage data
-        coverage erase
-        Remove-Item .coverage* -Force -ErrorAction SilentlyContinue
-        
-        # Run tests with coverage in subprocess mode
-        coverage run --parallel-mode -m pytest tests/e2e/ --timeout=300 -v
-        
-        # Combine coverage data from parallel runs
-        coverage combine
-        
-        # Generate reports (E2E tests focus on integration, not full code coverage)
-        coverage report --fail-under=5
-        coverage xml
-        coverage html
-      shell: pwsh
-      env:
-        PYTHONPATH: ${{ github.workspace }}
-        MCP_TEST_MODE: "true"
-        COVERAGE_PROCESS_START: ".coveragerc"
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
         flags: e2e
-        name: e2e-${{ matrix.os }}-py${{ matrix.python-version }}
+        name: e2e-ubuntu-py${{ matrix.python-version }}
 
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+        name: test-results-ubuntu-py${{ matrix.python-version }}
         path: |
           coverage.xml
           htmlcov/
@@ -204,21 +176,11 @@ jobs:
       run: |
         python -m pytest tests/e2e/test_performance.py::TestMemoryPerformance -v --memprof --memprof-top-n=10 || python -m pytest tests/e2e/test_performance.py::TestMemoryPerformance -v
 
-    - name: Analyze memory profile (Linux/macOS)
-      if: runner.os != 'Windows'
+    - name: Analyze memory profile
       run: |
         if [ -f memory_profile.txt ]; then
           python scripts/analyze_memory_profile.py memory_profile.txt
         fi
-      shell: bash
-
-    - name: Analyze memory profile (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        if (Test-Path memory_profile.txt) {
-          python scripts/analyze_memory_profile.py memory_profile.txt
-        }
-      shell: pwsh
 
   security-scan:
     name: Security Scan

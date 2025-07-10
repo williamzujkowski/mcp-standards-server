@@ -14,6 +14,10 @@ on:
     # Run daily at 9 AM UTC to check for overdue reviews
     - cron: '0 9 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   REVIEW_WEBHOOK_URL: ${{ secrets.REVIEW_WEBHOOK_URL }}
