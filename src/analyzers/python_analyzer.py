@@ -9,10 +9,18 @@ from .base import AnalyzerResult, BaseAnalyzer, Issue, IssueType, Severity
 class PythonAnalyzer(BaseAnalyzer):
     """Python-specific code analyzer."""
 
-    def __init__(self, config: dict[str, Any] | None = None):
-        super().__init__(config)
-        self.language = "python"
-        self.file_extensions = [".py"]
+    def __init__(self) -> None:
+        super().__init__()
+
+    @property
+    def language(self) -> str:
+        """Return the language this analyzer supports."""
+        return "python"
+
+    @property
+    def file_extensions(self) -> list[str]:
+        """Return file extensions this analyzer handles."""
+        return [".py"]
 
     def analyze_code(self, code: str, file_path: str | None = None) -> AnalyzerResult:
         """Analyze Python code for issues."""
@@ -40,12 +48,15 @@ class PythonAnalyzer(BaseAnalyzer):
                 )
             )
 
+        # Store additional metrics
+        metrics["total_lines"] = len(code.splitlines())
+        metrics["analyzed_files"] = 1 if file_path else 0
+        
         return AnalyzerResult(
+            file_path=file_path or "",
+            language=self.language,
             issues=issues,
             metrics=metrics,
-            total_lines=len(code.splitlines()),
-            analyzed_files=1 if file_path else 0,
-            language=self.language,
         )
 
     def _analyze_ast(self, tree: ast.AST, file_path: str) -> list[Issue]:

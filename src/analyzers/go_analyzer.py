@@ -189,14 +189,14 @@ class GoAnalyzer(BaseAnalyzer):
         ignored_error_pattern = r"_\s*(?:,\s*_\s*)?:?=\s*\w+\.[A-Z]\w*\("
         matches = self.find_pattern_matches(content, [ignored_error_pattern])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 Issue(
                     type=IssueType.ERROR_HANDLING,
                     severity=Severity.MEDIUM,
                     message="Error return value ignored",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Always handle or explicitly ignore errors with a comment",
@@ -223,7 +223,7 @@ class GoAnalyzer(BaseAnalyzer):
                         severity=Severity.MEDIUM,
                         message="Panic without recover mechanism",
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Add defer recover() to handle panics gracefully",
@@ -274,14 +274,14 @@ class GoAnalyzer(BaseAnalyzer):
 
         for pattern, message in secret_patterns:
             matches = self.find_pattern_matches(content, [pattern])
-            for match_text, line, col in matches:
+            for match_text, line_num, col in matches:
                 result.add_issue(
                     SecurityIssue(
                         type=IssueType.SECURITY,
                         severity=Severity.CRITICAL,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text[:50] + "...",  # Truncate sensitive data
                         recommendation="Use environment variables or secure key management systems",
@@ -402,14 +402,14 @@ class GoAnalyzer(BaseAnalyzer):
         unbuffered_chan = r"make\s*\(\s*chan\s+\w+\s*\)"
         matches = self.find_pattern_matches(content, [unbuffered_chan])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 PerformanceIssue(
                     type=IssueType.PERFORMANCE,
                     severity=Severity.LOW,
                     message="Consider using buffered channels for better performance",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Use make(chan Type, bufferSize) for async operations",
@@ -423,7 +423,7 @@ class GoAnalyzer(BaseAnalyzer):
         map_pattern = r"make\s*\(\s*map\s*\[[^\]]+\][^\)]+\)"
         matches = self.find_pattern_matches(content, [map_pattern])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             if not re.search(r",\s*\d+\s*\)", match_text):
                 result.add_issue(
                     PerformanceIssue(
@@ -431,7 +431,7 @@ class GoAnalyzer(BaseAnalyzer):
                         severity=Severity.LOW,
                         message="Map created without size hint",
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Provide size hint: make(map[K]V, expectedSize)",

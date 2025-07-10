@@ -160,7 +160,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.HIGH,
                         message=f"Use of weak cryptographic algorithm: {algo}",
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation=recommendation,
@@ -189,7 +189,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.CRITICAL,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text[:50] + "...",
                         recommendation="Use environment variables or secure configuration management",
@@ -309,7 +309,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.HIGH,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Use parameterized LDAP queries",
@@ -336,7 +336,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.CRITICAL,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Validate and sanitize all user input",
@@ -405,7 +405,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.HIGH,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Specify allowed origins explicitly",
@@ -465,7 +465,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.MEDIUM,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Require passwords of at least 8 characters",
@@ -551,7 +551,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.HIGH,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Never log sensitive information",
@@ -580,7 +580,7 @@ class JavaAnalyzer(BaseAnalyzer):
                         severity=Severity.HIGH,
                         message=message,
                         file_path=result.file_path,
-                        line_number=line,
+                        line_number=line_num,
                         column_number=col,
                         code_snippet=match_text,
                         recommendation="Validate and whitelist URLs before making requests",
@@ -662,14 +662,14 @@ class JavaAnalyzer(BaseAnalyzer):
         loop_allocation = r"for\s*\([^)]*\)\s*{[^}]*new\s+\w+\[[0-9]{4,}\]"
         matches = self.find_pattern_matches(content, [loop_allocation])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 PerformanceIssue(
                     type=IssueType.PERFORMANCE,
                     severity=Severity.MEDIUM,
                     message="Large array allocation in loop",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Move allocation outside loop or use object pooling",
@@ -782,14 +782,14 @@ class JavaAnalyzer(BaseAnalyzer):
         sdf_pattern = r"private\s+(?:static\s+)?SimpleDateFormat\s+"
         matches = self.find_pattern_matches(content, [sdf_pattern])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 PerformanceIssue(
                     type=IssueType.PERFORMANCE,
                     severity=Severity.HIGH,
                     message="SimpleDateFormat is not thread-safe",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Use ThreadLocal<SimpleDateFormat> or DateTimeFormatter",
@@ -964,14 +964,14 @@ class JavaAnalyzer(BaseAnalyzer):
         empty_catch = r"catch\s*\([^)]+\)\s*{\s*}"
         matches = self.find_pattern_matches(content, [empty_catch])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 Issue(
                     type=IssueType.ERROR_HANDLING,
                     severity=Severity.HIGH,
                     message="Empty catch block",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Log the exception or add appropriate error handling",
@@ -982,14 +982,14 @@ class JavaAnalyzer(BaseAnalyzer):
         generic_catch = r"catch\s*\(\s*Exception\s+\w+\s*\)"
         matches = self.find_pattern_matches(content, [generic_catch])
 
-        for match_text, line, col in matches:
+        for match_text, line_num, col in matches:
             result.add_issue(
                 Issue(
                     type=IssueType.ERROR_HANDLING,
                     severity=Severity.MEDIUM,
                     message="Catching generic Exception",
                     file_path=result.file_path,
-                    line_number=line,
+                    line_number=line_num,
                     column_number=col,
                     code_snippet=match_text,
                     recommendation="Catch specific exceptions",
