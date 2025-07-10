@@ -447,7 +447,8 @@ class MCPCache:
                 # Invalidate all calls to this tool
                 pattern = f"mcp:tool:{tool_name}:*"
                 count = await self.redis.async_delete_pattern(pattern)
-                success = count > 0
+                # Consider successful even if nothing was deleted (pattern might not match anything)
+                success = True
 
             if self.enable_metrics:
                 self.metrics.invalidations += 1

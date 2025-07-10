@@ -796,6 +796,41 @@ class RedisCache:
             logger.warning(f"Redis async_delete failed for key: {key}")
             return False
 
+    async def async_delete_pattern(self, pattern: str) -> int:
+        """Delete keys matching pattern (async)."""
+        full_pattern = self._build_key(pattern)
+
+        # Clear matching keys from L1 cache
+        l1_cleared = 0
+        for key in list(self._l1_cache.keys()):
+            if self._match_pattern(key, full_pattern):
+                del self._l1_cache[key]
+                l1_cleared += 1
+
+        # Delete from L2 cache
+        try:
+            if not self._circuit_breaker.can_attempt():
+                raise RedisConnectionError("Circuit breaker is open")
+
+            async with aioredis.Redis(connection_pool=self.async_pool) as r:
+                keys = []
+                async for key in r.scan_iter(match=full_pattern):
+                    keys.append(key)
+                
+                if keys:
+                    result = await r.delete(*keys)
+                    self._circuit_breaker.record_success()
+                    return max(l1_cleared, result)
+                else:
+                    self._circuit_breaker.record_success()
+                    return l1_cleared
+
+        except RedisError:
+            self._circuit_breaker.record_failure()
+            self._metrics['errors'] += 1
+            logger.warning(f"Redis async_delete_pattern failed for pattern: {pattern}, using L1 only")
+            return l1_cleared
+
     # Health and monitoring
 
     def health_check(self) -> dict[str, Any]:
