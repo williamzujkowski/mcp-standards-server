@@ -312,7 +312,10 @@ def get_error_handler() -> ErrorTrackingHandler | None:
 
 
 def init_logging(
-    level: str = "INFO", format: str = "json", log_file: str | None = None, **kwargs: Any
+    level: str = "INFO",
+    format: str = "json",
+    log_file: str | None = None,
+    **kwargs: Any,
 ) -> ErrorTrackingHandler:
     """
     Initialize logging with environment-aware configuration.

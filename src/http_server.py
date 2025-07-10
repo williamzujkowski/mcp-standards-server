@@ -316,7 +316,9 @@ class HTTPServer:
         logger.info("HTTP server stopped")
 
 
-async def start_http_server(host: str | None = None, port: int | None = None) -> web.AppRunner:
+async def start_http_server(
+    host: str | None = None, port: int | None = None
+) -> web.AppRunner:
     """Start the HTTP server with environment variable support."""
     host = host or os.environ.get("HTTP_HOST", "127.0.0.1")
     port = port or int(os.environ.get("HTTP_PORT", "8080"))
