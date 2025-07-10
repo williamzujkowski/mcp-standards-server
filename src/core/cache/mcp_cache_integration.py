@@ -358,10 +358,10 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | N
     async def executor_adapter(self_ref, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         # Call the original executor as a method (self is already bound)
         return await original_executor(tool_name, arguments)
-    
+
     # Wrap the adapter with caching
     wrapped_executor = middleware.wrap_tool_executor(executor_adapter)
-    
+
     # Create the final cached executor
     async def cached_executor(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return await wrapped_executor(mcp_server, tool_name, arguments)

@@ -1,8 +1,7 @@
 """Tests for Redis cache client."""
 
-import asyncio
 import time
-from unittest.mock import MagicMock, patch, PropertyMock, ANY, Mock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import redis
@@ -126,17 +125,17 @@ class TestRedisCache:
         deserialized = cache._deserialize(serialized)
         assert deserialized == large_data
 
-    
+
     @patch('redis.Redis')
     def test_sync_get_hit(self, mock_redis_cls, cache):
         """Test sync get with cache hit."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
         test_data = {"result": "data"}
         serialized_data = cache._serialize(test_data)
         mock_client.get.return_value = serialized_data
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
 
@@ -150,33 +149,33 @@ class TestRedisCache:
         # Check L1 cache
         assert "test:test_key" in cache._l1_cache
 
-    
+
     @patch('redis.Redis')
     def test_sync_get_miss(self, mock_redis_cls, cache):
         """Test sync get with cache miss."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
         mock_client.get.return_value = None
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
 
         result = cache.get("missing_key")
         assert result is None
-        
+
         # Verify Redis was called
         mock_client.get.assert_called_once_with("test:missing_key")
 
-    
+
     @patch('redis.Redis')
     def test_sync_set(self, mock_redis_cls, cache):
         """Test sync set operation."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
         mock_client.setex.return_value = True
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
 
@@ -201,18 +200,18 @@ class TestRedisCache:
         result = cache.get("cached_key")
         assert result == {"cached": "data"}
 
-    
+
     @patch('redis.Redis')
     def test_delete(self, mock_redis_cls, cache):
         """Test delete operation."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
         mock_client.delete.return_value = 1
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
-        
+
         # Pre-populate L1 cache
         cache._l1_cache["test:del_key"] = {"data": "value"}
 
@@ -225,14 +224,14 @@ class TestRedisCache:
         # Check Redis delete called
         mock_client.delete.assert_called_once_with("test:del_key")
 
-    
+
     @patch('redis.Redis')
     def test_mget(self, mock_redis_cls, cache):
         """Test multi-get operation."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
-        
+
         # Pre-populate some L1 cache entries
         cache._l1_cache["test:key1"] = "value1"
 
@@ -242,7 +241,7 @@ class TestRedisCache:
             cache._serialize("value2"),  # key2
             cache._serialize("value3")   # key3
         ]
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
 
@@ -258,20 +257,20 @@ class TestRedisCache:
         mock_client.mget.assert_called_once_with(["test:missing", "test:key2", "test:key3"])
 
     @pytest.mark.asyncio
-    
+
     @patch('redis.asyncio.Redis')
     async def test_async_get(self, mock_redis_cls, cache):
         """Test async get operation."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
-        
+
         # Create an async function that returns the serialized data
         async def mock_get(key):
             return cache._serialize({"async": "data"})
-        
+
         mock_client.get = mock_get
-        
+
         mock_redis_cls.return_value.__aenter__.return_value = mock_client
         mock_redis_cls.return_value.__aexit__.return_value = None
 
@@ -279,20 +278,20 @@ class TestRedisCache:
         assert result == {"async": "data"}
 
     @pytest.mark.asyncio
-    
+
     @patch('redis.asyncio.Redis')
     async def test_async_set(self, mock_redis_cls, cache):
         """Test async set operation."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
-        
+
         # Create an async function that returns True
         async def mock_setex(k, t, v):
             return True
-        
+
         mock_client.setex = mock_setex
-        
+
         mock_redis_cls.return_value.__aenter__.return_value = mock_client
         mock_redis_cls.return_value.__aexit__.return_value = None
 
@@ -309,27 +308,27 @@ class TestRedisCache:
         result = cache.get("any_key")
         assert result is None
 
-    
+
     @patch('redis.Redis')
     def test_retry_logic(self, mock_redis_cls, cache):
         """Test retry logic on Redis errors."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
-        
+
         # Prepare serialized success data
         success_data = cache._serialize({"retry": "success"})
-        
+
         # Fail twice, then succeed
         mock_client.get.side_effect = [
             redis.ConnectionError("Connection failed"),
             redis.ConnectionError("Connection failed"),
             success_data
         ]
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
-        
+
         # Adjust max_retries for this test
         cache.config.max_retries = 3
 
@@ -337,14 +336,14 @@ class TestRedisCache:
         assert result == {"retry": "success"}
         assert mock_client.get.call_count == 3
 
-    
+
     @patch('redis.Redis')
     def test_delete_pattern(self, mock_redis_cls, cache):
         """Test pattern-based deletion."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
-        
+
         # Pre-populate L1 cache
         cache._l1_cache["test:user:1"] = "data1"
         cache._l1_cache["test:user:2"] = "data2"
@@ -353,7 +352,7 @@ class TestRedisCache:
         # Mock keys and delete to return integers
         mock_client.keys.return_value = [b"test:user:1", b"test:user:2"]
         mock_client.delete.return_value = 2  # Number of keys deleted
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
 
@@ -365,15 +364,15 @@ class TestRedisCache:
         assert "test:user:2" not in cache._l1_cache
         assert "test:other:1" in cache._l1_cache
 
-    
+
     @patch('redis.Redis')
     def test_health_check(self, mock_redis_cls, cache):
         """Test health check functionality."""
         # Setup mocks
-        
+
         mock_client = MagicMock()
         mock_client.ping.return_value = True
-        
+
         mock_redis_cls.return_value.__enter__.return_value = mock_client
         mock_redis_cls.return_value.__exit__.return_value = None
 

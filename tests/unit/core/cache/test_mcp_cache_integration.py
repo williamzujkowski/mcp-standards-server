@@ -1,6 +1,6 @@
 """Tests for MCP cache integration."""
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -51,7 +51,7 @@ class TestMCPCacheMiddleware:
         async def executor_func(self_ref, tool_name, arguments):
             # Call the mock's _execute_tool directly since it's a method
             return await self_ref._execute_tool(tool_name, arguments)
-        
+
         # Wrap the executor
         wrapped = cache_middleware.wrap_tool_executor(executor_func)
 
@@ -226,9 +226,9 @@ class TestIntegration:
 
         # Execute tool (should be cached)
         result1 = await mock_server._execute_tool("get_standard_details", {"standard_id": "test"})
-        
+
         # Track calls before second execution
-        call_count_before = mock_server._execute_call_count
+        _call_count_before = mock_server._execute_call_count
 
         # Execute again (should hit cache)
         result2 = await mock_server._execute_tool("get_standard_details", {"standard_id": "test"})

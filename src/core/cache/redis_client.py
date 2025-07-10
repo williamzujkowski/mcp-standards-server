@@ -816,7 +816,7 @@ class RedisCache:
                 keys = []
                 async for key in r.scan_iter(match=full_pattern):
                     keys.append(key)
-                
+
                 if keys:
                     result = await r.delete(*keys)
                     self._circuit_breaker.record_success()

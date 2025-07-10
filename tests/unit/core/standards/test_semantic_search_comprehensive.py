@@ -255,19 +255,19 @@ class TestEmbeddingCacheComprehensive:
 
         # Should regenerate due to expiration
         # The mock model already returns consistent embeddings, so we just verify it's called again
-        original_call_count = getattr(cache.model.encode, 'call_count', 0)
-        
+        _original_call_count = getattr(cache.model.encode, 'call_count', 0)
+
         # Force cache miss by clearing all caches
         cache.memory_cache.clear()
         if cache.redis_client:
             try:
                 cache.redis_client.flushdb()
-            except:
+            except Exception:
                 pass
-        
+
         # This should trigger a new encoding
         embedding2 = cache.get_embedding(text)
-        
+
         # Verify embedding was regenerated (should be same due to deterministic mock)
         np.testing.assert_array_equal(embedding1, embedding2)
 
@@ -289,7 +289,7 @@ class TestEmbeddingCacheComprehensive:
         # Batch should be more efficient (or at least not significantly slower)
         # With mocked embeddings, batch may not always be faster, so we test for reasonable performance
         assert batch_embeddings.shape == (100, cache.model.embedding_dim)
-        
+
         # Allow batch to be up to 2x slower than individual in mock scenario
         assert batch_time < individual_time * 2, f"Batch time {batch_time} should be reasonable compared to individual time {individual_time}"
 
@@ -316,7 +316,7 @@ class TestEmbeddingCacheComprehensive:
             # Should only encode the uncached half
             assert mock_encode.call_count == 1
             assert len(mock_encode.call_args[0][0]) == 5  # Only uncached texts
-            
+
             # Verify we got embeddings for all texts
             assert embeddings.shape == (10, embedding_dim)
 
@@ -362,7 +362,7 @@ class TestEmbeddingCacheComprehensive:
 
         # Verify memory cache is populated
         assert len(cache.memory_cache) == 3
-        
+
         # Check Redis if available (handle connection errors gracefully)
         if cache.redis_client:
             try:
@@ -370,10 +370,10 @@ class TestEmbeddingCacheComprehensive:
                 # MockRedisClient doesn't have exists method, check each key
                 redis_count = sum(1 for k in keys if cache.redis_client.get(k) is not None)
                 assert redis_count > 0
-            except:
+            except Exception:
                 # Redis might not be available
                 pass
-        
+
         # Check file cache
         cache_files = list(temp_cache_dir.glob("*.npy"))
         assert len(cache_files) == 3
@@ -383,16 +383,16 @@ class TestEmbeddingCacheComprehensive:
 
         # Verify all cleared
         assert len(cache.memory_cache) == 0
-        
+
         # Verify Redis cleared if available
         if cache.redis_client:
             try:
                 keys = [f"emb:{hashlib.sha256(t.encode()).hexdigest()}" for t in texts]
                 redis_count = sum(1 for k in keys if cache.redis_client.get(k) is not None)
                 assert redis_count == 0
-            except:
+            except Exception:
                 pass
-                
+
         # Verify file cache cleared
         cache_files = list(temp_cache_dir.glob("*.npy"))
         assert len(cache_files) == 0
@@ -427,7 +427,7 @@ class TestEmbeddingCacheComprehensive:
             # Create a function that raises when called
             def raise_error(*args, **kwargs):
                 raise Exception("Model download failed")
-            
+
             mock_st.side_effect = raise_error
 
             with pytest.raises(Exception) as exc_info:
@@ -912,11 +912,11 @@ class TestAsyncSemanticSearchComprehensive:
                                         with patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors):
                                             # Create sync engine first
                                             sync_engine = create_search_engine(async_mode=False)
-                                            
+
                                             # Index test documents synchronously
                                             documents = TestDataGenerator.generate_standards_corpus(20)
                                             sync_engine.index_documents_batch(documents)
-                                            
+
                                             # Now wrap in async interface
                                             engine = AsyncSemanticSearch(sync_engine)
 
