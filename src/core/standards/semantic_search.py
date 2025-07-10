@@ -1176,7 +1176,7 @@ class AsyncSemanticSearch:
     async def search_async(self, query: str, **kwargs) -> list[SearchResult]:
         """Perform search asynchronously."""
         future = self.loop.run_in_executor(
-            None, self.search_engine.search, query, *kwargs
+            None, self.search_engine.search, query, **kwargs
         )
         return await future
 

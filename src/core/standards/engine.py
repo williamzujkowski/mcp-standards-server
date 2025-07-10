@@ -1,5 +1,6 @@
 """Standards engine for managing and accessing standards."""
 
+import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -70,9 +71,10 @@ class StandardsEngine:
 
         # Initialize semantic search
         if self.config.enable_semantic_search:
-            self.semantic_search = await create_search_engine(
-                data_dir=self.data_dir / "search",
-                enable_cache=self.config.enable_caching,
+            self.semantic_search = create_search_engine(
+                cache_dir=self.data_dir / "search",
+                enable_analytics=True,
+                async_mode=False,  # Use synchronous mode for simplicity
             )
 
         # Initialize rule engine
@@ -100,69 +102,96 @@ class StandardsEngine:
             if self.sync:
                 await self.sync.sync()
 
-            # Load from YAML files
-            import yaml
-
-            for yaml_file in self.data_dir.glob("*.yaml"):
-                if yaml_file.name == "import_metadata.json":
+            # Load from JSON files in cache directory
+            cache_dir = self.data_dir / "cache"
+            
+            for json_file in cache_dir.glob("*.json"):
+                if json_file.name in ["sync_metadata.json", "import_metadata.json"]:
                     continue
 
                 try:
-                    with open(yaml_file) as f:
-                        data = yaml.safe_load(f)
+                    with open(json_file) as f:
+                        data = json.load(f)
 
-                    if isinstance(data, dict) and "standards" in data:
-                        category = (
-                            yaml_file.stem.replace("_STANDARDS", "")
-                            .replace("_", " ")
-                            .title()
-                        )
-
-                        for std_data in data["standards"]:
+                    if isinstance(data, dict):
+                        # Check if it's a unified standards file with multiple standards
+                        if "standards" in data and isinstance(data["standards"], list):
+                            category = (
+                                json_file.stem.replace("_STANDARDS", "")
+                                .replace("_", " ")
+                                .title()
+                            )
+                            for std_data in data["standards"]:
+                                standard = Standard(
+                                    id=std_data.get("id", ""),
+                                    title=std_data.get("title", ""),
+                                    description=std_data.get("description", ""),
+                                    content=std_data.get("content", ""),
+                                    category=category,
+                                    subcategory=std_data.get("subcategory", ""),
+                                    tags=std_data.get("tags", []),
+                                    priority=std_data.get("priority", "medium"),
+                                    version=std_data.get("version", "1.0.0"),
+                                    examples=std_data.get("examples", []),
+                                    rules=std_data.get("rules", []) if isinstance(std_data.get("rules", []), list) else [],
+                                    metadata=StandardMetadata(
+                                        **std_data.get("metadata", {})
+                                    ),
+                                )
+                                self._standards_cache[standard.id] = standard
+                        else:
+                            # Single standard file format
+                            category = data.get("category", 
+                                json_file.stem.replace("_STANDARDS", "")
+                                .replace("_", " ")
+                                .title()
+                            )
+                            
                             standard = Standard(
-                                id=std_data.get("id", ""),
-                                title=std_data.get("title", ""),
-                                description=std_data.get("description", ""),
+                                id=data.get("id", json_file.stem.lower()),
+                                title=data.get("name", data.get("title", json_file.stem)),
+                                description=data.get("description", ""),
+                                content=data.get("content", ""),
                                 category=category,
-                                subcategory=std_data.get("subcategory", ""),
-                                tags=std_data.get("tags", []),
-                                priority=std_data.get("priority", "medium"),
-                                version=std_data.get("version", "1.0.0"),
-                                examples=std_data.get("examples", []),
-                                rules=std_data.get("rules", {}),
+                                subcategory=data.get("subcategory", ""),
+                                tags=data.get("tags", []),
+                                priority=data.get("priority", "medium"),
+                                version=data.get("version", "1.0.0"),
+                                examples=data.get("examples", []),
+                                rules=data.get("rules", []) if isinstance(data.get("rules", []), list) else [],
                                 metadata=StandardMetadata(
-                                    **std_data.get("metadata", {})
+                                    **data.get("metadata", {})
                                 ),
                             )
 
                             self._standards_cache[standard.id] = standard
 
                 except Exception as e:
-                    logger.error(f"Error loading {yaml_file}: {e}")
+                    logger.error(f"Error loading {json_file}: {e}")
 
             # Index in semantic search if available
             if self.semantic_search:
                 documents = []
                 for standard in self._standards_cache.values():
+                    # Format: (id, content, metadata)
                     documents.append(
-                        {
-                            "id": standard.id,
-                            "title": standard.title,
-                            "description": standard.description,
-                            "category": standard.category,
-                            "tags": standard.tags,
-                            "content": f"{standard.title}\n{standard.description}",
-                            "metadata": {
+                        (
+                            standard.id,
+                            f"{standard.title}\n{standard.description}",
+                            {
                                 "category": standard.category,
                                 "subcategory": standard.subcategory,
                                 "tags": standard.tags,
                                 "priority": standard.priority,
                                 "version": standard.version,
-                            },
-                        }
+                                "title": standard.title,
+                                "description": standard.description,
+                            }
+                        )
                     )
 
-                await self.semantic_search.index_documents_batch(documents)
+                # Synchronous indexing
+                self.semantic_search.index_documents_batch(documents)
 
         except Exception as e:
             logger.error(f"Error loading standards: {e}")
@@ -250,25 +279,24 @@ class StandardsEngine:
 
         # Re-index in semantic search
         if self.semantic_search:
-            await self.semantic_search.index_documents(
-                [
+            # Format: (id, content, metadata)
+            documents = [
+                (
+                    standard.id,
+                    f"{standard.title}\n{standard.description}",
                     {
-                        "id": standard.id,
+                        "category": standard.category,
+                        "subcategory": standard.subcategory,
+                        "tags": standard.tags,
+                        "priority": standard.priority,
+                        "version": standard.version,
                         "title": standard.title,
                         "description": standard.description,
-                        "category": standard.category,
-                        "tags": standard.tags,
-                        "content": f"{standard.title}\n{standard.description}",
-                        "metadata": {
-                            "category": standard.category,
-                            "subcategory": standard.subcategory,
-                            "tags": standard.tags,
-                            "priority": standard.priority,
-                            "version": standard.version,
-                        },
                     }
-                ]
-            )
+                )
+            ]
+            # Synchronous indexing
+            self.semantic_search.index_documents_batch(documents)
 
         return standard
 
@@ -295,22 +323,24 @@ class StandardsEngine:
         if tags:
             filters["tags"] = tags
 
-        # Perform semantic search
-        results = await self.semantic_search.search(
-            query=query, k=limit, threshold=threshold, filters=filters
+        # Perform semantic search (synchronous)
+        results = self.semantic_search.search(
+            query=query, top_k=limit, filters=filters
         )
 
         # Enrich results with full standard objects
         enriched_results = []
         for result in results:
-            standard = self._standards_cache.get(result.get("id"))
+            # Handle SearchResult dataclass
+            result_id = result.id if hasattr(result, 'id') else result.get("id")
+            standard = self._standards_cache.get(result_id)
             if standard:
                 enriched_results.append(
                     {
                         "standard": standard,
-                        "score": result.get("score", 0.0),
-                        "highlights": result.get("highlights", {}),
-                        "metadata": result.get("metadata", {}),
+                        "score": result.score if hasattr(result, 'score') else result.get("score", 0.0),
+                        "highlights": result.highlights if hasattr(result, 'highlights') else result.get("highlights", []),
+                        "metadata": result.metadata if hasattr(result, 'metadata') else result.get("metadata", {}),
                     }
                 )
 
@@ -365,23 +395,39 @@ class StandardsEngine:
             return []
 
         # Use rule engine to determine applicable standards
+        evaluation_result = self.rule_engine.evaluate(project_context)
+        
+        # Get matched standards from evaluation result
         applicable = []
-        for standard in self._standards_cache.values():
-            if await self.rule_engine.is_applicable(standard, project_context):
-                applicable.append(
-                    {
-                        "standard": standard,
-                        "confidence": 0.8,  # Default confidence
-                        "reasoning": "Rule-based match",
-                    }
-                )
+        for matched_rule in evaluation_result.get("matched_rules", []):
+            for standard_id in matched_rule.get("standards", []):
+                standard = self._standards_cache.get(standard_id)
+                if standard:
+                    applicable.append(
+                        {
+                            "standard": standard,
+                            "confidence": 0.8,  # Default confidence
+                            "reasoning": f"Matched by rule: {matched_rule.get('rule_name', 'Unknown')}",
+                            "priority": matched_rule.get("priority", 99),
+                        }
+                    )
 
-        return applicable
+        # Remove duplicates by standard ID
+        seen_ids = set()
+        unique_applicable = []
+        for item in sorted(applicable, key=lambda x: x["priority"]):
+            if item["standard"].id not in seen_ids:
+                seen_ids.add(item["standard"].id)
+                unique_applicable.append(item)
+
+        return unique_applicable
 
     async def close(self):
         """Close the engine and clean up resources."""
         if self.semantic_search:
-            await self.semantic_search.close()
+            if hasattr(self.semantic_search, 'close'):
+                # AsyncSemanticSearch.close() is not async
+                self.semantic_search.close()
 
         self._initialized = False
         self._standards_cache.clear()
