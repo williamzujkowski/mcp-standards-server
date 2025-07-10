@@ -80,6 +80,15 @@ dev = [
     "mypy>=1.0",
     "pip-audit>=2.6.0",
     "safety>=2.3.0",
+    # Type stubs for mypy
+    "types-PyYAML",
+    "types-requests",
+    "types-psutil",
+    "types-cachetools",
+    "scipy-stubs",
+    "click",  # Add click dependency
+    "semantic-version",  # Add semantic-version dependency
+    "packaging",  # Add packaging dependency
 ]
 test = [
     "pytest>=7.0",
@@ -189,6 +198,70 @@ check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+exclude = [
+    "benchmarks/.*",
+    "scripts/.*",
+    "web/.*",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "tiktoken",
+    "nltk",
+    "nltk.*",
+    "numpy",
+    "numpy.*",
+    "redis",
+    "redis.*",
+    "fuzzywuzzy",
+    "sentence_transformers",
+    "sklearn.*",
+    "msgpack",
+    "aiohttp",
+    "aiohttp.*",
+    "aioredis",
+    "faiss",
+    "github",
+    "pympler",
+    "prometheus_client",
+    "matplotlib.*",
+    "scipy.*",
+    "packaging",
+    "jwt",
+    "pydantic",
+    "click",
+    "yaml",
+    "generators",
+    "generators.*",
+    "pytest",
+    "pytest.*",
+    "src.core.mcp.models",
+    "src.core.standards.micro_standards",
+    "core.standards.sync",
+    "cli.commands.generate",
+    "cachetools",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "requests",
+    "psutil",
+    "semantic_version",
+    "pythonjsonlogger",
+    "jsonschema",
+    "jinja2",
+    "jinja2.*",
+    "mcp_server",
+    "mcp",
+    "mcp.*",
+    "pytest_asyncio",
+    "test_data_setup",
+    "fastapi",
+    "fastapi.*",
+    "passlib.*",
+]
+ignore_missing_imports = true
 
 [tool.setuptools]
 package-dir = {"" = "src"}

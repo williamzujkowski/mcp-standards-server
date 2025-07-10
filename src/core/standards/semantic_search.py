@@ -476,7 +476,7 @@ class SemanticSearch:
         tokens = word_tokenize(content.lower())
         self.fuzzy_matcher.add_known_terms(tokens)
 
-    def index_documents_batch(self, documents: list[tuple[str, str, dict[str, Any]]]):
+    def index_documents_batch(self, documents: list[tuple[str, str, dict[str, Any]]]) -> None:
         """Index multiple documents efficiently."""
         # Extract components
         doc_ids = [doc[0] for doc in documents]
@@ -660,7 +660,7 @@ class SemanticSearch:
             metadata = self.document_metadata.get(doc_id, {})
 
             # Score based on query token matches
-            matches = 0
+            matches = 0.0
             exact_matches = 0
 
             for token in search_query.tokens:
@@ -956,7 +956,7 @@ class SemanticSearch:
         normalized_score = weighted_occurrences / (1 + np.log(doc_length))
 
         # Cap at 1.0 but allow high frequency to show
-        return min(normalized_score, 1.0)
+        return float(min(normalized_score, 1.0))
 
     def _calculate_recency_score(self, metadata: dict[str, Any]) -> float:
         """Calculate recency score based on timestamp."""
@@ -968,7 +968,7 @@ class SemanticSearch:
             days_old = (datetime.now() - timestamp).days
 
             # Exponential decay - newer documents get higher scores
-            return np.exp(-days_old / 30)  # Half-life of 30 days
+            return float(np.exp(-days_old / 30))  # Half-life of 30 days
         except Exception:
             return 0.5
 
@@ -1016,7 +1016,7 @@ class SemanticSearch:
         # Use exponential decay - terms within 5 words get high score
         proximity_score = np.exp(-avg_min_distance / 5)
 
-        return min(proximity_score, 1.0)
+        return float(min(proximity_score, 1.0))
 
     def _calculate_position_score(self, content: str, terms: list[str]) -> float:
         """Calculate score based on where terms appear in document."""
@@ -1055,8 +1055,8 @@ class SemanticSearch:
         if not metadata:
             return 0.0
 
-        matches = 0
-        total_fields = 0
+        matches = 0.0
+        total_fields = 0.0
 
         # Check each metadata field for term matches
         important_fields = ["title", "category", "tags", "description", "summary"]
@@ -1147,14 +1147,14 @@ class SemanticSearch:
             "recent_failures": self.analytics.failed_queries[-5:],
         }
 
-    def track_click(self, query: str, result_id: str):
+    def track_click(self, query: str, result_id: str) -> None:
         """Track click-through data for analytics."""
         if self.analytics:
             if query not in self.analytics.click_through_data:
                 self.analytics.click_through_data[query] = []
             self.analytics.click_through_data[query].append(result_id)
 
-    def close(self):
+    def close(self) -> None:
         """Clean up resources."""
         self.executor.shutdown()
 
@@ -1169,7 +1169,7 @@ class AsyncSemanticSearch:
         self.thread = threading.Thread(target=self._run_loop, daemon=True)
         self.thread.start()
 
-    def _run_loop(self):
+    def _run_loop(self) -> None:
         """Run the async event loop in a separate thread."""
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
@@ -1183,14 +1183,14 @@ class AsyncSemanticSearch:
 
     async def index_documents_batch_async(
         self, documents: list[tuple[str, str, dict[str, Any]]]
-    ):
+    ) -> None:
         """Index documents asynchronously."""
         future = self.loop.run_in_executor(
             None, self.search_engine.index_documents_batch, documents
         )
         await future
 
-    def close(self):
+    def close(self) -> None:
         """Clean up async resources."""
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.thread.join()

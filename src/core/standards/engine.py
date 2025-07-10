@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .async_semantic_search import AsyncSemanticSearch
-from .models import Requirement, Standard, StandardMetadata
+from .models import Priority, Requirement, Standard, StandardMetadata
 from .rule_engine import RuleEngine
 from .semantic_search import SemanticSearch, create_search_engine
 from .sync import StandardsSynchronizer
@@ -72,7 +72,7 @@ class StandardsEngine:
 
         # Initialize semantic search
         if self.config.enable_semantic_search:
-            self.semantic_search = create_search_engine(
+            self.semantic_search = create_search_engine(  # type: ignore[assignment]
                 cache_dir=self.data_dir / "search",
                 enable_analytics=True,
                 async_mode=False,  # Use synchronous mode for simplicity
@@ -155,9 +155,9 @@ class StandardsEngine:
 
                             standard = Standard(
                                 id=data.get("id", json_file.stem.lower()),
-                                title=data.get(
+                                title=str(data.get(
                                     "name", data.get("title", json_file.stem)
-                                ),
+                                )),
                                 description=data.get("description", ""),
                                 content=data.get("content", ""),
                                 category=category,
@@ -191,7 +191,7 @@ class StandardsEngine:
                             {
                                 "category": standard.category,
                                 "subcategory": standard.subcategory,
-                                "tags": standard.tags,
+                                "tags": list(standard.tags),
                                 "priority": standard.priority,
                                 "version": standard.version,
                                 "title": standard.title,
@@ -251,18 +251,17 @@ class StandardsEngine:
 
         # Extract requirements from standard rules
         requirements = []
-        for rule_id, rule_data in standard.rules.items():
-            if requirement_ids and rule_id not in requirement_ids:
+        for rule in standard.rules:
+            if requirement_ids and rule.id not in requirement_ids:
                 continue
 
             req = Requirement(
-                id=rule_id,
-                standard_id=standard_id,
-                title=rule_data.get("title", rule_id),
-                description=rule_data.get("description", ""),
-                priority=rule_data.get("priority", "medium"),
-                category=rule_data.get("category", "general"),
-                tags=rule_data.get("tags", []),
+                id=rule.id,
+                title=rule.title or rule.id,
+                description=rule.description or "",
+                priority=getattr(rule, "priority", Priority.MEDIUM),
+                category=getattr(rule, "category", "general"),
+                tags=getattr(rule, "tags", []),
             )
             requirements.append(req)
 
@@ -297,7 +296,7 @@ class StandardsEngine:
                     {
                         "category": standard.category,
                         "subcategory": standard.subcategory,
-                        "tags": standard.tags,
+                        "tags": list(standard.tags),
                         "priority": standard.priority,
                         "version": standard.version,
                         "title": standard.title,

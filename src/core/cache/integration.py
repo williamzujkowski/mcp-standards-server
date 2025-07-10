@@ -70,7 +70,8 @@ class CachedStandardsEngine:
         self, standard_id: str, version: str | None = None
     ) -> Standard | None:
         """Get standard with caching."""
-        return await self.engine.get_standard(standard_id, version)
+        result = await self.engine.get_standard(standard_id, version)
+        return result  # type: ignore[no-any-return]
 
     @cache_result(prefix="standards:list", ttl=1800, include_kwargs=True)  # 30 minutes
     async def list_standards(
@@ -81,9 +82,10 @@ class CachedStandardsEngine:
         limit: int = 100,
     ) -> list[Standard]:
         """List standards with caching."""
-        return await self.engine.list_standards(
+        result = await self.engine.list_standards(
             category=category, tags=tags, offset=offset, limit=limit
         )
+        return result  # type: ignore[no-any-return]
 
     @cache_result(
         prefix="standards:requirements",
@@ -93,20 +95,22 @@ class CachedStandardsEngine:
         self, standard_id: str, requirement_ids: list[str] | None = None
     ) -> list[Requirement]:
         """Get requirements with caching."""
-        return await self.engine.get_requirements(standard_id, requirement_ids)
+        result = await self.engine.get_requirements(standard_id, requirement_ids)
+        return result  # type: ignore[no-any-return]
 
     @invalidate_cache(pattern="standards:*:{standard_id}:*")
     async def update_standard(
         self, standard_id: str, updates: dict[str, Any]
     ) -> Standard:
         """Update standard and invalidate cache."""
-        return await self.engine.update_standard(standard_id, updates)
+        result = await self.engine.update_standard(standard_id, updates)
+        return result  # type: ignore[no-any-return]
 
 
 class CachedRuleEngine:
     """Rule engine with caching integration."""
 
-    def __init__(self, rule_engine, cache: RedisCache | None = None):
+    def __init__(self, rule_engine: Any, cache: RedisCache | None = None) -> None:
         self.rule_engine = rule_engine
         self.cache = cache or get_cache()
 
@@ -122,7 +126,8 @@ class CachedRuleEngine:
         self, rule_id: str, context: dict[str, Any]
     ) -> dict[str, Any]:
         """Evaluate rule with caching."""
-        return await self.rule_engine.evaluate_rule(rule_id, context)
+        result = await self.rule_engine.evaluate_rule(rule_id, context)
+        return result  # type: ignore[no-any-return]
 
     @cache_result(
         prefix="rules:batch",
@@ -132,10 +137,11 @@ class CachedRuleEngine:
         self, rule_ids: list[str], context: dict[str, Any]
     ) -> dict[str, dict[str, Any]]:
         """Evaluate multiple rules with caching."""
-        return await self.rule_engine.evaluate_rules_batch(rule_ids, context)
+        result = await self.rule_engine.evaluate_rules_batch(rule_ids, context)
+        return result  # type: ignore[no-any-return]
 
     @invalidate_cache(prefix="rules")
-    async def update_rule(self, rule_id: str, rule_definition: dict[str, Any]):
+    async def update_rule(self, rule_id: str, rule_definition: dict[str, Any]) -> None:
         """Update rule and invalidate cache."""
         await self.rule_engine.update_rule(rule_id, rule_definition)
 
@@ -143,7 +149,7 @@ class CachedRuleEngine:
 class CachedSyncStatus:
     """Sync status with caching integration."""
 
-    def __init__(self, sync_manager, cache: RedisCache | None = None):
+    def __init__(self, sync_manager: Any, cache: RedisCache | None = None) -> None:
         self.sync_manager = sync_manager
         self.cache = cache or get_cache()
 
@@ -153,7 +159,8 @@ class CachedSyncStatus:
     )
     async def get_sync_status(self, source: str | None = None) -> dict[str, Any]:
         """Get sync status with caching."""
-        return await self.sync_manager.get_sync_status(source)
+        result = await self.sync_manager.get_sync_status(source)
+        return result  # type: ignore[no-any-return]
 
     @cache_result(
         prefix="sync:metadata",
@@ -163,12 +170,14 @@ class CachedSyncStatus:
         self, source: str, resource_type: str
     ) -> dict[str, Any]:
         """Get sync metadata with caching."""
-        return await self.sync_manager.get_sync_metadata(source, resource_type)
+        result = await self.sync_manager.get_sync_metadata(source, resource_type)
+        return result  # type: ignore[no-any-return]
 
     @invalidate_cache(prefix="sync")
     async def trigger_sync(self, source: str, force: bool = False) -> dict[str, Any]:
         """Trigger sync and invalidate cache."""
-        return await self.sync_manager.trigger_sync(source, force)
+        result = await self.sync_manager.trigger_sync(source, force)
+        return result  # type: ignore[no-any-return]
 
 
 class CacheWarmer:
@@ -179,12 +188,12 @@ class CacheWarmer:
         standards_engine: CachedStandardsEngine,
         semantic_search: CachedSemanticSearch,
         cache: RedisCache | None = None,
-    ):
+    ) -> None:
         self.standards_engine = standards_engine
         self.semantic_search = semantic_search
         self.cache = cache or get_cache()
 
-    async def warm_popular_searches(self, queries: list[str]):
+    async def warm_popular_searches(self, queries: list[str]) -> None:
         """Warm cache with popular search queries."""
         logger.info(f"Warming cache with {len(queries)} popular searches")
 
@@ -194,7 +203,7 @@ class CacheWarmer:
             except Exception as e:
                 logger.error(f"Failed to warm cache for query '{query}': {e}")
 
-    async def warm_standards(self, standard_ids: list[str]):
+    async def warm_standards(self, standard_ids: list[str]) -> None:
         """Warm cache with frequently accessed standards."""
         logger.info(f"Warming cache with {len(standard_ids)} standards")
 
@@ -205,7 +214,7 @@ class CacheWarmer:
             except Exception as e:
                 logger.error(f"Failed to warm cache for standard '{standard_id}': {e}")
 
-    async def warm_from_access_logs(self, top_n: int = 100):
+    async def warm_from_access_logs(self, top_n: int = 100) -> None:
         """Warm cache based on access patterns."""
         # This would integrate with your logging/analytics system
         # to identify most frequently accessed resources
@@ -215,7 +224,7 @@ class CacheWarmer:
 class CacheMetricsCollector:
     """Collect and report cache metrics."""
 
-    def __init__(self, cache: RedisCache | None = None):
+    def __init__(self, cache: RedisCache | None = None) -> None:
         self.cache = cache or get_cache()
 
     def collect_metrics(self) -> dict[str, Any]:
@@ -251,7 +260,7 @@ class CacheMetricsCollector:
         # L1 is more important for efficiency
         return l1_efficiency * 0.7 + l2_efficiency * 0.3
 
-    async def report_metrics(self, destination: str = "logs"):
+    async def report_metrics(self, destination: str = "logs") -> None:
         """Report metrics to configured destination."""
         metrics = self.collect_metrics()
 
