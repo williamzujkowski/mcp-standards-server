@@ -9,7 +9,7 @@ import re
 import time
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any
+from typing import Any, Callable
 
 from .errors import ErrorCode, SecurityError, get_secure_error_handler
 
@@ -45,7 +45,7 @@ class SecurityConfig:
     # Content security
     allowed_content_types: list[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.allowed_content_types is None:
             self.allowed_content_types = [
                 "application/json",
@@ -338,13 +338,13 @@ class SecurityMiddleware:
             }
 
 
-def security_middleware(config: SecurityConfig | None = None):
+def security_middleware(config: SecurityConfig | None = None) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for applying security middleware to functions."""
     middleware = SecurityMiddleware(config)
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Validate and sanitize inputs
             try:
                 # Find dictionary arguments that might be request data

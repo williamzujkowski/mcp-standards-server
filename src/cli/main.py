@@ -350,7 +350,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
             print("=" * 50)
 
             # Group by category
-            categories = {}
+            categories: dict[str, list[dict[str, Any]]] = {}
             for template in templates:
                 category = template["category"]
                 if category not in categories:

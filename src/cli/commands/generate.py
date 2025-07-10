@@ -21,7 +21,7 @@ from generators import StandardMetadata, StandardsGenerator
 
 
 @click.group()
-def generate():
+def generate() -> None:
     """Generate standards from templates."""
     pass
 
@@ -41,18 +41,18 @@ def generate():
 )
 @click.option("--config", "-c", help="Configuration file path")
 def standard(
-    template,
-    domain,
-    output,
-    title,
-    version,
-    author,
-    description,
-    interactive,
-    preview,
-    validate,
-    config,
-):
+    template: str | None,
+    domain: str | None,
+    output: str | None,
+    title: str | None,
+    version: str,
+    author: str | None,
+    description: str | None,
+    interactive: bool,
+    preview: bool,
+    validate: bool,
+    config: str | None,
+) -> None:
     """Generate a standard document from template."""
 
     try:
@@ -152,7 +152,7 @@ def standard(
 
 
 @generate.command()
-def list_templates():
+def list_templates() -> None:
     """List available templates."""
 
     try:
@@ -163,7 +163,7 @@ def list_templates():
         click.echo("=" * 50)
 
         # Group by category
-        categories = {}
+        categories: dict[str, list[dict[str, Any]]] = {}
         for template in templates:
             category = template["category"]
             if category not in categories:
@@ -187,7 +187,7 @@ def list_templates():
 
 @generate.command()
 @click.argument("template_name")
-def template_info(template_name):
+def template_info(template_name: str) -> None:
     """Get detailed information about a template."""
 
     try:
@@ -226,7 +226,7 @@ def template_info(template_name):
 @click.option("--name", "-n", required=True, help="Custom template name")
 @click.option("--config", "-c", help="Customization configuration file")
 @click.option("--interactive", "-i", is_flag=True, help="Interactive customization")
-def customize(template, name, config, interactive):
+def customize(template: str, name: str, config: str | None, interactive: bool) -> None:
     """Create a custom template based on an existing one."""
 
     try:
@@ -259,7 +259,7 @@ def customize(template, name, config, interactive):
 @generate.command()
 @click.argument("standard_file")
 @click.option("--report", "-r", help="Output report file")
-def validate_standard(standard_file, report):
+def validate_standard(standard_file: str, report: str | None) -> None:
     """Validate an existing standard document."""
 
     try:
@@ -435,7 +435,7 @@ def _interactive_template_customization() -> dict[str, Any]:
 
     click.echo("=== Interactive Template Customization ===")
 
-    customizations = {}
+    customizations: dict[str, Any] = {}
 
     # Section replacements
     if click.confirm("Customize sections?"):

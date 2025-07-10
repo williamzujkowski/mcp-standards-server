@@ -34,7 +34,7 @@ class TemplateEngine:
         # Add custom filters
         self._add_custom_filters()
 
-    def _add_custom_filters(self):
+    def _add_custom_filters(self) -> None:
         """Add custom Jinja2 filters."""
 
         def format_nist_control(control_id: str) -> str:
@@ -104,7 +104,7 @@ class TemplateEngine:
 
             # Load template metadata if exists
             metadata_path = template_path.with_suffix(".yaml")
-            metadata = {}
+            metadata: dict[str, Any] = {}
             if metadata_path.exists():
                 with open(metadata_path, encoding="utf-8") as f:
                     metadata = yaml.safe_load(f) or {}

@@ -57,7 +57,7 @@ class PrivacyConfig:
     redaction_char: str = "█"
     min_confidence: float = 0.8
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Set default PII types if not provided."""
         if self.pii_types is None:
             self.pii_types = {
@@ -94,10 +94,10 @@ class PIIDetector:
     def __init__(self, config: PrivacyConfig | None = None):
         """Initialize PII detector with configuration."""
         self.config = config or PrivacyConfig()
-        self._compiled_patterns = {}
+        self._compiled_patterns: dict[PIIType, re.Pattern[str]] = {}
         self._compile_patterns()
 
-    def _compile_patterns(self):
+    def _compile_patterns(self) -> None:
         """Compile regex patterns for efficiency."""
         for pii_type in self.config.pii_types:
             if pii_type in self.PATTERNS:
@@ -268,7 +268,7 @@ class PrivacyFilter:
         """Initialize privacy filter with configuration."""
         self.config = config or PrivacyConfig()
         self.detector = PIIDetector(config)
-        self._redaction_cache = {}
+        self._redaction_cache: dict[str, tuple[str, list[PIIMatch]]] = {}
 
     def filter_text(self, text: str) -> tuple[str, list[PIIMatch]]:
         """

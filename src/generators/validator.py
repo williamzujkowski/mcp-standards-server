@@ -26,7 +26,7 @@ class ValidationResult:
 class StandardValidator:
     """Validator for individual standards (compatible with MCP server)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the validator."""
         self.nist_controls = self._load_nist_controls()
         self.compliance_frameworks = self._load_compliance_frameworks()
@@ -85,10 +85,11 @@ class StandardValidator:
             )
 
         # Check for warnings
-        if not content.get("created_date"):
-            warnings.append("Missing creation date")
-        if not content.get("author"):
-            warnings.append("Missing author information")
+        if isinstance(content, dict):
+            if not content.get("created_date"):
+                warnings.append("Missing creation date")
+            if not content.get("author"):
+                warnings.append("Missing author information")
 
         is_valid = len(errors) == 0
 
@@ -147,7 +148,7 @@ class StandardValidator:
 class StandardsValidator:
     """Validator for standards documents."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the validator."""
         self.nist_controls = self._load_nist_controls()
         self.compliance_frameworks = self._load_compliance_frameworks()

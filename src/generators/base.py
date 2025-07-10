@@ -114,7 +114,7 @@ class StandardsGenerator:
 
     def _save_standard(
         self, content: str, output_path: str, metadata: StandardMetadata
-    ):
+    ) -> None:
         """Save the standard to file with metadata."""
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

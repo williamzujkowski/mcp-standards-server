@@ -16,6 +16,7 @@ class Colors:
     CYAN = "\033[96m"
     GREEN = "\033[92m"
     WARNING = "\033[93m"
+    YELLOW = "\033[93m"  # Add YELLOW alias for WARNING
     RED = "\033[91m"
     ENDC = "\033[0m"
     BOLD = "\033[1m"
@@ -32,7 +33,7 @@ def colored(text: str, color: str) -> str:
 class ImprovedHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom help formatter with better formatting and examples."""
 
-    def _format_action(self, action):
+    def _format_action(self, action: argparse.Action) -> str:
         # Get the original help text
         help_text = super()._format_action(action)
 
@@ -614,7 +615,7 @@ def suggest_command(invalid_cmd: str, commands: list[str]) -> str | None:
     return matches[0] if matches else None
 
 
-def main():
+def main() -> int:
     """Enhanced main entry point."""
     # Handle NO_COLOR environment variable
     if os.environ.get("NO_COLOR"):

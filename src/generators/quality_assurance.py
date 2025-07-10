@@ -15,7 +15,7 @@ from .metadata import StandardMetadata
 class QualityAssuranceSystem:
     """Quality assurance system for standards documents."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the QA system."""
         self.quality_metrics = [
             "completeness",

@@ -134,7 +134,7 @@ class AuthManager:
 
         return False, None, "Invalid API key"
 
-    def revoke_token(self, jti: str):
+    def revoke_token(self, jti: str) -> None:
         """Revoke a token by its JTI."""
         self._revoked_tokens.add(jti)
 

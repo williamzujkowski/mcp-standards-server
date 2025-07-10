@@ -74,7 +74,7 @@ class StandardMetadata:
             if isinstance(value, datetime):
                 result[key] = value.isoformat()
             elif isinstance(value, list):
-                result[key] = list(value)
+                result[key] = list(value)  # type: ignore[assignment]
             else:
                 result[key] = value
         return result
@@ -146,7 +146,7 @@ class Evidence:
     notes: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Set default created_at if not provided."""
         if self.created_at is None:
             self.created_at = datetime.now()
@@ -183,7 +183,7 @@ class Evidence:
 
 @dataclass
 class ComplianceMapping:
-    """Mapping between standards and compliance frameworks like NIST 800-53r5."""
+    """Mapping between standards and compliance frameworks like NIST 800-53 r5."""
 
     standard_id: str
     control_id: str
@@ -398,7 +398,7 @@ class Standard:
     author: str | None = None
     source: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Set default timestamps if not provided."""
         if self.created_at is None:
             self.created_at = datetime.now()

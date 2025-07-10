@@ -321,7 +321,7 @@ def _format_directory_analysis(results: list[AnalyzerResult]) -> str:
 
 
 # Register with MCP server
-def register_analyzer_tools(mcp_server):
+def register_analyzer_tools(mcp_server: Any) -> None:
     """Register analyzer tools with MCP server."""
     tools = AnalyzerMCPTools.get_tools()
 

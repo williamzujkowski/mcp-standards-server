@@ -296,7 +296,7 @@ TOOL_VALIDATORS = {
 class InputValidator:
     """Validates and sanitizes inputs for MCP tools."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.validators = TOOL_VALIDATORS
         self.error_handler = get_secure_error_handler()
 

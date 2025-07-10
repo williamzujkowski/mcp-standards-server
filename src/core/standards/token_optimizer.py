@@ -88,7 +88,7 @@ class StandardSection:
     dependencies: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Calculate token count if not provided."""
         if self.token_count == 0:
             # Simple approximation: 1 token ≈ 4 characters
@@ -100,10 +100,10 @@ class TokenCounter:
 
     def __init__(self, model_type: ModelType = ModelType.GPT4):
         self.model_type = model_type
-        self._encoders = {}
+        self._encoders: dict[str, Any] = {}
         self._init_encoders()
 
-    def _init_encoders(self):
+    def _init_encoders(self) -> None:
         """Initialize token encoders for different models."""
         try:
             # GPT models use tiktoken
@@ -220,7 +220,7 @@ class CompressionTechniques:
         # Find code blocks
         code_pattern = r"```[\s\S]*?```"
 
-        def compress_code(match):
+        def compress_code(match: re.Match[str]) -> str:
             code = match.group(0)
             lines = code.split("\n")
 
@@ -256,7 +256,7 @@ class CompressionTechniques:
 
         # Find repeated long phrases (>20 chars appearing 3+ times)
         words = text.split()
-        phrase_counts = defaultdict(int)
+        phrase_counts: defaultdict[str, int] = defaultdict(int)
 
         # Count 3-word phrases
         for i in range(len(words) - 2):
@@ -330,11 +330,11 @@ class TokenOptimizer:
         self.default_budget = default_budget or TokenBudget(total=8000)
 
         # Cache for formatted content
-        self._format_cache = {}
+        self._format_cache: dict[str, tuple[float, str, CompressionResult]] = {}
         self._cache_ttl = 3600  # 1 hour
 
         # Lookup tables for compression
-        self._global_lookup_table = {}
+        self._global_lookup_table: dict[str, str] = {}
 
     def optimize_standard(
         self,
@@ -753,7 +753,7 @@ class TokenOptimizer:
                 loading_plan.append(current_batch)
 
             # Find next batch (dependencies and high-priority dependents)
-            next_batch = set()
+            next_batch: set[str] = set()
             for section_id in to_load:
                 if section_id in dependency_graph:
                     # Add dependencies
@@ -856,7 +856,7 @@ class TokenOptimizer:
         if self._format_cache:
             # Analyze cached results
             compression_ratios = []
-            format_usage = defaultdict(int)
+            format_usage: defaultdict[str, int] = defaultdict(int)
 
             for _, (_, _, result) in self._format_cache.items():
                 compression_ratios.append(result.compression_ratio)
@@ -896,8 +896,8 @@ class DynamicLoader:
 
     def __init__(self, optimizer: TokenOptimizer):
         self.optimizer = optimizer
-        self._loaded_sections = defaultdict(set)
-        self._loading_history = defaultdict(list)
+        self._loaded_sections: defaultdict[str, set[str]] = defaultdict(set)
+        self._loading_history: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
 
     def load_section(
         self, standard_id: str, section_id: str, budget: TokenBudget

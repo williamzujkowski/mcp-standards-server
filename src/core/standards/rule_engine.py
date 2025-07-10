@@ -329,7 +329,7 @@ class RuleEngine:
     ) -> list[str]:
         """Resolve conflicts based on rule priority."""
         # Create priority map for standards
-        standard_priority = {}
+        standard_priority: dict[str, int] = {}
 
         for rule in matched_rules:
             for standard in rule["standards"]:
@@ -397,7 +397,7 @@ class RuleEngine:
         tree = {"type": "root", "total_rules": len(self.rules), "branches": []}
 
         # Group rules by common patterns
-        grouped = {}
+        grouped: dict[tuple[str, ...], list[StandardRule]] = {}
         for rule in self.rules:
             # Extract key fields from conditions
             key_fields = self._extract_key_fields(rule.conditions)

@@ -14,7 +14,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
 try:
     from pythonjsonlogger import jsonlogger
@@ -30,21 +30,21 @@ class ContextFilter(logging.Filter):
     _context = threading.local()
 
     @classmethod
-    def set_context(cls, **kwargs):
+    def set_context(cls, **kwargs: Any) -> None:
         """Set context variables for the current thread."""
         if not hasattr(cls._context, "data"):
             cls._context.data = {}
         cls._context.data.update(kwargs)
 
     @classmethod
-    def clear_context(cls):
+    def clear_context(cls) -> None:
         """Clear context for the current thread."""
         if hasattr(cls._context, "data"):
             cls._context.data.clear()
 
     @classmethod
     @contextmanager
-    def context(cls, **kwargs):
+    def context(cls, **kwargs: Any) -> Generator[None, None, None]:
         """Context manager for temporary context variables."""
         old_context = getattr(cls._context, "data", {}).copy()
         cls.set_context(**kwargs)
@@ -53,7 +53,7 @@ class ContextFilter(logging.Filter):
         finally:
             cls._context.data = old_context
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         """Add context data to log record."""
         if hasattr(self._context, "data"):
             for key, value in self._context.data.items():
@@ -64,13 +64,13 @@ class ContextFilter(logging.Filter):
 class ErrorTrackingHandler(logging.Handler):
     """Handler that tracks errors for monitoring and alerting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.error_counts = {}
         self.last_errors = []
         self.max_last_errors = 100
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Track error records."""
         if record.levelno >= logging.ERROR:
             # Track error counts by logger name
@@ -105,7 +105,7 @@ class ErrorTrackingHandler(logging.Handler):
             "total_errors": sum(self.error_counts.values()),
         }
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset error statistics."""
         self.error_counts.clear()
         self.last_errors.clear()
@@ -114,7 +114,7 @@ class ErrorTrackingHandler(logging.Handler):
 class StructuredFormatter(logging.Formatter):
     """Custom formatter that adds structure to log messages."""
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """Format log record with additional structure."""
         # Add standard fields
         record.service = "mcp-standards-server"

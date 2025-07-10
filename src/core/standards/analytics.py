@@ -453,9 +453,9 @@ class StandardsAnalytics:
         gap_analysis = GapAnalysis()
 
         # Analyze domain coverage
-        domains = Counter()
-        technologies = Counter()
-        frameworks = Counter()
+        domains: Counter[str] = Counter()
+        technologies: Counter[str] = Counter()
+        frameworks: Counter[str] = Counter()
 
         for _std_id, standard in standards.items():
             domain = standard.get("domain", "unknown")

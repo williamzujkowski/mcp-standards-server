@@ -9,15 +9,15 @@ logger = logging.getLogger(__name__)
 class StandardsHandler:
     """Handler for standards-related MCP operations."""
 
-    def __init__(self, standards_engine):
+    def __init__(self, standards_engine: Any) -> None:
         self.standards_engine = standards_engine
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the handler."""
         if self.standards_engine and hasattr(self.standards_engine, "initialize"):
             await self.standards_engine.initialize()
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup handler resources."""
         if self.standards_engine and hasattr(self.standards_engine, "close"):
             await self.standards_engine.close()

@@ -151,7 +151,7 @@ class StandardsVersionManager:
         self.version_history: dict[str, list[VersionInfo]] = {}
         self._load_version_history()
 
-    def _load_version_history(self):
+    def _load_version_history(self) -> None:
         """Load existing version history from disk."""
         history_file = self.versions_dir / "history.json"
         if history_file.exists():
@@ -166,7 +166,7 @@ class StandardsVersionManager:
             except Exception as e:
                 logger.error(f"Failed to load version history: {e}")
 
-    def _save_version_history(self):
+    def _save_version_history(self) -> None:
         """Save version history to disk."""
         history_file = self.versions_dir / "history.json"
 
@@ -384,7 +384,7 @@ class StandardsVersionManager:
         """Parse markdown content into sections."""
         sections = {}
         current_section = "introduction"
-        current_content = []
+        current_content: list[str] = []
 
         for line in content.split("\n"):
             if line.startswith("#"):
@@ -717,7 +717,7 @@ class StandardsVersionManager:
         version_info: VersionInfo,
         content: str,
         metadata: dict[str, Any],
-    ):
+    ) -> None:
         """Save version files to disk."""
         version_dir = self.versions_dir / standard_name / version_info.version
         version_dir.mkdir(parents=True, exist_ok=True)
