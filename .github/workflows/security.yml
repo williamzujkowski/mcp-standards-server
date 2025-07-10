@@ -117,7 +117,6 @@ jobs:
             p/python
             p/django
             p/r2c-security-audit
-          generateSarif: "1"
       
       - name: Upload SARIF file
         if: always() && hashFiles('semgrep.sarif') != ''

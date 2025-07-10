@@ -139,7 +139,6 @@ jobs:
           p/python
           p/owasp-top-ten
           p/cwe-top-25
-        generateSarif: "1"
       env:
         SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 

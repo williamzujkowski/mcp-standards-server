@@ -1,0 +1,20 @@
+# Semgrep ignore file for MCP Standards Server
+# Exclude intentionally vulnerable example files used for testing analyzers
+
+# Example files with intentional security vulnerabilities for testing
+examples/analyzer-test-samples/
+test-samples/
+*/test-samples/
+
+# Benchmark and test files that may contain mock vulnerabilities
+benchmarks/
+tests/
+
+# Generated or third-party files
+node_modules/
+*.min.js
+dist/
+build/
+
+# Web frontend - temporarily ignore while in development
+web/frontend/
