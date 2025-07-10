@@ -927,7 +927,7 @@ mcp-standards report --merge /tmp/results_*.json --output final-report.json
 # Only validate changed files in PR
 - name: Get changed files
   id: changed-files
-  uses: tj-actions/changed-files@v40
+  uses: tj-actions/changed-files@v46.0.1
   with:
     files: |
       **/*.py
