@@ -78,6 +78,8 @@ dev = [
     "black>=23.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
+    "pip-audit>=2.6.0",
+    "safety>=2.3.0",
 ]
 test = [
     "pytest>=7.0",

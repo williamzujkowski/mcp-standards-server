@@ -194,9 +194,9 @@ class TestHTTPServerUnit:
 
     def test_server_initialization(self):
         """Test server initialization."""
-        server = HTTPServer(host="0.0.0.0", port=8000)
+        server = HTTPServer(host="127.0.0.1", port=8000)
 
-        assert server.host == "0.0.0.0"
+        assert server.host == "127.0.0.1"
         assert server.port == 8000
         assert server.app is not None
         assert isinstance(server.app, web.Application)
