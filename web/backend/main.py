@@ -3,6 +3,7 @@ FastAPI backend for MCP Standards Server Web UI
 """
 import json
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -16,7 +17,7 @@ from fastapi.responses import FileResponse
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from engine_adapter import StandardsEngine
+from web.backend.engine_adapter import StandardsEngine
 
 logger = logging.getLogger(__name__)
 

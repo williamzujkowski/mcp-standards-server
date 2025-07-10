@@ -4,8 +4,8 @@ FROM node:18-alpine as build
 WORKDIR /app
 
 # Copy package files
-COPY web/frontend/package*.json ./
-RUN npm ci
+COPY web/frontend/package.json ./
+RUN npm install
 
 # Copy source code
 COPY web/frontend/ ./

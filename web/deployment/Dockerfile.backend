@@ -8,17 +8,20 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements
-COPY web/backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy project files needed for installation
+COPY pyproject.toml ./
+COPY README.md ./
+COPY src/ ./src/
 
-# Copy the main project requirements for dependencies
-COPY pyproject.toml /
-RUN pip install --no-cache-dir -e /
+# Copy backend requirements
+COPY web/backend/requirements.txt ./web/backend/
+RUN pip install --no-cache-dir -r ./web/backend/requirements.txt
+
+# Install the main project
+RUN pip install --no-cache-dir -e .
 
 # Copy backend code
 COPY web/backend/ ./web/backend/
-COPY src/ ./src/
 COPY data/standards/ ./data/standards/
 
 # Environment variables
