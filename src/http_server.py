@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 class HTTPServer:
     """HTTP server for health checks and monitoring."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 8080):
+    def __init__(self, host: str = "127.0.0.1", port: int = 8080) -> None:
         self.host = host
         self.port = port
         self.app = web.Application()
@@ -329,7 +329,7 @@ async def start_http_server(
 
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         # Setup logging
         logging.basicConfig(
             level=logging.INFO,

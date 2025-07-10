@@ -441,7 +441,7 @@ class StandardsEngine:
 
         return unique_applicable
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the engine and clean up resources."""
         if self.semantic_search:
             if hasattr(self.semantic_search, "close"):

@@ -392,7 +392,7 @@ class EmbeddingCache:
 class FuzzyMatcher:
     """Handles fuzzy matching for typo tolerance."""
 
-    def __init__(self, threshold: int = 80):
+    def __init__(self, threshold: int = 80) -> None:
         self.threshold = threshold
         self.known_terms: set[str] = set()
 
@@ -1165,7 +1165,7 @@ class SemanticSearch:
 class AsyncSemanticSearch:
     """Async wrapper for SemanticSearch."""
 
-    def __init__(self, semantic_search: SemanticSearch):
+    def __init__(self, semantic_search: SemanticSearch) -> None:
         self.search_engine = semantic_search
         self.loop = asyncio.new_event_loop()
         self.thread = threading.Thread(target=self._run_loop, daemon=True)

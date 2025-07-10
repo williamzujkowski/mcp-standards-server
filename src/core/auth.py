@@ -37,7 +37,7 @@ class TokenPayload(BaseModel):
 class AuthManager:
     """Manages authentication and authorization for MCP server."""
 
-    def __init__(self, config: AuthConfig | None = None):
+    def __init__(self, config: AuthConfig | None = None) -> None:
         """Initialize auth manager with configuration."""
         self.config = config or AuthConfig()
 

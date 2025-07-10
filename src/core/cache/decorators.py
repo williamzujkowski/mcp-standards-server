@@ -27,7 +27,7 @@ class CacheKeyConfig:
     exclude_args: set[str] = None
     custom_key_func: Callable | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.exclude_args is None:
             self.exclude_args = set()
 
@@ -173,7 +173,7 @@ def cache_result(
         )
 
         @functools.wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args, **kwargs) -> None:
             # Get cache instance
             cache_instance = cache or get_cache()
 
@@ -214,7 +214,7 @@ def cache_result(
             return result
 
         @functools.wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args, **kwargs) -> None:
             # Get cache instance
             cache_instance = cache or get_cache()
 
@@ -283,12 +283,12 @@ def invalidate_cache(
 
     Examples:
         @invalidate_cache(prefix="standards")
-        def update_standard(standard_id: str, data: dict):
+        def update_standard(standard_id: str, data: dict) -> None:
             # Update operation that invalidates standards cache
             pass
 
         @invalidate_cache(pattern="user:*:{user_id}")
-        async def delete_user(user_id: str):
+        async def delete_user(user_id: str) -> None:
             # Delete user and invalidate all user caches
             pass
     """
@@ -297,7 +297,7 @@ def invalidate_cache(
         is_async = asyncio.iscoroutinefunction(func)
 
         @functools.wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args, **kwargs) -> None:
             # Execute function first
             result = await func(*args, **kwargs)
 
@@ -334,7 +334,7 @@ def invalidate_cache(
             return result
 
         @functools.wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args, **kwargs) -> None:
             # Execute function first
             result = func(*args, **kwargs)
 
@@ -410,23 +410,23 @@ class CacheManager:
             await cache.mset({"key4": value4, "key5": value5})
     """
 
-    def __init__(self, cache: RedisCache | None = None):
+    def __init__(self, cache: RedisCache | None = None) -> None:
         self.cache = cache or get_cache()
         self.batch_gets = []
         self.batch_sets = {}
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         # Execute any pending batch operations
         if self.batch_sets:
             await self.cache.async_mset(self.batch_sets)
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         # Execute any pending batch operations
         if self.batch_sets:
             self.cache.mset(self.batch_sets)
@@ -435,7 +435,7 @@ class CacheManager:
         """Get value from cache."""
         return await self.cache.async_get(key)
 
-    async def set(self, key: str, value: Any, ttl: int | None = None):
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Set value in cache."""
         await self.cache.async_set(key, value, ttl)
 
@@ -443,7 +443,7 @@ class CacheManager:
         """Get multiple values."""
         return await self.cache.async_mget(keys)
 
-    async def mset(self, mapping: dict[str, Any], ttl: int | None = None):
+    async def mset(self, mapping: dict[str, Any], ttl: int | None = None) -> None:
         """Set multiple values."""
         await self.cache.async_mset(mapping, ttl)
 

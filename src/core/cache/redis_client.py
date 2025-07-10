@@ -85,7 +85,7 @@ class CacheConfig:
 class CircuitBreaker:
     """Simple circuit breaker implementation."""
 
-    def __init__(self, threshold: int = 5, timeout: int = 30):
+    def __init__(self, threshold: int = 5, timeout: int = 30) -> None:
         self.threshold = threshold
         self.timeout = timeout
         self.failure_count = 0
@@ -122,7 +122,7 @@ class CircuitBreaker:
 class RedisCache:
     """Redis cache client with L1/L2 caching and resilience features."""
 
-    def __init__(self, config: CacheConfig | None = None):
+    def __init__(self, config: CacheConfig | None = None) -> None:
         self.config = config or CacheConfig()
         self._sync_pool: redis.ConnectionPool | None = None
         self._async_pool: aioredis.ConnectionPool | None = None
@@ -717,7 +717,7 @@ class RedisCache:
         try:
 
             @self._with_retry
-            def _delete_pattern():
+            def _delete_pattern() -> None:
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     keys = r.keys(full_pattern)
                     if keys:
@@ -961,18 +961,18 @@ class RedisCache:
             ),
         }
 
-    def clear_l1_cache(self):
+    def clear_l1_cache(self) -> None:
         """Clear L1 cache."""
         self._l1_cache.clear()
 
-    def close(self):
+    def close(self) -> None:
         """Close connection pools."""
         if self._sync_pool:
             self._sync_pool.disconnect()
         if self._async_pool:
             asyncio.create_task(self._async_pool.disconnect())
 
-    async def async_close(self):
+    async def async_close(self) -> None:
         """Close connection pools (async)."""
         if self._sync_pool:
             self._sync_pool.disconnect()

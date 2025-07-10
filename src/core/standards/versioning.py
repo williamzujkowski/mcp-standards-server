@@ -133,7 +133,7 @@ class CompatibilityCheck:
 class StandardsVersionManager:
     """Manages versioning for standards including change detection and compatibility."""
 
-    def __init__(self, standards_dir: str, versions_dir: str | None = None):
+    def __init__(self, standards_dir: str, versions_dir: str | None = None) -> None:
         """
         Initialize version manager.
 

@@ -16,7 +16,7 @@ from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 class TemplateEngine:
     """Jinja2-based template engine for standards generation."""
 
-    def __init__(self, templates_dir: str):
+    def __init__(self, templates_dir: str) -> None:
         """
         Initialize the template engine.
 

@@ -30,7 +30,7 @@ class GenerationResult:
 class StandardsGenerator:
     """Main standards generator class that coordinates all generation components."""
 
-    def __init__(self, templates_dir: str | None = None):
+    def __init__(self, templates_dir: str | None = None) -> None:
         """
         Initialize the standards generator.
 

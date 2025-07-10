@@ -91,7 +91,7 @@ class PIIDetector:
         PIIType.DRIVER_LICENSE: r"\b[A-Z]{1,2}[0-9]{5,8}\b",  # Simplified pattern
     }
 
-    def __init__(self, config: PrivacyConfig | None = None):
+    def __init__(self, config: PrivacyConfig | None = None) -> None:
         """Initialize PII detector with configuration."""
         self.config = config or PrivacyConfig()
         self._compiled_patterns: dict[PIIType | str, re.Pattern[str]] = {}
@@ -266,7 +266,7 @@ class PIIDetector:
 class PrivacyFilter:
     """Filters and redacts PII from data."""
 
-    def __init__(self, config: PrivacyConfig | None = None):
+    def __init__(self, config: PrivacyConfig | None = None) -> None:
         """Initialize privacy filter with configuration."""
         self.config = config or PrivacyConfig()
         self.detector = PIIDetector(config)

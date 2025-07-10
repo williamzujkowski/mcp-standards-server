@@ -365,7 +365,7 @@ class TimerContext:
 class MCPMetrics:
     """MCP-specific metrics collection."""
 
-    def __init__(self, collector: MetricsCollector | None = None):
+    def __init__(self, collector: MetricsCollector | None = None) -> None:
         """Initialize MCP metrics."""
         self.collector = collector or MetricsCollector()
 

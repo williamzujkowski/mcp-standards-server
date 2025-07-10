@@ -56,7 +56,7 @@ class RetryConfig:
 class RetryManager:
     """Manages retry logic for operations."""
 
-    def __init__(self, config: RetryConfig | None = None):
+    def __init__(self, config: RetryConfig | None = None) -> None:
         """Initialize retry manager with configuration."""
         self.config = config or RetryConfig()
         self.metrics = get_mcp_metrics()
@@ -384,13 +384,13 @@ class CircuitBreaker:
             self._on_failure()
             raise
 
-    def _on_success(self):
+    def _on_success(self) -> None:
         """Handle successful call."""
         if self._state == "half-open":
             self._state = "closed"
         self._failure_count = 0
 
-    def _on_failure(self):
+    def _on_failure(self) -> None:
         """Handle failed call."""
         self._failure_count += 1
         self._last_failure_time = time.time()

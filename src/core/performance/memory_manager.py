@@ -124,7 +124,7 @@ class MemoryStats:
 class MemoryEfficientDict:
     """Memory-efficient dictionary implementation."""
 
-    def __init__(self, initial_size: int = 1000):
+    def __init__(self, initial_size: int = 1000) -> None:
         self._data: dict[Any, Any] = {}
         self._access_times: dict[Any, float] = {}
         self._access_counts: dict[Any, int] = defaultdict(int)
@@ -218,7 +218,7 @@ class MemoryEfficientDict:
 class MemoryEfficientList:
     """Memory-efficient list implementation with automatic cleanup."""
 
-    def __init__(self, max_size: int = 10000):
+    def __init__(self, max_size: int = 10000) -> None:
         self._data: list[Any] = []
         self._max_size = max_size
         self._total_additions = 0
@@ -269,7 +269,7 @@ class MemoryEfficientList:
 class ObjectPool:
     """Object pool for reusing expensive objects."""
 
-    def __init__(self, factory: Callable, max_size: int = 100):
+    def __init__(self, factory: Callable, max_size: int = 100) -> None:
         self._factory = factory
         self._pool: list[Any] = []
         self._max_size = max_size
@@ -321,7 +321,7 @@ class ObjectPool:
 class MemoryTracker:
     """Advanced memory tracking and leak detection."""
 
-    def __init__(self, config: MemoryConfig):
+    def __init__(self, config: MemoryConfig) -> None:
         self.config = config
         self.tracked_objects: weakref.WeakSet[Any] = weakref.WeakSet()
         self.object_counts: dict[str, int] = defaultdict(int)
@@ -348,7 +348,7 @@ class MemoryTracker:
             }
         )
 
-    def untrack_object(self, obj, category: str = "unknown"):
+    def untrack_object(self, obj: Any, category: str = "unknown") -> None:
         """Untrack an object."""
         self.tracked_objects.discard(obj)
         self.object_counts[category] = max(0, self.object_counts[category] - 1)
@@ -420,7 +420,7 @@ class MemoryTracker:
 class MemoryManager:
     """Comprehensive memory management system."""
 
-    def __init__(self, config: MemoryConfig | None = None):
+    def __init__(self, config: MemoryConfig | None = None) -> None:
         self.config = config or MemoryConfig()
         self.stats = MemoryStats()
         self.tracker = MemoryTracker(self.config)
@@ -454,7 +454,7 @@ class MemoryManager:
         # Shutdown event
         self.shutdown_event = asyncio.Event()
 
-    def _setup_object_pools(self):
+    def _setup_object_pools(self) -> None:
         """Setup object pools for common types."""
         # Example pools - can be customized based on usage patterns
         self.object_pools["list"] = ObjectPool(
@@ -469,7 +469,7 @@ class MemoryManager:
             lambda: set(), self.config.pool_sizes.get("small_objects", 1000)
         )
 
-    def _optimize_gc(self):
+    def _optimize_gc(self) -> None:
         """Optimize garbage collection settings."""
         gc.set_threshold(
             self.config.gc_threshold_0,
@@ -481,7 +481,7 @@ class MemoryManager:
         if logger.isEnabledFor(logging.DEBUG):
             gc.set_debug(gc.DEBUG_STATS)
 
-    async def start(self):
+    async def start(self) -> None:
         """Start memory management tasks."""
         # Start monitoring task
         self.monitor_task = asyncio.create_task(self._monitor_memory())
@@ -495,7 +495,7 @@ class MemoryManager:
 
         logger.info("Memory manager started")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop memory management tasks."""
         self.shutdown_event.set()
 
@@ -516,7 +516,7 @@ class MemoryManager:
 
         logger.info("Memory manager stopped")
 
-    async def _monitor_memory(self):
+    async def _monitor_memory(self) -> None:
         """Monitor memory usage continuously."""
         while not self.shutdown_event.is_set():
             try:
@@ -529,7 +529,7 @@ class MemoryManager:
                 logger.error(f"Error in memory monitoring: {e}")
                 await asyncio.sleep(self.config.monitoring_interval)
 
-    async def _update_memory_stats(self):
+    async def _update_memory_stats(self) -> None:
         """Update memory statistics."""
         # Get process memory info
         process = psutil.Process()
@@ -560,7 +560,7 @@ class MemoryManager:
         # Update tracked objects count
         self.stats.tracked_objects = len(self.tracker.tracked_objects)
 
-    async def _check_memory_thresholds(self):
+    async def _check_memory_thresholds(self) -> None:
         """Check memory thresholds and trigger alerts."""
         current_usage = self.stats.current_usage_mb
         current_time = time.time()
@@ -583,21 +583,21 @@ class MemoryManager:
                 )
                 self.last_alert_time = current_time
 
-    async def _handle_warning_memory(self):
+    async def _handle_warning_memory(self) -> None:
         """Handle warning memory usage."""
         logger.warning(f"Memory usage warning: {self.stats.current_usage_mb:.1f}MB")
 
         # Trigger cleanup
         await self._perform_cleanup()
 
-    async def _handle_critical_memory(self):
+    async def _handle_critical_memory(self) -> None:
         """Handle critical memory usage."""
         logger.critical(f"Critical memory usage: {self.stats.current_usage_mb:.1f}MB")
 
         # Aggressive cleanup
         await self._perform_aggressive_cleanup()
 
-    async def _cleanup_worker(self):
+    async def _cleanup_worker(self) -> None:
         """Worker task for periodic cleanup."""
         while not self.shutdown_event.is_set():
             try:
@@ -609,7 +609,7 @@ class MemoryManager:
                 logger.error(f"Error in cleanup worker: {e}")
                 await asyncio.sleep(self.config.cleanup_interval)
 
-    async def _perform_cleanup(self):
+    async def _perform_cleanup(self) -> None:
         """Perform regular memory cleanup."""
         start_time = time.time()
 
@@ -634,7 +634,7 @@ class MemoryManager:
             f"Cleanup completed in {cleanup_time:.3f}s, collected {collected} objects"
         )
 
-    async def _perform_aggressive_cleanup(self):
+    async def _perform_aggressive_cleanup(self) -> None:
         """Perform aggressive memory cleanup."""
         logger.info("Performing aggressive memory cleanup...")
 
@@ -655,7 +655,7 @@ class MemoryManager:
 
         logger.info("Aggressive cleanup completed")
 
-    def _cleanup_weak_references(self):
+    def _cleanup_weak_references(self) -> None:
         """Clean up dead weak references."""
         # Clean up tracked objects
         dead_refs = []
@@ -666,7 +666,7 @@ class MemoryManager:
         for ref in dead_refs:
             self.tracker.tracked_objects.discard(ref)
 
-    async def _profiling_worker(self):
+    async def _profiling_worker(self) -> None:
         """Worker task for memory profiling."""
         while not self.shutdown_event.is_set():
             try:
@@ -681,7 +681,7 @@ class MemoryManager:
                 logger.error(f"Error in profiling worker: {e}")
                 await asyncio.sleep(self.config.profiling_interval)
 
-    async def _trigger_alert(self, alert_type: str, data: dict[str, Any]):
+    async def _trigger_alert(self, alert_type: str, data: dict[str, Any]) -> None:
         """Trigger memory alert."""
         for callback in self.alert_callbacks:
             try:
@@ -694,21 +694,21 @@ class MemoryManager:
 
     # Public API
 
-    def track_object(self, obj, category: str = "unknown"):
+    def track_object(self, obj: Any, category: str = "unknown") -> None:
         """Track an object for memory monitoring."""
         self.tracker.track_object(obj, category)
 
-    def untrack_object(self, obj, category: str = "unknown"):
+    def untrack_object(self, obj: Any, category: str = "unknown") -> None:
         """Untrack an object."""
         self.tracker.untrack_object(obj, category)
 
-    def get_object_from_pool(self, pool_name: str):
+    def get_object_from_pool(self, pool_name: str) -> Any:
         """Get object from pool."""
         if pool_name in self.object_pools:
             return self.object_pools[pool_name].get()
         return None
 
-    def return_object_to_pool(self, pool_name: str, obj):
+    def return_object_to_pool(self, pool_name: str, obj: Any) -> None:
         """Return object to pool."""
         if pool_name in self.object_pools:
             self.object_pools[pool_name].put(obj)
@@ -727,17 +727,17 @@ class MemoryManager:
         self.efficient_lists[name] = efficient_list
         return efficient_list
 
-    def add_alert_callback(self, callback: Callable):
+    def add_alert_callback(self, callback: Callable) -> None:
         """Add memory alert callback."""
         self.alert_callbacks.append(callback)
 
-    def remove_alert_callback(self, callback: Callable):
+    def remove_alert_callback(self, callback: Callable) -> None:
         """Remove memory alert callback."""
         if callback in self.alert_callbacks:
             self.alert_callbacks.remove(callback)
 
     @contextmanager
-    def memory_context(self, name: str):
+    def memory_context(self, name: str) -> None:
         """Context manager for tracking memory usage."""
         if self.config.enable_detailed_tracking:
             snapshot_before = tracemalloc.take_snapshot()
@@ -789,11 +789,11 @@ class MemoryManager:
         """Get detailed memory profile."""
         return self.tracker.get_memory_profile()
 
-    async def force_cleanup(self):
+    async def force_cleanup(self) -> None:
         """Force immediate cleanup."""
         await self._perform_cleanup()
 
-    async def force_aggressive_cleanup(self):
+    async def force_aggressive_cleanup(self) -> None:
         """Force aggressive cleanup."""
         await self._perform_aggressive_cleanup()
 
@@ -820,7 +820,7 @@ async def initialize_memory_manager(
     return _global_memory_manager
 
 
-async def shutdown_memory_manager():
+async def shutdown_memory_manager() -> None:
     """Shutdown global memory manager."""
     global _global_memory_manager
     if _global_memory_manager:

@@ -203,7 +203,7 @@ async def request_logging_middleware(
 class WebSocketErrorHandler:
     """Error handler for WebSocket connections."""
 
-    def __init__(self, ws: web.WebSocketResponse, request_id: str):
+    def __init__(self, ws: web.WebSocketResponse, request_id: str) -> None:
         self.ws = ws
         self.request_id = request_id
         self.logger = logging.getLogger(f"{__name__}.websocket")
@@ -293,7 +293,7 @@ def _get_http_status_for_error(error: MCPError) -> int:
     return status_map.get(error.code, 500)
 
 
-def setup_error_handling(app: web.Application):
+def setup_error_handling(app: web.Application) -> None:
     """
     Setup error handling for the application.
 

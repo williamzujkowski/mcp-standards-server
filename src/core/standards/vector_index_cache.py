@@ -128,7 +128,7 @@ class VectorIndexMetrics:
 class VectorIndexBuilder:
     """Builds and optimizes vector indices."""
 
-    def __init__(self, config: VectorIndexConfig):
+    def __init__(self, config: VectorIndexConfig) -> None:
         self.config = config
         self.pca_model = None
         self.executor = ThreadPoolExecutor(max_workers=config.max_workers)
@@ -222,7 +222,7 @@ class VectorIndexBuilder:
         # Deserialize index
         return faiss.deserialize_index(index_data)
 
-    def close(self):
+    def close(self) -> None:
         """Close the builder and clean up resources."""
         self.executor.shutdown(wait=True)
 
@@ -230,7 +230,7 @@ class VectorIndexBuilder:
 class WarmingStrategy:
     """Base class for cache warming strategies."""
 
-    def __init__(self, config: VectorIndexConfig):
+    def __init__(self, config: VectorIndexConfig) -> None:
         self.config = config
 
     async def get_warming_candidates(
@@ -328,12 +328,12 @@ class VectorIndexCache:
         # Weak references for cleanup
         self.weak_refs = weakref.WeakSet()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the cache warming system."""
         if self.config.auto_warming_interval > 0:
             self.warming_task = asyncio.create_task(self._warming_worker())
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the cache warming system."""
         self.shutdown_event.set()
         if self.warming_task:
@@ -397,7 +397,7 @@ class VectorIndexCache:
         self.metrics.cache_misses += 1
         return None
 
-    async def set_index(self, index_id: str, index: faiss.Index):
+    async def set_index(self, index_id: str, index: faiss.Index) -> None:
         """Set vector index in cache."""
         start_time = time.time()
 
@@ -488,7 +488,7 @@ class VectorIndexCache:
 
         return distances, indices
 
-    async def invalidate_index(self, index_id: str):
+    async def invalidate_index(self, index_id: str) -> None:
         """Invalidate and remove index from all cache levels."""
         # Remove from memory cache
         self.memory_cache.pop(index_id, None)
@@ -512,12 +512,12 @@ class VectorIndexCache:
         # Update metrics
         self.metrics.cache_evictions += 1
 
-    async def warm_cache(self, index_ids: list[str]):
+    async def warm_cache(self, index_ids: list[str]) -> None:
         """Warm cache with specific indices."""
         for index_id in index_ids:
             await self.warming_queue.put(index_id)
 
-    async def _warming_worker(self):
+    async def _warming_worker(self) -> None:
         """Worker task for cache warming."""
         while not self.shutdown_event.is_set():
             try:
@@ -536,7 +536,7 @@ class VectorIndexCache:
                 logger.error(f"Error in warming worker: {e}")
                 await asyncio.sleep(60)  # Wait before retry
 
-    async def _auto_warm(self):
+    async def _auto_warm(self) -> None:
         """Perform automatic cache warming."""
         for strategy_name in self.config.warming_strategies:
             if strategy_name in self.warming_strategies:
@@ -551,7 +551,7 @@ class VectorIndexCache:
                 except Exception as e:
                     logger.error(f"Error in {strategy_name} warming strategy: {e}")
 
-    async def _process_warming_queue(self):
+    async def _process_warming_queue(self) -> None:
         """Process manual warming requests."""
         candidates = []
 
@@ -571,7 +571,7 @@ class VectorIndexCache:
         if candidates:
             await self._warm_candidates(candidates)
 
-    async def _warm_candidates(self, candidates: list[str]):
+    async def _warm_candidates(self, candidates: list[str]) -> None:
         """Warm specific index candidates."""
         tasks = []
 
@@ -587,7 +587,7 @@ class VectorIndexCache:
                 batch = tasks[i : i + batch_size]
                 await asyncio.gather(*batch, return_exceptions=True)
 
-    async def _warm_single_index(self, index_id: str):
+    async def _warm_single_index(self, index_id: str) -> None:
         """Warm a single index."""
         try:
             self.metrics.warming_operations += 1
@@ -621,7 +621,7 @@ class VectorIndexCache:
         """Get access statistics for all indices."""
         return dict(self.access_stats)
 
-    async def clear_cache(self):
+    async def clear_cache(self) -> None:
         """Clear all cache levels."""
         # Clear memory cache
         self.memory_cache.clear()

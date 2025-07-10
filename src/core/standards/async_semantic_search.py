@@ -79,7 +79,7 @@ class AsyncSearchConfig:
 class BatchProcessor:
     """Handles batch processing of embedding generation and search queries."""
 
-    def __init__(self, config: AsyncSearchConfig):
+    def __init__(self, config: AsyncSearchConfig) -> None:
         self.config = config
         self.embedding_queue = asyncio.Queue()
         self.search_queue = asyncio.Queue()
@@ -88,7 +88,7 @@ class BatchProcessor:
         self.processing_tasks = set()
         self.shutdown_event = asyncio.Event()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start batch processing tasks."""
         # Start embedding batch processor
         for _i in range(self.config.max_concurrent_batches):
@@ -102,12 +102,12 @@ class BatchProcessor:
             self.processing_tasks.add(task)
             task.add_done_callback(self.processing_tasks.discard)
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop batch processing."""
         self.shutdown_event.set()
         await asyncio.gather(*self.processing_tasks, return_exceptions=True)
 
-    async def queue_embedding(self, text: str, future: asyncio.Future):
+    async def queue_embedding(self, text: str, future: asyncio.Future) -> None:
         """Queue text for embedding generation."""
         await self.embedding_queue.put((text, future))
 
@@ -117,7 +117,7 @@ class BatchProcessor:
         """Queue search query for processing."""
         await self.search_queue.put((query, params, future))
 
-    async def _process_embedding_batches(self):
+    async def _process_embedding_batches(self) -> None:
         """Process embedding generation in batches."""
         while not self.shutdown_event.is_set():
             try:
@@ -153,7 +153,7 @@ class BatchProcessor:
                 logger.error(f"Error in embedding batch processing: {e}")
                 await asyncio.sleep(0.1)
 
-    async def _process_search_batches(self):
+    async def _process_search_batches(self) -> None:
         """Process search queries in batches."""
         while not self.shutdown_event.is_set():
             try:
@@ -185,7 +185,7 @@ class BatchProcessor:
                 logger.error(f"Error in search batch processing: {e}")
                 await asyncio.sleep(0.1)
 
-    async def _process_embedding_batch(self, batch: list[tuple[str, asyncio.Future]]):
+    async def _process_embedding_batch(self, batch: list[tuple[str, asyncio.Future]]) -> None:
         """Process a batch of embedding requests."""
         # This would be implemented with actual embedding model calls
         # For now, we'll simulate the processing
@@ -242,7 +242,7 @@ class BatchProcessor:
 class VectorIndexCache:
     """Manages vector index caching with warming strategies."""
 
-    def __init__(self, config: AsyncSearchConfig, redis_cache: RedisCache):
+    def __init__(self, config: AsyncSearchConfig, redis_cache: RedisCache) -> None:
         self.config = config
         self.redis_cache = redis_cache
         self.local_cache = TTLCache(
@@ -252,12 +252,12 @@ class VectorIndexCache:
         self.warming_task = None
         self.index_stats = {"cache_hits": 0, "cache_misses": 0, "warming_operations": 0}
 
-    async def start_warming(self):
+    async def start_warming(self) -> None:
         """Start cache warming task."""
         if self.config.enable_cache_warming:
             self.warming_task = asyncio.create_task(self._warming_worker())
 
-    async def stop_warming(self):
+    async def stop_warming(self) -> None:
         """Stop cache warming task."""
         if self.warming_task:
             self.warming_task.cancel()
@@ -283,7 +283,7 @@ class VectorIndexCache:
         self.index_stats["cache_misses"] += 1
         return None
 
-    async def set_vector_index(self, index_id: str, index_data: dict[str, Any]):
+    async def set_vector_index(self, index_id: str, index_data: dict[str, Any]) -> None:
         """Set vector index in cache."""
         # Store in local cache
         self.local_cache[index_id] = index_data
@@ -293,12 +293,12 @@ class VectorIndexCache:
             f"vector_index:{index_id}", index_data, ttl=self.config.vector_cache_ttl
         )
 
-    async def warm_cache(self, index_ids: list[str]):
+    async def warm_cache(self, index_ids: list[str]) -> None:
         """Warm cache with specific index IDs."""
         for index_id in index_ids:
             await self.warming_queue.put(index_id)
 
-    async def _warming_worker(self):
+    async def _warming_worker(self) -> None:
         """Worker task for cache warming."""
         while True:
             try:
@@ -335,7 +335,7 @@ class VectorIndexCache:
                 logger.error(f"Error in cache warming: {e}")
                 await asyncio.sleep(1.0)
 
-    async def _warm_batch(self, index_ids: list[str]):
+    async def _warm_batch(self, index_ids: list[str]) -> None:
         """Warm a batch of vector indices."""
         # Simulate vector index loading/generation
         # In a real implementation, this would load from storage or generate indices
@@ -372,7 +372,7 @@ class VectorIndexCache:
 class MemoryManager:
     """Manages memory usage and cleanup for the search engine."""
 
-    def __init__(self, config: AsyncSearchConfig):
+    def __init__(self, config: AsyncSearchConfig) -> None:
         self.config = config
         self.memory_stats = {
             "current_usage_mb": 0,
@@ -383,11 +383,11 @@ class MemoryManager:
         self.cleanup_task = None
         self.weak_references = weakref.WeakSet()
 
-    async def start_monitoring(self):
+    async def start_monitoring(self) -> None:
         """Start memory monitoring task."""
         self.cleanup_task = asyncio.create_task(self._memory_monitor())
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop memory monitoring task."""
         if self.cleanup_task:
             self.cleanup_task.cancel()
@@ -396,7 +396,7 @@ class MemoryManager:
             except asyncio.CancelledError:
                 pass
 
-    def register_object(self, obj):
+    def register_object(self, obj) -> None:
         """Register an object for memory tracking."""
         # Skip numpy arrays as they are not weakly referenceable
         if isinstance(obj, np.ndarray):
@@ -407,7 +407,7 @@ class MemoryManager:
             # Object doesn't support weak references, skip it
             pass
 
-    async def _memory_monitor(self):
+    async def _memory_monitor(self) -> None:
         """Monitor memory usage and perform cleanup."""
         while True:
             try:
@@ -435,7 +435,7 @@ class MemoryManager:
                 logger.error(f"Error in memory monitoring: {e}")
                 await asyncio.sleep(10.0)
 
-    async def _perform_cleanup(self):
+    async def _perform_cleanup(self) -> None:
         """Perform memory cleanup operations."""
         logger.info("Performing memory cleanup...")
 
@@ -466,7 +466,7 @@ class MemoryManager:
 class AsyncSemanticSearch:
     """Async semantic search engine with performance optimizations."""
 
-    def __init__(self, config: AsyncSearchConfig | None = None):
+    def __init__(self, config: AsyncSearchConfig | None = None) -> None:
         self.config = config or AsyncSearchConfig()
         self.preprocessor = QueryPreprocessor()
         self.analytics = SearchAnalytics()
@@ -499,7 +499,7 @@ class AsyncSemanticSearch:
         self.initialized = False
         self.shutdown_event = asyncio.Event()
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the search engine."""
         if self.initialized:
             return
@@ -557,7 +557,7 @@ class AsyncSemanticSearch:
         self.initialized = True
         logger.info("AsyncSemanticSearch initialized successfully")
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the search engine and clean up resources."""
         if not self.initialized:
             return

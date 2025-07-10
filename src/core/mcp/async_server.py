@@ -35,7 +35,7 @@ except (TypeError, ImportError) as e:
         # Mock aioredis for compatibility
         class MockRedis:
             @staticmethod
-            async def from_url(*args, **kwargs):
+            async def from_url(*args, **kwargs) -> None:
                 return None
 
         aioredis = type(
@@ -79,7 +79,7 @@ class ConnectionInfo:
     bytes_sent: int = 0
     bytes_received: int = 0
 
-    def update_activity(self):
+    def update_activity(self) -> None:
         """Update last activity timestamp."""
         self.last_activity = time.time()
 
@@ -210,7 +210,7 @@ class RequestMetrics:
 class RequestBatcher:
     """Batches requests for more efficient processing."""
 
-    def __init__(self, config: ServerConfig):
+    def __init__(self, config: ServerConfig) -> None:
         self.config = config
         self.batch_queue = asyncio.Queue()
         self.batch_worker_task = None
@@ -218,12 +218,12 @@ class RequestBatcher:
         self.pending_requests = {}
         self.batch_metrics = RequestMetrics()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start request batching."""
         if self.config.enable_request_batching:
             self.batch_worker_task = asyncio.create_task(self._batch_worker())
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop request batching."""
         self.shutdown_event.set()
         if self.batch_worker_task:
@@ -263,7 +263,7 @@ class RequestBatcher:
             # Clean up
             self.pending_requests.pop(request_id, None)
 
-    async def _batch_worker(self):
+    async def _batch_worker(self) -> None:
         """Worker task for processing request batches."""
         while not self.shutdown_event.is_set():
             try:
@@ -301,7 +301,7 @@ class RequestBatcher:
                 logger.error(f"Error in batch worker: {e}")
                 await asyncio.sleep(0.1)
 
-    async def _process_batch(self, batch: list[dict[str, Any]]):
+    async def _process_batch(self, batch: list[dict[str, Any]]) -> None:
         """Process a batch of requests."""
         start_time = time.time()
 
@@ -360,7 +360,7 @@ class RequestBatcher:
 class ConnectionManager:
     """Manages client connections and their lifecycle."""
 
-    def __init__(self, config: ServerConfig):
+    def __init__(self, config: ServerConfig) -> None:
         self.config = config
         self.connections: dict[str, ConnectionInfo] = {}
         self.websockets: dict[str, WebSocketResponse] = {}
@@ -374,11 +374,11 @@ class ConnectionManager:
         self.max_connections = config.max_connections
         self.connection_semaphore = asyncio.Semaphore(self.max_connections)
 
-    async def start(self):
+    async def start(self) -> None:
         """Start connection management."""
         self.cleanup_task = asyncio.create_task(self._cleanup_worker())
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop connection management."""
         self.shutdown_event.set()
 
@@ -437,7 +437,7 @@ class ConnectionManager:
             self.connection_semaphore.release()
             return False
 
-    async def remove_connection(self, connection_id: str):
+    async def remove_connection(self, connection_id: str) -> None:
         """Remove a connection."""
         with self.connection_lock:
             connection_info = self.connections.pop(connection_id, None)
@@ -453,7 +453,7 @@ class ConnectionManager:
         # Release semaphore
         self.connection_semaphore.release()
 
-    def update_connection_activity(self, connection_id: str):
+    def update_connection_activity(self, connection_id: str) -> None:
         """Update connection activity timestamp."""
         with self.connection_lock:
             if connection_id in self.connections:
@@ -469,7 +469,7 @@ class ConnectionManager:
         with self.connection_lock:
             return list(self.connections.values())
 
-    async def _cleanup_worker(self):
+    async def _cleanup_worker(self) -> None:
         """Worker task for cleaning up inactive connections."""
         while not self.shutdown_event.is_set():
             try:
@@ -481,7 +481,7 @@ class ConnectionManager:
                 logger.error(f"Error in connection cleanup: {e}")
                 await asyncio.sleep(self.config.cleanup_interval)
 
-    async def _cleanup_inactive_connections(self):
+    async def _cleanup_inactive_connections(self) -> None:
         """Clean up inactive connections."""
         current_time = time.time()
         inactive_connections = []
@@ -498,7 +498,7 @@ class ConnectionManager:
             logger.info(f"Removing inactive connection: {connection_id}")
             await self.remove_connection(connection_id)
 
-    async def _close_all_connections(self):
+    async def _close_all_connections(self) -> None:
         """Close all connections."""
         connection_ids = list(self.connections.keys())
 
@@ -535,7 +535,7 @@ class ConnectionManager:
 class MCPSession:
     """MCP session management for individual client connections."""
 
-    def __init__(self, session_id: str, server, reader, writer):
+    def __init__(self, session_id: str, server, reader, writer) -> None:
         self.id = session_id
         self.server = server
         self.reader = reader
@@ -547,7 +547,7 @@ class MCPSession:
         }
         self.last_activity = time.time()
 
-    async def handle(self):
+    async def handle(self) -> None:
         """Handle session messages."""
         try:
             while True:
@@ -570,7 +570,7 @@ class MCPSession:
         finally:
             await self.close()
 
-    async def _process_message(self, message: dict[str, Any]):
+    async def _process_message(self, message: dict[str, Any]) -> None:
         """Process a single message."""
         self.last_activity = time.time()
 
@@ -591,7 +591,7 @@ class MCPSession:
         else:
             await self.send_error_message(f"Unknown message type: {msg_type}")
 
-    async def _handle_request(self, message: dict[str, Any]):
+    async def _handle_request(self, message: dict[str, Any]) -> None:
         """Handle a request message."""
         request_id = message.get("id")
         method = message.get("method")
@@ -616,18 +616,18 @@ class MCPSession:
                 {"type": "error", "id": request_id, "error": str(e)}
             )
 
-    async def send_message(self, message: dict[str, Any]):
+    async def send_message(self, message: dict[str, Any]) -> None:
         """Send a message to the client."""
         if self.writer and not self.writer.is_closing():
             data = json.dumps(message).encode() + b"\n"
             self.writer.write(data)
             await self.writer.drain()
 
-    async def send_error_message(self, error: str):
+    async def send_error_message(self, error: str) -> None:
         """Send an error message to the client."""
         await self.send_message({"type": "error", "error": error})
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the session."""
         if self.writer and not self.writer.is_closing():
             self.writer.close()
@@ -650,7 +650,7 @@ class MCPSession:
 class AsyncMCPServer:
     """Async MCP server with enhanced performance."""
 
-    def __init__(self, config: ServerConfig | None = None, standards_engine=None):
+    def __init__(self, config: ServerConfig | None = None, standards_engine=None) -> None:
         self.config = config or ServerConfig()
         self.standards_engine = standards_engine
 
@@ -685,7 +685,7 @@ class AsyncMCPServer:
         # Memory manager
         self.memory_manager = get_memory_manager()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the async MCP server."""
         if self.running:
             return
@@ -733,7 +733,7 @@ class AsyncMCPServer:
             f"Async MCP server started on {self.config.host}:{self.config.port}"
         )
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the async MCP server."""
         if not self.running:
             return
@@ -977,7 +977,7 @@ class AsyncMCPServer:
         return {"error": f"Tool not found: {tool_name}"}
 
     @web.middleware
-    async def _cors_middleware(self, request: web.Request, handler):
+    async def _cors_middleware(self, request: web.Request, handler) -> None:
         """CORS middleware."""
         response = await handler(request)
 
@@ -990,7 +990,7 @@ class AsyncMCPServer:
 
         return response
 
-    async def _metrics_worker(self):
+    async def _metrics_worker(self) -> None:
         """Worker task for metrics collection."""
         while not self.shutdown_event.is_set():
             try:
@@ -1002,7 +1002,7 @@ class AsyncMCPServer:
                 logger.error(f"Error in metrics collection: {e}")
                 await asyncio.sleep(self.config.metrics_interval)
 
-    async def _collect_metrics(self):
+    async def _collect_metrics(self) -> None:
         """Collect server metrics."""
         # Connection metrics
         connection_stats = self.connection_manager.get_connection_stats()

@@ -235,7 +235,7 @@ class MCPCache:
         # Cache warming tasks
         self._warm_tasks: list[asyncio.Task] = []
 
-    def _build_invalidation_map(self):
+    def _build_invalidation_map(self) -> None:
         """Build reverse mapping for cache invalidation."""
         for tool_name, config in self.tool_configs.items():
             for invalidator in config.invalidate_on:
@@ -540,7 +540,7 @@ class MCPCache:
             interval_seconds: How often to warm cache
         """
 
-        async def warm_task():
+        async def warm_task() -> None:
             while True:
                 try:
                     await self.warm_cache(executor)
@@ -554,7 +554,7 @@ class MCPCache:
         task = asyncio.create_task(warm_task())
         self._warm_tasks.append(task)
 
-    def stop_background_warming(self):
+    def stop_background_warming(self) -> None:
         """Stop all background warming tasks."""
         for task in self._warm_tasks:
             task.cancel()
@@ -585,7 +585,7 @@ class MCPCache:
             ),
         }
 
-    def reset_metrics(self):
+    def reset_metrics(self) -> None:
         """Reset all metrics."""
         self.metrics = CacheMetrics()
 
@@ -655,12 +655,12 @@ def cache_tool_response(
 
     Usage:
         @cache_tool_response(cache, "my_tool")
-        async def my_tool_handler(args):
+        async def my_tool_handler(args) -> None:
             return expensive_operation(args)
     """
 
-    def decorator(func: Callable):
-        async def wrapper(arguments: dict[str, Any], **kwargs):
+    def decorator(func: Callable) -> None:
+        async def wrapper(arguments: dict[str, Any], **kwargs) -> None:
             nonlocal tool_name
             if tool_name is None:
                 tool_name = func.__name__

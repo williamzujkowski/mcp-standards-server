@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 class MCPStandardsServer:
     """MCP server for standards management."""
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.server = Server("mcp-standards-server")
 
@@ -130,7 +130,7 @@ class MCPStandardsServer:
         # Register tools
         self._register_tools()
 
-    def _register_tools(self):
+    def _register_tools(self) -> None:
         """Register all MCP tools."""
 
         @self.server.list_tools()
@@ -1420,7 +1420,7 @@ class MCPStandardsServer:
         """Get performance metrics dashboard."""
         return self.metrics.get_dashboard_metrics()
 
-    def _get_semantic_search_engine(self):
+    def _get_semantic_search_engine(self) -> None:
         """Get semantic search engine instance."""
         return self.search
 
@@ -1448,7 +1448,7 @@ class MCPStandardsServer:
         return {"standard_id": standard_id, "framework": framework, "mappings": []}
 
     @property
-    def rate_limiter(self):
+    def rate_limiter(self) -> None:
         """Get rate limiter for backwards compatibility."""
         return self
 
@@ -1474,7 +1474,7 @@ class MCPStandardsServer:
         self._rate_limit_store[user_key].append(now)
         return True
 
-    async def run(self):
+    async def run(self) -> None:
         """Run the MCP server."""
         # Start metrics export task
         await self.metrics.collector.start_export_task()
@@ -1496,7 +1496,7 @@ class MCPStandardsServer:
             self.metrics.update_active_connections(self._active_connections)
 
 
-async def main():
+async def main() -> None:
     """Main entry point for MCP server."""
     # Setup logging
     logging.basicConfig(

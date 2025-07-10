@@ -163,7 +163,7 @@ class AuthorizationError(MCPError):
 class ToolNotFoundError(MCPError):
     """Tool not found error."""
 
-    def __init__(self, tool_name: str):
+    def __init__(self, tool_name: str) -> None:
         super().__init__(
             code=ErrorCode.TOOL_NOT_FOUND,
             message=f"Tool '{tool_name}' not found",
@@ -175,7 +175,7 @@ class ToolNotFoundError(MCPError):
 class ResourceNotFoundError(MCPError):
     """Resource not found error."""
 
-    def __init__(self, resource_type: str, resource_id: str):
+    def __init__(self, resource_type: str, resource_id: str) -> None:
         super().__init__(
             code=ErrorCode.RESOURCE_NOT_FOUND,
             message=f"{resource_type} '{resource_id}' not found",
@@ -186,7 +186,7 @@ class ResourceNotFoundError(MCPError):
 class RateLimitError(MCPError):
     """Rate limit exceeded error."""
 
-    def __init__(self, limit: int, window: str, retry_after: int | None = None):
+    def __init__(self, limit: int, window: str, retry_after: int | None = None) -> None:
         super().__init__(
             code=ErrorCode.SYSTEM_RATE_LIMIT_EXCEEDED,
             message=f"Rate limit exceeded: {limit} requests per {window}",
@@ -217,7 +217,7 @@ class SecurityError(MCPError):
 class SecureErrorHandler:
     """Handles errors with security-first approach to prevent information leakage."""
 
-    def __init__(self, mask_errors: bool = True, log_errors: bool = True):
+    def __init__(self, mask_errors: bool = True, log_errors: bool = True) -> None:
         self.mask_errors = mask_errors
         self.log_errors = log_errors
         self.sensitive_patterns = [

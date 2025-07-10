@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 class CombinedServer:
     """Combined server that runs both MCP and HTTP servers."""
 
-    def __init__(self, mcp_config: dict | None = None):
+    def __init__(self, mcp_config: dict | None = None) -> None:
         self.mcp_config = mcp_config or {}
         self.mcp_server: MCPStandardsServer | None = None
         self.http_runner: Any | None = None

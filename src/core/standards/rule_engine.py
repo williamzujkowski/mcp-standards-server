@@ -206,7 +206,7 @@ class StandardRule:
 class RuleEngine:
     """Main rule engine for automatic standard selection."""
 
-    def __init__(self, rules_path: Path | None = None):
+    def __init__(self, rules_path: Path | None = None) -> None:
         """
         Initialize the rule engine.
 

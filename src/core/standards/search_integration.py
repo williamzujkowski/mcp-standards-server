@@ -38,7 +38,7 @@ class StandardsSearchIntegration:
         self.rule_engine = RuleEngine()
         self._indexed_standards = set()
 
-    def index_all_standards(self, force_reindex: bool = False):
+    def index_all_standards(self, force_reindex: bool = False) -> None:
         """
         Index all standards documents for searching.
 
@@ -343,7 +343,7 @@ class StandardsSearchIntegration:
         """Get search analytics report."""
         return self.search_engine.get_analytics_report()
 
-    def export_search_index(self, output_path: Path):
+    def export_search_index(self, output_path: Path) -> None:
         """Export the search index for backup or analysis."""
         index_data = {
             "documents": dict(self.search_engine.documents),
@@ -357,7 +357,7 @@ class StandardsSearchIntegration:
 
         logger.info(f"Exported search index to {output_path}")
 
-    def import_search_index(self, input_path: Path):
+    def import_search_index(self, input_path: Path) -> None:
         """Import a previously exported search index."""
         with open(input_path) as f:
             index_data = json.load(f)

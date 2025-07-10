@@ -50,7 +50,7 @@ class HealthCheckResult:
 class HealthChecker:
     """Comprehensive health checker for the MCP Standards Server."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.checks: dict[str, callable] = {}
         self.cache: dict[str, HealthCheckResult] = {}
         self.cache_ttl = 30  # seconds
@@ -59,7 +59,7 @@ class HealthChecker:
         # Register default health checks
         self._register_default_checks()
 
-    def _register_default_checks(self):
+    def _register_default_checks(self) -> None:
         """Register default health checks."""
         self.register_check("system_resources", self._check_system_resources)
         self.register_check("memory_usage", self._check_memory_usage)
@@ -68,7 +68,7 @@ class HealthChecker:
         self.register_check("chromadb_connection", self._check_chromadb_connection)
         self.register_check("standards_loaded", self._check_standards_loaded)
 
-    def register_check(self, name: str, check_func: callable):
+    def register_check(self, name: str, check_func: callable) -> None:
         """Register a new health check."""
         self.checks[name] = check_func
         logger.info(f"Registered health check: {name}")

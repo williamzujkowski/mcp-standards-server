@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class MCPServer:
     """Model Context Protocol server for standards management."""
 
-    def __init__(self, standards_engine=None):
+    def __init__(self, standards_engine=None) -> None:
         self.standards_engine = standards_engine
         self.handlers = {}
         self.running = False
@@ -26,7 +26,7 @@ class MCPServer:
         if standards_engine:
             self.handlers["standards"] = StandardsHandler(standards_engine)
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the MCP server."""
         logger.info("Starting MCP server...")
         self.running = True
@@ -38,7 +38,7 @@ class MCPServer:
 
         logger.info("MCP server started successfully")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the MCP server."""
         logger.info("Stopping MCP server...")
         self.running = False

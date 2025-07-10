@@ -86,7 +86,7 @@ class RateLimiter:
             print(f"Rate limit check failed: {e}")
             return True, None
 
-    def reset_limit(self, identifier: str):
+    def reset_limit(self, identifier: str) -> None:
         """Reset rate limit for an identifier."""
         if self.redis_client:
             key = f"{self.redis_prefix}:{identifier}"
@@ -96,7 +96,7 @@ class RateLimiter:
 class MultiTierRateLimiter:
     """Rate limiter with multiple tiers (per-minute, per-hour, per-day)."""
 
-    def __init__(self, redis_prefix: str = "mcp:ratelimit"):
+    def __init__(self, redis_prefix: str = "mcp:ratelimit") -> None:
         """Initialize multi-tier rate limiter."""
         self.tiers = {
             "minute": RateLimiter(100, 60, f"{redis_prefix}:minute"),
@@ -129,7 +129,7 @@ class MultiTierRateLimiter:
 
         return True, all_limits
 
-    def reset_all_limits(self, identifier: str):
+    def reset_all_limits(self, identifier: str) -> None:
         """Reset all rate limits for an identifier."""
         for limiter in self.tiers.values():
             limiter.reset_limit(identifier)
@@ -169,7 +169,7 @@ class AdaptiveRateLimiter:
 
         return self.base_limit
 
-    def update_reputation(self, identifier: str, is_good_request: bool):
+    def update_reputation(self, identifier: str, is_good_request: bool) -> None:
         """Update user reputation based on request behavior."""
         if not self.redis_client:
             return

@@ -108,7 +108,7 @@ class Recommendation:
 class StandardsAnalytics:
     """Comprehensive analytics system for standards."""
 
-    def __init__(self, analytics_dir: Path):
+    def __init__(self, analytics_dir: Path) -> None:
         """
         Initialize the analytics system.
 

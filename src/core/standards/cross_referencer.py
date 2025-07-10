@@ -61,7 +61,7 @@ class CrossReferenceResult:
 class CrossReferencer:
     """System for automated cross-referencing between standards."""
 
-    def __init__(self, standards_dir: Path, cache_dir: Path | None = None):
+    def __init__(self, standards_dir: Path, cache_dir: Path | None = None) -> None:
         """
         Initialize the cross-referencer.
 

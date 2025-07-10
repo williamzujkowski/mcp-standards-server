@@ -98,7 +98,7 @@ class StandardSection:
 class TokenCounter:
     """Accurate token counting for different models."""
 
-    def __init__(self, model_type: ModelType = ModelType.GPT4):
+    def __init__(self, model_type: ModelType = ModelType.GPT4) -> None:
         self.model_type = model_type
         self._encoders: dict[str, Any] = {}
         self._init_encoders()
@@ -898,7 +898,7 @@ class TokenOptimizer:
 class DynamicLoader:
     """Handles dynamic loading of standard sections."""
 
-    def __init__(self, optimizer: TokenOptimizer):
+    def __init__(self, optimizer: TokenOptimizer) -> None:
         self.optimizer = optimizer
         self._loaded_sections: defaultdict[str, set[str]] = defaultdict(set)
         self._loading_history: defaultdict[str, list[dict[str, Any]]] = defaultdict(

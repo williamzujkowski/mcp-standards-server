@@ -30,7 +30,7 @@ except (TypeError, ImportError) as e:
         # Mock aioredis for compatibility
         class MockRedis:
             @staticmethod
-            async def from_url(*args, **kwargs):
+            async def from_url(*args, **kwargs) -> None:
                 return None
 
         aioredis = type(
@@ -131,7 +131,7 @@ class QueryMetrics:
 class QueryCache:
     """Query result caching system."""
 
-    def __init__(self, config: QueryCacheConfig, redis_cache: RedisCache):
+    def __init__(self, config: QueryCacheConfig, redis_cache: RedisCache) -> None:
         self.config = config
         self.redis_cache = redis_cache
 
@@ -226,7 +226,7 @@ class QueryCache:
         except Exception as e:
             logger.error(f"Error caching result: {e}")
 
-    async def invalidate_cache(self, pattern: str):
+    async def invalidate_cache(self, pattern: str) -> None:
         """Invalidate cache entries matching pattern."""
         try:
             # Invalidate Redis cache
@@ -260,19 +260,19 @@ class QueryCache:
 class QueryBatcher:
     """Batches queries for more efficient database operations."""
 
-    def __init__(self, config: QueryCacheConfig):
+    def __init__(self, config: QueryCacheConfig) -> None:
         self.config = config
         self.batch_queue = asyncio.Queue()
         self.batch_results = {}
         self.batch_worker_task = None
         self.shutdown_event = asyncio.Event()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start batch processing."""
         if self.config.enable_query_batching:
             self.batch_worker_task = asyncio.create_task(self._batch_worker())
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop batch processing."""
         self.shutdown_event.set()
         if self.batch_worker_task:
@@ -300,7 +300,7 @@ class QueryBatcher:
         # Wait for result
         return await result_future
 
-    async def _batch_worker(self):
+    async def _batch_worker(self) -> None:
         """Worker task for processing query batches."""
         while not self.shutdown_event.is_set():
             try:
@@ -338,7 +338,7 @@ class QueryBatcher:
                 logger.error(f"Error in batch worker: {e}")
                 await asyncio.sleep(0.1)
 
-    async def _process_batch(self, batch: list[dict[str, Any]]):
+    async def _process_batch(self, batch: list[dict[str, Any]]) -> None:
         """Process a batch of queries."""
         # Group similar queries
         query_groups = defaultdict(list)
@@ -365,7 +365,7 @@ class QueryBatcher:
 class DatabaseOptimizer:
     """Main database optimization and caching system."""
 
-    def __init__(self, config: QueryCacheConfig | None = None):
+    def __init__(self, config: QueryCacheConfig | None = None) -> None:
         self.config = config or QueryCacheConfig()
         self.metrics = QueryMetrics()
 
@@ -393,14 +393,14 @@ class DatabaseOptimizer:
         # Performance monitoring
         self.performance_callbacks = []
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the database optimizer."""
         # Start batch processing
         await self.query_batcher.start()
 
         logger.info("Database optimizer initialized")
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the database optimizer."""
         # Stop batch processing
         await self.query_batcher.stop()
@@ -642,7 +642,7 @@ class DatabaseOptimizer:
         with self.prepared_statements_lock:
             return self.prepared_statements.get(query_hash)
 
-    def cache_prepared_statement(self, query: str, statement: str):
+    def cache_prepared_statement(self, query: str, statement: str) -> None:
         """Cache prepared statement."""
         if not self.config.enable_prepared_statements:
             return
@@ -652,16 +652,16 @@ class DatabaseOptimizer:
         with self.prepared_statements_lock:
             self.prepared_statements[query_hash] = statement
 
-    async def invalidate_cache_for_table(self, table_name: str):
+    async def invalidate_cache_for_table(self, table_name: str) -> None:
         """Invalidate cache for queries affecting a specific table."""
         pattern = f"*{table_name}*"
         await self.query_cache.invalidate_cache(pattern)
 
-    def add_performance_callback(self, callback: Callable):
+    def add_performance_callback(self, callback: Callable) -> None:
         """Add performance monitoring callback."""
         self.performance_callbacks.append(callback)
 
-    def remove_performance_callback(self, callback: Callable):
+    def remove_performance_callback(self, callback: Callable) -> None:
         """Remove performance monitoring callback."""
         if callback in self.performance_callbacks:
             self.performance_callbacks.remove(callback)
@@ -773,7 +773,7 @@ async def initialize_database_optimizer(
     return _global_optimizer
 
 
-async def shutdown_database_optimizer():
+async def shutdown_database_optimizer() -> None:
     """Shutdown global database optimizer."""
     global _global_optimizer
     if _global_optimizer:

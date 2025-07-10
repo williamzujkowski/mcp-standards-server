@@ -139,7 +139,7 @@ class PerformanceConfig:
 class MetricCollector:
     """Collects and stores performance metrics."""
 
-    def __init__(self, config: PerformanceConfig):
+    def __init__(self, config: PerformanceConfig) -> None:
         self.config = config
         self.metrics_registry = {}
         self.prometheus_registry = CollectorRegistry()
@@ -166,11 +166,11 @@ class MetricCollector:
         # Thread pool for async operations
         self.executor = ThreadPoolExecutor(max_workers=config.max_workers)
 
-    def set_redis_cache(self, redis_cache: RedisCache):
+    def set_redis_cache(self, redis_cache: RedisCache) -> None:
         """Set Redis cache for metric storage."""
         self.redis_cache = redis_cache
 
-    def register_metric(self, definition: MetricDefinition):
+    def register_metric(self, definition: MetricDefinition) -> None:
         """Register a new metric definition."""
         self.metrics_registry[definition.name] = definition
 
@@ -178,7 +178,7 @@ class MetricCollector:
         if self.config.enable_prometheus:
             self._create_prometheus_metric(definition)
 
-    def _create_prometheus_metric(self, definition: MetricDefinition):
+    def _create_prometheus_metric(self, definition: MetricDefinition) -> None:
         """Create Prometheus metric."""
         metric_kwargs = {
             "name": definition.name,
@@ -241,7 +241,7 @@ class MetricCollector:
         if self.config.enable_alerting:
             self._check_thresholds(name, value)
 
-    async def _store_metric_in_redis(self, name: str, metric_value: MetricValue):
+    async def _store_metric_in_redis(self, name: str, metric_value: MetricValue) -> None:
         """Store metric in Redis."""
         try:
             key = f"{self.config.redis_key_prefix}:{name}:{int(metric_value.timestamp)}"
@@ -255,13 +255,13 @@ class MetricCollector:
         except Exception as e:
             logger.error(f"Failed to store metric in Redis: {e}")
 
-    def add_threshold(self, threshold: PerformanceThreshold):
+    def add_threshold(self, threshold: PerformanceThreshold) -> None:
         """Add a performance threshold."""
         if threshold.metric_name not in self.thresholds:
             self.thresholds[threshold.metric_name] = []
         self.thresholds[threshold.metric_name].append(threshold)
 
-    def _check_thresholds(self, metric_name: str, value: float):
+    def _check_thresholds(self, metric_name: str, value: float) -> None:
         """Check if metric value exceeds thresholds."""
         if metric_name not in self.thresholds:
             return
@@ -312,7 +312,7 @@ class MetricCollector:
                         alert.resolved_at = current_time
                         self._trigger_alert(alert)
 
-    def _trigger_alert(self, alert: PerformanceAlert):
+    def _trigger_alert(self, alert: PerformanceAlert) -> None:
         """Trigger alert callbacks."""
         for callback in self.alert_callbacks:
             try:
@@ -323,11 +323,11 @@ class MetricCollector:
             except Exception as e:
                 logger.error(f"Error in alert callback: {e}")
 
-    def add_alert_callback(self, callback: Callable):
+    def add_alert_callback(self, callback: Callable) -> None:
         """Add alert callback."""
         self.alert_callbacks.append(callback)
 
-    def remove_alert_callback(self, callback: Callable):
+    def remove_alert_callback(self, callback: Callable) -> None:
         """Remove alert callback."""
         if callback in self.alert_callbacks:
             self.alert_callbacks.remove(callback)
@@ -387,14 +387,14 @@ class MetricCollector:
 
         return generate_latest(self.prometheus_registry).decode("utf-8")
 
-    async def start(self):
+    async def start(self) -> None:
         """Start metric collection."""
         if self.config.async_collection:
             self.collection_task = asyncio.create_task(self._collection_worker())
 
         logger.info("Metric collector started")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop metric collection."""
         self.shutdown_event.set()
 
@@ -408,7 +408,7 @@ class MetricCollector:
         self.executor.shutdown(wait=True)
         logger.info("Metric collector stopped")
 
-    async def _collection_worker(self):
+    async def _collection_worker(self) -> None:
         """Worker task for automatic metric collection."""
         while not self.shutdown_event.is_set():
             try:
@@ -423,7 +423,7 @@ class MetricCollector:
                 logger.error(f"Error in metric collection: {e}")
                 await asyncio.sleep(self.config.collection_interval)
 
-    async def _collect_system_metrics(self):
+    async def _collect_system_metrics(self) -> None:
         """Collect system performance metrics."""
         try:
             # CPU metrics
@@ -454,7 +454,7 @@ class MetricCollector:
 class PerformanceMonitor:
     """Main performance monitoring system."""
 
-    def __init__(self, config: PerformanceConfig | None = None):
+    def __init__(self, config: PerformanceConfig | None = None) -> None:
         self.config = config or PerformanceConfig()
         self.collector = MetricCollector(self.config)
         self.benchmarks = {}
@@ -466,7 +466,7 @@ class PerformanceMonitor:
         # Initialize standard thresholds
         self._register_standard_thresholds()
 
-    def _register_standard_metrics(self):
+    def _register_standard_metrics(self) -> None:
         """Register standard application metrics."""
         metrics = [
             # System metrics
@@ -581,7 +581,7 @@ class PerformanceMonitor:
         for metric in metrics:
             self.collector.register_metric(metric)
 
-    def _register_standard_thresholds(self):
+    def _register_standard_thresholds(self) -> None:
         """Register standard performance thresholds."""
         thresholds = [
             # System thresholds
@@ -668,11 +668,11 @@ class PerformanceMonitor:
         for threshold in thresholds:
             self.collector.add_threshold(threshold)
 
-    def set_redis_cache(self, redis_cache: RedisCache):
+    def set_redis_cache(self, redis_cache: RedisCache) -> None:
         """Set Redis cache for metric storage."""
         self.collector.set_redis_cache(redis_cache)
 
-    def register_metric(self, definition: MetricDefinition):
+    def register_metric(self, definition: MetricDefinition) -> None:
         """Register a custom metric."""
         self.collector.register_metric(definition)
 
@@ -682,15 +682,15 @@ class PerformanceMonitor:
         """Record a metric value."""
         self.collector.record_metric(name, value, labels)
 
-    def add_threshold(self, threshold: PerformanceThreshold):
+    def add_threshold(self, threshold: PerformanceThreshold) -> None:
         """Add a performance threshold."""
         self.collector.add_threshold(threshold)
 
-    def add_alert_callback(self, callback: Callable):
+    def add_alert_callback(self, callback: Callable) -> None:
         """Add alert callback."""
         self.collector.add_alert_callback(callback)
 
-    def time_operation(self, metric_name: str, labels: dict[str, str] | None = None):
+    def time_operation(self, metric_name: str, labels: dict[str, str] | None = None) -> None:
         """Context manager for timing operations."""
         return TimingContext(self, metric_name, labels)
 
@@ -788,13 +788,13 @@ class PerformanceMonitor:
         """Get Prometheus metrics."""
         return self.collector.get_prometheus_metrics()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start performance monitoring."""
         await self.collector.start()
         self.running = True
         logger.info("Performance monitor started")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop performance monitoring."""
         await self.collector.stop()
         self.running = False
@@ -815,11 +815,11 @@ class TimingContext:
         self.labels = labels or {}
         self.start_time = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.start_time:
             duration = time.time() - self.start_time
             self.monitor.record_metric(self.metric_name, duration, self.labels)
@@ -828,7 +828,7 @@ class TimingContext:
 class Benchmark:
     """Performance benchmark."""
 
-    def __init__(self, name: str, operation: Callable, monitor: PerformanceMonitor):
+    def __init__(self, name: str, operation: Callable, monitor: PerformanceMonitor) -> None:
         self.name = name
         self.operation = operation
         self.monitor = monitor
@@ -913,7 +913,7 @@ async def initialize_performance_monitor(
     return _global_monitor
 
 
-async def shutdown_performance_monitor():
+async def shutdown_performance_monitor() -> None:
     """Shutdown global performance monitor."""
     global _global_monitor
     if _global_monitor:
@@ -922,13 +922,13 @@ async def shutdown_performance_monitor():
 
 
 # Convenience functions
-def record_metric(name: str, value: float, labels: dict[str, str] | None = None):
+def record_metric(name: str, value: float, labels: dict[str, str] | None = None) -> None:
     """Record a metric using global monitor."""
     monitor = get_performance_monitor()
     monitor.record_metric(name, value, labels)
 
 
-def time_operation(metric_name: str, labels: dict[str, str] | None = None):
+def time_operation(metric_name: str, labels: dict[str, str] | None = None) -> None:
     """Time an operation using global monitor."""
     monitor = get_performance_monitor()
     return monitor.time_operation(metric_name, labels)

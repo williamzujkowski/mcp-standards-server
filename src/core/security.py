@@ -75,7 +75,7 @@ class SecurityHeaders:
 class InputSanitizer:
     """Sanitizes and validates input data."""
 
-    def __init__(self, config: SecurityConfig):
+    def __init__(self, config: SecurityConfig) -> None:
         self.config = config
 
     def sanitize_string(self, value: str, max_length: int | None = None) -> str:
@@ -172,7 +172,7 @@ class InputSanitizer:
 class SecurityValidator:
     """Validates requests for security issues."""
 
-    def __init__(self, config: SecurityConfig):
+    def __init__(self, config: SecurityConfig) -> None:
         self.config = config
         self.sanitizer = InputSanitizer(config)
 
@@ -276,7 +276,7 @@ class SecurityValidator:
 class SecurityMiddleware:
     """Main security middleware class."""
 
-    def __init__(self, config: SecurityConfig | None = None):
+    def __init__(self, config: SecurityConfig | None = None) -> None:
         self.config = config or SecurityConfig()
         self.validator = SecurityValidator(self.config)
         self.sanitizer = InputSanitizer(self.config)
