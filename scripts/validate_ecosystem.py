@@ -22,6 +22,7 @@ def validate_file_exists(filepath, description):
         print(f"❌ {description}: {filepath} - NOT FOUND")
         return False
 
+
 def validate_yaml_syntax(filepath, description):
     """Validate YAML file syntax."""
     try:
@@ -33,6 +34,7 @@ def validate_yaml_syntax(filepath, description):
         print(f"❌ {description}: Invalid YAML - {e}")
         return False
 
+
 def validate_python_syntax(filepath, description):
     """Validate Python file syntax."""
     try:
@@ -40,12 +42,13 @@ def validate_python_syntax(filepath, description):
         importlib.util.module_from_spec(spec)
         # Don't execute, just validate syntax
         with open(filepath) as f:
-            compile(f.read(), filepath, 'exec')
+            compile(f.read(), filepath, "exec")
         print(f"✅ {description}: Valid Python syntax")
         return True
     except Exception as e:
         print(f"❌ {description}: Invalid Python - {e}")
         return False
+
 
 def main():
     """Run ecosystem validation."""
@@ -55,81 +58,87 @@ def main():
 
     # Core documentation files
     print("📚 Core Documentation:")
-    validation_results.append(validate_file_exists(
-        "CONTRIBUTING_STANDARDS.md",
-        "Standards Contribution Guidelines"
-    ))
-    validation_results.append(validate_file_exists(
-        "docs/community/review-process.md",
-        "Community Review Process"
-    ))
-    validation_results.append(validate_file_exists(
-        "STANDARDS_ECOSYSTEM.md",
-        "Ecosystem Overview Documentation"
-    ))
+    validation_results.append(
+        validate_file_exists(
+            "CONTRIBUTING_STANDARDS.md", "Standards Contribution Guidelines"
+        )
+    )
+    validation_results.append(
+        validate_file_exists(
+            "docs/community/review-process.md", "Community Review Process"
+        )
+    )
+    validation_results.append(
+        validate_file_exists(
+            "STANDARDS_ECOSYSTEM.md", "Ecosystem Overview Documentation"
+        )
+    )
 
     # Core scripts
     print("\n🛠️  Core Scripts:")
-    validation_results.append(validate_file_exists(
-        "scripts/publish_standards.py",
-        "Publishing Pipeline Script"
-    ))
-    validation_results.append(validate_file_exists(
-        "scripts/reviewer_tools.py",
-        "Reviewer Management Tools"
-    ))
+    validation_results.append(
+        validate_file_exists(
+            "scripts/publish_standards.py", "Publishing Pipeline Script"
+        )
+    )
+    validation_results.append(
+        validate_file_exists("scripts/reviewer_tools.py", "Reviewer Management Tools")
+    )
 
     # Core modules
     print("\n🐍 Core Python Modules:")
-    validation_results.append(validate_file_exists(
-        "src/core/standards/versioning.py",
-        "Standards Versioning System"
-    ))
+    validation_results.append(
+        validate_file_exists(
+            "src/core/standards/versioning.py", "Standards Versioning System"
+        )
+    )
 
     # Configuration files
     print("\n⚙️  Configuration Files:")
-    validation_results.append(validate_file_exists(
-        "reviewer_config.yaml",
-        "Reviewer Configuration"
-    ))
-    validation_results.append(validate_file_exists(
-        ".github/workflows/review-automation.yml",
-        "GitHub Actions Workflow"
-    ))
+    validation_results.append(
+        validate_file_exists("reviewer_config.yaml", "Reviewer Configuration")
+    )
+    validation_results.append(
+        validate_file_exists(
+            ".github/workflows/review-automation.yml", "GitHub Actions Workflow"
+        )
+    )
 
     # Validate YAML syntax
     print("\n📝 YAML Syntax Validation:")
     if Path("reviewer_config.yaml").exists():
-        validation_results.append(validate_yaml_syntax(
-            "reviewer_config.yaml",
-            "Reviewer Configuration YAML"
-        ))
+        validation_results.append(
+            validate_yaml_syntax("reviewer_config.yaml", "Reviewer Configuration YAML")
+        )
 
     if Path(".github/workflows/review-automation.yml").exists():
-        validation_results.append(validate_yaml_syntax(
-            ".github/workflows/review-automation.yml",
-            "GitHub Actions Workflow YAML"
-        ))
+        validation_results.append(
+            validate_yaml_syntax(
+                ".github/workflows/review-automation.yml",
+                "GitHub Actions Workflow YAML",
+            )
+        )
 
     # Validate Python syntax
     print("\n🐍 Python Syntax Validation:")
     if Path("scripts/publish_standards.py").exists():
-        validation_results.append(validate_python_syntax(
-            "scripts/publish_standards.py",
-            "Publishing Pipeline Python"
-        ))
+        validation_results.append(
+            validate_python_syntax(
+                "scripts/publish_standards.py", "Publishing Pipeline Python"
+            )
+        )
 
     if Path("scripts/reviewer_tools.py").exists():
-        validation_results.append(validate_python_syntax(
-            "scripts/reviewer_tools.py",
-            "Reviewer Tools Python"
-        ))
+        validation_results.append(
+            validate_python_syntax("scripts/reviewer_tools.py", "Reviewer Tools Python")
+        )
 
     if Path("src/core/standards/versioning.py").exists():
-        validation_results.append(validate_python_syntax(
-            "src/core/standards/versioning.py",
-            "Versioning System Python"
-        ))
+        validation_results.append(
+            validate_python_syntax(
+                "src/core/standards/versioning.py", "Versioning System Python"
+            )
+        )
 
     # Check for required directories
     print("\n📁 Directory Structure:")
@@ -137,7 +146,7 @@ def main():
         "docs/community",
         "scripts",
         "src/core/standards",
-        ".github/workflows"
+        ".github/workflows",
     ]
 
     for directory in required_dirs:
@@ -165,6 +174,7 @@ def main():
     else:
         print("❌ Significant validation failures detected.")
         return 2
+
 
 if __name__ == "__main__":
     exit_code = main()

@@ -103,11 +103,11 @@ class MemoryProfiler:
             timestamp=time.time(),
             rss_mb=mem_info.rss / 1024 / 1024,
             vms_mb=mem_info.vms / 1024 / 1024,
-            shared_mb=getattr(mem_info, 'shared', 0) / 1024 / 1024,
+            shared_mb=getattr(mem_info, "shared", 0) / 1024 / 1024,
             available_mb=vm.available / 1024 / 1024,
             percent=vm.percent,
             current_mb=current,
-            peak_mb=peak
+            peak_mb=peak,
         )
 
     def _capture_allocations(self, limit: int = 10):
@@ -116,7 +116,7 @@ class MemoryProfiler:
             return
 
         snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('traceback')
+        top_stats = snapshot.statistics("traceback")
 
         self.allocations.clear()
 
@@ -126,13 +126,15 @@ class MemoryProfiler:
             for frame in stat.traceback:
                 tb_lines.append(f"{frame.filename}:{frame.lineno}")
 
-            self.allocations.append(AllocationTrace(
-                filename=stat.traceback[0].filename,
-                lineno=stat.traceback[0].lineno,
-                size_mb=stat.size / 1024 / 1024,
-                count=stat.count,
-                traceback=tb_lines
-            ))
+            self.allocations.append(
+                AllocationTrace(
+                    filename=stat.traceback[0].filename,
+                    lineno=stat.traceback[0].lineno,
+                    size_mb=stat.size / 1024 / 1024,
+                    count=stat.count,
+                    traceback=tb_lines,
+                )
+            )
 
     def get_summary(self) -> dict[str, Any]:
         """Get memory profiling summary."""
@@ -143,7 +145,8 @@ class MemoryProfiler:
 
         return {
             "samples": len(self.snapshots),
-            "duration_seconds": self.snapshots[-1].timestamp - self.snapshots[0].timestamp,
+            "duration_seconds": self.snapshots[-1].timestamp
+            - self.snapshots[0].timestamp,
             "rss": {
                 "min_mb": min(rss_values),
                 "max_mb": max(rss_values),
@@ -161,7 +164,7 @@ class MemoryProfiler:
                     "count": a.count,
                 }
                 for a in self.allocations[:5]
-            ]
+            ],
         }
 
     def detect_memory_leak(self, threshold_mb: float = 10.0) -> bool:
@@ -227,6 +230,7 @@ class TimeProfiler:
 
     def time_async(self, name: str | None = None):
         """Decorator for timing async functions."""
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
@@ -244,10 +248,12 @@ class TimeProfiler:
                     self.timings[label].append(elapsed)
 
             return wrapper
+
         return decorator
 
     def time_sync(self, name: str | None = None):
         """Decorator for timing sync functions."""
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -265,11 +271,13 @@ class TimeProfiler:
                     self.timings[label].append(elapsed)
 
             return wrapper
+
         return decorator
 
     def get_summary(self) -> dict[str, dict[str, float]]:
         """Get timing summary."""
         from .stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         summary = {}
@@ -284,7 +292,11 @@ class TimeProfiler:
                     "mean": stats.mean(times),
                     "median": stats.median(times),
                     "std_dev": stats.std_dev(times) if len(times) > 1 else 0,
-                    "p95": stats.percentiles(times, [95])[95] if len(times) > 1 else times[0],
+                    "p95": (
+                        stats.percentiles(times, [95])[95]
+                        if len(times) > 1
+                        else times[0]
+                    ),
                 }
 
         return summary
@@ -299,14 +311,14 @@ class TimeProfiler:
 
         # Sort by total time
         sorted_items = sorted(
-            summary.items(),
-            key=lambda x: x[1]["total"],
-            reverse=True
+            summary.items(), key=lambda x: x[1]["total"], reverse=True
         )[:top_n]
 
         print("\nTiming Summary:")
         print("-" * 80)
-        print(f"{'Function':<40} {'Count':>8} {'Total(s)':>10} {'Mean(ms)':>10} {'p95(ms)':>10}")
+        print(
+            f"{'Function':<40} {'Count':>8} {'Total(s)':>10} {'Mean(ms)':>10} {'p95(ms)':>10}"
+        )
         print("-" * 80)
 
         for name, data in sorted_items:

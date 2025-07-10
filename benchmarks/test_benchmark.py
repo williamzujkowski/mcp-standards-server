@@ -25,7 +25,7 @@ async def test_mcp_server():
         config = {
             "search": {"enabled": False},
             "token_model": "gpt-4",
-            "default_token_budget": 8000
+            "default_token_budget": 8000,
         }
         server = MCPStandardsServer(config)
 
@@ -67,11 +67,7 @@ async def test_rule_engine():
         rule_engine = RuleEngine()
 
         # Test with sample context
-        context = {
-            "language": "python",
-            "framework": "fastapi",
-            "project_type": "api"
-        }
+        context = {"language": "python", "framework": "fastapi", "project_type": "api"}
 
         matches = rule_engine.evaluate(context)
         print("✓ Rule Engine initialized")
@@ -110,14 +106,12 @@ async def test_token_optimizer():
         test_content = {
             "title": "Test Standard",
             "description": "This is a test standard for benchmarking",
-            "sections": ["Section 1", "Section 2", "Section 3"]
+            "sections": ["Section 1", "Section 2", "Section 3"],
         }
 
         # Test get_optimized_content
         optimized = optimizer.get_optimized_content(
-            test_content,
-            format_type="condensed",
-            token_budget=100
+            test_content, format_type="condensed", token_budget=100
         )
         print("✓ Token Optimizer initialized")
         print(f"  Optimized content type: {type(optimized)}")
@@ -138,7 +132,7 @@ async def main():
         test_standards_engine,
         test_rule_engine,
         test_semantic_search,
-        test_token_optimizer
+        test_token_optimizer,
     ]
 
     results = []

@@ -1,6 +1,7 @@
 """
 Adapter for the StandardsEngine to work with the web UI
 """
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -9,18 +10,22 @@ from typing import Any
 @dataclass
 class SearchResult:
     """Search result with standard and metadata"""
+
     standard: Any
     score: float
     highlights: dict[str, list[str]]
 
+
 @dataclass
 class AnalysisResult:
     """Analysis result with recommendations"""
+
     standard: Any
     relevance_score: float
     confidence: float
     reasoning: str
     implementation_notes: str
+
 
 class StandardsEngine:
     """Adapter for the standards engine with async support"""
@@ -48,27 +53,35 @@ class StandardsEngine:
                 with open(yaml_file) as f:
                     data = yaml.safe_load(f)
 
-                if isinstance(data, dict) and 'standards' in data:
-                    category = yaml_file.stem.replace('_STANDARDS', '').replace('_', ' ').title()
+                if isinstance(data, dict) and "standards" in data:
+                    category = (
+                        yaml_file.stem.replace("_STANDARDS", "")
+                        .replace("_", " ")
+                        .title()
+                    )
                     self._standards_cache[category] = []
 
-                    for std in data['standards']:
+                    for std in data["standards"]:
                         # Create standard object
-                        standard = type('Standard', (), {
-                            'id': std.get('id', ''),
-                            'title': std.get('title', ''),
-                            'description': std.get('description', ''),
-                            'category': category,
-                            'subcategory': std.get('subcategory', ''),
-                            'tags': std.get('tags', []),
-                            'priority': std.get('priority', 'medium'),
-                            'version': std.get('version', '1.0.0'),
-                            'examples': std.get('examples', []),
-                            'rules': std.get('rules', {}),
-                            'created_at': None,
-                            'updated_at': None,
-                            'metadata': std.get('metadata', {})
-                        })()
+                        standard = type(
+                            "Standard",
+                            (),
+                            {
+                                "id": std.get("id", ""),
+                                "title": std.get("title", ""),
+                                "description": std.get("description", ""),
+                                "category": category,
+                                "subcategory": std.get("subcategory", ""),
+                                "tags": std.get("tags", []),
+                                "priority": std.get("priority", "medium"),
+                                "version": std.get("version", "1.0.0"),
+                                "examples": std.get("examples", []),
+                                "rules": std.get("rules", {}),
+                                "created_at": None,
+                                "updated_at": None,
+                                "metadata": std.get("metadata", {}),
+                            },
+                        )()
 
                         self._standards_cache[category].append(standard)
 
@@ -77,11 +90,17 @@ class StandardsEngine:
                             self._tags_cache.add(tag)
 
                     # Add category
-                    self._categories_cache.append(type('Category', (), {
-                        'name': category,
-                        'description': data.get('description', ''),
-                        'count': len(self._standards_cache[category])
-                    })())
+                    self._categories_cache.append(
+                        type(
+                            "Category",
+                            (),
+                            {
+                                "name": category,
+                                "description": data.get("description", ""),
+                                "count": len(self._standards_cache[category]),
+                            },
+                        )()
+                    )
 
             except Exception as e:
                 print(f"Error loading {yaml_file}: {e}")
@@ -106,7 +125,7 @@ class StandardsEngine:
         query: str,
         category: str | None = None,
         tags: list[str] | None = None,
-        limit: int = 20
+        limit: int = 20,
     ) -> list[SearchResult]:
         """Search standards with optional filters"""
         results = []
@@ -119,15 +138,15 @@ class StandardsEngine:
             for standard in standards_list:
                 # Simple text matching
                 score = 0.0
-                highlights = {'title': [], 'description': []}
+                highlights = {"title": [], "description": []}
 
                 if query_lower in standard.title.lower():
                     score += 0.5
-                    highlights['title'].append(query)
+                    highlights["title"].append(query)
 
                 if query_lower in standard.description.lower():
                     score += 0.3
-                    highlights['description'].append(query)
+                    highlights["description"].append(query)
 
                 if tags:
                     matching_tags = set(tags) & set(standard.tags)
@@ -135,11 +154,13 @@ class StandardsEngine:
                         score += 0.2 * len(matching_tags)
 
                 if score > 0:
-                    results.append(SearchResult(
-                        standard=standard,
-                        score=min(score, 1.0),
-                        highlights=highlights
-                    ))
+                    results.append(
+                        SearchResult(
+                            standard=standard,
+                            score=min(score, 1.0),
+                            highlights=highlights,
+                        )
+                    )
 
         # Sort by score
         results.sort(key=lambda x: x.score, reverse=True)
@@ -158,14 +179,14 @@ class StandardsEngine:
                 # Match languages
                 if context.languages:
                     for lang in context.languages:
-                        if lang.lower() in ' '.join(standard.tags).lower():
+                        if lang.lower() in " ".join(standard.tags).lower():
                             score += 0.3
                             reasoning.append(f"Matches language: {lang}")
 
                 # Match frameworks
                 if context.frameworks:
                     for fw in context.frameworks:
-                        if fw.lower() in ' '.join(standard.tags).lower():
+                        if fw.lower() in " ".join(standard.tags).lower():
                             score += 0.3
                             reasoning.append(f"Matches framework: {fw}")
 
@@ -173,23 +194,27 @@ class StandardsEngine:
                 if context.project_type:
                     if context.project_type.lower() in standard.description.lower():
                         score += 0.2
-                        reasoning.append(f"Relevant for {context.project_type} projects")
+                        reasoning.append(
+                            f"Relevant for {context.project_type} projects"
+                        )
 
                 # Match compliance requirements
                 if context.compliance_requirements:
                     for req in context.compliance_requirements:
-                        if req.lower() in ' '.join(standard.tags).lower():
+                        if req.lower() in " ".join(standard.tags).lower():
                             score += 0.4
                             reasoning.append(f"Addresses compliance: {req}")
 
                 if score > 0.2:  # Threshold for relevance
-                    recommendations.append(AnalysisResult(
-                        standard=standard,
-                        relevance_score=min(score, 1.0),
-                        confidence=0.8 if score > 0.5 else 0.6,
-                        reasoning=' '.join(reasoning),
-                        implementation_notes=f"Consider implementing {standard.title} to improve your {context.project_type} project."
-                    ))
+                    recommendations.append(
+                        AnalysisResult(
+                            standard=standard,
+                            relevance_score=min(score, 1.0),
+                            confidence=0.8 if score > 0.5 else 0.6,
+                            reasoning=" ".join(reasoning),
+                            implementation_notes=f"Consider implementing {standard.title} to improve your {context.project_type} project.",
+                        )
+                    )
 
         # Sort by relevance
         recommendations.sort(key=lambda x: x.relevance_score, reverse=True)

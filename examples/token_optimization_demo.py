@@ -28,9 +28,9 @@ class TokenOptimizationDemo:
     def create_sample_standard(self) -> dict[str, Any]:
         """Create a sample standard for demonstration."""
         return {
-            'id': 'demo-standard',
-            'name': 'Demonstration Standard',
-            'content': """# React Best Practices Standard
+            "id": "demo-standard",
+            "name": "Demonstration Standard",
+            "content": """# React Best Practices Standard
 
 ## Overview
 
@@ -264,7 +264,7 @@ describe('UserProfile', () => {
 - [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app)
 - [React Performance Optimization](https://react.dev/learn/render-and-commit)
 - [Testing React Applications](https://testing-library.com/docs/react-testing-library/intro)
-"""
+""",
         }
 
     async def demo_format_comparison(self):
@@ -272,16 +272,18 @@ describe('UserProfile', () => {
         print("=== Format Comparison Demo ===\n")
 
         standard = self.create_sample_standard()
-        formats = [StandardFormat.FULL, StandardFormat.CONDENSED,
-                  StandardFormat.REFERENCE, StandardFormat.SUMMARY]
+        formats = [
+            StandardFormat.FULL,
+            StandardFormat.CONDENSED,
+            StandardFormat.REFERENCE,
+            StandardFormat.SUMMARY,
+        ]
 
         for format_type in formats:
             print(f"\n--- {format_type.value.upper()} FORMAT ---")
 
             content, result = self.optimizer.optimize_standard(
-                standard,
-                format_type=format_type,
-                budget=TokenBudget(total=8000)
+                standard, format_type=format_type, budget=TokenBudget(total=8000)
             )
 
             print(f"Original tokens: {result.original_tokens}")
@@ -308,9 +310,7 @@ describe('UserProfile', () => {
             selected_format = self.optimizer.auto_select_format(standard, budget)
 
             content, result = self.optimizer.optimize_standard(
-                standard,
-                format_type=selected_format,
-                budget=budget
+                standard, format_type=selected_format, budget=budget
             )
 
             print(f"Auto-selected format: {selected_format.value}")
@@ -329,29 +329,29 @@ describe('UserProfile', () => {
 
         contexts = [
             {
-                'name': 'Beginner Developer',
-                'context': {
-                    'user_expertise': 'beginner',
-                    'focus_areas': ['examples', 'implementation'],
-                    'query_type': 'learning'
-                }
+                "name": "Beginner Developer",
+                "context": {
+                    "user_expertise": "beginner",
+                    "focus_areas": ["examples", "implementation"],
+                    "query_type": "learning",
+                },
             },
             {
-                'name': 'Expert Quick Lookup',
-                'context': {
-                    'user_expertise': 'expert',
-                    'focus_areas': ['performance', 'security'],
-                    'query_type': 'quick_lookup'
-                }
+                "name": "Expert Quick Lookup",
+                "context": {
+                    "user_expertise": "expert",
+                    "focus_areas": ["performance", "security"],
+                    "query_type": "quick_lookup",
+                },
             },
             {
-                'name': 'Security Audit',
-                'context': {
-                    'user_expertise': 'intermediate',
-                    'focus_areas': ['security'],
-                    'query_type': 'detailed_explanation'
-                }
-            }
+                "name": "Security Audit",
+                "context": {
+                    "user_expertise": "intermediate",
+                    "focus_areas": ["security"],
+                    "query_type": "detailed_explanation",
+                },
+            },
         ]
 
         for ctx in contexts:
@@ -361,12 +361,14 @@ describe('UserProfile', () => {
                 standard,
                 format_type=StandardFormat.CUSTOM,
                 budget=TokenBudget(total=3000),
-                context=ctx['context']
+                context=ctx["context"],
             )
 
             print(f"Format used: {result.format_used.value}")
             print(f"Tokens: {result.compressed_tokens}")
-            print(f"Focus sections: {[s for s in result.sections_included if any(f in s for f in ctx['context'].get('focus_areas', []))]}")
+            print(
+                f"Focus sections: {[s for s in result.sections_included if any(f in s for f in ctx['context'].get('focus_areas', []))]}"
+            )
 
     async def demo_progressive_loading(self):
         """Demonstrate progressive loading."""
@@ -376,9 +378,7 @@ describe('UserProfile', () => {
 
         # Generate loading plan
         loading_plan = self.optimizer.progressive_load(
-            standard,
-            initial_sections=['overview'],
-            max_depth=3
+            standard, initial_sections=["overview"], max_depth=3
         )
 
         print("Loading Plan:")
@@ -399,11 +399,9 @@ describe('UserProfile', () => {
         budget = TokenBudget(total=2000)
         loaded_tokens = 0
 
-        for section_id in ['overview', 'requirements', 'security']:
+        for section_id in ["overview", "requirements", "security"]:
             content, tokens = self.dynamic_loader.load_section(
-                'demo-standard',
-                section_id,
-                budget
+                "demo-standard", section_id, budget
             )
 
             if loaded_tokens + tokens <= budget.available:
@@ -415,13 +413,12 @@ describe('UserProfile', () => {
 
         # Get loading suggestions
         context = {
-            'recent_queries': ['How to implement security?', 'Performance tips'],
-            'user_expertise': 'intermediate'
+            "recent_queries": ["How to implement security?", "Performance tips"],
+            "user_expertise": "intermediate",
         }
 
         suggestions = self.dynamic_loader.get_loading_suggestions(
-            'demo-standard',
-            context
+            "demo-standard", context
         )
 
         print(f"\nSuggested sections to load next: {suggestions}")
@@ -500,9 +497,9 @@ describe('UserProfile', () => {
         stats = self.optimizer.get_compression_stats()
         print("\nCache Statistics:")
         print(f"- Cache size: {stats['cache_size']} entries")
-        if 'average_compression_ratio' in stats:
+        if "average_compression_ratio" in stats:
             print(f"- Average compression: {stats['average_compression_ratio']:.2%}")
-        if 'format_usage' in stats:
+        if "format_usage" in stats:
             print(f"- Format usage: {json.dumps(stats['format_usage'], indent=2)}")
 
 
@@ -512,5 +509,5 @@ async def main():
     await demo.run_all_demos()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

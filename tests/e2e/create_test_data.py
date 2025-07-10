@@ -43,5 +43,6 @@ def main():
     if sync_file.exists():
         print(f"\nCreated sync config: {sync_file}")
 
+
 if __name__ == "__main__":
     main()

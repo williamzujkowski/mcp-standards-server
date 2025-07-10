@@ -117,7 +117,10 @@ class StandardsHandler:
                     "properties": {
                         "standard_id": {"type": "string", "description": "Standard ID"},
                         "code": {"type": "string", "description": "Code to validate"},
-                        "file_path": {"type": "string", "description": "Path to file to validate"},
+                        "file_path": {
+                            "type": "string",
+                            "description": "Path to file to validate",
+                        },
                     },
                     "required": ["standard_id"],
                 },
@@ -184,7 +187,10 @@ class StandardsHandler:
                     return {"error": f"Standard not found: {args.get('standard_id')}"}
 
                 # Apply token optimization if available
-                if hasattr(self.standards_engine, "token_optimizer") and self.standards_engine.token_optimizer:
+                if (
+                    hasattr(self.standards_engine, "token_optimizer")
+                    and self.standards_engine.token_optimizer
+                ):
                     format_type_str = args.get("format", "condensed")
 
                     # Import and convert to enum
@@ -197,7 +203,9 @@ class StandardsHandler:
                         "reference": StandardFormat.REFERENCE,
                         "summary": StandardFormat.SUMMARY,
                     }
-                    format_type = format_map.get(format_type_str, StandardFormat.CONDENSED)
+                    format_type = format_map.get(
+                        format_type_str, StandardFormat.CONDENSED
+                    )
 
                     # Convert Standard to dict for optimizer
                     standard_dict = {
@@ -208,18 +216,30 @@ class StandardsHandler:
                         "category": standard.category,
                         "tags": standard.tags,
                         "version": standard.version,
-                        "metadata": standard.metadata.__dict__ if hasattr(standard.metadata, '__dict__') else {},
+                        "metadata": (
+                            standard.metadata.__dict__
+                            if hasattr(standard.metadata, "__dict__")
+                            else {}
+                        ),
                     }
-                    optimized_content, compression_result = self.standards_engine.token_optimizer.optimize_standard(
-                        standard_dict, format_type
+                    optimized_content, compression_result = (
+                        self.standards_engine.token_optimizer.optimize_standard(
+                            standard_dict, format_type
+                        )
                     )
-                    return {"result": {
-                        "id": standard.id,
-                        "title": standard.title,
-                        "content": optimized_content,
-                        "format": format_type_str,
-                        "compression": compression_result.__dict__ if hasattr(compression_result, '__dict__') else compression_result
-                    }}
+                    return {
+                        "result": {
+                            "id": standard.id,
+                            "title": standard.title,
+                            "content": optimized_content,
+                            "format": format_type_str,
+                            "compression": (
+                                compression_result.__dict__
+                                if hasattr(compression_result, "__dict__")
+                                else compression_result
+                            ),
+                        }
+                    }
                 else:
                     # Return standard as-is if no optimizer
                     return {"result": standard}
@@ -235,7 +255,7 @@ class StandardsHandler:
                     "valid": True,
                     "issues": [],
                     "warnings": [],
-                    "info": "Validation not fully implemented yet"
+                    "info": "Validation not fully implemented yet",
                 }
                 return {"result": result}
 
@@ -251,11 +271,13 @@ class StandardsHandler:
                         if hasattr(standard.metadata, "nist_controls"):
                             for control in standard.metadata.nist_controls:
                                 if not control_id or control == control_id:
-                                    mappings.append({
-                                        "standard_id": std_id,
-                                        "control_id": control,
-                                        "standard_title": standard.title,
-                                    })
+                                    mappings.append(
+                                        {
+                                            "standard_id": std_id,
+                                            "control_id": control,
+                                            "standard_title": standard.title,
+                                        }
+                                    )
 
                 return {"result": mappings}
 

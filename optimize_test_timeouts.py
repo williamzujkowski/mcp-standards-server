@@ -16,6 +16,7 @@ SLOW_TEST_PATTERNS = [
     (r"test_sync", 15),
 ]
 
+
 def add_timeout_marker(file_path, test_name, timeout):
     """Add timeout marker to a test function."""
     with open(file_path) as f:
@@ -33,14 +34,15 @@ def add_timeout_marker(file_path, test_name, timeout):
     new_content = re.sub(pattern, replacement, content)
 
     if new_content != content:
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             f.write(new_content)
         return True
     return False
 
+
 def process_test_file(file_path):
     """Process a test file to add timeout markers."""
-    if not file_path.endswith('.py'):
+    if not file_path.endswith(".py"):
         return
 
     with open(file_path) as f:
@@ -60,6 +62,7 @@ def process_test_file(file_path):
 
     return modified
 
+
 def main():
     """Main entry point."""
     test_dirs = ["tests/unit", "tests/integration", "tests/e2e", "tests/performance"]
@@ -77,6 +80,7 @@ def main():
                         total_modified += 1
 
     print(f"\nModified {total_modified} test files with timeout markers.")
+
 
 if __name__ == "__main__":
     main()

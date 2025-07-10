@@ -64,14 +64,12 @@ async def run_full_benchmarks():
     suite.add_benchmark(MCPResponseTimeBenchmark(iterations=100))
 
     # Throughput benchmarks
-    suite.add_benchmark(MCPThroughputBenchmark(
-        concurrent_clients=10,
-        duration_seconds=30
-    ))
-    suite.add_benchmark(MCPThroughputBenchmark(
-        concurrent_clients=50,
-        duration_seconds=30
-    ))
+    suite.add_benchmark(
+        MCPThroughputBenchmark(concurrent_clients=10, duration_seconds=30)
+    )
+    suite.add_benchmark(
+        MCPThroughputBenchmark(concurrent_clients=50, duration_seconds=30)
+    )
 
     # Latency distribution
     suite.add_benchmark(MCPLatencyBenchmark(iterations=500))
@@ -102,7 +100,9 @@ async def run_full_benchmarks():
             # Create dashboard
             fig = visualizer.create_dashboard(latest_result)
             if fig:  # Only save if visualization is available
-                fig.savefig(output_dir / f"{benchmark_name.replace(' ', '_')}_dashboard.png")
+                fig.savefig(
+                    output_dir / f"{benchmark_name.replace(' ', '_')}_dashboard.png"
+                )
 
     visualizer.close_all()
 
@@ -124,7 +124,7 @@ async def run_stress_tests():
             user_count=50,
             spawn_rate=2.0,
             test_duration=120,  # 2 minutes
-            scenario=scenario
+            scenario=scenario,
         )
 
         result = await benchmark.run()
@@ -143,10 +143,7 @@ async def run_memory_growth_analysis():
     """Run extended memory growth analysis."""
     print("Running memory growth analysis (this will take several minutes)...")
 
-    benchmark = MemoryGrowthBenchmark(
-        duration_minutes=5,
-        sample_interval=1.0
-    )
+    benchmark = MemoryGrowthBenchmark(duration_minutes=5, sample_interval=1.0)
 
     result = await benchmark.run()
 
@@ -204,24 +201,22 @@ async def run_continuous_monitoring(duration_minutes: int = 10):
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="MCP Standards Server Performance Benchmarks")
+    parser = argparse.ArgumentParser(
+        description="MCP Standards Server Performance Benchmarks"
+    )
     parser.add_argument(
         "--mode",
         choices=["quick", "full", "stress", "memory", "monitor"],
         default="quick",
-        help="Benchmark mode to run"
+        help="Benchmark mode to run",
     )
     parser.add_argument(
         "--duration",
         type=int,
         default=10,
-        help="Duration in minutes (for monitoring mode)"
+        help="Duration in minutes (for monitoring mode)",
     )
-    parser.add_argument(
-        "--output",
-        type=str,
-        help="Output directory for results"
-    )
+    parser.add_argument("--output", type=str, help="Output directory for results")
 
     args = parser.parse_args()
 

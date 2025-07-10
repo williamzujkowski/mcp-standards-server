@@ -9,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-
 from src.analyzers.base import AnalyzerPlugin
 from src.analyzers.go_analyzer import GoAnalyzer
 from src.analyzers.java_analyzer import JavaAnalyzer
@@ -21,7 +20,9 @@ class AnalyzerBenchmark:
     """Benchmark analyzer performance."""
 
     def __init__(self):
-        self.examples_dir = Path(__file__).parent.parent / "examples" / "analyzer-test-samples"
+        self.examples_dir = (
+            Path(__file__).parent.parent / "examples" / "analyzer-test-samples"
+        )
         self.results = {}
 
     def run_benchmarks(self, iterations: int = 10):
@@ -32,7 +33,7 @@ class AnalyzerBenchmark:
             "go": self.examples_dir / "go-example.go",
             "java": self.examples_dir / "java-example.java",
             "rust": self.examples_dir / "rust-example.rs",
-            "typescript": self.examples_dir / "typescript-example.tsx"
+            "typescript": self.examples_dir / "typescript-example.tsx",
         }
 
         for language, file_path in test_files.items():
@@ -61,17 +62,19 @@ class AnalyzerBenchmark:
                         "file_size": file_path.stat().st_size,
                         "lines": len(file_path.read_text().splitlines()),
                         "issues_found": len(result.issues),
-                        "issue_breakdown": self._get_issue_breakdown(result)
+                        "issue_breakdown": self._get_issue_breakdown(result),
                     }
 
             # Calculate statistics
-            self.results[language].update({
-                "min_time": min(times),
-                "max_time": max(times),
-                "avg_time": statistics.mean(times),
-                "median_time": statistics.median(times),
-                "std_dev": statistics.stdev(times) if len(times) > 1 else 0
-            })
+            self.results[language].update(
+                {
+                    "min_time": min(times),
+                    "max_time": max(times),
+                    "avg_time": statistics.mean(times),
+                    "median_time": statistics.median(times),
+                    "std_dev": statistics.stdev(times) if len(times) > 1 else 0,
+                }
+            )
 
         self._print_results()
 
@@ -96,9 +99,9 @@ class AnalyzerBenchmark:
             print(f"Lines of code: {data['lines']}")
             print(f"Total issues found: {data['issues_found']}")
 
-            if data['issue_breakdown']:
+            if data["issue_breakdown"]:
                 print("\nIssue breakdown:")
-                for issue_type, count in sorted(data['issue_breakdown'].items()):
+                for issue_type, count in sorted(data["issue_breakdown"].items()):
                     print(f"  - {issue_type}: {count}")
 
             print("\nPerformance (seconds):")
@@ -109,7 +112,7 @@ class AnalyzerBenchmark:
             print(f"  - Std Dev: {data['std_dev']:.4f}")
 
             # Calculate throughput
-            throughput = data['lines'] / data['avg_time']
+            throughput = data["lines"] / data["avg_time"]
             print(f"  - Throughput: {throughput:.0f} lines/second")
             print()
 
@@ -125,8 +128,8 @@ class AnalyzerBenchmark:
         # Speed comparison
         print("Speed Ranking (fastest to slowest):")
         speed_ranking = sorted(
-            [(lang, data['avg_time']) for lang, data in self.results.items()],
-            key=lambda x: x[1]
+            [(lang, data["avg_time"]) for lang, data in self.results.items()],
+            key=lambda x: x[1],
         )
 
         for i, (lang, avg_time) in enumerate(speed_ranking, 1):
@@ -135,14 +138,14 @@ class AnalyzerBenchmark:
         # Issue detection comparison
         print("\nIssue Detection:")
         for lang, data in self.results.items():
-            issues_per_line = data['issues_found'] / data['lines']
+            issues_per_line = data["issues_found"] / data["lines"]
             print(f"- {lang}: {issues_per_line:.2f} issues per line")
 
         # Efficiency score (issues found per second)
         print("\nEfficiency (issues detected per second):")
         efficiency = []
         for lang, data in self.results.items():
-            eff = data['issues_found'] / data['avg_time']
+            eff = data["issues_found"] / data["avg_time"]
             efficiency.append((lang, eff))
 
         efficiency.sort(key=lambda x: x[1], reverse=True)

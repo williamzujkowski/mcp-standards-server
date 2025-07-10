@@ -19,6 +19,7 @@ from ..framework import BaseBenchmark
 @dataclass
 class User:
     """Simulated user for load testing."""
+
     id: int
     task_weights: dict[str, float]
     think_time_range: tuple[float, float] = (0.1, 2.0)
@@ -42,7 +43,7 @@ class StressTestBenchmark(BaseBenchmark):
         user_count: int = 50,
         spawn_rate: float = 2.0,  # users per second
         test_duration: int = 300,  # seconds
-        scenario: str = "mixed"
+        scenario: str = "mixed",
     ):
         super().__init__(f"Stress Test ({scenario})", 1)
         self.user_count = user_count
@@ -59,10 +60,9 @@ class StressTestBenchmark(BaseBenchmark):
 
     async def setup(self):
         """Setup test environment."""
-        self.server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
 
         # Create test data
         await self._create_test_data()
@@ -102,9 +102,13 @@ class StressTestBenchmark(BaseBenchmark):
             "total_requests": self.total_requests,
             "total_failures": self.total_failures,
             "requests_per_second": self.total_requests / total_time,
-            "failure_rate": self.total_failures / self.total_requests if self.total_requests > 0 else 0,
+            "failure_rate": (
+                self.total_failures / self.total_requests
+                if self.total_requests > 0
+                else 0
+            ),
             "request_stats": self._calculate_request_stats(),
-            "peak_users": self.user_count
+            "peak_users": self.user_count,
         }
 
     async def _spawn_users(self):
@@ -145,25 +149,14 @@ class StressTestBenchmark(BaseBenchmark):
                 "search": 15,
                 "get_applicable": 15,
                 "optimize_token": 10,
-                "validate": 10
+                "validate": 10,
             }
         elif self.scenario == "read_heavy":
-            task_weights = {
-                "get_standard": 50,
-                "list_standards": 30,
-                "search": 20
-            }
+            task_weights = {"get_standard": 50, "list_standards": 30, "search": 20}
         elif self.scenario == "compute_heavy":
-            task_weights = {
-                "optimize_token": 40,
-                "validate": 30,
-                "get_applicable": 30
-            }
+            task_weights = {"optimize_token": 40, "validate": 30, "get_applicable": 30}
         elif self.scenario == "search_heavy":
-            task_weights = {
-                "search": 60,
-                "get_applicable": 40
-            }
+            task_weights = {"search": 60, "get_applicable": 40}
         else:
             # Default mixed
             task_weights = {"get_standard": 100}
@@ -204,34 +197,27 @@ class StressTestBenchmark(BaseBenchmark):
 
             elif task_name == "search":
                 queries = ["test", "performance", "security", "react", "python"]
-                await self.server._search_standards(
-                    random.choice(queries),
-                    limit=20
-                )
+                await self.server._search_standards(random.choice(queries), limit=20)
 
             elif task_name == "get_applicable":
                 contexts = [
                     {"language": "python"},
                     {"language": "javascript", "framework": "react"},
-                    {"language": "java", "framework": "spring"}
+                    {"language": "java", "framework": "spring"},
                 ]
-                await self.server._get_applicable_standards(
-                    random.choice(contexts)
-                )
+                await self.server._get_applicable_standards(random.choice(contexts))
 
             elif task_name == "optimize_token":
                 std_id = f"stress-test-{random.randint(0, 4)}"
                 await self.server._get_optimized_standard(
                     std_id,
                     format_type=random.choice(["condensed", "summary"]),
-                    token_budget=random.randint(1000, 5000)
+                    token_budget=random.randint(1000, 5000),
                 )
 
             elif task_name == "validate":
                 await self.server._validate_against_standard(
-                    "def test(): pass",
-                    "python-pep8",
-                    "python"
+                    "def test(): pass", "python-pep8", "python"
                 )
 
             success = True
@@ -253,9 +239,9 @@ class StressTestBenchmark(BaseBenchmark):
                 "count": 0,
                 "failures": 0,
                 "total_time": 0,
-                "min_time": float('inf'),
+                "min_time": float("inf"),
                 "max_time": 0,
-                "response_times": []
+                "response_times": [],
             }
 
         stats = self.request_stats[task_name]
@@ -294,9 +280,11 @@ class StressTestBenchmark(BaseBenchmark):
             if stats["count"] > 0:
                 avg_time = stats["total_time"] / stats["count"]
                 failure_rate = stats["failures"] / stats["count"] * 100
-                print(f"  {task_name}: {stats['count']} reqs, "
-                      f"{avg_time*1000:.1f}ms avg, "
-                      f"{failure_rate:.1f}% fail")
+                print(
+                    f"  {task_name}: {stats['count']} reqs, "
+                    f"{avg_time*1000:.1f}ms avg, "
+                    f"{failure_rate:.1f}% fail"
+                )
 
     def _calculate_request_stats(self) -> dict[str, Any]:
         """Calculate final request statistics."""
@@ -321,9 +309,15 @@ class StressTestBenchmark(BaseBenchmark):
                     "avg_response_time": stats["total_time"] / stats["count"],
                     "min_response_time": stats["min_time"],
                     "max_response_time": stats["max_time"],
-                    "p50_response_time": sorted_times[p50_idx] if p50_idx < len(sorted_times) else 0,
-                    "p95_response_time": sorted_times[p95_idx] if p95_idx < len(sorted_times) else 0,
-                    "p99_response_time": sorted_times[p99_idx] if p99_idx < len(sorted_times) else 0,
+                    "p50_response_time": (
+                        sorted_times[p50_idx] if p50_idx < len(sorted_times) else 0
+                    ),
+                    "p95_response_time": (
+                        sorted_times[p95_idx] if p95_idx < len(sorted_times) else 0
+                    ),
+                    "p99_response_time": (
+                        sorted_times[p99_idx] if p99_idx < len(sorted_times) else 0
+                    ),
                 }
 
         return final_stats
@@ -352,12 +346,12 @@ class StressTestBenchmark(BaseBenchmark):
                     "examples": [
                         f"Example {j}" * random.randint(20, 100)
                         for j in range(random.randint(3, 10))
-                    ]
-                }
+                    ],
+                },
             }
 
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def teardown(self):
@@ -379,14 +373,16 @@ class StressTestBenchmark(BaseBenchmark):
         ]
 
         for task_name, stats in self._calculate_request_stats().items():
-            lines.extend([
-                f"\n### {task_name}",
-                f"- Requests: {stats['count']}",
-                f"- Failures: {stats['failures']} ({stats['failure_rate']*100:.1f}%)",
-                f"- Avg Response Time: {stats['avg_response_time']*1000:.1f}ms",
-                f"- P50: {stats['p50_response_time']*1000:.1f}ms",
-                f"- P95: {stats['p95_response_time']*1000:.1f}ms",
-                f"- P99: {stats['p99_response_time']*1000:.1f}ms",
-            ])
+            lines.extend(
+                [
+                    f"\n### {task_name}",
+                    f"- Requests: {stats['count']}",
+                    f"- Failures: {stats['failures']} ({stats['failure_rate']*100:.1f}%)",
+                    f"- Avg Response Time: {stats['avg_response_time']*1000:.1f}ms",
+                    f"- P50: {stats['p50_response_time']*1000:.1f}ms",
+                    f"- P95: {stats['p95_response_time']*1000:.1f}ms",
+                    f"- P99: {stats['p99_response_time']*1000:.1f}ms",
+                ]
+            )
 
         return "\n".join(lines)

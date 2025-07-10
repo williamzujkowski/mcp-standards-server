@@ -24,7 +24,7 @@ class BenchmarkMetrics:
             "tool_latencies": {},
             "cache_performance": {},
             "auth_overhead": {},
-            "concurrent_performance": {}
+            "concurrent_performance": {},
         }
 
     def record_tool_latency(self, tool: str, latency: float):
@@ -33,22 +33,26 @@ class BenchmarkMetrics:
             self.results["tool_latencies"][tool] = []
         self.results["tool_latencies"][tool].append(latency)
 
-    def record_cache_performance(self, operation: str, hit_rate: float, time_saved: float):
+    def record_cache_performance(
+        self, operation: str, hit_rate: float, time_saved: float
+    ):
         """Record cache performance metrics."""
         self.results["cache_performance"][operation] = {
             "hit_rate": hit_rate,
-            "time_saved_ms": time_saved * 1000
+            "time_saved_ms": time_saved * 1000,
         }
 
     def record_auth_overhead(self, auth_type: str, overhead_ms: float):
         """Record authentication overhead."""
         self.results["auth_overhead"][auth_type] = overhead_ms
 
-    def record_concurrent_performance(self, concurrent_level: int, avg_latency: float, throughput: float):
+    def record_concurrent_performance(
+        self, concurrent_level: int, avg_latency: float, throughput: float
+    ):
         """Record concurrent request performance."""
         self.results["concurrent_performance"][str(concurrent_level)] = {
             "avg_latency_ms": avg_latency * 1000,
-            "throughput_rps": throughput
+            "throughput_rps": throughput,
         }
 
     def get_summary(self) -> dict[str, Any]:
@@ -57,7 +61,7 @@ class BenchmarkMetrics:
             "tool_latencies_summary": {},
             "cache_performance": self.results["cache_performance"],
             "auth_overhead": self.results["auth_overhead"],
-            "concurrent_performance": self.results["concurrent_performance"]
+            "concurrent_performance": self.results["concurrent_performance"],
         }
 
         # Summarize tool latencies
@@ -69,7 +73,7 @@ class BenchmarkMetrics:
                     "p95_ms": self._percentile(latencies, 95) * 1000,
                     "p99_ms": self._percentile(latencies, 99) * 1000,
                     "min_ms": min(latencies) * 1000,
-                    "max_ms": max(latencies) * 1000
+                    "max_ms": max(latencies) * 1000,
                 }
 
         return summary
@@ -94,16 +98,12 @@ class TestToolLatencyBenchmarks:
 
         async def operation():
             return await mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
+                "get_applicable_standards", {"context": context}
             )
 
         # Run benchmark
         result = await benchmark.pedantic(
-            operation,
-            rounds=50,
-            iterations=1,
-            warmup_rounds=5
+            operation, rounds=50, iterations=1, warmup_rounds=5
         )
 
         # Verify result and check against target
@@ -125,15 +125,12 @@ class TestToolLatencyBenchmarks:
                 {
                     "code": code,
                     "standard": "react-18-patterns",
-                    "language": "javascript"
-                }
+                    "language": "javascript",
+                },
             )
 
         result = await benchmark.pedantic(
-            operation,
-            rounds=30,
-            iterations=1,
-            warmup_rounds=3
+            operation, rounds=30, iterations=1, warmup_rounds=3
         )
 
         assert "violations" in result
@@ -142,20 +139,14 @@ class TestToolLatencyBenchmarks:
     @pytest.mark.asyncio
     async def test_search_standards_latency(self, mcp_client, benchmark):
         """Benchmark search_standards latency."""
+
         async def operation():
             return await mcp_client.call_tool(
-                "search_standards",
-                {
-                    "query": "React hooks best practices",
-                    "limit": 5
-                }
+                "search_standards", {"query": "React hooks best practices", "limit": 5}
             )
 
         result = await benchmark.pedantic(
-            operation,
-            rounds=30,
-            iterations=1,
-            warmup_rounds=3
+            operation, rounds=30, iterations=1, warmup_rounds=3
         )
 
         assert "results" in result
@@ -164,17 +155,14 @@ class TestToolLatencyBenchmarks:
     @pytest.mark.asyncio
     async def test_get_standard_details_latency(self, mcp_client, benchmark):
         """Benchmark get_standard_details latency."""
+
         async def operation():
             return await mcp_client.call_tool(
-                "get_standard_details",
-                {"standard_id": "react-18-patterns"}
+                "get_standard_details", {"standard_id": "react-18-patterns"}
             )
 
         result = await benchmark.pedantic(
-            operation,
-            rounds=50,
-            iterations=1,
-            warmup_rounds=5
+            operation, rounds=50, iterations=1, warmup_rounds=5
         )
 
         assert "id" in result
@@ -191,24 +179,16 @@ class TestCachePerformanceBenchmarks:
         standard_id = "react-18-patterns"
 
         # Prime the cache
-        await mcp_client.call_tool(
-            "get_standard_details",
-            {"standard_id": standard_id}
-        )
+        await mcp_client.call_tool("get_standard_details", {"standard_id": standard_id})
 
         # Measure cache hit performance
         async def cache_hit_operation():
             return await mcp_client.call_tool(
-                "get_standard_details",
-                {"standard_id": standard_id}
+                "get_standard_details", {"standard_id": standard_id}
             )
 
         # Measure performance
-        await benchmark.pedantic(
-            cache_hit_operation,
-            rounds=100,
-            iterations=1
-        )
+        await benchmark.pedantic(cache_hit_operation, rounds=100, iterations=1)
 
         cache_hit_time = benchmark.stats["mean"]
 
@@ -217,17 +197,12 @@ class TestCachePerformanceBenchmarks:
 
         async def cache_miss_operation():
             return await mcp_client.call_tool(
-                "get_standard_details",
-                {"standard_id": standard_id}
+                "get_standard_details", {"standard_id": standard_id}
             )
 
         # Reset benchmark for new measurement
         benchmark.reset()
-        await benchmark.pedantic(
-            cache_miss_operation,
-            rounds=10,
-            iterations=1
-        )
+        await benchmark.pedantic(cache_miss_operation, rounds=10, iterations=1)
 
         cache_miss_time = benchmark.stats["mean"]
 
@@ -240,7 +215,7 @@ class TestCachePerformanceBenchmarks:
         metrics.record_cache_performance(
             "get_standard_details",
             hit_rate=0.9,  # Assumed hit rate
-            time_saved=(cache_miss_time - cache_hit_time)
+            time_saved=(cache_miss_time - cache_hit_time),
         )
 
 
@@ -270,8 +245,7 @@ class TestConcurrentPerformanceBenchmarks:
                 async with client.connect() as connected:
                     start = time.time()
                     result = await connected.call_tool(
-                        "get_applicable_standards",
-                        {"context": context}
+                        "get_applicable_standards", {"context": context}
                     )
                     latency = time.time() - start
                     return latency, result
@@ -293,9 +267,7 @@ class TestConcurrentPerformanceBenchmarks:
             throughput = num_concurrent / total_time
 
             metrics.record_concurrent_performance(
-                num_concurrent,
-                avg_latency,
-                throughput
+                num_concurrent, avg_latency, throughput
             )
 
             return avg_latency, throughput
@@ -328,35 +300,23 @@ class TestAuthenticationOverheadBenchmarks:
         # Set auth header for authenticated client
         async def operation_no_auth():
             async with client_no_auth.connect() as client:
-                return await client.call_tool(
-                    "list_available_standards",
-                    {"limit": 10}
-                )
+                return await client.call_tool("list_available_standards", {"limit": 10})
 
         async def operation_with_auth():
             async with client_with_auth.connect() as client:
                 # Simulate JWT token in header
-                client.session._write_transport._process.env["MCP_AUTH_TOKEN"] = "fake.jwt.token"
-                return await client.call_tool(
-                    "list_available_standards",
-                    {"limit": 10}
+                client.session._write_transport._process.env["MCP_AUTH_TOKEN"] = (
+                    "fake.jwt.token"
                 )
+                return await client.call_tool("list_available_standards", {"limit": 10})
 
         # Benchmark without auth
-        await benchmark.pedantic(
-            operation_no_auth,
-            rounds=30,
-            iterations=1
-        )
+        await benchmark.pedantic(operation_no_auth, rounds=30, iterations=1)
         time_no_auth = benchmark.stats["mean"]
 
         # Reset and benchmark with auth
         benchmark.reset()
-        await benchmark.pedantic(
-            operation_with_auth,
-            rounds=30,
-            iterations=1
-        )
+        await benchmark.pedantic(operation_with_auth, rounds=30, iterations=1)
         time_with_auth = benchmark.stats["mean"]
 
         # Calculate overhead
@@ -392,8 +352,7 @@ class TestMemoryUsageBenchmarks:
                 gc.collect()  # Force garbage collection periodically
 
             result = await mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
+                "get_applicable_standards", {"context": context}
             )
 
             # Verify result
@@ -419,15 +378,19 @@ def run_all_benchmarks():
     import subprocess
 
     # Run pytest with benchmark plugin
-    result = subprocess.run([
-        "pytest",
-        __file__,
-        "-v",
-        "--benchmark-only",
-        "--benchmark-json=benchmark_results.json",
-        "--benchmark-columns=min,max,mean,stddev,median,iqr,outliers,rounds,iterations",
-        "--benchmark-group-by=group"
-    ], capture_output=True, text=True)
+    result = subprocess.run(
+        [
+            "pytest",
+            __file__,
+            "-v",
+            "--benchmark-only",
+            "--benchmark-json=benchmark_results.json",
+            "--benchmark-columns=min,max,mean,stddev,median,iqr,outliers,rounds,iterations",
+            "--benchmark-group-by=group",
+        ],
+        capture_output=True,
+        text=True,
+    )
 
     print(result.stdout)
 
@@ -436,9 +399,9 @@ def run_all_benchmarks():
         with open("benchmark_results.json") as f:
             results = json.load(f)
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("PERFORMANCE BENCHMARK SUMMARY")
-        print("="*80)
+        print("=" * 80)
 
         # Check against MCP performance targets
         targets_met = True
@@ -460,9 +423,11 @@ def run_all_benchmarks():
                 else:
                     print("  ✅ PASSED: Meets 50ms target")
 
-        print("\n" + "="*80)
-        print(f"Overall: {'✅ ALL TARGETS MET' if targets_met else '❌ SOME TARGETS MISSED'}")
-        print("="*80)
+        print("\n" + "=" * 80)
+        print(
+            f"Overall: {'✅ ALL TARGETS MET' if targets_met else '❌ SOME TARGETS MISSED'}"
+        )
+        print("=" * 80)
 
     except FileNotFoundError:
         print("No benchmark results found. Run benchmarks first.")

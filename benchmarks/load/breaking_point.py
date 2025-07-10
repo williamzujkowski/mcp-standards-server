@@ -24,7 +24,7 @@ class BreakingPointBenchmark(BaseBenchmark):
         load_increment: int = 10,
         failure_threshold: float = 0.5,  # 50% failure rate
         timeout_threshold: float = 5.0,  # 5 second timeout
-        step_duration: int = 30  # seconds per step
+        step_duration: int = 30,  # seconds per step
     ):
         super().__init__("Breaking Point Analysis", 1)
         self.initial_load = initial_load
@@ -37,10 +37,9 @@ class BreakingPointBenchmark(BaseBenchmark):
 
     async def setup(self):
         """Setup breaking point test."""
-        self.server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
         self.breaking_point = None
         self.load_history.clear()
 
@@ -57,15 +56,14 @@ class BreakingPointBenchmark(BaseBenchmark):
 
             # Test at current load
             metrics = await self._test_load_level(current_load)
-            self.load_history.append({
-                "load": current_load,
-                "metrics": metrics
-            })
+            self.load_history.append({"load": current_load, "metrics": metrics})
 
             # Check if we've hit breaking point
             if self._is_breaking_point(metrics):
                 self.breaking_point = current_load
-                print(f"\n🔥 Breaking point found at {current_load} concurrent requests!")
+                print(
+                    f"\n🔥 Breaking point found at {current_load} concurrent requests!"
+                )
                 break
 
             # Check if system is still healthy
@@ -88,17 +86,12 @@ class BreakingPointBenchmark(BaseBenchmark):
             "breaking_point": self.breaking_point or "Not found",
             "final_load_tested": current_load,
             "progression": self.load_history,
-            "analysis": analysis
+            "analysis": analysis,
         }
 
     async def _test_load_level(self, concurrent_requests: int) -> dict[str, Any]:
         """Test server at specific load level."""
-        results = {
-            "successful": 0,
-            "failed": 0,
-            "timeouts": 0,
-            "response_times": []
-        }
+        results = {"successful": 0, "failed": 0, "timeouts": 0, "response_times": []}
 
         # Create test tasks
         tasks = []
@@ -110,10 +103,7 @@ class BreakingPointBenchmark(BaseBenchmark):
         time.time()
 
         # Wait for tasks with timeout
-        done, pending = await asyncio.wait(
-            tasks,
-            timeout=self.step_duration
-        )
+        done, pending = await asyncio.wait(tasks, timeout=self.step_duration)
 
         # Cancel pending tasks
         for task in pending:
@@ -142,8 +132,14 @@ class BreakingPointBenchmark(BaseBenchmark):
             "successful": results["successful"],
             "failed": results["failed"],
             "timeouts": results["timeouts"],
-            "failure_rate": (results["failed"] + results["timeouts"]) / total_requests if total_requests > 0 else 0,
-            "timeout_rate": results["timeouts"] / total_requests if total_requests > 0 else 0,
+            "failure_rate": (
+                (results["failed"] + results["timeouts"]) / total_requests
+                if total_requests > 0
+                else 0
+            ),
+            "timeout_rate": (
+                results["timeouts"] / total_requests if total_requests > 0 else 0
+            ),
         }
 
         # Calculate latency percentiles
@@ -171,16 +167,13 @@ class BreakingPointBenchmark(BaseBenchmark):
                 lambda: self.server._get_standard_details("test-standard-0"),
                 lambda: self.server._list_available_standards(limit=20),
                 lambda: self.server._get_applicable_standards({"language": "python"}),
-                lambda: self.server._get_sync_status()
+                lambda: self.server._get_sync_status(),
             ]
 
             operation = random.choice(operations)
 
             # Execute with timeout
-            await asyncio.wait_for(
-                operation(),
-                timeout=self.timeout_threshold
-            )
+            await asyncio.wait_for(operation(), timeout=self.timeout_threshold)
 
             response_time = time.perf_counter() - start
             return True, response_time
@@ -215,7 +208,7 @@ class BreakingPointBenchmark(BaseBenchmark):
         analysis = {
             "healthy_load": None,
             "degradation_start": None,
-            "failure_acceleration": None
+            "failure_acceleration": None,
         }
 
         # Find last healthy load level
@@ -232,10 +225,14 @@ class BreakingPointBenchmark(BaseBenchmark):
 
                 # Calculate acceleration
                 if i > 0:
-                    prev_metrics = self.load_history[i-1]["metrics"]
-                    load_increase = entry["load"] - self.load_history[i-1]["load"]
-                    failure_increase = metrics["failure_rate"] - prev_metrics["failure_rate"]
-                    analysis["failure_acceleration"] = failure_increase / load_increase if load_increase > 0 else 0
+                    prev_metrics = self.load_history[i - 1]["metrics"]
+                    load_increase = entry["load"] - self.load_history[i - 1]["load"]
+                    failure_increase = (
+                        metrics["failure_rate"] - prev_metrics["failure_rate"]
+                    )
+                    analysis["failure_acceleration"] = (
+                        failure_increase / load_increase if load_increase > 0 else 0
+                    )
                 break
 
         return analysis
@@ -246,9 +243,9 @@ class BreakingPointBenchmark(BaseBenchmark):
 
     def _generate_breaking_point_report(self):
         """Generate detailed breaking point analysis report."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("BREAKING POINT ANALYSIS REPORT")
-        print("="*60)
+        print("=" * 60)
 
         if self.breaking_point:
             print(f"\nBreaking Point: {self.breaking_point} concurrent requests")

@@ -34,7 +34,7 @@ def demo_basic_operations():
     users = {
         "user:1": {"name": "Alice"},
         "user:2": {"name": "Bob"},
-        "user:3": {"name": "Charlie"}
+        "user:3": {"name": "Charlie"},
     }
     cache.mset(users)
 
@@ -126,7 +126,7 @@ async def demo_async_operations():
         return {
             "endpoint": endpoint,
             "data": f"Response from {endpoint}",
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
     print("\n1. Async caching:")
@@ -163,7 +163,9 @@ async def demo_async_operations():
     results = await concurrent_test()
     elapsed = time.time() - start
     print(f"   Set and retrieved 10 values concurrently in {elapsed:.3f}s")
-    print(f"   All values correct: {all(results[i] == f'value_{i}' for i in range(10))}")
+    print(
+        f"   All values correct: {all(results[i] == f'value_{i}' for i in range(10))}"
+    )
 
 
 # Example: Real-world scenario
@@ -183,7 +185,7 @@ class StandardsService:
         results = [
             {"id": "ISO27001", "name": "Information Security", "score": 0.95},
             {"id": "NIST-CSF", "name": "Cybersecurity Framework", "score": 0.87},
-            {"id": "GDPR", "name": "Data Protection", "score": 0.82}
+            {"id": "GDPR", "name": "Data Protection", "score": 0.82},
         ]
 
         if category:
@@ -201,7 +203,7 @@ class StandardsService:
             "id": standard_id,
             "name": f"Standard {standard_id}",
             "version": "1.0",
-            "requirements": ["REQ-1", "REQ-2", "REQ-3"]
+            "requirements": ["REQ-1", "REQ-2", "REQ-3"],
         }
 
     @invalidate_cache(pattern="standard:*:{standard_id}:*")
@@ -260,7 +262,9 @@ def demo_real_world():
     metrics = service.get_metrics()
     print(f"   L1 hit rate: {metrics['l1_hit_rate']:.1%}")
     print(f"   L2 hit rate: {metrics['l2_hit_rate']:.1%}")
-    print(f"   Total operations: {sum(metrics[k] for k in ['l1_hits', 'l1_misses', 'l2_hits', 'l2_misses'])}")
+    print(
+        f"   Total operations: {sum(metrics[k] for k in ['l1_hits', 'l1_misses', 'l2_hits', 'l2_misses'])}"
+    )
 
 
 def demo_monitoring():

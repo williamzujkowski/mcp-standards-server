@@ -12,7 +12,7 @@ import sys
 import time
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.core.auth import AuthManager
 from src.core.cache.mcp_cache import CacheConfig, MCPCache
@@ -39,7 +39,7 @@ class PerformanceBenchmark:
             "project_type": "web_application",
             "framework": "react",
             "language": "javascript",
-            "requirements": ["accessibility", "performance"]
+            "requirements": ["accessibility", "performance"],
         }
 
         # Warm up
@@ -62,12 +62,14 @@ class PerformanceBenchmark:
             "min_ms": min(times) * 1000,
             "max_ms": max(times) * 1000,
             "p95_ms": self._percentile(times, 95) * 1000,
-            "p99_ms": self._percentile(times, 99) * 1000
+            "p99_ms": self._percentile(times, 99) * 1000,
         }
 
         print(f"  ✓ Mean: {self.results['standards_engine']['mean_ms']:.2f}ms")
         print(f"  ✓ P95: {self.results['standards_engine']['p95_ms']:.2f}ms")
-        print(f"  ✓ Target: <50ms - {'✅ PASS' if self.results['standards_engine']['mean_ms'] < 50 else '❌ FAIL'}")
+        print(
+            f"  ✓ Target: <50ms - {'✅ PASS' if self.results['standards_engine']['mean_ms'] < 50 else '❌ FAIL'}"
+        )
 
     def benchmark_validation(self):
         """Benchmark input validation."""
@@ -78,7 +80,7 @@ class PerformanceBenchmark:
             "context": {
                 "project_type": "web_application",
                 "framework": "react",
-                "requirements": ["security", "performance"]
+                "requirements": ["security", "performance"],
             }
         }
 
@@ -100,12 +102,14 @@ class PerformanceBenchmark:
             "mean_ms": statistics.mean(times) * 1000,
             "median_ms": statistics.median(times) * 1000,
             "min_ms": min(times) * 1000,
-            "max_ms": max(times) * 1000
+            "max_ms": max(times) * 1000,
         }
 
         print(f"  ✓ Mean: {self.results['validation']['mean_ms']:.2f}ms")
         print(f"  ✓ Median: {self.results['validation']['median_ms']:.2f}ms")
-        print(f"  ✓ Target: <5ms - {'✅ PASS' if self.results['validation']['mean_ms'] < 5 else '❌ FAIL'}")
+        print(
+            f"  ✓ Target: <5ms - {'✅ PASS' if self.results['validation']['mean_ms'] < 5 else '❌ FAIL'}"
+        )
 
     def benchmark_auth(self):
         """Benchmark authentication operations."""
@@ -137,12 +141,14 @@ class PerformanceBenchmark:
             "mean_ms": statistics.mean(times) * 1000,
             "median_ms": statistics.median(times) * 1000,
             "min_ms": min(times) * 1000,
-            "max_ms": max(times) * 1000
+            "max_ms": max(times) * 1000,
         }
 
         print(f"  ✓ Mean: {self.results['auth_verification']['mean_ms']:.2f}ms")
         print(f"  ✓ Median: {self.results['auth_verification']['median_ms']:.2f}ms")
-        print(f"  ✓ Target: <2ms - {'✅ PASS' if self.results['auth_verification']['mean_ms'] < 2 else '❌ FAIL'}")
+        print(
+            f"  ✓ Target: <2ms - {'✅ PASS' if self.results['auth_verification']['mean_ms'] < 2 else '❌ FAIL'}"
+        )
 
     async def benchmark_cache(self):
         """Benchmark cache operations."""
@@ -175,18 +181,24 @@ class PerformanceBenchmark:
             "set_operation": {
                 "iterations": 100,
                 "mean_ms": statistics.mean(times_set) * 1000,
-                "median_ms": statistics.median(times_set) * 1000
+                "median_ms": statistics.median(times_set) * 1000,
             },
             "get_operation": {
                 "iterations": 100,
                 "mean_ms": statistics.mean(times_get) * 1000,
-                "median_ms": statistics.median(times_get) * 1000
-            }
+                "median_ms": statistics.median(times_get) * 1000,
+            },
         }
 
-        print(f"  ✓ Set Mean: {self.results['cache']['set_operation']['mean_ms']:.2f}ms")
-        print(f"  ✓ Get Mean: {self.results['cache']['get_operation']['mean_ms']:.2f}ms")
-        print(f"  ✓ Target: <10ms - {'✅ PASS' if self.results['cache']['get_operation']['mean_ms'] < 10 else '❌ FAIL'}")
+        print(
+            f"  ✓ Set Mean: {self.results['cache']['set_operation']['mean_ms']:.2f}ms"
+        )
+        print(
+            f"  ✓ Get Mean: {self.results['cache']['get_operation']['mean_ms']:.2f}ms"
+        )
+        print(
+            f"  ✓ Target: <10ms - {'✅ PASS' if self.results['cache']['get_operation']['mean_ms'] < 10 else '❌ FAIL'}"
+        )
 
     def benchmark_concurrent_operations(self):
         """Benchmark concurrent operation handling."""
@@ -194,15 +206,12 @@ class PerformanceBenchmark:
 
         async def concurrent_validation(num_concurrent: int):
             """Run concurrent validations."""
-            test_input = {
-                "context": {
-                    "project_type": "api",
-                    "language": "python"
-                }
-            }
+            test_input = {"context": {"project_type": "api", "language": "python"}}
 
             async def single_validation():
-                return self.validator.validate_tool_input("get_applicable_standards", test_input)
+                return self.validator.validate_tool_input(
+                    "get_applicable_standards", test_input
+                )
 
             start = time.time()
             tasks = [single_validation() for _ in range(num_concurrent)]
@@ -221,10 +230,12 @@ class PerformanceBenchmark:
             concurrency_results[concurrent] = {
                 "total_time_s": elapsed,
                 "throughput_ops": throughput,
-                "avg_latency_ms": (elapsed / count) * 1000
+                "avg_latency_ms": (elapsed / count) * 1000,
             }
 
-            print(f"  ✓ {concurrent} concurrent: {throughput:.0f} ops/s, {concurrency_results[concurrent]['avg_latency_ms']:.2f}ms avg")
+            print(
+                f"  ✓ {concurrent} concurrent: {throughput:.0f} ops/s, {concurrency_results[concurrent]['avg_latency_ms']:.2f}ms avg"
+            )
 
         self.results["concurrency"] = concurrency_results
 
@@ -238,9 +249,9 @@ class PerformanceBenchmark:
 
     def generate_report(self):
         """Generate performance report."""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("PERFORMANCE BENCHMARK REPORT")
-        print("="*80)
+        print("=" * 80)
 
         # Check overall performance
         targets_met = True
@@ -258,10 +269,15 @@ class PerformanceBenchmark:
             targets_met = False
 
         # Cache target: <10ms
-        if self.results.get("cache", {}).get("get_operation", {}).get("mean_ms", 20) > 10:
+        if (
+            self.results.get("cache", {}).get("get_operation", {}).get("mean_ms", 20)
+            > 10
+        ):
             targets_met = False
 
-        print(f"\n📈 Overall Result: {'✅ ALL PERFORMANCE TARGETS MET' if targets_met else '❌ SOME TARGETS MISSED'}")
+        print(
+            f"\n📈 Overall Result: {'✅ ALL PERFORMANCE TARGETS MET' if targets_met else '❌ SOME TARGETS MISSED'}"
+        )
 
         # Save detailed results
         with open("benchmark_results_simple.json", "w") as f:

@@ -14,6 +14,7 @@ from .metrics import MetricsCollector
 
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -23,6 +24,7 @@ class AlertSeverity(Enum):
 @dataclass
 class AlertRule:
     """Definition of an alert rule."""
+
     name: str
     metric: str
     condition: str  # e.g., "> 90", "< 50", "rate > 10"
@@ -31,7 +33,9 @@ class AlertRule:
     window_seconds: int = 60
     cooldown_seconds: int = 300  # Prevent alert spam
     description: str = ""
-    actions: list[str] = field(default_factory=list)  # e.g., ["log", "email", "webhook"]
+    actions: list[str] = field(
+        default_factory=list
+    )  # e.g., ["log", "email", "webhook"]
 
     def evaluate(self, value: float) -> bool:
         """Evaluate if alert condition is met."""
@@ -57,6 +61,7 @@ class AlertRule:
 @dataclass
 class Alert:
     """Active alert instance."""
+
     rule: AlertRule
     triggered_at: datetime
     value: float
@@ -78,7 +83,7 @@ class Alert:
             "value": self.value,
             "message": self.message,
             "resolved": self.resolved,
-            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
         }
 
 
@@ -94,7 +99,7 @@ class AlertSystem:
         self.handlers: dict[str, list[Callable]] = {
             "log": [],
             "email": [],
-            "webhook": []
+            "webhook": [],
         }
 
         # Register default rules
@@ -103,83 +108,99 @@ class AlertSystem:
     def _register_default_rules(self):
         """Register default alert rules."""
         # CPU alerts
-        self.add_rule(AlertRule(
-            name="high_cpu_usage",
-            metric="system_cpu_percent",
-            condition="> 80",
-            threshold=80,
-            severity=AlertSeverity.WARNING,
-            description="CPU usage above 80%"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="high_cpu_usage",
+                metric="system_cpu_percent",
+                condition="> 80",
+                threshold=80,
+                severity=AlertSeverity.WARNING,
+                description="CPU usage above 80%",
+            )
+        )
 
-        self.add_rule(AlertRule(
-            name="critical_cpu_usage",
-            metric="system_cpu_percent",
-            condition="> 95",
-            threshold=95,
-            severity=AlertSeverity.CRITICAL,
-            description="CPU usage above 95%"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="critical_cpu_usage",
+                metric="system_cpu_percent",
+                condition="> 95",
+                threshold=95,
+                severity=AlertSeverity.CRITICAL,
+                description="CPU usage above 95%",
+            )
+        )
 
         # Memory alerts
-        self.add_rule(AlertRule(
-            name="high_memory_usage",
-            metric="system_memory_percent",
-            condition="> 85",
-            threshold=85,
-            severity=AlertSeverity.WARNING,
-            description="Memory usage above 85%"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="high_memory_usage",
+                metric="system_memory_percent",
+                condition="> 85",
+                threshold=85,
+                severity=AlertSeverity.WARNING,
+                description="Memory usage above 85%",
+            )
+        )
 
-        self.add_rule(AlertRule(
-            name="memory_growth_rate",
-            metric="system_memory_rss_mb",
-            condition="rate > 10",
-            threshold=10,  # MB per minute
-            severity=AlertSeverity.WARNING,
-            window_seconds=300,
-            description="Memory growing faster than 10MB/min"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="memory_growth_rate",
+                metric="system_memory_rss_mb",
+                condition="rate > 10",
+                threshold=10,  # MB per minute
+                severity=AlertSeverity.WARNING,
+                window_seconds=300,
+                description="Memory growing faster than 10MB/min",
+            )
+        )
 
         # Response time alerts
-        self.add_rule(AlertRule(
-            name="high_response_time",
-            metric="mcp_request_duration_ms",
-            condition="> 500",
-            threshold=500,
-            severity=AlertSeverity.WARNING,
-            description="Response time above 500ms"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="high_response_time",
+                metric="mcp_request_duration_ms",
+                condition="> 500",
+                threshold=500,
+                severity=AlertSeverity.WARNING,
+                description="Response time above 500ms",
+            )
+        )
 
-        self.add_rule(AlertRule(
-            name="slo_violation",
-            metric="mcp_request_duration_ms",
-            condition="> 1000",
-            threshold=1000,
-            severity=AlertSeverity.ERROR,
-            description="Response time SLO violation (>1s)"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="slo_violation",
+                metric="mcp_request_duration_ms",
+                condition="> 1000",
+                threshold=1000,
+                severity=AlertSeverity.ERROR,
+                description="Response time SLO violation (>1s)",
+            )
+        )
 
         # Error rate alerts
-        self.add_rule(AlertRule(
-            name="high_error_rate",
-            metric="mcp_error_count",
-            condition="rate > 10",
-            threshold=10,  # errors per minute
-            severity=AlertSeverity.ERROR,
-            window_seconds=60,
-            description="Error rate above 10/min"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="high_error_rate",
+                metric="mcp_error_count",
+                condition="rate > 10",
+                threshold=10,  # errors per minute
+                severity=AlertSeverity.ERROR,
+                window_seconds=60,
+                description="Error rate above 10/min",
+            )
+        )
 
         # Cache performance
-        self.add_rule(AlertRule(
-            name="low_cache_hit_rate",
-            metric="cache_hit_rate",
-            condition="< 50",
-            threshold=50,
-            severity=AlertSeverity.WARNING,
-            description="Cache hit rate below 50%"
-        ))
+        self.add_rule(
+            AlertRule(
+                name="low_cache_hit_rate",
+                metric="cache_hit_rate",
+                condition="< 50",
+                threshold=50,
+                severity=AlertSeverity.WARNING,
+                description="Cache hit rate below 50%",
+            )
+        )
 
     def add_rule(self, rule: AlertRule):
         """Add an alert rule."""
@@ -249,7 +270,7 @@ class AlertSystem:
             rule=rule,
             triggered_at=datetime.now(),
             value=value,
-            message=f"{rule.description}: {rule.metric} = {value:.2f}"
+            message=f"{rule.description}: {rule.metric} = {value:.2f}",
         )
 
         # Execute actions
@@ -290,14 +311,16 @@ class AlertSystem:
         active_by_severity = {}
         for severity in AlertSeverity:
             active_by_severity[severity.value] = sum(
-                1 for alert in self.active_alerts.values()
+                1
+                for alert in self.active_alerts.values()
                 if alert.rule.severity == severity
             )
 
         # Recent alerts (last hour)
         cutoff = datetime.now().timestamp() - 3600
         recent_alerts = [
-            alert for alert in self.alert_history
+            alert
+            for alert in self.alert_history
             if alert.triggered_at.timestamp() > cutoff
         ]
 
@@ -306,7 +329,7 @@ class AlertSystem:
             "active_by_severity": active_by_severity,
             "recent_count": len(recent_alerts),
             "rules_count": len(self.rules),
-            "most_frequent": self._get_most_frequent_alerts()
+            "most_frequent": self._get_most_frequent_alerts(),
         }
 
     def _get_most_frequent_alerts(self, hours: int = 24) -> list[dict[str, Any]]:
@@ -321,25 +344,20 @@ class AlertSystem:
                 alert_counts[rule_name] = alert_counts.get(rule_name, 0) + 1
 
         # Sort by frequency
-        sorted_alerts = sorted(
-            alert_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:5]
-
-        return [
-            {"rule": name, "count": count}
-            for name, count in sorted_alerts
+        sorted_alerts = sorted(alert_counts.items(), key=lambda x: x[1], reverse=True)[
+            :5
         ]
+
+        return [{"rule": name, "count": count} for name, count in sorted_alerts]
 
     def save_alert_history(self, filepath: Path):
         """Save alert history to file."""
         history_data = {
             "alerts": [alert.to_dict() for alert in self.alert_history],
-            "summary": self.get_alert_summary()
+            "summary": self.get_alert_summary(),
         }
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(history_data, f, indent=2)
 
     def load_alert_history(self, filepath: Path):

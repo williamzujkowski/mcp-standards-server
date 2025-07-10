@@ -10,10 +10,7 @@ class ScalabilityTestBenchmark(BaseBenchmark):
     """Test server scalability with increasing load."""
 
     def __init__(
-        self,
-        max_users: int = 200,
-        step_size: int = 20,
-        duration_per_step: int = 60
+        self, max_users: int = 200, step_size: int = 20, duration_per_step: int = 60
     ):
         super().__init__("Scalability Test", 1)
         self.max_users = max_users
@@ -37,7 +34,7 @@ class ScalabilityTestBenchmark(BaseBenchmark):
                 user_count=num_users,
                 spawn_rate=5.0,
                 test_duration=self.duration_per_step,
-                scenario="mixed"
+                scenario="mixed",
             )
 
             result = await stress_test.run()
@@ -49,7 +46,7 @@ class ScalabilityTestBenchmark(BaseBenchmark):
                 "p95_response_time": result.percentiles.get(95, 0),
                 "error_rate": result.custom_metrics.get("failure_rate", 0),
                 "cpu_usage": result.custom_metrics.get("peak_cpu", 0),
-                "memory_usage": result.peak_memory_mb
+                "memory_usage": result.peak_memory_mb,
             }
 
             # Check if we've hit saturation
@@ -66,7 +63,7 @@ class ScalabilityTestBenchmark(BaseBenchmark):
             "saturation_point": analysis["saturation_point"],
             "max_throughput": analysis["max_throughput"],
             "scalability_factor": analysis["scalability_factor"],
-            "detailed_results": self.results_by_load
+            "detailed_results": self.results_by_load,
         }
 
     def _check_saturation(self, current_users: int) -> bool:
@@ -101,10 +98,7 @@ class ScalabilityTestBenchmark(BaseBenchmark):
         users = sorted(self.results_by_load.keys())
 
         # Find optimal load (best throughput)
-        optimal_load = max(
-            users,
-            key=lambda u: self.results_by_load[u]["throughput"]
-        )
+        optimal_load = max(users, key=lambda u: self.results_by_load[u]["throughput"])
 
         # Find saturation point
         saturation_point = optimal_load
@@ -117,7 +111,9 @@ class ScalabilityTestBenchmark(BaseBenchmark):
         if len(users) >= 2:
             first_throughput = self.results_by_load[users[0]]["throughput"]
             last_throughput = self.results_by_load[users[-1]]["throughput"]
-            scalability_factor = last_throughput / first_throughput if first_throughput > 0 else 0
+            scalability_factor = (
+                last_throughput / first_throughput if first_throughput > 0 else 0
+            )
         else:
             scalability_factor = 1.0
 
@@ -125,7 +121,7 @@ class ScalabilityTestBenchmark(BaseBenchmark):
             "optimal_load": optimal_load,
             "saturation_point": saturation_point,
             "max_throughput": self.results_by_load[optimal_load]["throughput"],
-            "scalability_factor": scalability_factor
+            "scalability_factor": scalability_factor,
         }
 
     async def teardown(self):
@@ -134,9 +130,9 @@ class ScalabilityTestBenchmark(BaseBenchmark):
 
     def _generate_scalability_report(self):
         """Generate scalability analysis report."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("SCALABILITY ANALYSIS REPORT")
-        print("="*60)
+        print("=" * 60)
 
         if not self.results_by_load:
             print("No results to report")

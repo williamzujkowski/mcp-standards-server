@@ -11,6 +11,7 @@ import psutil
 @dataclass
 class ResourceSnapshot:
     """System resource snapshot."""
+
     timestamp: float
     cpu_percent: float
     memory_percent: float
@@ -77,8 +78,16 @@ class ResourceTracker:
         # Disk IO
         current_io = psutil.disk_io_counters()
         if self._start_io_counters and current_io:
-            disk_read_mb = (current_io.read_bytes - self._start_io_counters.read_bytes) / 1024 / 1024
-            disk_write_mb = (current_io.write_bytes - self._start_io_counters.write_bytes) / 1024 / 1024
+            disk_read_mb = (
+                (current_io.read_bytes - self._start_io_counters.read_bytes)
+                / 1024
+                / 1024
+            )
+            disk_write_mb = (
+                (current_io.write_bytes - self._start_io_counters.write_bytes)
+                / 1024
+                / 1024
+            )
         else:
             disk_read_mb = 0
             disk_write_mb = 0
@@ -86,8 +95,16 @@ class ResourceTracker:
         # Network IO
         current_net = psutil.net_io_counters()
         if self._start_net_counters and current_net:
-            net_sent_mb = (current_net.bytes_sent - self._start_net_counters.bytes_sent) / 1024 / 1024
-            net_recv_mb = (current_net.bytes_recv - self._start_net_counters.bytes_recv) / 1024 / 1024
+            net_sent_mb = (
+                (current_net.bytes_sent - self._start_net_counters.bytes_sent)
+                / 1024
+                / 1024
+            )
+            net_recv_mb = (
+                (current_net.bytes_recv - self._start_net_counters.bytes_recv)
+                / 1024
+                / 1024
+            )
         else:
             net_sent_mb = 0
             net_recv_mb = 0
@@ -113,7 +130,7 @@ class ResourceTracker:
             network_sent_mb=net_sent_mb,
             network_recv_mb=net_recv_mb,
             open_files=open_files,
-            threads=threads
+            threads=threads,
         )
 
     def get_summary(self) -> dict[str, Any]:
@@ -125,30 +142,31 @@ class ResourceTracker:
         memory_values = [s.memory_mb for s in self.snapshots]
 
         return {
-            "duration_seconds": self.snapshots[-1].timestamp - self.snapshots[0].timestamp,
+            "duration_seconds": self.snapshots[-1].timestamp
+            - self.snapshots[0].timestamp,
             "samples": len(self.snapshots),
             "cpu": {
                 "min": min(cpu_values),
                 "max": max(cpu_values),
                 "avg": sum(cpu_values) / len(cpu_values),
-                "peak": max(cpu_values)
+                "peak": max(cpu_values),
             },
             "memory": {
                 "min_mb": min(memory_values),
                 "max_mb": max(memory_values),
                 "avg_mb": sum(memory_values) / len(memory_values),
-                "growth_mb": memory_values[-1] - memory_values[0]
+                "growth_mb": memory_values[-1] - memory_values[0],
             },
             "io": {
                 "total_disk_read_mb": self.snapshots[-1].disk_io_read_mb,
                 "total_disk_write_mb": self.snapshots[-1].disk_io_write_mb,
                 "total_network_sent_mb": self.snapshots[-1].network_sent_mb,
-                "total_network_recv_mb": self.snapshots[-1].network_recv_mb
+                "total_network_recv_mb": self.snapshots[-1].network_recv_mb,
             },
             "resources": {
                 "max_open_files": max(s.open_files for s in self.snapshots),
-                "max_threads": max(s.threads for s in self.snapshots)
-            }
+                "max_threads": max(s.threads for s in self.snapshots),
+            },
         }
 
     def detect_resource_issues(self) -> list[str]:
@@ -165,11 +183,15 @@ class ResourceTracker:
             issues.append(f"High average CPU usage: {summary['cpu']['avg']:.1f}%")
 
         if summary["cpu"]["peak"] > 95:
-            issues.append(f"CPU saturation detected: {summary['cpu']['peak']:.1f}% peak")
+            issues.append(
+                f"CPU saturation detected: {summary['cpu']['peak']:.1f}% peak"
+            )
 
         # Memory issues
         if summary["memory"]["growth_mb"] > 100:
-            issues.append(f"Significant memory growth: {summary['memory']['growth_mb']:.1f}MB")
+            issues.append(
+                f"Significant memory growth: {summary['memory']['growth_mb']:.1f}MB"
+            )
 
         # Check for memory leak pattern
         if len(self.snapshots) > 10:
@@ -189,10 +211,14 @@ class ResourceTracker:
                 slope = numerator / denominator
                 # If memory growing more than 1MB per sample
                 if slope > 1:
-                    issues.append(f"Potential memory leak: {slope:.2f}MB/sample growth rate")
+                    issues.append(
+                        f"Potential memory leak: {slope:.2f}MB/sample growth rate"
+                    )
 
         # File descriptor issues
         if summary["resources"]["max_open_files"] > 1000:
-            issues.append(f"High file descriptor usage: {summary['resources']['max_open_files']}")
+            issues.append(
+                f"High file descriptor usage: {summary['resources']['max_open_files']}"
+            )
 
         return issues

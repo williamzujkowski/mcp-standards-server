@@ -1,6 +1,7 @@
 """
 FastAPI backend for MCP Standards Server Web UI
 """
+
 import json
 import logging
 import os
@@ -21,6 +22,7 @@ from web.backend.engine_adapter import StandardsEngine
 
 logger = logging.getLogger(__name__)
 
+
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
@@ -40,7 +42,9 @@ class ConnectionManager:
         for connection in self.active_connections:
             await connection.send_text(message)
 
+
 manager = ConnectionManager()
+
 
 # Lifespan context manager
 @asynccontextmanager
@@ -53,12 +57,13 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down MCP Standards Server Web UI")
 
+
 # Create FastAPI app
 app = FastAPI(
     title="MCP Standards Server",
     description="Web UI for browsing and interacting with development standards",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -70,10 +75,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # API endpoints
 @app.get("/")
 async def root():
     return {"message": "MCP Standards Server API", "version": "1.0.0"}
+
 
 @app.get("/api/standards")
 async def get_all_standards():
@@ -88,19 +95,22 @@ async def get_all_standards():
             category = standard.category
             if category not in by_category:
                 by_category[category] = []
-            by_category[category].append({
-                "id": standard.id,
-                "title": standard.title,
-                "description": standard.description,
-                "tags": standard.tags,
-                "priority": standard.priority,
-                "version": standard.version
-            })
+            by_category[category].append(
+                {
+                    "id": standard.id,
+                    "title": standard.title,
+                    "description": standard.description,
+                    "tags": standard.tags,
+                    "priority": standard.priority,
+                    "version": standard.version,
+                }
+            )
 
         return {"standards": by_category, "total": len(standards)}
     except Exception as e:
         logger.error(f"Error fetching standards: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/standards/{standard_id}")
 async def get_standard(standard_id: str):
@@ -124,13 +134,14 @@ async def get_standard(standard_id: str):
             "version": standard.version,
             "created_at": standard.created_at,
             "updated_at": standard.updated_at,
-            "metadata": standard.metadata
+            "metadata": standard.metadata,
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching standard {standard_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/search")
 async def search_standards(query: dict[str, Any]):
@@ -145,7 +156,7 @@ async def search_standards(query: dict[str, Any]):
             query=search_query,
             category=filters.get("category"),
             tags=filters.get("tags"),
-            limit=limit
+            limit=limit,
         )
 
         return {
@@ -156,15 +167,16 @@ async def search_standards(query: dict[str, Any]):
                     "description": r.standard.description,
                     "category": r.standard.category,
                     "score": r.score,
-                    "highlights": r.highlights
+                    "highlights": r.highlights,
                 }
                 for r in results
             ],
-            "total": len(results)
+            "total": len(results),
         }
     except Exception as e:
         logger.error(f"Error searching standards: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/analyze")
 async def analyze_project(context: dict[str, Any]):
@@ -173,7 +185,7 @@ async def analyze_project(context: dict[str, Any]):
         engine = app.state.engine
 
         # Create project context from request
-        project_context = type('ProjectContext', (), context)()
+        project_context = type("ProjectContext", (), context)()
 
         # Get recommendations
         recommendations = await engine.analyze_project(project_context)
@@ -185,20 +197,21 @@ async def analyze_project(context: dict[str, Any]):
                         "id": r.standard.id,
                         "title": r.standard.title,
                         "description": r.standard.description,
-                        "category": r.standard.category
+                        "category": r.standard.category,
                     },
                     "relevance_score": r.relevance_score,
                     "confidence": r.confidence,
                     "reasoning": r.reasoning,
-                    "implementation_notes": r.implementation_notes
+                    "implementation_notes": r.implementation_notes,
                 }
                 for r in recommendations
             ],
-            "total": len(recommendations)
+            "total": len(recommendations),
         }
     except Exception as e:
         logger.error(f"Error analyzing project: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/categories")
 async def get_categories():
@@ -211,6 +224,7 @@ async def get_categories():
         logger.error(f"Error fetching categories: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/api/tags")
 async def get_tags():
     """Get all available tags"""
@@ -221,6 +235,7 @@ async def get_tags():
     except Exception as e:
         logger.error(f"Error fetching tags: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/export/bulk")
 async def export_bulk_standards(request: dict[str, Any]):
@@ -239,27 +254,29 @@ async def export_bulk_standards(request: dict[str, Any]):
         for standard_id in standard_ids:
             standard = await engine.get_standard_by_id(standard_id)
             if standard:
-                standards_data.append({
-                    "id": standard.id,
-                    "title": standard.title,
-                    "description": standard.description,
-                    "category": standard.category,
-                    "subcategory": standard.subcategory,
-                    "tags": standard.tags,
-                    "priority": standard.priority,
-                    "version": standard.version,
-                    "examples": standard.examples,
-                    "rules": standard.rules,
-                    "metadata": standard.metadata,
-                    "created_at": standard.created_at,
-                    "updated_at": standard.updated_at
-                })
+                standards_data.append(
+                    {
+                        "id": standard.id,
+                        "title": standard.title,
+                        "description": standard.description,
+                        "category": standard.category,
+                        "subcategory": standard.subcategory,
+                        "tags": standard.tags,
+                        "priority": standard.priority,
+                        "version": standard.version,
+                        "examples": standard.examples,
+                        "rules": standard.rules,
+                        "metadata": standard.metadata,
+                        "created_at": standard.created_at,
+                        "updated_at": standard.updated_at,
+                    }
+                )
 
         if format == "json":
             export_data = {
                 "exportDate": datetime.now().isoformat(),
                 "totalStandards": len(standards_data),
-                "standards": standards_data
+                "standards": standards_data,
             }
 
             # Save to temporary file
@@ -269,15 +286,18 @@ async def export_bulk_standards(request: dict[str, Any]):
             return FileResponse(
                 path=str(temp_file),
                 filename=f"standards-export-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json",
-                media_type="application/json"
+                media_type="application/json",
             )
         else:
-            raise HTTPException(status_code=400, detail="Unsupported format for bulk export")
+            raise HTTPException(
+                status_code=400, detail="Unsupported format for bulk export"
+            )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error bulk exporting standards: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/export/{standard_id}")
 async def export_standard(standard_id: str, format: str = "markdown"):
@@ -312,7 +332,7 @@ async def export_standard(standard_id: str, format: str = "markdown"):
                 content += f"```{example.get('language', '')}\n"
                 content += f"{example.get('code', '')}\n"
                 content += "```\n"
-                if example.get('description'):
+                if example.get("description"):
                     content += f"\n{example['description']}\n"
 
             # Save to temporary file
@@ -322,7 +342,7 @@ async def export_standard(standard_id: str, format: str = "markdown"):
             return FileResponse(
                 path=str(temp_file),
                 filename=f"{standard_id}.md",
-                media_type="text/markdown"
+                media_type="text/markdown",
             )
         elif format == "json":
             # Export as JSON
@@ -339,7 +359,7 @@ async def export_standard(standard_id: str, format: str = "markdown"):
                 "rules": standard.rules,
                 "metadata": standard.metadata,
                 "created_at": standard.created_at,
-                "updated_at": standard.updated_at
+                "updated_at": standard.updated_at,
             }
 
             temp_file = Path(f"/tmp/{standard_id}.json")
@@ -348,15 +368,19 @@ async def export_standard(standard_id: str, format: str = "markdown"):
             return FileResponse(
                 path=str(temp_file),
                 filename=f"{standard_id}.json",
-                media_type="application/json"
+                media_type="application/json",
             )
         else:
-            raise HTTPException(status_code=400, detail="Unsupported format. Supported formats: markdown, json")
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported format. Supported formats: markdown, json",
+            )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error exporting standard {standard_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # WebSocket endpoint for real-time updates
 @app.websocket("/ws")
@@ -371,18 +395,22 @@ async def websocket_endpoint(websocket: WebSocket):
             # Handle different message types
             if message["type"] == "ping":
                 await manager.send_personal_message(
-                    json.dumps({"type": "pong", "timestamp": datetime.now().isoformat()}),
-                    websocket
+                    json.dumps(
+                        {"type": "pong", "timestamp": datetime.now().isoformat()}
+                    ),
+                    websocket,
                 )
             elif message["type"] == "subscribe":
                 # Subscribe to updates for specific standards or categories
                 await manager.send_personal_message(
-                    json.dumps({
-                        "type": "subscribed",
-                        "to": message.get("to", "all"),
-                        "timestamp": datetime.now().isoformat()
-                    }),
-                    websocket
+                    json.dumps(
+                        {
+                            "type": "subscribed",
+                            "to": message.get("to", "all"),
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    ),
+                    websocket,
                 )
 
     except WebSocketDisconnect:
@@ -392,6 +420,8 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host=os.getenv("WEB_HOST", "127.0.0.1"), port=8000)

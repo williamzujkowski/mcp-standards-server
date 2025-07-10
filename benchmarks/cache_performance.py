@@ -15,7 +15,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-
 from src.core.cache import CacheConfig, RedisCache, cache_result
 
 
@@ -35,7 +34,7 @@ class CacheBenchmark:
                 "id": 1,
                 "name": "test",
                 "data": [{"item": i, "value": i * 2} for i in range(100)],
-                "metadata": {f"key_{i}": f"value_{i}" for i in range(50)}
+                "metadata": {f"key_{i}": f"value_{i}" for i in range(50)},
             }
         else:  # large
             return {
@@ -44,11 +43,11 @@ class CacheBenchmark:
                 "items": [
                     {
                         "id": i,
-                        "data": ''.join(random.choices(string.ascii_letters, k=100)),
-                        "numbers": list(range(100))
+                        "data": "".join(random.choices(string.ascii_letters, k=100)),
+                        "numbers": list(range(100)),
                     }
                     for i in range(100)
-                ]
+                ],
             }
 
     def benchmark_basic_operations(self, iterations: int = 1000):
@@ -107,19 +106,21 @@ class CacheBenchmark:
                     "mean_ms": statistics.mean(times) * 1000,
                     "median_ms": statistics.median(times) * 1000,
                     "p95_ms": statistics.quantiles(times, n=20)[18] * 1000,
-                    "p99_ms": statistics.quantiles(times, n=100)[98] * 1000
+                    "p99_ms": statistics.quantiles(times, n=100)[98] * 1000,
                 }
-                for size, times in set_times.items() if times
+                for size, times in set_times.items()
+                if times
             },
             "get_operations": {
                 size: {
                     "mean_ms": statistics.mean(times) * 1000,
                     "median_ms": statistics.median(times) * 1000,
                     "p95_ms": statistics.quantiles(times, n=20)[18] * 1000,
-                    "p99_ms": statistics.quantiles(times, n=100)[98] * 1000
+                    "p99_ms": statistics.quantiles(times, n=100)[98] * 1000,
                 }
-                for size, times in get_times.items() if times
-            }
+                for size, times in get_times.items()
+                if times
+            },
         }
 
         self.results["basic_operations"] = results
@@ -157,14 +158,14 @@ class CacheBenchmark:
             "l1_cache": {
                 "mean_us": statistics.mean(l1_times) * 1_000_000,
                 "median_us": statistics.median(l1_times) * 1_000_000,
-                "p99_us": statistics.quantiles(l1_times, n=100)[98] * 1_000_000
+                "p99_us": statistics.quantiles(l1_times, n=100)[98] * 1_000_000,
             },
             "l2_cache": {
                 "mean_us": statistics.mean(l2_times) * 1_000_000,
                 "median_us": statistics.median(l2_times) * 1_000_000,
-                "p99_us": statistics.quantiles(l2_times, n=100)[98] * 1_000_000
+                "p99_us": statistics.quantiles(l2_times, n=100)[98] * 1_000_000,
             },
-            "speedup": statistics.mean(l2_times) / statistics.mean(l1_times)
+            "speedup": statistics.mean(l2_times) / statistics.mean(l1_times),
         }
 
         self.results["l1_vs_l2"] = results
@@ -195,12 +196,12 @@ class CacheBenchmark:
 
             results["mset"][batch_size] = {
                 "total_ms": mset_time * 1000,
-                "per_key_ms": (mset_time / batch_size) * 1000
+                "per_key_ms": (mset_time / batch_size) * 1000,
             }
 
             results["mget"][batch_size] = {
                 "total_ms": mget_time * 1000,
-                "per_key_ms": (mget_time / batch_size) * 1000
+                "per_key_ms": (mget_time / batch_size) * 1000,
             }
 
         self.results["batch_operations"] = results
@@ -208,7 +209,9 @@ class CacheBenchmark:
 
     def benchmark_concurrent_access(self, workers: int = 10, operations: int = 100):
         """Benchmark concurrent cache access."""
-        print(f"\nBenchmarking concurrent access ({workers} workers, {operations} ops each)...")
+        print(
+            f"\nBenchmarking concurrent access ({workers} workers, {operations} ops each)..."
+        )
 
         test_data = self.generate_data("medium")
 
@@ -252,13 +255,13 @@ class CacheBenchmark:
             "set_latency_ms": {
                 "mean": statistics.mean(set_times) * 1000,
                 "p95": statistics.quantiles(set_times, n=20)[18] * 1000,
-                "p99": statistics.quantiles(set_times, n=100)[98] * 1000
+                "p99": statistics.quantiles(set_times, n=100)[98] * 1000,
             },
             "get_latency_ms": {
                 "mean": statistics.mean(get_times) * 1000,
                 "p95": statistics.quantiles(get_times, n=20)[18] * 1000,
-                "p99": statistics.quantiles(get_times, n=100)[98] * 1000
-            }
+                "p99": statistics.quantiles(get_times, n=100)[98] * 1000,
+            },
         }
 
         self.results["concurrent_access"] = results
@@ -298,14 +301,14 @@ class CacheBenchmark:
             "sequential": {
                 "mean_ms": statistics.mean(async_times) * 1000,
                 "median_ms": statistics.median(async_times) * 1000,
-                "p99_ms": statistics.quantiles(async_times, n=100)[98] * 1000
+                "p99_ms": statistics.quantiles(async_times, n=100)[98] * 1000,
             },
             "concurrent": {
                 "total_time_s": concurrent_total,
                 "operations": 200,  # 100 sets + 100 gets
                 "throughput_ops_per_sec": 200 / concurrent_total,
-                "mean_ms": statistics.mean(concurrent_times) * 1000
-            }
+                "mean_ms": statistics.mean(concurrent_times) * 1000,
+            },
         }
 
         self.results["async_operations"] = results
@@ -351,8 +354,12 @@ class CacheBenchmark:
             "uncached_us": statistics.mean(uncached_times) * 1_000_000,
             "cache_miss_us": statistics.mean(cache_miss_times) * 1_000_000,
             "cache_hit_us": statistics.mean(cache_hit_times) * 1_000_000,
-            "miss_overhead_us": (statistics.mean(cache_miss_times) - statistics.mean(uncached_times)) * 1_000_000,
-            "hit_speedup": statistics.mean(cache_miss_times) / statistics.mean(cache_hit_times)
+            "miss_overhead_us": (
+                statistics.mean(cache_miss_times) - statistics.mean(uncached_times)
+            )
+            * 1_000_000,
+            "hit_speedup": statistics.mean(cache_miss_times)
+            / statistics.mean(cache_hit_times),
         }
 
         self.results["decorator_overhead"] = results
@@ -366,11 +373,7 @@ class CacheBenchmark:
         self.cache.get_metrics()
 
         # Add various sized data
-        sizes = {
-            "small": 1000,
-            "medium": 100,
-            "large": 10
-        }
+        sizes = {"small": 1000, "medium": 100, "large": 10}
 
         for size, count in sizes.items():
             data = self.generate_data(size)
@@ -386,8 +389,8 @@ class CacheBenchmark:
             "estimated_memory_mb": self._estimate_memory_usage(),
             "hit_rates": {
                 "l1": final_metrics.get("l1_hit_rate", 0),
-                "l2": final_metrics.get("l2_hit_rate", 0)
-            }
+                "l2": final_metrics.get("l2_hit_rate", 0),
+            },
         }
 
         self.results["memory_efficiency"] = results
@@ -441,15 +444,17 @@ class CacheBenchmark:
         print("=" * 50)
 
         if "l1_vs_l2" in self.results:
-            print(f"\nL1 Cache Speedup: {self.results['l1_vs_l2']['speedup']:.1f}x faster than L2")
+            print(
+                f"\nL1 Cache Speedup: {self.results['l1_vs_l2']['speedup']:.1f}x faster than L2"
+            )
 
         if "concurrent_access" in self.results:
-            throughput = self.results['concurrent_access']['throughput_ops_per_sec']
+            throughput = self.results["concurrent_access"]["throughput_ops_per_sec"]
             print(f"Concurrent Throughput: {throughput:.0f} ops/sec")
 
         if "decorator_overhead" in self.results:
-            overhead = self.results['decorator_overhead']['miss_overhead_us']
-            speedup = self.results['decorator_overhead']['hit_speedup']
+            overhead = self.results["decorator_overhead"]["miss_overhead_us"]
+            speedup = self.results["decorator_overhead"]["hit_speedup"]
             print(f"Decorator Overhead: {overhead:.1f} microseconds")
             print(f"Cache Hit Speedup: {speedup:.1f}x faster")
 
@@ -465,7 +470,7 @@ def main():
         db=14,  # Separate DB for benchmarks
         key_prefix="benchmark",
         l1_max_size=10000,
-        l1_ttl=60
+        l1_ttl=60,
     )
 
     cache = RedisCache(config)
@@ -479,6 +484,7 @@ def main():
 
         # Clear benchmark database
         import redis
+
         with redis.Redis(host=config.host, port=config.port, db=config.db) as r:
             r.flushdb()
 

@@ -31,7 +31,9 @@ class StatisticalAnalyzer:
             return 0.0
         return statistics.variance(values)
 
-    def percentiles(self, values: list[float], percentiles: list[int]) -> dict[int, float]:
+    def percentiles(
+        self, values: list[float], percentiles: list[int]
+    ) -> dict[int, float]:
         """Calculate multiple percentiles."""
         if not values:
             return dict.fromkeys(percentiles, 0.0)
@@ -127,9 +129,7 @@ class StatisticalAnalyzer:
         return std_val / abs(mean_val)
 
     def confidence_interval(
-        self,
-        values: list[float],
-        confidence: float = 0.95
+        self, values: list[float], confidence: float = 0.95
     ) -> tuple[float, float]:
         """Calculate confidence interval using t-distribution."""
         if len(values) < 2:
@@ -142,11 +142,7 @@ class StatisticalAnalyzer:
 
         # For simplicity, using z-score approximation
         # For small samples, should use t-distribution
-        z_scores = {
-            0.90: 1.645,
-            0.95: 1.960,
-            0.99: 2.576
-        }
+        z_scores = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
 
         z = z_scores.get(confidence, 1.960)
         margin = z * std_err
@@ -163,15 +159,13 @@ class StatisticalAnalyzer:
 
         result = []
         for i in range(len(values) - window + 1):
-            window_values = values[i:i + window]
+            window_values = values[i : i + window]
             result.append(self.mean(window_values))
 
         return result
 
     def exponential_moving_average(
-        self,
-        values: list[float],
-        alpha: float = 0.3
+        self, values: list[float], alpha: float = 0.3
     ) -> list[float]:
         """Calculate exponential moving average."""
         if not values:
@@ -209,9 +203,7 @@ class StatisticalAnalyzer:
             return "stable"
 
     def compare_distributions(
-        self,
-        dist1: list[float],
-        dist2: list[float]
+        self, dist1: list[float], dist2: list[float]
     ) -> dict[str, float | str]:
         """Compare two distributions."""
         if not dist1 or not dist2:
@@ -220,7 +212,11 @@ class StatisticalAnalyzer:
         result = {
             "mean_diff": self.mean(dist2) - self.mean(dist1),
             "median_diff": self.median(dist2) - self.median(dist1),
-            "std_dev_ratio": self.std_dev(dist2) / self.std_dev(dist1) if self.std_dev(dist1) > 0 else float('inf'),
+            "std_dev_ratio": (
+                self.std_dev(dist2) / self.std_dev(dist1)
+                if self.std_dev(dist1) > 0
+                else float("inf")
+            ),
         }
 
         # Percentage changes
@@ -228,13 +224,13 @@ class StatisticalAnalyzer:
             result["mean_change_pct"] = (result["mean_diff"] / self.mean(dist1)) * 100
 
         if self.median(dist1) != 0:
-            result["median_change_pct"] = (result["median_diff"] / self.median(dist1)) * 100
+            result["median_change_pct"] = (
+                result["median_diff"] / self.median(dist1)
+            ) * 100
 
         # Statistical significance (simplified)
         # For proper testing, use scipy.stats
-        pooled_std = math.sqrt(
-            (self.variance(dist1) + self.variance(dist2)) / 2
-        )
+        pooled_std = math.sqrt((self.variance(dist1) + self.variance(dist2)) / 2)
 
         if pooled_std > 0:
             effect_size = result["mean_diff"] / pooled_std

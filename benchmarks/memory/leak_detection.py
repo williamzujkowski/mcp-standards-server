@@ -63,9 +63,10 @@ class LeakDetectionBenchmark(BaseBenchmark):
         leaks = self._check_for_leaks()
 
         return {
-            "memory_growth_mb": self._get_memory_info()["rss"] - self.baseline_memory["rss"],
+            "memory_growth_mb": self._get_memory_info()["rss"]
+            - self.baseline_memory["rss"],
             "leaked_objects": len(leaks),
-            "gc_stats": gc.get_stats()[-1] if gc.get_stats() else {}
+            "gc_stats": gc.get_stats()[-1] if gc.get_stats() else {},
         }
 
     async def _test_server_lifecycle(self):
@@ -74,10 +75,9 @@ class LeakDetectionBenchmark(BaseBenchmark):
 
         # Create multiple servers
         for _i in range(5):
-            server = MCPStandardsServer({
-                "search": {"enabled": False},
-                "token_model": "gpt-4"
-            })
+            server = MCPStandardsServer(
+                {"search": {"enabled": False}, "token_model": "gpt-4"}
+            )
             servers.append(weakref.ref(server))
 
             # Perform some operations
@@ -104,16 +104,14 @@ class LeakDetectionBenchmark(BaseBenchmark):
             await server._list_available_standards(limit=50)
 
             # Get applicable standards
-            await server._get_applicable_standards({
-                "language": "python",
-                "framework": "fastapi"
-            })
+            await server._get_applicable_standards(
+                {"language": "python", "framework": "fastapi"}
+            )
 
             # Token optimization
             try:
                 await server._get_optimized_standard(
-                    f"leak-test-{i % 5}",
-                    format_type="condensed"
+                    f"leak-test-{i % 5}", format_type="condensed"
                 )
             except Exception:
                 pass
@@ -156,8 +154,7 @@ class LeakDetectionBenchmark(BaseBenchmark):
         # Wait with timeout
         try:
             await asyncio.wait_for(
-                asyncio.gather(*tasks, return_exceptions=True),
-                timeout=10.0
+                asyncio.gather(*tasks, return_exceptions=True), timeout=10.0
             )
         except asyncio.TimeoutError:
             # Cancel remaining tasks
@@ -173,23 +170,27 @@ class LeakDetectionBenchmark(BaseBenchmark):
         growth = self.object_tracker.get_growth("before", "after")
         for type_name, count in growth.items():
             if count > 10:  # Threshold for leak detection
-                leaks.append({
-                    "type": type_name,
-                    "growth": count,
-                    "severity": "high" if count > 100 else "medium"
-                })
+                leaks.append(
+                    {
+                        "type": type_name,
+                        "growth": count,
+                        "severity": "high" if count > 100 else "medium",
+                    }
+                )
 
         # Check tracemalloc differences
         current_snapshot = tracemalloc.take_snapshot()
-        top_stats = current_snapshot.compare_to(self.baseline_snapshot, 'lineno')
+        top_stats = current_snapshot.compare_to(self.baseline_snapshot, "lineno")
 
         for stat in top_stats[:10]:
             if stat.size_diff > 1024 * 1024:  # 1MB threshold
-                leaks.append({
-                    "location": str(stat),
-                    "size_diff_mb": stat.size_diff / 1024 / 1024,
-                    "count_diff": stat.count_diff
-                })
+                leaks.append(
+                    {
+                        "location": str(stat),
+                        "size_diff_mb": stat.size_diff / 1024 / 1024,
+                        "count_diff": stat.count_diff,
+                    }
+                )
 
         self.leak_candidates.extend(leaks)
         return leaks
@@ -199,10 +200,7 @@ class LeakDetectionBenchmark(BaseBenchmark):
         process = psutil.Process()
         mem_info = process.memory_info()
 
-        return {
-            "rss": mem_info.rss / 1024 / 1024,
-            "vms": mem_info.vms / 1024 / 1024
-        }
+        return {"rss": mem_info.rss / 1024 / 1024, "vms": mem_info.vms / 1024 / 1024}
 
     async def _create_test_data(self):
         """Create test standards."""
@@ -219,12 +217,12 @@ class LeakDetectionBenchmark(BaseBenchmark):
                 "category": "test",
                 "content": {
                     "overview": f"Test standard {i}",
-                    "guidelines": [f"Guideline {j}" for j in range(10)]
-                }
+                    "guidelines": [f"Guideline {j}" for j in range(10)],
+                },
             }
 
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def teardown(self):
@@ -254,29 +252,39 @@ class LeakDetectionBenchmark(BaseBenchmark):
 
         report = {
             "total_memory_growth_mb": total_growth,
-            "growth_per_iteration_mb": total_growth / self.iterations if self.iterations > 0 else 0,
+            "growth_per_iteration_mb": (
+                total_growth / self.iterations if self.iterations > 0 else 0
+            ),
             "leak_types": leak_types,
             "leak_detected": total_growth > 10,  # 10MB threshold
-            "recommendations": self._generate_recommendations(leak_types, total_growth)
+            "recommendations": self._generate_recommendations(leak_types, total_growth),
         }
 
         return report
 
-    def _generate_recommendations(self, leak_types: dict[str, list], growth: float) -> list[str]:
+    def _generate_recommendations(
+        self, leak_types: dict[str, list], growth: float
+    ) -> list[str]:
         """Generate recommendations based on findings."""
         recommendations = []
 
         if growth > 10:
-            recommendations.append("Significant memory growth detected - investigate memory management")
+            recommendations.append(
+                "Significant memory growth detected - investigate memory management"
+            )
 
         if "MCPStandardsServer" in leak_types:
             recommendations.append("Server instances may not be properly cleaned up")
 
         if "dict" in leak_types or "list" in leak_types:
-            recommendations.append("Consider clearing caches and temporary data structures")
+            recommendations.append(
+                "Consider clearing caches and temporary data structures"
+            )
 
         if growth > 50:
-            recommendations.append("Critical: Memory leak detected - immediate action required")
+            recommendations.append(
+                "Critical: Memory leak detected - immediate action required"
+            )
 
         return recommendations
 

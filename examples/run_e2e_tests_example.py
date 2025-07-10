@@ -24,11 +24,7 @@ def run_e2e_tests(test_type="all", coverage=True, performance=False):
 
     # Add coverage
     if coverage:
-        cmd.extend([
-            "--cov=src",
-            "--cov-report=json",
-            "--cov-report=term"
-        ])
+        cmd.extend(["--cov=src", "--cov-report=json", "--cov-report=term"])
 
     # Add JSON output for parsing
     cmd.extend(["--json-report", "--json-report-file=test_results.json"])
@@ -53,16 +49,16 @@ def run_e2e_tests(test_type="all", coverage=True, performance=False):
         "stdout": result.stdout,
         "stderr": result.stderr,
         "test_results": test_results,
-        "coverage": coverage_data
+        "coverage": coverage_data,
     }
 
 
 def analyze_results(results):
     """Analyze test results and print summary."""
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("E2E TEST RESULTS SUMMARY")
-    print("="*60)
+    print("=" * 60)
 
     if results["exit_code"] == 0:
         print("✅ All tests passed!")
@@ -102,9 +98,10 @@ def run_performance_benchmarks():
     cmd = [
         "pytest",
         "tests/e2e/test_performance.py",
-        "-m", "benchmark",
+        "-m",
+        "benchmark",
         "--benchmark-json=benchmark_results.json",
-        "--benchmark-only"
+        "--benchmark-only",
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -127,13 +124,12 @@ def run_performance_benchmarks():
                 "scripts/detect_performance_regression.py",
                 "benchmark_results.json",
                 "benchmark_baseline.json",
-                "--threshold", "10.0"
+                "--threshold",
+                "10.0",
             ]
 
             regression_result = subprocess.run(
-                check_cmd,
-                capture_output=True,
-                text=True
+                check_cmd, capture_output=True, text=True
             )
 
             print("\nRegression Check:")
@@ -160,11 +156,10 @@ def main():
 
     # Overall result
     overall_success = (
-        functional_results["exit_code"] == 0 and
-        performance_results["exit_code"] == 0
+        functional_results["exit_code"] == 0 and performance_results["exit_code"] == 0
     )
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     if overall_success:
         print("✅ All E2E tests completed successfully!")
         return 0

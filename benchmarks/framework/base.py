@@ -70,7 +70,7 @@ class BenchmarkResult:
                 "tags": self.tags,
                 "environment": self.environment,
                 "errors": self.errors,
-            }
+            },
         }
 
     @classmethod
@@ -175,6 +175,7 @@ class BaseBenchmark(ABC):
 
         # Calculate statistics
         from benchmarks.framework.stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         result = BenchmarkResult(
@@ -193,7 +194,7 @@ class BaseBenchmark(ABC):
             memory_samples=memory_samples,
             throughput=len(times) / total_duration if total_duration > 0 else 0,
             errors=errors,
-            environment=self._get_environment_info()
+            environment=self._get_environment_info(),
         )
 
         # Aggregate custom metrics
@@ -211,11 +212,13 @@ class BaseBenchmark(ABC):
             "memory_total_gb": psutil.virtual_memory().total / 1024 / 1024 / 1024,
             "platform": {
                 "system": psutil.LINUX if hasattr(psutil, "LINUX") else "unknown",
-                "boot_time": datetime.fromtimestamp(psutil.boot_time()).isoformat()
-            }
+                "boot_time": datetime.fromtimestamp(psutil.boot_time()).isoformat(),
+            },
         }
 
-    def _aggregate_custom_metrics(self, metrics_list: list[dict[str, Any]]) -> dict[str, Any]:
+    def _aggregate_custom_metrics(
+        self, metrics_list: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Aggregate custom metrics from all iterations."""
         if not metrics_list:
             return {}
@@ -228,6 +231,7 @@ class BaseBenchmark(ABC):
             all_keys.update(metrics.keys())
 
         from benchmarks.framework.stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         for key in all_keys:
@@ -240,7 +244,7 @@ class BaseBenchmark(ABC):
                     "median": stats.median(values),
                     "min": min(values),
                     "max": max(values),
-                    "std_dev": stats.std_dev(values)
+                    "std_dev": stats.std_dev(values),
                 }
             else:
                 # Non-numeric - just store all values
@@ -250,12 +254,8 @@ class BaseBenchmark(ABC):
 
     def save_results(self, filepath: Path):
         """Save results to JSON file."""
-        with open(filepath, 'w') as f:
-            json.dump(
-                [r.to_dict() for r in self.results],
-                f,
-                indent=2
-            )
+        with open(filepath, "w") as f:
+            json.dump([r.to_dict() for r in self.results], f, indent=2)
 
     def load_results(self, filepath: Path):
         """Load results from JSON file."""
@@ -276,7 +276,9 @@ class BenchmarkSuite:
         """Add a benchmark to the suite."""
         self.benchmarks.append(benchmark)
 
-    async def run_all(self, warmup_iterations: int = 5) -> dict[str, list[BenchmarkResult]]:
+    async def run_all(
+        self, warmup_iterations: int = 5
+    ) -> dict[str, list[BenchmarkResult]]:
         """Run all benchmarks in the suite."""
         print(f"\nRunning benchmark suite: {self.name}")
         print("=" * 80)
@@ -307,19 +309,15 @@ class BenchmarkSuite:
         # Save individual benchmark results
         for name, results in self.results.items():
             filepath = directory / f"{name.replace(' ', '_')}.json"
-            with open(filepath, 'w') as f:
-                json.dump(
-                    [r.to_dict() for r in results],
-                    f,
-                    indent=2
-                )
+            with open(filepath, "w") as f:
+                json.dump([r.to_dict() for r in results], f, indent=2)
 
         # Save summary
         summary = {
             "suite": self.name,
             "timestamp": datetime.now().isoformat(),
             "benchmarks": list(self.results.keys()),
-            "summary": {}
+            "summary": {},
         }
 
         for name, results in self.results.items():
@@ -329,8 +327,8 @@ class BenchmarkSuite:
                     "mean_time": latest.mean_time,
                     "throughput": latest.throughput,
                     "peak_memory_mb": latest.peak_memory_mb,
-                    "errors": len(latest.errors)
+                    "errors": len(latest.errors),
                 }
 
-        with open(directory / "summary.json", 'w') as f:
+        with open(directory / "summary.json", "w") as f:
             json.dump(summary, f, indent=2)

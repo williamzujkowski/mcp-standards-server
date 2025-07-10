@@ -18,7 +18,7 @@ class HTMLReportGenerator:
         self,
         results: dict[str, list[BenchmarkResult]],
         output_path: Path,
-        title: str = "MCP Performance Report"
+        title: str = "MCP Performance Report",
     ):
         """Generate comprehensive HTML report."""
         # Prepare data
@@ -32,7 +32,9 @@ class HTMLReportGenerator:
 
         # Detailed results by benchmark
         for benchmark_name, benchmark_data in report_data["benchmarks"].items():
-            sections.append(self._generate_benchmark_section(benchmark_name, benchmark_data))
+            sections.append(
+                self._generate_benchmark_section(benchmark_name, benchmark_data)
+            )
 
         # Performance trends
         if len(results) > 1:
@@ -48,20 +50,22 @@ class HTMLReportGenerator:
         html = self.template.format(
             title=title,
             generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            content=content
+            content=content,
         )
 
         # Save report
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(html)
 
         # Also save raw data as JSON
-        json_path = output_path.with_suffix('.json')
-        with open(json_path, 'w') as f:
+        json_path = output_path.with_suffix(".json")
+        with open(json_path, "w") as f:
             json.dump(report_data, f, indent=2, default=str)
 
-    def _prepare_report_data(self, results: dict[str, list[BenchmarkResult]]) -> dict[str, Any]:
+    def _prepare_report_data(
+        self, results: dict[str, list[BenchmarkResult]]
+    ) -> dict[str, Any]:
         """Prepare data for report generation."""
         report_data = {
             "generated_at": datetime.now().isoformat(),
@@ -69,7 +73,7 @@ class HTMLReportGenerator:
                 "total_benchmarks": len(results),
                 "total_runs": sum(len(runs) for runs in results.values()),
             },
-            "benchmarks": {}
+            "benchmarks": {},
         }
 
         for benchmark_name, runs in results.items():
@@ -89,19 +93,21 @@ class HTMLReportGenerator:
                     "p99_time": latest.percentiles.get(99, 0),
                     "throughput": latest.throughput,
                     "peak_memory_mb": latest.peak_memory_mb,
-                    "errors": len(latest.errors)
+                    "errors": len(latest.errors),
                 },
-                "history": []
+                "history": [],
             }
 
             # Add historical data
             for run in runs:
-                benchmark_data["history"].append({
-                    "timestamp": run.timestamp.isoformat(),
-                    "mean_time": run.mean_time,
-                    "throughput": run.throughput,
-                    "peak_memory_mb": run.peak_memory_mb
-                })
+                benchmark_data["history"].append(
+                    {
+                        "timestamp": run.timestamp.isoformat(),
+                        "mean_time": run.mean_time,
+                        "throughput": run.throughput,
+                        "peak_memory_mb": run.peak_memory_mb,
+                    }
+                )
 
             report_data["benchmarks"][benchmark_name] = benchmark_data
 
@@ -159,13 +165,15 @@ class HTMLReportGenerator:
                 )
 
         if not findings:
-            findings.append('<li class="success">✅ All benchmarks completed successfully</li>')
+            findings.append(
+                '<li class="success">✅ All benchmarks completed successfully</li>'
+            )
 
         return summary_html.format(
             total_benchmarks=data["summary"]["total_benchmarks"],
             total_runs=data["summary"]["total_runs"],
             generated_at=data["generated_at"],
-            findings="\n".join(findings)
+            findings="\n".join(findings),
         )
 
     def _generate_benchmark_section(self, name: str, data: dict[str, Any]) -> str:
@@ -224,16 +232,22 @@ class HTMLReportGenerator:
             # Calculate trend
             first_time = history[0]["mean_time"]
             last_time = history[-1]["mean_time"]
-            change_pct = ((last_time - first_time) / first_time * 100) if first_time > 0 else 0
+            change_pct = (
+                ((last_time - first_time) / first_time * 100) if first_time > 0 else 0
+            )
 
-            trend_class = "improving" if change_pct < -5 else "degrading" if change_pct > 5 else "stable"
+            trend_class = (
+                "improving"
+                if change_pct < -5
+                else "degrading" if change_pct > 5 else "stable"
+            )
             trend_icon = "📈" if change_pct > 5 else "📉" if change_pct < -5 else "➡️"
 
             trend_items.append(
                 f'<div class="trend-item {trend_class}">'
-                f'{trend_icon} {name}: {change_pct:+.1f}% '
-                f'({first_time*1000:.1f}ms → {last_time*1000:.1f}ms)'
-                f'</div>'
+                f"{trend_icon} {name}: {change_pct:+.1f}% "
+                f"({first_time*1000:.1f}ms → {last_time*1000:.1f}ms)"
+                f"</div>"
             )
 
         return trends_html.format(trend_items="\n".join(trend_items))
@@ -247,37 +261,45 @@ class HTMLReportGenerator:
             latest = benchmark["latest_run"]
 
             if latest["mean_time"] > 0.5:
-                recommendations.append({
-                    "type": "performance",
-                    "severity": "high",
-                    "message": f"Optimize {name} - response time exceeds 500ms threshold"
-                })
+                recommendations.append(
+                    {
+                        "type": "performance",
+                        "severity": "high",
+                        "message": f"Optimize {name} - response time exceeds 500ms threshold",
+                    }
+                )
 
             if latest["peak_memory_mb"] > 500:
-                recommendations.append({
-                    "type": "memory",
-                    "severity": "medium",
-                    "message": f"Review memory usage in {name} - consider optimization"
-                })
+                recommendations.append(
+                    {
+                        "type": "memory",
+                        "severity": "medium",
+                        "message": f"Review memory usage in {name} - consider optimization",
+                    }
+                )
 
             if latest["throughput"] and latest["throughput"] < 10:
-                recommendations.append({
-                    "type": "throughput",
-                    "severity": "medium",
-                    "message": f"Low throughput in {name} - investigate bottlenecks"
-                })
+                recommendations.append(
+                    {
+                        "type": "throughput",
+                        "severity": "medium",
+                        "message": f"Low throughput in {name} - investigate bottlenecks",
+                    }
+                )
 
         # Generate HTML
         if not recommendations:
-            recommendations_html = '<p class="success">✅ No critical issues detected</p>'
+            recommendations_html = (
+                '<p class="success">✅ No critical issues detected</p>'
+            )
         else:
             items = []
             for rec in recommendations:
                 severity_class = f"severity-{rec['severity']}"
-                items.append(
-                    f'<li class="{severity_class}">{rec["message"]}</li>'
-                )
-            recommendations_html = f'<ul class="recommendations">{chr(10).join(items)}</ul>'
+                items.append(f'<li class="{severity_class}">{rec["message"]}</li>')
+            recommendations_html = (
+                f'<ul class="recommendations">{chr(10).join(items)}</ul>'
+            )
 
         return f"""
         <section class="recommendations-section">

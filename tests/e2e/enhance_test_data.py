@@ -25,9 +25,9 @@ def enhance_standards():
                         "examples": [
                             {
                                 "description": "Functional component with hooks",
-                                "code": "const MyComponent = ({ data }) => {\n  const [state, setState] = useState(data);\n  return <div>{state}</div>;\n};"
+                                "code": "const MyComponent = ({ data }) => {\n  const [state, setState] = useState(data);\n  return <div>{state}</div>;\n};",
                             }
-                        ]
+                        ],
                     },
                     {
                         "title": "State Management",
@@ -35,8 +35,8 @@ def enhance_standards():
                         "rules": [
                             "Avoid prop drilling by using Context API",
                             "Keep state as local as possible",
-                            "Use useReducer for complex state logic"
-                        ]
+                            "Use useReducer for complex state logic",
+                        ],
                     },
                     {
                         "title": "Performance Optimization",
@@ -44,24 +44,24 @@ def enhance_standards():
                         "rules": [
                             "Memoize expensive computations",
                             "Use React.lazy for code splitting",
-                            "Implement virtualization for long lists"
-                        ]
-                    }
-                ]
+                            "Implement virtualization for long lists",
+                        ],
+                    },
+                ],
             },
             "metadata": {
                 "author": "React Team",
                 "last_updated": "2024-01-01",
                 "applies_to": ["react@>=18.0.0"],
-                "nist_controls": ["SA-15", "SA-17"]
+                "nist_controls": ["SA-15", "SA-17"],
             },
             "validation_rules": [
                 {
                     "id": "no-class-components",
                     "description": "Prefer functional components over class components",
-                    "severity": "warning"
+                    "severity": "warning",
                 }
-            ]
+            ],
         },
         "python-testing": {
             "id": "python-testing",
@@ -78,8 +78,8 @@ def enhance_standards():
                         "rules": [
                             "Use descriptive test names starting with test_",
                             "Group related tests in classes",
-                            "Keep tests independent and isolated"
-                        ]
+                            "Keep tests independent and isolated",
+                        ],
                     },
                     {
                         "title": "Pytest Best Practices",
@@ -87,9 +87,9 @@ def enhance_standards():
                         "examples": [
                             {
                                 "description": "Parametrized testing",
-                                "code": "@pytest.mark.parametrize('input,expected', [\n    (1, 2),\n    (2, 4),\n])\ndef test_double(input, expected):\n    assert double(input) == expected"
+                                "code": "@pytest.mark.parametrize('input,expected', [\n    (1, 2),\n    (2, 4),\n])\ndef test_double(input, expected):\n    assert double(input) == expected",
                             }
-                        ]
+                        ],
                     },
                     {
                         "title": "Coverage Requirements",
@@ -97,17 +97,17 @@ def enhance_standards():
                         "rules": [
                             "Write tests for all public APIs",
                             "Test edge cases and error conditions",
-                            "Use mocks for external dependencies"
-                        ]
-                    }
-                ]
+                            "Use mocks for external dependencies",
+                        ],
+                    },
+                ],
             },
             "metadata": {
                 "author": "QA Team",
                 "last_updated": "2024-01-15",
                 "applies_to": ["python@>=3.8"],
-                "tools": ["pytest", "coverage", "pytest-cov"]
-            }
+                "tools": ["pytest", "coverage", "pytest-cov"],
+            },
         },
         "javascript-es6-standards": {
             "id": "javascript-es6-standards",
@@ -125,8 +125,8 @@ def enhance_standards():
                             "Use const/let instead of var",
                             "Prefer arrow functions for callbacks",
                             "Use template literals for string interpolation",
-                            "Destructure objects and arrays"
-                        ]
+                            "Destructure objects and arrays",
+                        ],
                     },
                     {
                         "title": "Async Programming",
@@ -134,9 +134,9 @@ def enhance_standards():
                         "examples": [
                             {
                                 "description": "Async/await pattern",
-                                "code": "async function fetchData() {\n  try {\n    const response = await fetch('/api/data');\n    return await response.json();\n  } catch (error) {\n    console.error('Failed to fetch:', error);\n  }\n}"
+                                "code": "async function fetchData() {\n  try {\n    const response = await fetch('/api/data');\n    return await response.json();\n  } catch (error) {\n    console.error('Failed to fetch:', error);\n  }\n}",
                             }
-                        ]
+                        ],
                     },
                     {
                         "title": "Module System",
@@ -144,23 +144,23 @@ def enhance_standards():
                         "rules": [
                             "Use named exports for utilities",
                             "Use default exports for main components",
-                            "Avoid circular dependencies"
-                        ]
-                    }
-                ]
+                            "Avoid circular dependencies",
+                        ],
+                    },
+                ],
             },
             "metadata": {
                 "author": "JavaScript Standards Committee",
                 "last_updated": "2024-01-10",
-                "applies_to": ["node@>=14.0.0", "es2020+"]
-            }
-        }
+                "applies_to": ["node@>=14.0.0", "es2020+"],
+            },
+        },
     }
 
     # Write enhanced standards to both locations
     locations = [
         Path("/tmp/test_standards_data/standards/cache"),
-        Path("/home/william/git/mcp-standards-server/data/standards/cache")
+        Path("/home/william/git/mcp-standards-server/data/standards/cache"),
     ]
 
     for location in locations:
@@ -169,6 +169,7 @@ def enhance_standards():
                 std_file = location / f"{std_id}.json"
                 std_file.write_text(json.dumps(std_data, indent=2))
                 print(f"Enhanced {std_id} in {location}")
+
 
 if __name__ == "__main__":
     enhance_standards()

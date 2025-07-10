@@ -68,9 +68,7 @@ class AllocationTrackingBenchmark(BaseBenchmark):
 
             # Analyze allocations
             stats = self._analyze_allocations(
-                component_name,
-                snapshot_before,
-                snapshot_after
+                component_name, snapshot_before, snapshot_after
             )
 
             results[component_name] = stats
@@ -93,19 +91,20 @@ class AllocationTrackingBenchmark(BaseBenchmark):
                 "project_type": "enterprise",
                 "team_size": "large",
                 "deployment": "kubernetes",
-                "security_level": "high"
-            }
+                "security_level": "high",
+            },
         ]
 
         for context in contexts:
-            await server._get_applicable_standards(context, include_resolution_details=True)
+            await server._get_applicable_standards(
+                context, include_resolution_details=True
+            )
 
     async def _track_token_optimizer(self):
         """Track token optimizer allocations."""
-        server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
 
         # Test different optimization scenarios
         standard_ids = ["alloc-test-0", "alloc-test-1", "alloc-test-2"]
@@ -115,36 +114,31 @@ class AllocationTrackingBenchmark(BaseBenchmark):
             for format_type in ["full", "condensed", "summary"]:
                 try:
                     await server._get_optimized_standard(
-                        std_id,
-                        format_type=format_type,
-                        token_budget=3000
+                        std_id, format_type=format_type, token_budget=3000
                     )
                 except Exception:
                     pass
 
         # Multi-standard optimization
-        await server._auto_optimize_standards(
-            standard_ids,
-            total_token_budget=10000
-        )
+        await server._auto_optimize_standards(standard_ids, total_token_budget=10000)
 
         # Progressive loading
         for std_id in standard_ids[:1]:
             try:
                 await server._progressive_load_standard(
-                    std_id,
-                    initial_sections=["overview", "guidelines"],
-                    max_depth=3
+                    std_id, initial_sections=["overview", "guidelines"], max_depth=3
                 )
             except Exception:
                 pass
 
     async def _track_search_engine(self):
         """Track search engine allocations."""
-        server = MCPStandardsServer({
-            "search": {"enabled": True},
-            "search_model": "sentence-transformers/all-MiniLM-L6-v2"
-        })
+        server = MCPStandardsServer(
+            {
+                "search": {"enabled": True},
+                "search_model": "sentence-transformers/all-MiniLM-L6-v2",
+            }
+        )
 
         # Various search queries
         queries = [
@@ -152,15 +146,11 @@ class AllocationTrackingBenchmark(BaseBenchmark):
             "authentication oauth jwt token refresh",
             "react hooks performance optimization memoization",
             "microservices distributed tracing observability",
-            "kubernetes deployment scaling horizontal pod autoscaler"
+            "kubernetes deployment scaling horizontal pod autoscaler",
         ]
 
         for query in queries:
-            await server._search_standards(
-                query,
-                limit=20,
-                min_relevance=0.3
-            )
+            await server._search_standards(query, limit=20, min_relevance=0.3)
 
     async def _track_sync_manager(self):
         """Track sync manager allocations."""
@@ -193,29 +183,30 @@ class AllocationTrackingBenchmark(BaseBenchmark):
         await server._list_available_standards(category="test", limit=50)
 
     def _analyze_allocations(
-        self,
-        component: str,
-        before: tracemalloc.Snapshot,
-        after: tracemalloc.Snapshot
+        self, component: str, before: tracemalloc.Snapshot, after: tracemalloc.Snapshot
     ) -> dict[str, Any]:
         """Analyze memory allocations for a component."""
         # Get top differences
-        top_stats = after.compare_to(before, 'lineno')
+        top_stats = after.compare_to(before, "lineno")
 
         # Calculate total allocations
-        total_allocated = sum(stat.size_diff for stat in top_stats if stat.size_diff > 0)
+        total_allocated = sum(
+            stat.size_diff for stat in top_stats if stat.size_diff > 0
+        )
         total_freed = sum(-stat.size_diff for stat in top_stats if stat.size_diff < 0)
 
         # Get top allocating locations
         top_allocations = []
         for stat in sorted(top_stats, key=lambda x: x.size_diff, reverse=True)[:10]:
             if stat.size_diff > 0:
-                top_allocations.append({
-                    "file": stat.traceback[0].filename,
-                    "line": stat.traceback[0].lineno,
-                    "size_kb": stat.size_diff / 1024,
-                    "count": stat.count_diff
-                })
+                top_allocations.append(
+                    {
+                        "file": stat.traceback[0].filename,
+                        "line": stat.traceback[0].lineno,
+                        "size_kb": stat.size_diff / 1024,
+                        "count": stat.count_diff,
+                    }
+                )
 
         # Get allocation by file
         allocations_by_file = defaultdict(int)
@@ -232,9 +223,7 @@ class AllocationTrackingBenchmark(BaseBenchmark):
 
         # Get top allocating files
         top_files = sorted(
-            allocations_by_file.items(),
-            key=lambda x: x[1],
-            reverse=True
+            allocations_by_file.items(), key=lambda x: x[1], reverse=True
         )[:5]
 
         return {
@@ -242,11 +231,8 @@ class AllocationTrackingBenchmark(BaseBenchmark):
             "total_freed_kb": total_freed / 1024,
             "net_allocation_kb": (total_allocated - total_freed) / 1024,
             "top_allocations": top_allocations,
-            "top_files": [
-                {"file": f, "size_kb": s / 1024}
-                for f, s in top_files
-            ],
-            "allocation_count": sum(1 for stat in top_stats if stat.size_diff > 0)
+            "top_files": [{"file": f, "size_kb": s / 1024} for f, s in top_files],
+            "allocation_count": sum(1 for stat in top_stats if stat.size_diff > 0),
         }
 
     async def _create_test_data(self):
@@ -268,15 +254,12 @@ class AllocationTrackingBenchmark(BaseBenchmark):
                     "overview": "x" * (100 * (i + 1)),
                     "guidelines": [f"Guideline {j}" * 10 for j in range(i + 5)],
                     "examples": [f"Example {j}" * 20 for j in range(i + 2)],
-                    "sections": {
-                        f"section_{j}": f"Content {j}" * 50
-                        for j in range(i)
-                    }
-                }
+                    "sections": {f"section_{j}": f"Content {j}" * 50 for j in range(i)},
+                },
             }
 
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def teardown(self):
@@ -296,7 +279,7 @@ class AllocationTrackingBenchmark(BaseBenchmark):
                 "total_net_kb": 0,
             },
             "hotspots": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Aggregate component data
@@ -304,7 +287,9 @@ class AllocationTrackingBenchmark(BaseBenchmark):
             report["components"][component] = {
                 "net_allocation_kb": stats["net_allocation_kb"],
                 "allocation_count": stats["allocation_count"],
-                "top_file": stats["top_files"][0]["file"] if stats["top_files"] else "N/A"
+                "top_file": (
+                    stats["top_files"][0]["file"] if stats["top_files"] else "N/A"
+                ),
             }
 
             report["summary"]["total_allocated_kb"] += stats["total_allocated_kb"]
@@ -318,7 +303,9 @@ class AllocationTrackingBenchmark(BaseBenchmark):
                 all_allocations.append(alloc)
 
         # Sort by size
-        hotspots = sorted(all_allocations, key=lambda x: x["size_kb"], reverse=True)[:10]
+        hotspots = sorted(all_allocations, key=lambda x: x["size_kb"], reverse=True)[
+            :10
+        ]
         report["hotspots"] = hotspots
 
         # Generate recommendations
@@ -338,7 +325,7 @@ class AllocationTrackingBenchmark(BaseBenchmark):
 
     def print_allocation_summary(self):
         """Print a formatted allocation summary."""
-        if not hasattr(self, 'allocation_report'):
+        if not hasattr(self, "allocation_report"):
             print("No allocation report available")
             return
 
@@ -349,7 +336,9 @@ class AllocationTrackingBenchmark(BaseBenchmark):
         print("=" * 80)
 
         print("\n## Component Summary")
-        print(f"{'Component':<20} {'Net Alloc (KB)':<15} {'Allocations':<12} {'Top File':<30}")
+        print(
+            f"{'Component':<20} {'Net Alloc (KB)':<15} {'Allocations':<12} {'Top File':<30}"
+        )
         print("-" * 80)
 
         for component, data in report["components"].items():

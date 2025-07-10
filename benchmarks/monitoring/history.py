@@ -39,7 +39,7 @@ class HistoricalAnalyzer:
         filename = f"{result.timestamp.strftime('%Y%m%d_%H%M%S')}.json"
         filepath = benchmark_dir / filename
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(result.to_dict(), f, indent=2)
 
     def load_history(self, benchmark_name: str | None = None):
@@ -72,10 +72,7 @@ class HistoricalAnalyzer:
                 self.benchmark_history[benchmark_name] = results
 
     def analyze_trends(
-        self,
-        benchmark_name: str,
-        metric: str = "mean_time",
-        days: int = 7
+        self, benchmark_name: str, metric: str = "mean_time", days: int = 7
     ) -> dict[str, Any]:
         """Analyze performance trends for a benchmark."""
         if benchmark_name not in self.benchmark_history:
@@ -113,7 +110,7 @@ class HistoricalAnalyzer:
             "trend": self._detect_trend(timestamps, values),
             "anomalies": self._detect_anomalies(values),
             "forecast": self._forecast_trend(timestamps, values),
-            "change_points": self._detect_change_points(values)
+            "change_points": self._detect_change_points(values),
         }
 
         return analysis
@@ -159,16 +156,20 @@ class HistoricalAnalyzer:
             "min": min(values),
             "max": max(values),
             "range": max(values) - min(values),
-            "cv": statistics.stdev(values) / statistics.mean(values) if len(values) > 1 and statistics.mean(values) > 0 else 0,
+            "cv": (
+                statistics.stdev(values) / statistics.mean(values)
+                if len(values) > 1 and statistics.mean(values) > 0
+                else 0
+            ),
             "latest": values[-1],
             "first": values[0],
-            "change_pct": ((values[-1] - values[0]) / values[0] * 100) if values[0] != 0 else 0
+            "change_pct": (
+                ((values[-1] - values[0]) / values[0] * 100) if values[0] != 0 else 0
+            ),
         }
 
     def _detect_trend(
-        self,
-        timestamps: list[datetime],
-        values: list[float]
+        self, timestamps: list[datetime], values: list[float]
     ) -> dict[str, Any]:
         """Detect trend using linear regression."""
         if len(values) < 3:
@@ -199,12 +200,14 @@ class HistoricalAnalyzer:
         return {
             "type": trend_type,
             "slope": slope,
-            "r_squared": r_value ** 2,
+            "r_squared": r_value**2,
             "p_value": p_value,
             "change_per_hour": slope,
             "change_per_day": change_per_day,
             "total_change": total_change,
-            "confidence": "high" if p_value < 0.01 else "medium" if p_value < 0.05 else "low"
+            "confidence": (
+                "high" if p_value < 0.01 else "medium" if p_value < 0.05 else "low"
+            ),
         }
 
     def _detect_anomalies(self, values: list[float]) -> list[dict[str, Any]]:
@@ -221,12 +224,14 @@ class HistoricalAnalyzer:
         for i, value in enumerate(values):
             z_score = (value - mean) / std if std > 0 else 0
             if abs(z_score) > 3:
-                anomalies.append({
-                    "index": i,
-                    "value": value,
-                    "z_score": z_score,
-                    "method": "z_score"
-                })
+                anomalies.append(
+                    {
+                        "index": i,
+                        "value": value,
+                        "z_score": z_score,
+                        "method": "z_score",
+                    }
+                )
 
         # Method 2: Isolation Forest (simplified version)
         # Check for values that are far from neighbors
@@ -237,23 +242,24 @@ class HistoricalAnalyzer:
 
             # Check if current value is significantly different from neighbors
             neighbor_avg = (prev_val + next_val) / 2
-            diff_pct = abs(curr_val - neighbor_avg) / neighbor_avg if neighbor_avg > 0 else 0
+            diff_pct = (
+                abs(curr_val - neighbor_avg) / neighbor_avg if neighbor_avg > 0 else 0
+            )
 
             if diff_pct > 0.5:  # 50% difference
-                anomalies.append({
-                    "index": i,
-                    "value": curr_val,
-                    "neighbor_diff_pct": diff_pct * 100,
-                    "method": "neighbor_comparison"
-                })
+                anomalies.append(
+                    {
+                        "index": i,
+                        "value": curr_val,
+                        "neighbor_diff_pct": diff_pct * 100,
+                        "method": "neighbor_comparison",
+                    }
+                )
 
         return anomalies
 
     def _forecast_trend(
-        self,
-        timestamps: list[datetime],
-        values: list[float],
-        forecast_days: int = 3
+        self, timestamps: list[datetime], values: list[float], forecast_days: int = 3
     ) -> dict[str, Any]:
         """Forecast future values based on trend."""
         if len(values) < 5:
@@ -272,38 +278,36 @@ class HistoricalAnalyzer:
             forecast_value = slope * future_x + intercept
             forecast_timestamp = last_timestamp + timedelta(days=day)
 
-            forecast_points.append({
-                "timestamp": forecast_timestamp.isoformat(),
-                "value": max(0, forecast_value),  # Ensure non-negative
-                "confidence_interval": self._calculate_forecast_ci(
-                    values, forecast_value, day
-                )
-            })
+            forecast_points.append(
+                {
+                    "timestamp": forecast_timestamp.isoformat(),
+                    "value": max(0, forecast_value),  # Ensure non-negative
+                    "confidence_interval": self._calculate_forecast_ci(
+                        values, forecast_value, day
+                    ),
+                }
+            )
 
         return {
             "method": "linear_extrapolation",
             "forecast": forecast_points,
             "trend_strength": abs(slope),
-            "warning": self._generate_forecast_warning(slope, values)
+            "warning": self._generate_forecast_warning(slope, values),
         }
 
     def _calculate_forecast_ci(
-        self,
-        historical: list[float],
-        forecast_value: float,
-        days_ahead: int
+        self, historical: list[float], forecast_value: float, days_ahead: int
     ) -> tuple[float, float]:
         """Calculate confidence interval for forecast."""
         # Simple approach: CI widens with time
         std = statistics.stdev(historical) if len(historical) > 1 else 0
         margin = std * (1 + 0.1 * days_ahead)  # 10% wider per day
 
-        return (
-            max(0, forecast_value - 2 * margin),
-            forecast_value + 2 * margin
-        )
+        return (max(0, forecast_value - 2 * margin), forecast_value + 2 * margin)
 
-    def _generate_forecast_warning(self, slope: float, values: list[float]) -> str | None:
+    def _generate_forecast_warning(
+        self, slope: float, values: list[float]
+    ) -> str | None:
         """Generate warning based on forecast."""
         if slope > 0:
             # Calculate when metric might double
@@ -325,8 +329,8 @@ class HistoricalAnalyzer:
 
         for i in range(window, len(values) - window):
             # Compare before and after windows
-            before = values[i-window:i]
-            after = values[i:i+window]
+            before = values[i - window : i]
+            after = values[i : i + window]
 
             before_mean = statistics.mean(before)
             after_mean = statistics.mean(after)
@@ -336,26 +340,26 @@ class HistoricalAnalyzer:
                 change_pct = abs(after_mean - before_mean) / before_mean * 100
 
                 if change_pct > 20:  # 20% change threshold
-                    change_points.append({
-                        "index": i,
-                        "before_mean": before_mean,
-                        "after_mean": after_mean,
-                        "change_pct": change_pct,
-                        "direction": "increase" if after_mean > before_mean else "decrease"
-                    })
+                    change_points.append(
+                        {
+                            "index": i,
+                            "before_mean": before_mean,
+                            "after_mean": after_mean,
+                            "change_pct": change_pct,
+                            "direction": (
+                                "increase" if after_mean > before_mean else "decrease"
+                            ),
+                        }
+                    )
 
         return change_points
 
-    def generate_report(
-        self,
-        output_path: Path,
-        days: int = 7
-    ) -> str:
+    def generate_report(self, output_path: Path, days: int = 7) -> str:
         """Generate comprehensive historical analysis report."""
         lines = [
             "# Historical Performance Analysis Report",
             f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"Analysis Period: Last {days} days\n"
+            f"Analysis Period: Last {days} days\n",
         ]
 
         for benchmark_name in sorted(self.benchmark_history.keys()):
@@ -376,14 +380,20 @@ class HistoricalAnalyzer:
 
                     # Trend
                     trend = analysis["trend"]
-                    lines.append(f"- Trend: {trend['type']} ({trend['confidence']} confidence)")
+                    lines.append(
+                        f"- Trend: {trend['type']} ({trend['confidence']} confidence)"
+                    )
 
                     if trend["type"] != "no_trend":
-                        lines.append(f"- Change rate: {trend['change_per_day']:.3f} per day")
+                        lines.append(
+                            f"- Change rate: {trend['change_per_day']:.3f} per day"
+                        )
 
                     # Anomalies
                     if analysis["anomalies"]:
-                        lines.append(f"- Anomalies detected: {len(analysis['anomalies'])}")
+                        lines.append(
+                            f"- Anomalies detected: {len(analysis['anomalies'])}"
+                        )
 
                     # Forecast warning
                     if "forecast" in analysis and analysis["forecast"].get("warning"):
@@ -392,7 +402,7 @@ class HistoricalAnalyzer:
         report = "\n".join(lines)
 
         # Save report
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
 
         return report

@@ -10,7 +10,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-
 from benchmarks.framework import BaseBenchmark
 from src.mcp_server import MCPStandardsServer
 
@@ -34,10 +33,10 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                         "project_type": "web_app",
                         "language": "javascript",
                         "framework": "react",
-                        "environment": "production"
+                        "environment": "production",
                     },
-                    "include_resolution_details": True
-                }
+                    "include_resolution_details": True,
+                },
             },
             # search_standards
             {
@@ -45,23 +44,18 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 "args": {
                     "query": "security best practices authentication",
                     "limit": 10,
-                    "min_relevance": 0.5
-                }
+                    "min_relevance": 0.5,
+                },
             },
             # get_standard_details
             {
                 "tool": "get_standard_details",
-                "args": {
-                    "standard_id": "react-18-patterns"
-                }
+                "args": {"standard_id": "react-18-patterns"},
             },
             # list_available_standards
             {
                 "tool": "list_available_standards",
-                "args": {
-                    "category": "frontend",
-                    "limit": 50
-                }
+                "args": {"category": "frontend", "limit": 50},
             },
             # validate_against_standard
             {
@@ -77,8 +71,8 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                     }
                     """,
                     "standard": "react-18-patterns",
-                    "language": "javascript"
-                }
+                    "language": "javascript",
+                },
             },
             # suggest_improvements
             {
@@ -90,11 +84,8 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                         return fetch('/api/data').then(res => res.json());
                     }
                     """,
-                    "context": {
-                        "language": "javascript",
-                        "framework": "react"
-                    }
-                }
+                    "context": {"language": "javascript", "framework": "react"},
+                },
             },
             # get_optimized_standard
             {
@@ -102,22 +93,19 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 "args": {
                     "standard_id": "react-18-patterns",
                     "format_type": "condensed",
-                    "token_budget": 2000
-                }
+                    "token_budget": 2000,
+                },
             },
             # estimate_token_usage
             {
                 "tool": "estimate_token_usage",
                 "args": {
                     "standard_ids": ["react-18-patterns", "typescript-5-guidelines"],
-                    "format_types": ["full", "condensed", "summary"]
-                }
+                    "format_types": ["full", "condensed", "summary"],
+                },
             },
             # get_sync_status
-            {
-                "tool": "get_sync_status",
-                "args": {}
-            }
+            {"tool": "get_sync_status", "args": {}},
         ]
 
     async def setup(self):
@@ -125,7 +113,7 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
         config = {
             "search": {"enabled": False},  # Disable search for speed
             "token_model": "gpt-4",
-            "default_token_budget": 8000
+            "default_token_budget": 8000,
         }
         self.server = MCPStandardsServer(config)
 
@@ -144,8 +132,10 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 "content": {
                     "overview": "Best practices for React 18",
                     "guidelines": ["Use functional components", "Prefer hooks"],
-                    "examples": ["const MyComponent = () => { return <div>Hello</div>; }"]
-                }
+                    "examples": [
+                        "const MyComponent = () => { return <div>Hello</div>; }"
+                    ],
+                },
             },
             {
                 "id": "typescript-5-guidelines",
@@ -155,9 +145,9 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 "content": {
                     "overview": "Guidelines for TypeScript 5",
                     "guidelines": ["Use strict mode", "Avoid any type"],
-                    "examples": ["interface User { name: string; age: number; }"]
-                }
-            }
+                    "examples": ["interface User { name: string; age: number; }"],
+                },
+            },
         ]
 
         cache_dir = self.server.synchronizer.cache_dir
@@ -165,7 +155,7 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
 
         for standard in test_standards:
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def run_single_iteration(self) -> dict[str, Any]:
@@ -212,10 +202,9 @@ class MCPToolSpecificBenchmark(BaseBenchmark):
 
     async def setup(self):
         """Setup MCP server and test cases."""
-        self.server = MCPStandardsServer({
-            "search": {"enabled": True},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": True}, "token_model": "gpt-4"}
+        )
 
         # Generate tool-specific test cases
         self.test_cases = self._generate_test_cases()
@@ -227,28 +216,52 @@ class MCPToolSpecificBenchmark(BaseBenchmark):
                 {"query": "security", "limit": 5},
                 {"query": "authentication oauth jwt", "limit": 10},
                 {"query": "react hooks performance optimization", "limit": 20},
-                {"query": "microservices architecture patterns distributed systems", "limit": 50}
+                {
+                    "query": "microservices architecture patterns distributed systems",
+                    "limit": 50,
+                },
             ]
         elif self.tool_name == "get_applicable_standards":
             return [
                 {"context": {"language": "python"}},
                 {"context": {"language": "javascript", "framework": "react"}},
-                {"context": {"language": "java", "framework": "spring", "project_type": "microservice"}},
-                {"context": {
-                    "language": "typescript",
-                    "framework": "angular",
-                    "project_type": "enterprise",
-                    "team_size": "large",
-                    "deployment": "kubernetes"
-                }}
+                {
+                    "context": {
+                        "language": "java",
+                        "framework": "spring",
+                        "project_type": "microservice",
+                    }
+                },
+                {
+                    "context": {
+                        "language": "typescript",
+                        "framework": "angular",
+                        "project_type": "enterprise",
+                        "team_size": "large",
+                        "deployment": "kubernetes",
+                    }
+                },
             ]
         elif self.tool_name == "validate_against_standard":
             # Different sizes of code
             return [
                 {"code": "x = 1", "standard": "python-pep8", "language": "python"},
-                {"code": "def hello():\n    return 'world'\n" * 10, "standard": "python-pep8", "language": "python"},
-                {"code": "class MyClass:\n    def method(self):\n        pass\n" * 50, "standard": "python-pep8", "language": "python"},
-                {"code": "# Large file\n" + "def func():\n    pass\n" * 200, "standard": "python-pep8", "language": "python"}
+                {
+                    "code": "def hello():\n    return 'world'\n" * 10,
+                    "standard": "python-pep8",
+                    "language": "python",
+                },
+                {
+                    "code": "class MyClass:\n    def method(self):\n        pass\n"
+                    * 50,
+                    "standard": "python-pep8",
+                    "language": "python",
+                },
+                {
+                    "code": "# Large file\n" + "def func():\n    pass\n" * 200,
+                    "standard": "python-pep8",
+                    "language": "python",
+                },
             ]
         else:
             return [{"default": True}]

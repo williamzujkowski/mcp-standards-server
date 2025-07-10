@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Reviewer:
     """Information about a reviewer."""
+
     username: str
     name: str
     domains: list[str]
@@ -37,6 +38,7 @@ class Reviewer:
 @dataclass
 class ReviewAssignment:
     """A review assignment."""
+
     standard_name: str
     reviewer: str
     stage: str  # technical, editorial, community, final
@@ -66,12 +68,12 @@ class ReviewerManager:
                 config = yaml.safe_load(f)
 
             # Load reviewers
-            for reviewer_data in config.get('reviewers', []):
+            for reviewer_data in config.get("reviewers", []):
                 reviewer = Reviewer(**reviewer_data)
                 self.reviewers[reviewer.username] = reviewer
 
             # Load GitHub token if available
-            github_token = config.get('github_token') or os.environ.get('GITHUB_TOKEN')
+            github_token = config.get("github_token") or os.environ.get("GITHUB_TOKEN")
             if github_token:
                 self.github = Github(github_token)
 
@@ -88,10 +90,12 @@ class ReviewerManager:
                     standard_name=assignment_data["standard_name"],
                     reviewer=assignment_data["reviewer"],
                     stage=assignment_data["stage"],
-                    assigned_date=datetime.fromisoformat(assignment_data["assigned_date"]),
+                    assigned_date=datetime.fromisoformat(
+                        assignment_data["assigned_date"]
+                    ),
                     due_date=datetime.fromisoformat(assignment_data["due_date"]),
                     status=assignment_data["status"],
-                    feedback_url=assignment_data.get("feedback_url")
+                    feedback_url=assignment_data.get("feedback_url"),
                 )
                 self.assignments.append(assignment)
 
@@ -104,10 +108,12 @@ class ReviewerManager:
             assignment_dict["due_date"] = assignment.due_date.isoformat()
             assignments_data.append(assignment_dict)
 
-        with open("review_assignments.json", 'w') as f:
+        with open("review_assignments.json", "w") as f:
             json.dump(assignments_data, f, indent=2)
 
-    def assign_reviewers(self, standard_name: str, domain: str, pr_number: int | None = None) -> dict[str, list[str]]:
+    def assign_reviewers(
+        self, standard_name: str, domain: str, pr_number: int | None = None
+    ) -> dict[str, list[str]]:
         """
         Assign reviewers for a standard based on domain and availability.
 
@@ -119,34 +125,33 @@ class ReviewerManager:
         Returns:
             Dictionary mapping review stages to assigned reviewers
         """
-        assignments = {
-            "technical": [],
-            "editorial": [],
-            "community": []
-        }
+        assignments = {"technical": [], "editorial": [], "community": []}
 
         # Technical reviewers (domain experts)
         technical_reviewers = self._find_available_reviewers(
-            domains=[domain],
-            roles=["maintainer", "domain_expert"],
-            max_assignments=2
+            domains=[domain], roles=["maintainer", "domain_expert"], max_assignments=2
         )
-        assignments["technical"] = technical_reviewers[:2]  # Assign 2 technical reviewers
+        assignments["technical"] = technical_reviewers[
+            :2
+        ]  # Assign 2 technical reviewers
 
         # Editorial reviewer
         editorial_reviewers = self._find_available_reviewers(
-            roles=["editorial", "maintainer"],
-            max_assignments=1
+            roles=["editorial", "maintainer"], max_assignments=1
         )
-        assignments["editorial"] = editorial_reviewers[:1]  # Assign 1 editorial reviewer
+        assignments["editorial"] = editorial_reviewers[
+            :1
+        ]  # Assign 1 editorial reviewer
 
         # Community reviewers
         community_reviewers = self._find_available_reviewers(
             roles=["community", "domain_expert", "maintainer"],
             max_assignments=3,
-            exclude=assignments["technical"] + assignments["editorial"]
+            exclude=assignments["technical"] + assignments["editorial"],
         )
-        assignments["community"] = community_reviewers[:3]  # Assign 3 community reviewers
+        assignments["community"] = community_reviewers[
+            :3
+        ]  # Assign 3 community reviewers
 
         # Create review assignments
         now = datetime.utcnow()
@@ -159,7 +164,7 @@ class ReviewerManager:
                 stage="technical",
                 assigned_date=now,
                 due_date=now + timedelta(days=5),
-                status="assigned"
+                status="assigned",
             )
             self.assignments.append(assignment)
             self.reviewers[reviewer].current_assignments += 1
@@ -172,7 +177,7 @@ class ReviewerManager:
                 stage="editorial",
                 assigned_date=now + timedelta(days=5),
                 due_date=now + timedelta(days=8),
-                status="assigned"
+                status="assigned",
             )
             self.assignments.append(assignment)
             self.reviewers[reviewer].current_assignments += 1
@@ -185,7 +190,7 @@ class ReviewerManager:
                 stage="community",
                 assigned_date=now + timedelta(days=3),
                 due_date=now + timedelta(days=10),
-                status="assigned"
+                status="assigned",
             )
             self.assignments.append(assignment)
             self.reviewers[reviewer].current_assignments += 1
@@ -205,7 +210,7 @@ class ReviewerManager:
         domains: list[str] | None = None,
         roles: list[str] | None = None,
         max_assignments: int = 5,
-        exclude: list[str] | None = None
+        exclude: list[str] | None = None,
     ) -> list[str]:
         """Find available reviewers matching criteria."""
         available = []
@@ -234,7 +239,9 @@ class ReviewerManager:
 
         return available
 
-    def _create_github_assignments(self, pr_number: int, assignments: dict[str, list[str]]):
+    def _create_github_assignments(
+        self, pr_number: int, assignments: dict[str, list[str]]
+    ):
         """Create GitHub review assignments."""
         if not self.github:
             return
@@ -255,12 +262,20 @@ class ReviewerManager:
         except Exception as e:
             logger.error(f"Failed to create GitHub assignments: {e}")
 
-    def complete_review(self, standard_name: str, reviewer: str, stage: str, feedback_url: str | None = None):
+    def complete_review(
+        self,
+        standard_name: str,
+        reviewer: str,
+        stage: str,
+        feedback_url: str | None = None,
+    ):
         """Mark a review as completed."""
         for assignment in self.assignments:
-            if (assignment.standard_name == standard_name and
-                assignment.reviewer == reviewer and
-                assignment.stage == stage):
+            if (
+                assignment.standard_name == standard_name
+                and assignment.reviewer == reviewer
+                and assignment.stage == stage
+            ):
 
                 assignment.status = "completed"
                 assignment.feedback_url = feedback_url
@@ -272,7 +287,9 @@ class ReviewerManager:
                     )
 
                 self._save_assignments()
-                logger.info(f"Marked review completed: {standard_name} by {reviewer} ({stage})")
+                logger.info(
+                    f"Marked review completed: {standard_name} by {reviewer} ({stage})"
+                )
                 break
 
     def get_overdue_reviews(self) -> list[ReviewAssignment]:
@@ -281,7 +298,10 @@ class ReviewerManager:
         overdue = []
 
         for assignment in self.assignments:
-            if assignment.status in ["assigned", "in_progress"] and assignment.due_date < now:
+            if (
+                assignment.status in ["assigned", "in_progress"]
+                and assignment.due_date < now
+            ):
                 assignment.status = "overdue"
                 overdue.append(assignment)
 
@@ -296,7 +316,8 @@ class ReviewerManager:
 
         for username, reviewer in self.reviewers.items():
             active_assignments = [
-                a for a in self.assignments
+                a
+                for a in self.assignments
                 if a.reviewer == username and a.status in ["assigned", "in_progress"]
             ]
 
@@ -312,10 +333,10 @@ class ReviewerManager:
                         "standard": a.standard_name,
                         "stage": a.stage,
                         "due_date": a.due_date.isoformat(),
-                        "status": a.status
+                        "status": a.status,
                     }
                     for a in active_assignments
-                ]
+                ],
             }
 
         return workload
@@ -327,8 +348,10 @@ class ReviewerManager:
         # Find assignments due within 24 hours
         upcoming_due = []
         for assignment in self.assignments:
-            if (assignment.status in ["assigned", "in_progress"] and
-                assignment.due_date - now <= timedelta(hours=24)):
+            if assignment.status in [
+                "assigned",
+                "in_progress",
+            ] and assignment.due_date - now <= timedelta(hours=24):
                 upcoming_due.append(assignment)
 
         # Send notifications
@@ -353,12 +376,14 @@ class ReviewerManager:
             "standard": assignment.standard_name,
             "stage": assignment.stage,
             "due_date": assignment.due_date.isoformat(),
-            "status": assignment.status
+            "status": assignment.status,
         }
 
         # Send notification (webhook, email, etc.)
         # This is a placeholder - implement actual notification logic
-        logger.info(f"Notification sent to {reviewer.name}: {notification_type} for {assignment.standard_name}")
+        logger.info(
+            f"Notification sent to {reviewer.name}: {notification_type} for {assignment.standard_name}"
+        )
 
     def generate_review_report(self) -> dict[str, Any]:
         """Generate comprehensive review status report."""
@@ -377,15 +402,17 @@ class ReviewerManager:
                 standards[assignment.standard_name] = {
                     "assignments": [],
                     "completed": 0,
-                    "total": 0
+                    "total": 0,
                 }
 
-            standards[assignment.standard_name]["assignments"].append({
-                "reviewer": assignment.reviewer,
-                "stage": assignment.stage,
-                "status": assignment.status,
-                "due_date": assignment.due_date.isoformat()
-            })
+            standards[assignment.standard_name]["assignments"].append(
+                {
+                    "reviewer": assignment.reviewer,
+                    "stage": assignment.stage,
+                    "status": assignment.status,
+                    "due_date": assignment.due_date.isoformat(),
+                }
+            )
             standards[assignment.standard_name]["total"] += 1
 
             if assignment.status == "completed":
@@ -398,36 +425,40 @@ class ReviewerManager:
                 "completed": completed,
                 "in_progress": in_progress,
                 "overdue": overdue,
-                "completion_rate": completed / total_assignments if total_assignments > 0 else 0
+                "completion_rate": (
+                    completed / total_assignments if total_assignments > 0 else 0
+                ),
             },
             "standards": standards,
-            "reviewer_workload": self.get_reviewer_workload()
+            "reviewer_workload": self.get_reviewer_workload(),
         }
 
 
 def main():
     """CLI interface for reviewer tools."""
     parser = argparse.ArgumentParser(description="Reviewer management tools")
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Assign reviewers command
-    assign_parser = subparsers.add_parser('assign', help='Assign reviewers to a standard')
-    assign_parser.add_argument('--standard', required=True, help='Standard name')
-    assign_parser.add_argument('--domain', required=True, help='Standard domain')
-    assign_parser.add_argument('--pr', type=int, help='GitHub PR number')
+    assign_parser = subparsers.add_parser(
+        "assign", help="Assign reviewers to a standard"
+    )
+    assign_parser.add_argument("--standard", required=True, help="Standard name")
+    assign_parser.add_argument("--domain", required=True, help="Standard domain")
+    assign_parser.add_argument("--pr", type=int, help="GitHub PR number")
 
     # Complete review command
-    complete_parser = subparsers.add_parser('complete', help='Mark review as completed')
-    complete_parser.add_argument('--standard', required=True, help='Standard name')
-    complete_parser.add_argument('--reviewer', required=True, help='Reviewer username')
-    complete_parser.add_argument('--stage', required=True, help='Review stage')
-    complete_parser.add_argument('--feedback-url', help='URL to feedback')
+    complete_parser = subparsers.add_parser("complete", help="Mark review as completed")
+    complete_parser.add_argument("--standard", required=True, help="Standard name")
+    complete_parser.add_argument("--reviewer", required=True, help="Reviewer username")
+    complete_parser.add_argument("--stage", required=True, help="Review stage")
+    complete_parser.add_argument("--feedback-url", help="URL to feedback")
 
     # Status commands
-    subparsers.add_parser('overdue', help='List overdue reviews')
-    subparsers.add_parser('workload', help='Show reviewer workload')
-    subparsers.add_parser('report', help='Generate comprehensive report')
-    subparsers.add_parser('notify', help='Send reminder notifications')
+    subparsers.add_parser("overdue", help="List overdue reviews")
+    subparsers.add_parser("workload", help="Show reviewer workload")
+    subparsers.add_parser("report", help="Generate comprehensive report")
+    subparsers.add_parser("notify", help="Send reminder notifications")
 
     args = parser.parse_args()
 
@@ -437,45 +468,47 @@ def main():
     # Initialize manager
     manager = ReviewerManager()
 
-    if args.command == 'assign':
+    if args.command == "assign":
         assignments = manager.assign_reviewers(
-            standard_name=args.standard,
-            domain=args.domain,
-            pr_number=args.pr
+            standard_name=args.standard, domain=args.domain, pr_number=args.pr
         )
         print(f"Assigned reviewers for {args.standard}:")
         for stage, reviewers in assignments.items():
             print(f"  {stage}: {', '.join(reviewers)}")
 
-    elif args.command == 'complete':
+    elif args.command == "complete":
         manager.complete_review(
             standard_name=args.standard,
             reviewer=args.reviewer,
             stage=args.stage,
-            feedback_url=args.feedback_url
+            feedback_url=args.feedback_url,
         )
         print(f"Marked review completed: {args.standard} by {args.reviewer}")
 
-    elif args.command == 'overdue':
+    elif args.command == "overdue":
         overdue = manager.get_overdue_reviews()
         if overdue:
             print("Overdue reviews:")
             for assignment in overdue:
-                print(f"  {assignment.standard_name} - {assignment.reviewer} ({assignment.stage}) - Due: {assignment.due_date}")
+                print(
+                    f"  {assignment.standard_name} - {assignment.reviewer} ({assignment.stage}) - Due: {assignment.due_date}"
+                )
         else:
             print("No overdue reviews")
 
-    elif args.command == 'workload':
+    elif args.command == "workload":
         workload = manager.get_reviewer_workload()
         print("Reviewer workload:")
         for username, info in workload.items():
-            print(f"  {info['name']} ({username}): {info['current_assignments']}/{info['max_concurrent']} assignments")
+            print(
+                f"  {info['name']} ({username}): {info['current_assignments']}/{info['max_concurrent']} assignments"
+            )
 
-    elif args.command == 'report':
+    elif args.command == "report":
         report = manager.generate_review_report()
         print(json.dumps(report, indent=2))
 
-    elif args.command == 'notify':
+    elif args.command == "notify":
         manager.send_reminder_notifications()
         print("Reminder notifications sent")
 

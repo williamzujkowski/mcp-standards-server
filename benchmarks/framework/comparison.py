@@ -45,7 +45,9 @@ class RegressionReport:
     @property
     def has_regression(self) -> bool:
         """Check if any regression was detected."""
-        return self.time_regression or self.memory_regression or self.throughput_regression
+        return (
+            self.time_regression or self.memory_regression or self.throughput_regression
+        )
 
     def to_dict(self) -> dict[str, any]:
         """Convert to dictionary for serialization."""
@@ -70,7 +72,7 @@ class RegressionReport:
             "analysis": {
                 "likely_cause": self.likely_cause,
                 "recommendations": self.recommendations,
-            }
+            },
         }
 
 
@@ -82,7 +84,7 @@ class RegressionDetector:
         time_threshold: float = 0.10,  # 10% slower
         memory_threshold: float = 0.20,  # 20% more memory
         throughput_threshold: float = 0.10,  # 10% less throughput
-        confidence_level: float = 0.95
+        confidence_level: float = 0.95,
     ):
         self.time_threshold = time_threshold
         self.memory_threshold = memory_threshold
@@ -91,9 +93,7 @@ class RegressionDetector:
         self.stats = StatisticalAnalyzer()
 
     def compare(
-        self,
-        baseline: BenchmarkResult,
-        current: BenchmarkResult
+        self, baseline: BenchmarkResult, current: BenchmarkResult
     ) -> RegressionReport:
         """Compare two benchmark results and detect regressions."""
         # Calculate percentage changes
@@ -129,7 +129,7 @@ class RegressionDetector:
             is_significant=is_significant,
             confidence_level=self.confidence_level,
             time_threshold=self.time_threshold,
-            memory_threshold=self.memory_threshold
+            memory_threshold=self.memory_threshold,
         )
 
         # Analyze likely causes
@@ -141,9 +141,7 @@ class RegressionDetector:
         return report
 
     def compare_multiple(
-        self,
-        results: list[BenchmarkResult],
-        baseline_index: int = 0
+        self, results: list[BenchmarkResult], baseline_index: int = 0
     ) -> list[RegressionReport]:
         """Compare multiple results against a baseline."""
         if len(results) < 2:
@@ -160,9 +158,7 @@ class RegressionDetector:
         return reports
 
     def detect_trend_regression(
-        self,
-        results: list[BenchmarkResult],
-        window_size: int = 5
+        self, results: list[BenchmarkResult], window_size: int = 5
     ) -> dict[str, any]:
         """Detect regression trends over multiple runs."""
         if len(results) < window_size:
@@ -183,12 +179,20 @@ class RegressionDetector:
 
         # Calculate regression scores
         recent_window = sorted_results[-window_size:]
-        older_window = sorted_results[-window_size*2:-window_size] if len(sorted_results) >= window_size*2 else sorted_results[:window_size]
+        older_window = (
+            sorted_results[-window_size * 2 : -window_size]
+            if len(sorted_results) >= window_size * 2
+            else sorted_results[:window_size]
+        )
 
         recent_avg_time = self.stats.mean([r.mean_time for r in recent_window])
         older_avg_time = self.stats.mean([r.mean_time for r in older_window])
 
-        time_regression_score = (recent_avg_time - older_avg_time) / older_avg_time if older_avg_time > 0 else 0
+        time_regression_score = (
+            (recent_avg_time - older_avg_time) / older_avg_time
+            if older_avg_time > 0
+            else 0
+        )
 
         return {
             "trends": {
@@ -203,7 +207,7 @@ class RegressionDetector:
             "total_samples": len(results),
             "warnings": self._generate_trend_warnings(
                 time_trend, memory_trend, throughput_trend, time_regression_score
-            )
+            ),
         }
 
     def _calculate_change_pct(self, baseline: float, current: float) -> float:
@@ -213,15 +217,15 @@ class RegressionDetector:
         return ((current - baseline) / baseline) * 100
 
     def _check_significance(
-        self,
-        baseline: BenchmarkResult,
-        current: BenchmarkResult
+        self, baseline: BenchmarkResult, current: BenchmarkResult
     ) -> bool:
         """Check if the difference is statistically significant."""
         # Simplified significance check based on standard deviations
         # For proper analysis, would use t-test or Mann-Whitney U test
 
-        baseline_cv = baseline.std_dev / baseline.mean_time if baseline.mean_time > 0 else 0
+        baseline_cv = (
+            baseline.std_dev / baseline.mean_time if baseline.mean_time > 0 else 0
+        )
         current_cv = current.std_dev / current.mean_time if current.mean_time > 0 else 0
 
         # High variability reduces confidence in regression detection
@@ -253,7 +257,9 @@ class RegressionDetector:
             if report.current.memory_samples:
                 # Simple check: is memory constantly increasing?
                 samples = report.current.memory_samples
-                increasing = all(samples[i] <= samples[i+1] for i in range(len(samples)-1))
+                increasing = all(
+                    samples[i] <= samples[i + 1] for i in range(len(samples) - 1)
+                )
                 if increasing:
                     causes.append("Possible memory leak detected")
 
@@ -269,13 +275,17 @@ class RegressionDetector:
 
         if report.time_regression:
             recommendations.append("Profile code to identify performance bottlenecks")
-            recommendations.append("Check for recent code changes that might impact performance")
+            recommendations.append(
+                "Check for recent code changes that might impact performance"
+            )
 
             if report.current.std_dev > report.baseline.std_dev * 1.5:
                 recommendations.append("Investigate sources of performance variability")
 
         if report.memory_regression:
-            recommendations.append("Run memory profiler to identify allocation hotspots")
+            recommendations.append(
+                "Run memory profiler to identify allocation hotspots"
+            )
             recommendations.append("Check for memory leaks or excessive allocations")
 
             if "leak" in report.likely_cause.lower():
@@ -283,10 +293,14 @@ class RegressionDetector:
 
         if report.throughput_regression:
             recommendations.append("Analyze request processing pipeline")
-            recommendations.append("Check for resource contention or blocking operations")
+            recommendations.append(
+                "Check for resource contention or blocking operations"
+            )
 
         if not report.is_significant:
-            recommendations.append("Results may not be statistically significant - run more iterations")
+            recommendations.append(
+                "Results may not be statistically significant - run more iterations"
+            )
 
         report.recommendations = recommendations
 
@@ -295,7 +309,7 @@ class RegressionDetector:
         time_trend: str,
         memory_trend: str,
         throughput_trend: str,
-        time_regression_score: float
+        time_regression_score: float,
     ) -> list[str]:
         """Generate warnings based on trend analysis."""
         warnings = []
@@ -310,14 +324,14 @@ class RegressionDetector:
             warnings.append("Throughput is declining")
 
         if time_regression_score > 0.05:  # 5% regression
-            warnings.append(f"Significant performance regression detected: {time_regression_score*100:.1f}% slower")
+            warnings.append(
+                f"Significant performance regression detected: {time_regression_score*100:.1f}% slower"
+            )
 
         return warnings
 
     def generate_report(
-        self,
-        reports: list[RegressionReport],
-        output_path: Path | None = None
+        self, reports: list[RegressionReport], output_path: Path | None = None
     ) -> str:
         """Generate a comprehensive regression report."""
         # Build report content
@@ -342,13 +356,21 @@ class RegressionDetector:
                 content.append("✅ No regression detected")
             else:
                 if report.time_regression:
-                    content.append(f"❌ Time regression: {report.time_change_pct:+.1f}%")
+                    content.append(
+                        f"❌ Time regression: {report.time_change_pct:+.1f}%"
+                    )
                 if report.memory_regression:
-                    content.append(f"❌ Memory regression: {report.memory_change_pct:+.1f}%")
+                    content.append(
+                        f"❌ Memory regression: {report.memory_change_pct:+.1f}%"
+                    )
                 if report.throughput_regression:
-                    content.append(f"❌ Throughput regression: {report.throughput_change_pct:+.1f}%")
+                    content.append(
+                        f"❌ Throughput regression: {report.throughput_change_pct:+.1f}%"
+                    )
 
-            content.append(f"\n**Statistical Significance**: {'Yes' if report.is_significant else 'No'}")
+            content.append(
+                f"\n**Statistical Significance**: {'Yes' if report.is_significant else 'No'}"
+            )
             content.append(f"**Likely Cause**: {report.likely_cause}")
 
             if report.recommendations:

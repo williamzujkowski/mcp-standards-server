@@ -16,6 +16,7 @@ import psutil
 @dataclass
 class MetricPoint:
     """Single metric data point."""
+
     timestamp: float
     value: float
     labels: dict[str, str] = field(default_factory=dict)
@@ -24,6 +25,7 @@ class MetricPoint:
 @dataclass
 class Metric:
     """Metric definition and storage."""
+
     name: str
     type: str  # counter, gauge, histogram
     description: str
@@ -32,11 +34,7 @@ class Metric:
 
     def add_point(self, value: float, labels: dict[str, str] | None = None):
         """Add a data point to the metric."""
-        point = MetricPoint(
-            timestamp=time.time(),
-            value=value,
-            labels=labels or {}
-        )
+        point = MetricPoint(timestamp=time.time(), value=value, labels=labels or {})
         self.data_points.append(point)
 
     def get_latest(self) -> float | None:
@@ -48,10 +46,7 @@ class Metric:
     def get_stats(self, window_seconds: int = 60) -> dict[str, float]:
         """Get statistics for a time window."""
         cutoff = time.time() - window_seconds
-        values = [
-            p.value for p in self.data_points
-            if p.timestamp >= cutoff
-        ]
+        values = [p.value for p in self.data_points if p.timestamp >= cutoff]
 
         if not values:
             return {}
@@ -62,7 +57,7 @@ class Metric:
             "min": min(values),
             "max": max(values),
             "avg": sum(values) / len(values),
-            "latest": values[-1] if values else 0
+            "latest": values[-1] if values else 0,
         }
 
 
@@ -82,103 +77,48 @@ class MetricsCollector:
     def _register_default_metrics(self):
         """Register default system metrics."""
         # System metrics
+        self.register_metric("system_cpu_percent", "gauge", "CPU usage percentage", "%")
+        self.register_metric("system_memory_rss_mb", "gauge", "Resident set size", "MB")
         self.register_metric(
-            "system_cpu_percent",
-            "gauge",
-            "CPU usage percentage",
-            "%"
-        )
-        self.register_metric(
-            "system_memory_rss_mb",
-            "gauge",
-            "Resident set size",
-            "MB"
-        )
-        self.register_metric(
-            "system_memory_percent",
-            "gauge",
-            "Memory usage percentage",
-            "%"
+            "system_memory_percent", "gauge", "Memory usage percentage", "%"
         )
 
         # MCP operation metrics
         self.register_metric(
-            "mcp_request_duration_ms",
-            "histogram",
-            "Request duration",
-            "ms"
+            "mcp_request_duration_ms", "histogram", "Request duration", "ms"
         )
-        self.register_metric(
-            "mcp_request_count",
-            "counter",
-            "Total requests",
-            ""
-        )
-        self.register_metric(
-            "mcp_error_count",
-            "counter",
-            "Total errors",
-            ""
-        )
+        self.register_metric("mcp_request_count", "counter", "Total requests", "")
+        self.register_metric("mcp_error_count", "counter", "Total errors", "")
 
         # Component-specific metrics
         self.register_metric(
-            "rule_engine_evaluation_time_ms",
-            "histogram",
-            "Rule evaluation time",
-            "ms"
+            "rule_engine_evaluation_time_ms", "histogram", "Rule evaluation time", "ms"
         )
         self.register_metric(
-            "token_optimizer_compression_ratio",
-            "gauge",
-            "Token compression ratio",
-            ""
+            "token_optimizer_compression_ratio", "gauge", "Token compression ratio", ""
         )
         self.register_metric(
-            "search_query_time_ms",
-            "histogram",
-            "Search query time",
-            "ms"
+            "search_query_time_ms", "histogram", "Search query time", "ms"
         )
-        self.register_metric(
-            "cache_hit_rate",
-            "gauge",
-            "Cache hit rate",
-            "%"
-        )
+        self.register_metric("cache_hit_rate", "gauge", "Cache hit rate", "%")
 
     def register_metric(
-        self,
-        name: str,
-        metric_type: str,
-        description: str,
-        unit: str = ""
+        self, name: str, metric_type: str, description: str, unit: str = ""
     ) -> Metric:
         """Register a new metric."""
-        metric = Metric(
-            name=name,
-            type=metric_type,
-            description=description,
-            unit=unit
-        )
+        metric = Metric(name=name, type=metric_type, description=description, unit=unit)
         self.metrics[name] = metric
         return metric
 
     def record(
-        self,
-        metric_name: str,
-        value: float,
-        labels: dict[str, str] | None = None
+        self, metric_name: str, value: float, labels: dict[str, str] | None = None
     ):
         """Record a metric value."""
         if metric_name in self.metrics:
             self.metrics[metric_name].add_point(value, labels)
 
     def increment(
-        self,
-        metric_name: str,
-        value: float = 1,
-        labels: dict[str, str] | None = None
+        self, metric_name: str, value: float = 1, labels: dict[str, str] | None = None
     ):
         """Increment a counter metric."""
         if metric_name in self.metrics:
@@ -249,7 +189,7 @@ class MetricsCollector:
                 summary[name] = {
                     "type": metric.type,
                     "unit": metric.unit,
-                    "stats": stats
+                    "stats": stats,
                 }
 
         return summary
@@ -272,10 +212,7 @@ class MetricsCollector:
 
     def save_snapshot(self, filepath: Path):
         """Save current metrics snapshot."""
-        snapshot = {
-            "timestamp": datetime.now().isoformat(),
-            "metrics": {}
-        }
+        snapshot = {"timestamp": datetime.now().isoformat(), "metrics": {}}
 
         for name, metric in self.metrics.items():
             # Get recent data points
@@ -284,21 +221,23 @@ class MetricsCollector:
 
             for point in metric.data_points:
                 if point.timestamp >= cutoff:
-                    recent_points.append({
-                        "timestamp": point.timestamp,
-                        "value": point.value,
-                        "labels": point.labels
-                    })
+                    recent_points.append(
+                        {
+                            "timestamp": point.timestamp,
+                            "value": point.value,
+                            "labels": point.labels,
+                        }
+                    )
 
             snapshot["metrics"][name] = {
                 "type": metric.type,
                 "description": metric.description,
                 "unit": metric.unit,
                 "data_points": recent_points,
-                "stats": metric.get_stats(300)
+                "stats": metric.get_stats(300),
             }
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(snapshot, f, indent=2)
 
     def load_snapshot(self, filepath: Path):
@@ -310,10 +249,7 @@ class MetricsCollector:
             # Create metric if doesn't exist
             if name not in self.metrics:
                 self.register_metric(
-                    name,
-                    data["type"],
-                    data["description"],
-                    data["unit"]
+                    name, data["type"], data["description"], data["unit"]
                 )
 
             # Load data points
@@ -322,7 +258,7 @@ class MetricsCollector:
                 point = MetricPoint(
                     timestamp=point_data["timestamp"],
                     value=point_data["value"],
-                    labels=point_data["labels"]
+                    labels=point_data["labels"],
                 )
                 metric.data_points.append(point)
 
@@ -355,21 +291,21 @@ class MCPMetricsCollector(MetricsCollector):
         tool_name: str,
         duration_ms: float,
         success: bool,
-        error: str | None = None
+        error: str | None = None,
     ):
         """Record an MCP request."""
         # Record duration
         self.record(
             "mcp_request_duration_ms",
             duration_ms,
-            {"tool": tool_name, "success": str(success)}
+            {"tool": tool_name, "success": str(success)},
         )
 
         # Increment counters
         self.increment("mcp_request_count", labels={"tool": tool_name})
 
         if not success:
-            self.increment("mcp_error_count", labels={
-                "tool": tool_name,
-                "error": error or "unknown"
-            })
+            self.increment(
+                "mcp_error_count",
+                labels={"tool": tool_name, "error": error or "unknown"},
+            )

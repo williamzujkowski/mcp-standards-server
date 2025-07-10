@@ -30,10 +30,9 @@ class MemoryGrowthBenchmark(BaseBenchmark):
     async def setup(self):
         """Setup for memory growth analysis."""
         # Initialize server
-        self.server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
 
         # Create test data
         await self._create_test_data()
@@ -82,7 +81,7 @@ class MemoryGrowthBenchmark(BaseBenchmark):
             "memory_growth_mb": analysis["total_growth_mb"],
             "growth_rate_mb_per_hour": analysis["growth_rate_mb_per_hour"],
             "growth_pattern": analysis["pattern"],
-            "operations": dict(self.operation_counts)
+            "operations": dict(self.operation_counts),
         }
 
     async def _monitor_memory(self):
@@ -104,7 +103,9 @@ class MemoryGrowthBenchmark(BaseBenchmark):
                 for i in range(10):
                     try:
                         await self.server._get_standard_details(f"growth-test-{i}")
-                        self.operation_counts["reads"] = self.operation_counts.get("reads", 0) + 1
+                        self.operation_counts["reads"] = (
+                            self.operation_counts.get("reads", 0) + 1
+                        )
                     except Exception:
                         pass
 
@@ -120,7 +121,9 @@ class MemoryGrowthBenchmark(BaseBenchmark):
             try:
                 for query in queries:
                     await self.server._search_standards(query, limit=10)
-                    self.operation_counts["searches"] = self.operation_counts.get("searches", 0) + 1
+                    self.operation_counts["searches"] = (
+                        self.operation_counts.get("searches", 0) + 1
+                    )
 
                 await asyncio.sleep(0.5)
             except asyncio.CancelledError:
@@ -135,9 +138,11 @@ class MemoryGrowthBenchmark(BaseBenchmark):
                         await self.server._get_optimized_standard(
                             f"growth-test-{i}",
                             format_type="condensed",
-                            token_budget=2000
+                            token_budget=2000,
                         )
-                        self.operation_counts["optimizations"] = self.operation_counts.get("optimizations", 0) + 1
+                        self.operation_counts["optimizations"] = (
+                            self.operation_counts.get("optimizations", 0) + 1
+                        )
                     except Exception:
                         pass
 
@@ -157,11 +162,11 @@ class MemoryGrowthBenchmark(BaseBenchmark):
             try:
                 for code in code_samples:
                     await self.server._validate_against_standard(
-                        code,
-                        "python-pep8",
-                        "python"
+                        code, "python-pep8", "python"
                     )
-                    self.operation_counts["validations"] = self.operation_counts.get("validations", 0) + 1
+                    self.operation_counts["validations"] = (
+                        self.operation_counts.get("validations", 0) + 1
+                    )
 
                 await asyncio.sleep(0.3)
             except asyncio.CancelledError:
@@ -178,7 +183,7 @@ class MemoryGrowthBenchmark(BaseBenchmark):
             return {
                 "total_growth_mb": 0,
                 "growth_rate_mb_per_hour": 0,
-                "pattern": "insufficient_data"
+                "pattern": "insufficient_data",
             }
 
         # Calculate total growth
@@ -204,7 +209,7 @@ class MemoryGrowthBenchmark(BaseBenchmark):
             "final_memory_mb": final_memory,
             "peak_memory_mb": max(m[1] for m in self.memory_samples),
             "memory_spikes": spikes,
-            "samples_collected": len(self.memory_samples)
+            "samples_collected": len(self.memory_samples),
         }
 
     def _detect_growth_pattern(self) -> str:
@@ -256,7 +261,7 @@ class MemoryGrowthBenchmark(BaseBenchmark):
         jumps = 0
 
         for i in range(1, len(memories)):
-            if memories[i] - memories[i-1] > threshold:
+            if memories[i] - memories[i - 1] > threshold:
                 jumps += 1
 
         return jumps > 2
@@ -270,17 +275,19 @@ class MemoryGrowthBenchmark(BaseBenchmark):
         threshold = 10.0  # 10MB spike
 
         for i in range(1, len(self.memory_samples) - 1):
-            prev_mem = self.memory_samples[i-1][1]
+            prev_mem = self.memory_samples[i - 1][1]
             curr_mem = self.memory_samples[i][1]
-            next_mem = self.memory_samples[i+1][1]
+            next_mem = self.memory_samples[i + 1][1]
 
             # Check for spike (sudden increase then decrease)
             if curr_mem - prev_mem > threshold and curr_mem - next_mem > threshold / 2:
-                spikes.append({
-                    "timestamp": self.memory_samples[i][0],
-                    "memory_mb": curr_mem,
-                    "spike_size_mb": curr_mem - prev_mem
-                })
+                spikes.append(
+                    {
+                        "timestamp": self.memory_samples[i][0],
+                        "memory_mb": curr_mem,
+                        "spike_size_mb": curr_mem - prev_mem,
+                    }
+                )
 
         return spikes
 
@@ -300,12 +307,12 @@ class MemoryGrowthBenchmark(BaseBenchmark):
                 "content": {
                     "overview": "x" * 1000,
                     "guidelines": ["y" * 100 for _ in range(10)],
-                    "examples": ["z" * 200 for _ in range(5)]
-                }
+                    "examples": ["z" * 200 for _ in range(5)],
+                },
             }
 
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def teardown(self):
@@ -337,10 +344,12 @@ class MemoryGrowthBenchmark(BaseBenchmark):
             lines.append(f"- {op}: {count} total ({rate:.1f}/min)")
 
         if analysis.get("memory_spikes"):
-            lines.extend([
-                "",
-                "## Memory Spikes Detected",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "## Memory Spikes Detected",
+                ]
+            )
             for spike in analysis["memory_spikes"]:
                 lines.append(
                     f"- Time: {spike['timestamp']:.1f}s, "
@@ -348,10 +357,12 @@ class MemoryGrowthBenchmark(BaseBenchmark):
                 )
 
         # Add recommendations
-        lines.extend([
-            "",
-            "## Recommendations",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Recommendations",
+            ]
+        )
 
         if analysis["growth_rate_mb_per_hour"] > 100:
             lines.append("- CRITICAL: High memory growth rate detected")

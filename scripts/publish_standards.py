@@ -21,7 +21,7 @@ import yaml
 from github import Github
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from generators.metadata import StandardMetadata
 from generators.quality_assurance import QualityAssuranceSystem
@@ -31,6 +31,7 @@ from generators.validator import StandardsValidator
 @dataclass
 class PublicationConfig:
     """Configuration for publication process."""
+
     github_token: str
     target_repo: str = "williamzujkowski/standards"
     source_branch: str = "main"
@@ -44,6 +45,7 @@ class PublicationConfig:
 @dataclass
 class PublicationResult:
     """Result of publication process."""
+
     success: bool
     standard_name: str
     version: str
@@ -75,7 +77,9 @@ class StandardsPublisher:
         try:
             self.target_repo = self.github.get_repo(config.target_repo)
         except Exception as e:
-            raise ValueError(f"Cannot access target repository {config.target_repo}: {e}")
+            raise ValueError(
+                f"Cannot access target repository {config.target_repo}: {e}"
+            )
 
     def _setup_logging(self) -> logging.Logger:
         """Setup logging configuration."""
@@ -85,14 +89,16 @@ class StandardsPublisher:
         if not logger.handlers:
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         return logger
 
-    def publish_standard(self, standard_path: str, dry_run: bool = False) -> PublicationResult:
+    def publish_standard(
+        self, standard_path: str, dry_run: bool = False
+    ) -> PublicationResult:
         """
         Publish a single standard to the target repository.
 
@@ -113,11 +119,13 @@ class StandardsPublisher:
                 success=False,
                 standard_name=Path(standard_path).stem,
                 version="unknown",
-                errors=[f"Failed to load standard: {e}"]
+                errors=[f"Failed to load standard: {e}"],
             )
 
         # Validate content
-        validation_result = self._validate_standard(standard_md, standard_yaml, metadata)
+        validation_result = self._validate_standard(
+            standard_md, standard_yaml, metadata
+        )
         if not validation_result.success:
             return validation_result
 
@@ -129,7 +137,9 @@ class StandardsPublisher:
                 standard_name=metadata.title,
                 version=metadata.version,
                 quality_score=qa_result.quality_score,
-                errors=[f"Quality score {qa_result.quality_score:.2f} below minimum {self.config.min_quality_score}"]
+                errors=[
+                    f"Quality score {qa_result.quality_score:.2f} below minimum {self.config.min_quality_score}"
+                ],
             )
 
         if dry_run:
@@ -139,12 +149,14 @@ class StandardsPublisher:
                 standard_name=metadata.title,
                 version=metadata.version,
                 quality_score=qa_result.quality_score,
-                warnings=["Dry run - not actually published"]
+                warnings=["Dry run - not actually published"],
             )
 
         # Publish to repository
         try:
-            publish_result = self._publish_to_github(standard_md, standard_yaml, metadata)
+            publish_result = self._publish_to_github(
+                standard_md, standard_yaml, metadata
+            )
             publish_result.quality_score = qa_result.quality_score
 
             # Send notification if configured
@@ -159,27 +171,33 @@ class StandardsPublisher:
                 standard_name=metadata.title,
                 version=metadata.version,
                 quality_score=qa_result.quality_score,
-                errors=[f"Publication failed: {e}"]
+                errors=[f"Publication failed: {e}"],
             )
 
-    def _load_standard(self, standard_path: str) -> tuple[str, dict[str, Any], StandardMetadata]:
+    def _load_standard(
+        self, standard_path: str
+    ) -> tuple[str, dict[str, Any], StandardMetadata]:
         """Load standard markdown and YAML files."""
         standard_path = Path(standard_path)
 
         # Load markdown content
-        md_path = standard_path if standard_path.suffix == '.md' else standard_path.with_suffix('.md')
+        md_path = (
+            standard_path
+            if standard_path.suffix == ".md"
+            else standard_path.with_suffix(".md")
+        )
         if not md_path.exists():
             raise FileNotFoundError(f"Standard markdown file not found: {md_path}")
 
-        with open(md_path, encoding='utf-8') as f:
+        with open(md_path, encoding="utf-8") as f:
             standard_md = f.read()
 
         # Load YAML metadata
-        yaml_path = md_path.with_suffix('.yaml')
+        yaml_path = md_path.with_suffix(".yaml")
         if not yaml_path.exists():
             raise FileNotFoundError(f"Standard YAML file not found: {yaml_path}")
 
-        with open(yaml_path, encoding='utf-8') as f:
+        with open(yaml_path, encoding="utf-8") as f:
             standard_yaml = yaml.safe_load(f)
 
         # Create metadata object
@@ -187,7 +205,9 @@ class StandardsPublisher:
 
         return standard_md, standard_yaml, metadata
 
-    def _validate_standard(self, content: str, yaml_data: dict[str, Any], metadata: StandardMetadata) -> PublicationResult:
+    def _validate_standard(
+        self, content: str, yaml_data: dict[str, Any], metadata: StandardMetadata
+    ) -> PublicationResult:
         """Validate standard content and metadata."""
         try:
             # Validate metadata
@@ -196,8 +216,8 @@ class StandardsPublisher:
             # Validate content structure
             validation_results = self.validator.validate_standard(content, metadata)
 
-            errors = validation_results.get('errors', [])
-            warnings = validation_results.get('warnings', [])
+            errors = validation_results.get("errors", [])
+            warnings = validation_results.get("warnings", [])
 
             if errors and self.config.validation_strict:
                 return PublicationResult(
@@ -205,25 +225,27 @@ class StandardsPublisher:
                     standard_name=metadata.title,
                     version=metadata.version,
                     errors=errors,
-                    warnings=warnings
+                    warnings=warnings,
                 )
 
             return PublicationResult(
                 success=True,
                 standard_name=metadata.title,
                 version=metadata.version,
-                warnings=warnings
+                warnings=warnings,
             )
 
         except Exception as e:
             return PublicationResult(
                 success=False,
-                standard_name=getattr(metadata, 'title', 'unknown'),
-                version=getattr(metadata, 'version', 'unknown'),
-                errors=[f"Validation error: {e}"]
+                standard_name=getattr(metadata, "title", "unknown"),
+                version=getattr(metadata, "version", "unknown"),
+                errors=[f"Validation error: {e}"],
             )
 
-    def _assess_quality(self, content: str, metadata: StandardMetadata) -> PublicationResult:
+    def _assess_quality(
+        self, content: str, metadata: StandardMetadata
+    ) -> PublicationResult:
         """Assess quality of standard content."""
         try:
             qa_results = self.qa_system.assess_standard(content, metadata)
@@ -232,8 +254,8 @@ class StandardsPublisher:
                 success=True,
                 standard_name=metadata.title,
                 version=metadata.version,
-                quality_score=qa_results.get('overall_score', 0.0),
-                warnings=qa_results.get('warnings', [])
+                quality_score=qa_results.get("overall_score", 0.0),
+                warnings=qa_results.get("warnings", []),
             )
 
         except Exception as e:
@@ -241,10 +263,12 @@ class StandardsPublisher:
                 success=False,
                 standard_name=metadata.title,
                 version=metadata.version,
-                errors=[f"Quality assessment error: {e}"]
+                errors=[f"Quality assessment error: {e}"],
             )
 
-    def _publish_to_github(self, content: str, yaml_data: dict[str, Any], metadata: StandardMetadata) -> PublicationResult:
+    def _publish_to_github(
+        self, content: str, yaml_data: dict[str, Any], metadata: StandardMetadata
+    ) -> PublicationResult:
         """Publish standard to GitHub repository."""
         # Generate standardized filename
         filename = self._generate_filename(metadata)
@@ -257,8 +281,8 @@ class StandardsPublisher:
         yaml_path = f"standards/{filename}.yaml"
 
         # Update metadata with publication info
-        yaml_data['published_date'] = datetime.utcnow().isoformat()
-        yaml_data['publication_status'] = 'published'
+        yaml_data["published_date"] = datetime.utcnow().isoformat()
+        yaml_data["publication_status"] = "published"
 
         try:
             # Check if files already exist
@@ -278,27 +302,29 @@ class StandardsPublisher:
                 path=md_path,
                 content=updated_content,
                 message=commit_msg,
-                branch=self.config.target_branch
+                branch=self.config.target_branch,
             )
 
             self._create_or_update_file(
                 path=yaml_path,
                 content=yaml.dump(yaml_data, default_flow_style=False),
                 message=commit_msg,
-                branch=self.config.target_branch
+                branch=self.config.target_branch,
             )
 
             # Update standards index
             self._update_standards_index(metadata, filename)
 
-            self.logger.info(f"Successfully published {metadata.title} v{metadata.version}")
+            self.logger.info(
+                f"Successfully published {metadata.title} v{metadata.version}"
+            )
 
             return PublicationResult(
                 success=True,
                 standard_name=metadata.title,
                 version=metadata.version,
                 url=f"https://github.com/{self.config.target_repo}/blob/{self.config.target_branch}/{md_path}",
-                commit_sha=md_result.get('commit', {}).get('sha')
+                commit_sha=md_result.get("commit", {}).get("sha"),
             )
 
         except Exception as e:
@@ -308,7 +334,9 @@ class StandardsPublisher:
     def _generate_filename(self, metadata: StandardMetadata) -> str:
         """Generate standardized filename for the standard."""
         # Create safe filename from title
-        safe_title = "".join(c if c.isalnum() or c in "-_" else "_" for c in metadata.title.upper())
+        safe_title = "".join(
+            c if c.isalnum() or c in "-_" else "_" for c in metadata.title.upper()
+        )
         # Remove multiple underscores
         safe_title = "_".join(filter(None, safe_title.split("_")))
         return f"{safe_title}_STANDARDS"
@@ -321,7 +349,9 @@ class StandardsPublisher:
         except Exception:
             return False
 
-    def _create_or_update_file(self, path: str, content: str, message: str, branch: str) -> dict[str, Any]:
+    def _create_or_update_file(
+        self, path: str, content: str, message: str, branch: str
+    ) -> dict[str, Any]:
         """Create or update file in repository."""
         try:
             # Try to get existing file
@@ -332,15 +362,12 @@ class StandardsPublisher:
                 message=message,
                 content=content,
                 sha=existing_file.sha,
-                branch=branch
+                branch=branch,
             )
         except Exception:
             # Create new file
             result = self.target_repo.create_file(
-                path=path,
-                message=message,
-                content=content,
-                branch=branch
+                path=path, message=message, content=content, branch=branch
             )
 
         return result
@@ -360,14 +387,16 @@ class StandardsPublisher:
 
         try:
             # Get existing index
-            index_content = self.target_repo.get_contents(index_path, ref=self.config.target_branch)
+            index_content = self.target_repo.get_contents(
+                index_path, ref=self.config.target_branch
+            )
             index_data = json.loads(index_content.decoded_content)
         except Exception:
             # Create new index
             index_data = {
                 "standards": [],
                 "last_updated": datetime.utcnow().isoformat(),
-                "total_count": 0
+                "total_count": 0,
             }
 
         # Update index entry
@@ -377,9 +406,9 @@ class StandardsPublisher:
             "version": metadata.version,
             "domain": metadata.domain,
             "type": metadata.type,
-            "maturity_level": getattr(metadata, 'maturity_level', 'draft'),
+            "maturity_level": getattr(metadata, "maturity_level", "draft"),
             "updated_date": datetime.utcnow().isoformat(),
-            "url": f"standards/{filename}.md"
+            "url": f"standards/{filename}.md",
         }
 
         # Find and update existing entry or add new one
@@ -405,7 +434,7 @@ class StandardsPublisher:
             path=index_path,
             content=json.dumps(index_data, indent=2),
             message=f"Update standards index for {metadata.title}",
-            branch=self.config.target_branch
+            branch=self.config.target_branch,
         )
 
     def _send_notification(self, result: PublicationResult):
@@ -419,23 +448,23 @@ class StandardsPublisher:
                 "name": result.standard_name,
                 "version": result.version,
                 "url": result.url,
-                "quality_score": result.quality_score
+                "quality_score": result.quality_score,
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         try:
             response = requests.post(
-                self.config.notification_webhook,
-                json=payload,
-                timeout=10
+                self.config.notification_webhook, json=payload, timeout=10
             )
             response.raise_for_status()
             self.logger.info("Notification sent successfully")
         except Exception as e:
             self.logger.warning(f"Failed to send notification: {e}")
 
-    def batch_publish(self, standards_dir: str, dry_run: bool = False) -> list[PublicationResult]:
+    def batch_publish(
+        self, standards_dir: str, dry_run: bool = False
+    ) -> list[PublicationResult]:
         """Publish all standards in a directory."""
         results = []
         standards_path = Path(standards_dir)
@@ -456,12 +485,16 @@ class StandardsPublisher:
         successful = [r for r in results if r.success]
         failed = [r for r in results if not r.success]
 
-        self.logger.info(f"Batch publication complete: {len(successful)} successful, {len(failed)} failed")
+        self.logger.info(
+            f"Batch publication complete: {len(successful)} successful, {len(failed)} failed"
+        )
 
         if failed:
             self.logger.error("Failed publications:")
             for result in failed:
-                self.logger.error(f"  - {result.standard_name}: {'; '.join(result.errors)}")
+                self.logger.error(
+                    f"  - {result.standard_name}: {'; '.join(result.errors)}"
+                )
 
         # Create detailed report file
         report = {
@@ -469,13 +502,15 @@ class StandardsPublisher:
             "summary": {
                 "total": len(results),
                 "successful": len(successful),
-                "failed": len(failed)
+                "failed": len(failed),
             },
-            "results": [asdict(r) for r in results]
+            "results": [asdict(r) for r in results],
         }
 
-        report_path = f"publication_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_path, 'w') as f:
+        report_path = (
+            f"publication_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 
         self.logger.info(f"Detailed report saved to: {report_path}")
@@ -483,15 +518,27 @@ class StandardsPublisher:
 
 def main():
     """Main CLI interface for the publishing pipeline."""
-    parser = argparse.ArgumentParser(description="Publish standards to GitHub repository")
+    parser = argparse.ArgumentParser(
+        description="Publish standards to GitHub repository"
+    )
 
     parser.add_argument("--standard", help="Path to specific standard to publish")
-    parser.add_argument("--batch-dir", help="Directory containing standards to batch publish")
-    parser.add_argument("--dry-run", action="store_true", help="Validate but don't publish")
+    parser.add_argument(
+        "--batch-dir", help="Directory containing standards to batch publish"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate but don't publish"
+    )
     parser.add_argument("--config", help="Path to configuration file")
-    parser.add_argument("--github-token", help="GitHub token (or set GITHUB_TOKEN env var)")
-    parser.add_argument("--target-repo", default="williamzujkowski/standards", help="Target repository")
-    parser.add_argument("--min-quality", type=float, default=0.8, help="Minimum quality score")
+    parser.add_argument(
+        "--github-token", help="GitHub token (or set GITHUB_TOKEN env var)"
+    )
+    parser.add_argument(
+        "--target-repo", default="williamzujkowski/standards", help="Target repository"
+    )
+    parser.add_argument(
+        "--min-quality", type=float, default=0.8, help="Minimum quality score"
+    )
     parser.add_argument("--strict", action="store_true", help="Strict validation mode")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 
@@ -504,7 +551,9 @@ def main():
     # Get GitHub token
     github_token = args.github_token or os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        print("Error: GitHub token required. Set GITHUB_TOKEN env var or use --github-token")
+        print(
+            "Error: GitHub token required. Set GITHUB_TOKEN env var or use --github-token"
+        )
         sys.exit(1)
 
     # Load configuration
@@ -517,7 +566,7 @@ def main():
             github_token=github_token,
             target_repo=args.target_repo,
             min_quality_score=args.min_quality,
-            validation_strict=args.strict
+            validation_strict=args.strict,
         )
 
     # Create publisher
@@ -529,7 +578,9 @@ def main():
             result = publisher.publish_standard(args.standard, dry_run=args.dry_run)
 
             if result.success:
-                print(f"✅ Successfully published {result.standard_name} v{result.version}")
+                print(
+                    f"✅ Successfully published {result.standard_name} v{result.version}"
+                )
                 if result.url:
                     print(f"   URL: {result.url}")
                 print(f"   Quality Score: {result.quality_score:.2f}")
@@ -564,6 +615,7 @@ def main():
         print(f"❌ Publication failed: {e}")
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 

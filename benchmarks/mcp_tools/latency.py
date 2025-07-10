@@ -12,7 +12,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-
 from src.mcp_server import MCPStandardsServer
 
 from ..framework import BaseBenchmark
@@ -29,10 +28,9 @@ class MCPLatencyBenchmark(BaseBenchmark):
 
     async def setup(self):
         """Setup MCP server and test data."""
-        self.server = MCPStandardsServer({
-            "search": {"enabled": True},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": True}, "token_model": "gpt-4"}
+        )
 
         # Clear latencies
         self.latencies_by_tool.clear()
@@ -52,7 +50,7 @@ class MCPLatencyBenchmark(BaseBenchmark):
             "id": "small-standard",
             "name": "Small Standard",
             "category": "test",
-            "content": {"overview": "Small content"}
+            "content": {"overview": "Small content"},
         }
 
         # Medium standard
@@ -62,8 +60,8 @@ class MCPLatencyBenchmark(BaseBenchmark):
             "category": "test",
             "content": {
                 "overview": "Medium content " * 100,
-                "guidelines": ["Guideline " * 50 for _ in range(10)]
-            }
+                "guidelines": ["Guideline " * 50 for _ in range(10)],
+            },
         }
 
         # Large standard
@@ -74,13 +72,13 @@ class MCPLatencyBenchmark(BaseBenchmark):
             "content": {
                 "overview": "Large content " * 1000,
                 "guidelines": ["Guideline " * 100 for _ in range(50)],
-                "examples": ["Example " * 200 for _ in range(20)]
-            }
+                "examples": ["Example " * 200 for _ in range(20)],
+            },
         }
 
         for standard in [small_standard, medium_standard, large_standard]:
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def run_single_iteration(self) -> dict[str, Any]:
@@ -110,10 +108,7 @@ class MCPLatencyBenchmark(BaseBenchmark):
                 self.latencies_by_tool[op_name].append(1.0)
 
         # Return current iteration metrics
-        return {
-            "iteration_complete": True,
-            "operations_tested": len(operations)
-        }
+        return {"iteration_complete": True, "operations_tested": len(operations)}
 
     async def _test_get_standard_small(self):
         """Test getting a small standard."""
@@ -134,9 +129,7 @@ class MCPLatencyBenchmark(BaseBenchmark):
     async def _test_search_complex(self):
         """Test complex search."""
         await self.server._search_standards(
-            "security authentication oauth jwt token",
-            limit=20,
-            min_relevance=0.5
+            "security authentication oauth jwt token", limit=20, min_relevance=0.5
         )
 
     async def _test_list_standards(self):
@@ -146,18 +139,14 @@ class MCPLatencyBenchmark(BaseBenchmark):
     async def _test_token_optimization(self):
         """Test token optimization."""
         await self.server._get_optimized_standard(
-            "medium-standard",
-            format_type="condensed",
-            token_budget=1000
+            "medium-standard", format_type="condensed", token_budget=1000
         )
 
     async def _test_get_applicable_standards(self):
         """Test getting applicable standards."""
-        await self.server._get_applicable_standards({
-            "language": "javascript",
-            "framework": "react",
-            "project_type": "web_app"
-        })
+        await self.server._get_applicable_standards(
+            {"language": "javascript", "framework": "react", "project_type": "web_app"}
+        )
 
     async def teardown(self):
         """Analyze latency distribution."""
@@ -167,6 +156,7 @@ class MCPLatencyBenchmark(BaseBenchmark):
     def _calculate_distributions(self) -> dict[str, Any]:
         """Calculate latency distributions for all operations."""
         from ..framework.stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         distributions = {}
@@ -200,10 +190,14 @@ class MCPLatencyBenchmark(BaseBenchmark):
 
             # Calculate SLO compliance
             dist["slo_compliance"] = {
-                "under_10ms": sum(1 for latency in latencies if latency < 0.01) / len(latencies),
-                "under_50ms": sum(1 for latency in latencies if latency < 0.05) / len(latencies),
-                "under_100ms": sum(1 for latency in latencies if latency < 0.1) / len(latencies),
-                "under_1s": sum(1 for latency in latencies if latency < 1.0) / len(latencies),
+                "under_10ms": sum(1 for latency in latencies if latency < 0.01)
+                / len(latencies),
+                "under_50ms": sum(1 for latency in latencies if latency < 0.05)
+                / len(latencies),
+                "under_100ms": sum(1 for latency in latencies if latency < 0.1)
+                / len(latencies),
+                "under_1s": sum(1 for latency in latencies if latency < 1.0)
+                / len(latencies),
             }
 
             distributions[op_name] = dist
@@ -212,7 +206,7 @@ class MCPLatencyBenchmark(BaseBenchmark):
 
     def get_latency_summary(self) -> str:
         """Generate a summary of latency characteristics."""
-        if not hasattr(self, 'latency_distribution'):
+        if not hasattr(self, "latency_distribution"):
             return "No latency data available"
 
         lines = ["# Latency Distribution Summary\n"]
@@ -224,7 +218,9 @@ class MCPLatencyBenchmark(BaseBenchmark):
             lines.append(f"- Median: {dist['median']*1000:.2f}ms")
             lines.append(f"- P95: {dist['percentiles'][95]*1000:.2f}ms")
             lines.append(f"- P99: {dist['percentiles'][99]*1000:.2f}ms")
-            lines.append(f"- SLO (<100ms): {dist['slo_compliance']['under_100ms']*100:.1f}%")
+            lines.append(
+                f"- SLO (<100ms): {dist['slo_compliance']['under_100ms']*100:.1f}%"
+            )
 
         return "\n".join(lines)
 
@@ -232,11 +228,7 @@ class MCPLatencyBenchmark(BaseBenchmark):
 class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
     """Analyze how latency changes under different load conditions."""
 
-    def __init__(
-        self,
-        load_levels: list[int] = None,
-        duration_per_level: int = 30
-    ):
+    def __init__(self, load_levels: list[int] = None, duration_per_level: int = 30):
         if load_levels is None:
             load_levels = [1, 5, 10, 20, 50]
         super().__init__("MCP Latency Under Load", len(load_levels))
@@ -247,10 +239,9 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
 
     async def setup(self):
         """Setup server."""
-        self.server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
 
         # Setup test data
         await self._setup_test_data()
@@ -270,12 +261,12 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
                 "category": "test",
                 "content": {
                     "overview": f"Content for standard {i}" * 50,
-                    "guidelines": [f"Guideline {j}" for j in range(20)]
-                }
+                    "guidelines": [f"Guideline {j}" for j in range(20)],
+                },
             }
 
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def run_single_iteration(self) -> dict[str, Any]:
@@ -291,9 +282,7 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
         # Create concurrent tasks
         tasks = []
         for _ in range(current_load):
-            task = asyncio.create_task(
-                self._measure_operations(latencies_by_operation)
-            )
+            task = asyncio.create_task(self._measure_operations(latencies_by_operation))
             tasks.append(task)
 
         # Run for duration
@@ -315,6 +304,7 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
 
         # Return summary for this load level
         from ..framework.stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         summary = {}
@@ -372,11 +362,12 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
     def _analyze_load_impact(self) -> dict[str, Any]:
         """Analyze the impact of load on latency."""
         from ..framework.stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         analysis = {
-            "load_levels": self.load_levels[:len(self.results_by_load)],
-            "operations": {}
+            "load_levels": self.load_levels[: len(self.results_by_load)],
+            "operations": {},
         }
 
         # Analyze each operation
@@ -385,10 +376,7 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
             operations.update(load_data.keys())
 
         for op in operations:
-            op_analysis = {
-                "latencies_by_load": {},
-                "degradation": {}
-            }
+            op_analysis = {"latencies_by_load": {}, "degradation": {}}
 
             for load, data in self.results_by_load.items():
                 if op in data and data[op]:
@@ -407,7 +395,9 @@ class MCPLatencyUnderLoadBenchmark(BaseBenchmark):
                     base_p95 = op_analysis["latencies_by_load"][loads[0]]["p95"]
                     for load in loads[1:]:
                         current_p95 = op_analysis["latencies_by_load"][load]["p95"]
-                        degradation = (current_p95 - base_p95) / base_p95 if base_p95 > 0 else 0
+                        degradation = (
+                            (current_p95 - base_p95) / base_p95 if base_p95 > 0 else 0
+                        )
                         op_analysis["degradation"][load] = degradation
 
             analysis["operations"][op] = op_analysis

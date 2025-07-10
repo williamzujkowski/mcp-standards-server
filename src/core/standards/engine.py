@@ -133,7 +133,11 @@ class StandardsEngine:
                                     priority=std_data.get("priority", "medium"),
                                     version=std_data.get("version", "1.0.0"),
                                     examples=std_data.get("examples", []),
-                                    rules=std_data.get("rules", []) if isinstance(std_data.get("rules", []), list) else [],
+                                    rules=(
+                                        std_data.get("rules", [])
+                                        if isinstance(std_data.get("rules", []), list)
+                                        else []
+                                    ),
                                     metadata=StandardMetadata(
                                         **std_data.get("metadata", {})
                                     ),
@@ -141,15 +145,18 @@ class StandardsEngine:
                                 self._standards_cache[standard.id] = standard
                         else:
                             # Single standard file format
-                            category = data.get("category",
+                            category = data.get(
+                                "category",
                                 json_file.stem.replace("_STANDARDS", "")
                                 .replace("_", " ")
-                                .title()
+                                .title(),
                             )
 
                             standard = Standard(
                                 id=data.get("id", json_file.stem.lower()),
-                                title=data.get("name", data.get("title", json_file.stem)),
+                                title=data.get(
+                                    "name", data.get("title", json_file.stem)
+                                ),
                                 description=data.get("description", ""),
                                 content=data.get("content", ""),
                                 category=category,
@@ -158,10 +165,12 @@ class StandardsEngine:
                                 priority=data.get("priority", "medium"),
                                 version=data.get("version", "1.0.0"),
                                 examples=data.get("examples", []),
-                                rules=data.get("rules", []) if isinstance(data.get("rules", []), list) else [],
-                                metadata=StandardMetadata(
-                                    **data.get("metadata", {})
+                                rules=(
+                                    data.get("rules", [])
+                                    if isinstance(data.get("rules", []), list)
+                                    else []
                                 ),
+                                metadata=StandardMetadata(**data.get("metadata", {})),
                             )
 
                             self._standards_cache[standard.id] = standard
@@ -186,7 +195,7 @@ class StandardsEngine:
                                 "version": standard.version,
                                 "title": standard.title,
                                 "description": standard.description,
-                            }
+                            },
                         )
                     )
 
@@ -292,7 +301,7 @@ class StandardsEngine:
                         "version": standard.version,
                         "title": standard.title,
                         "description": standard.description,
-                    }
+                    },
                 )
             ]
             # Synchronous indexing
@@ -324,23 +333,33 @@ class StandardsEngine:
             filters["tags"] = tags
 
         # Perform semantic search (synchronous)
-        results = self.semantic_search.search(
-            query=query, top_k=limit, filters=filters
-        )
+        results = self.semantic_search.search(query=query, top_k=limit, filters=filters)
 
         # Enrich results with full standard objects
         enriched_results = []
         for result in results:
             # Handle SearchResult dataclass
-            result_id = result.id if hasattr(result, 'id') else result.get("id")
+            result_id = result.id if hasattr(result, "id") else result.get("id")
             standard = self._standards_cache.get(result_id)
             if standard:
                 enriched_results.append(
                     {
                         "standard": standard,
-                        "score": result.score if hasattr(result, 'score') else result.get("score", 0.0),
-                        "highlights": result.highlights if hasattr(result, 'highlights') else result.get("highlights", []),
-                        "metadata": result.metadata if hasattr(result, 'metadata') else result.get("metadata", {}),
+                        "score": (
+                            result.score
+                            if hasattr(result, "score")
+                            else result.get("score", 0.0)
+                        ),
+                        "highlights": (
+                            result.highlights
+                            if hasattr(result, "highlights")
+                            else result.get("highlights", [])
+                        ),
+                        "metadata": (
+                            result.metadata
+                            if hasattr(result, "metadata")
+                            else result.get("metadata", {})
+                        ),
                     }
                 )
 
@@ -425,7 +444,7 @@ class StandardsEngine:
     async def close(self):
         """Close the engine and clean up resources."""
         if self.semantic_search:
-            if hasattr(self.semantic_search, 'close'):
+            if hasattr(self.semantic_search, "close"):
                 # AsyncSemanticSearch.close() is not async
                 self.semantic_search.close()
 

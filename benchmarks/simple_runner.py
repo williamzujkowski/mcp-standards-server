@@ -27,12 +27,14 @@ class SimpleBenchmark:
         config = {
             "search": {"enabled": False},
             "token_model": "gpt-4",
-            "default_token_budget": 8000
+            "default_token_budget": 8000,
         }
         self.server = MCPStandardsServer(config)
         print("✓ MCP Server initialized")
 
-    async def benchmark_tool(self, tool_name: str, args: dict, iterations: int = 10) -> dict:
+    async def benchmark_tool(
+        self, tool_name: str, args: dict, iterations: int = 10
+    ) -> dict:
         """Benchmark a specific MCP tool."""
         print(f"\nBenchmarking {tool_name}...")
 
@@ -86,15 +88,11 @@ class SimpleBenchmark:
                 "min_time": min_time,
                 "max_time": max_time,
                 "times": times,
-                "errors": errors
+                "errors": errors,
             }
         else:
             print("  ✗ All iterations failed")
-            return {
-                "tool": tool_name,
-                "iterations": 0,
-                "errors": errors
-            }
+            return {"tool": tool_name, "iterations": 0, "errors": errors}
 
     async def run_benchmarks(self):
         """Run benchmarks for all MCP tools."""
@@ -105,25 +103,19 @@ class SimpleBenchmark:
 
         # Define test scenarios
         test_scenarios = [
-            {
-                "tool": "get_sync_status",
-                "args": {}
-            },
-            {
-                "tool": "list_available_standards",
-                "args": {"limit": 10}
-            },
+            {"tool": "get_sync_status", "args": {}},
+            {"tool": "list_available_standards", "args": {"limit": 10}},
             {
                 "tool": "get_standard_details",
-                "args": {"standard_id": "CODING_STANDARDS"}
+                "args": {"standard_id": "CODING_STANDARDS"},
             },
             {
                 "tool": "search_standards",
                 "args": {
                     "query": "security authentication",
                     "limit": 5,
-                    "min_relevance": 0.5
-                }
+                    "min_relevance": 0.5,
+                },
             },
             {
                 "tool": "get_applicable_standards",
@@ -131,25 +123,23 @@ class SimpleBenchmark:
                     "context": {
                         "language": "python",
                         "framework": "fastapi",
-                        "project_type": "api"
+                        "project_type": "api",
                     }
-                }
+                },
             },
             {
                 "tool": "estimate_token_usage",
                 "args": {
                     "standard_ids": ["CODING_STANDARDS"],
-                    "format_types": ["full", "condensed"]
-                }
-            }
+                    "format_types": ["full", "condensed"],
+                },
+            },
         ]
 
         # Run benchmarks
         for scenario in test_scenarios:
             result = await self.benchmark_tool(
-                scenario["tool"],
-                scenario["args"],
-                iterations=20
+                scenario["tool"], scenario["args"], iterations=20
             )
             self.results.append(result)
 
@@ -173,8 +163,10 @@ class SimpleBenchmark:
         summary = {
             "timestamp": timestamp,
             "total_tools": len(self.results),
-            "successful_tools": len([r for r in self.results if r.get("iterations", 0) > 0]),
-            "tool_performance": {}
+            "successful_tools": len(
+                [r for r in self.results if r.get("iterations", 0) > 0]
+            ),
+            "tool_performance": {},
         }
 
         for result in self.results:
@@ -182,7 +174,7 @@ class SimpleBenchmark:
                 summary["tool_performance"][result["tool"]] = {
                     "avg_time": f"{result['avg_time']:.4f}s",
                     "min_time": f"{result['min_time']:.4f}s",
-                    "max_time": f"{result['max_time']:.4f}s"
+                    "max_time": f"{result['max_time']:.4f}s",
                 }
 
         with open(output_dir / "summary.json", "w") as f:

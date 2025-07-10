@@ -1,6 +1,7 @@
 """
 Pydantic models for API requests and responses
 """
+
 from datetime import datetime
 from typing import Any
 
@@ -12,6 +13,7 @@ class SearchRequest(BaseModel):
     filters: dict[str, Any] | None = Field(default_factory=dict)
     limit: int = Field(default=20, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
+
 
 class ProjectAnalysisRequest(BaseModel):
     languages: list[str] = Field(default_factory=list)
@@ -25,6 +27,7 @@ class ProjectAnalysisRequest(BaseModel):
     security_requirements: dict[str, Any] = Field(default_factory=dict)
     scalability_requirements: dict[str, Any] = Field(default_factory=dict)
 
+
 class StandardSummary(BaseModel):
     id: str
     title: str
@@ -34,6 +37,7 @@ class StandardSummary(BaseModel):
     priority: str
     version: str
 
+
 class StandardDetail(StandardSummary):
     subcategory: str
     examples: list[dict[str, Any]]
@@ -42,10 +46,12 @@ class StandardDetail(StandardSummary):
     updated_at: datetime | None
     metadata: dict[str, Any]
 
+
 class SearchResult(BaseModel):
     standard: StandardSummary
     score: float
     highlights: dict[str, list[str]]
+
 
 class Recommendation(BaseModel):
     standard: StandardSummary
@@ -53,6 +59,7 @@ class Recommendation(BaseModel):
     confidence: float
     reasoning: str
     implementation_notes: str
+
 
 class WebSocketMessage(BaseModel):
     type: str

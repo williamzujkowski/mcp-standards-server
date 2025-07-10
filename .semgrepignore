@@ -16,5 +16,7 @@ node_modules/
 dist/
 build/
 
-# Web frontend - temporarily ignore while in development
-web/frontend/
+# Web frontend and deployment - temporarily ignore while in development
+web/
+.github/workflows/release.yml
+.github/workflows/review-automation.yml

@@ -11,7 +11,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-
 from src.mcp_server import MCPStandardsServer
 
 from ..framework import BaseBenchmark
@@ -24,12 +23,9 @@ class MCPThroughputBenchmark(BaseBenchmark):
         self,
         concurrent_clients: int = 10,
         duration_seconds: int = 30,
-        iterations: int = 1
+        iterations: int = 1,
     ):
-        super().__init__(
-            f"MCP Throughput (clients={concurrent_clients})",
-            iterations
-        )
+        super().__init__(f"MCP Throughput (clients={concurrent_clients})", iterations)
         self.concurrent_clients = concurrent_clients
         self.duration_seconds = duration_seconds
         self.server: MCPStandardsServer = None
@@ -39,10 +35,9 @@ class MCPThroughputBenchmark(BaseBenchmark):
 
     async def setup(self):
         """Setup MCP server."""
-        self.server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        self.server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
 
         # Reset counters
         self.request_count = 0
@@ -61,13 +56,15 @@ class MCPThroughputBenchmark(BaseBenchmark):
             standard = {
                 "id": f"test-standard-{i}",
                 "name": f"Test Standard {i}",
-                "category": random.choice(["frontend", "backend", "security", "testing"]),
+                "category": random.choice(
+                    ["frontend", "backend", "security", "testing"]
+                ),
                 "tags": [f"tag{j}" for j in range(random.randint(2, 5))],
                 "content": {
                     "overview": f"Overview for standard {i}",
                     "guidelines": [f"Guideline {j}" for j in range(10)],
-                    "examples": [f"Example {j}" for j in range(5)]
-                }
+                    "examples": [f"Example {j}" for j in range(5)],
+                },
             }
             test_standards.append(standard)
 
@@ -77,8 +74,9 @@ class MCPThroughputBenchmark(BaseBenchmark):
 
         for standard in test_standards:
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 import json
+
                 json.dump(standard, f)
 
     async def run_single_iteration(self) -> dict[str, Any]:
@@ -87,9 +85,7 @@ class MCPThroughputBenchmark(BaseBenchmark):
         client_tasks = []
 
         for i in range(self.concurrent_clients):
-            task = asyncio.create_task(
-                self._client_worker(i, self.duration_seconds)
-            )
+            task = asyncio.create_task(self._client_worker(i, self.duration_seconds))
             client_tasks.append(task)
 
         # Wait for all clients to complete
@@ -100,17 +96,26 @@ class MCPThroughputBenchmark(BaseBenchmark):
 
         # Calculate latency statistics
         from ..framework.stats import StatisticalAnalyzer
+
         stats = StatisticalAnalyzer()
 
         return {
             "total_requests": self.request_count,
             "total_errors": self.error_count,
             "throughput_rps": throughput,
-            "error_rate": self.error_count / self.request_count if self.request_count > 0 else 0,
+            "error_rate": (
+                self.error_count / self.request_count if self.request_count > 0 else 0
+            ),
             "latency_mean": stats.mean(self.latencies) if self.latencies else 0,
-            "latency_p50": stats.percentiles(self.latencies, [50])[50] if self.latencies else 0,
-            "latency_p95": stats.percentiles(self.latencies, [95])[95] if self.latencies else 0,
-            "latency_p99": stats.percentiles(self.latencies, [99])[99] if self.latencies else 0,
+            "latency_p50": (
+                stats.percentiles(self.latencies, [50])[50] if self.latencies else 0
+            ),
+            "latency_p95": (
+                stats.percentiles(self.latencies, [95])[95] if self.latencies else 0
+            ),
+            "latency_p99": (
+                stats.percentiles(self.latencies, [99])[99] if self.latencies else 0
+            ),
         }
 
     async def _client_worker(self, client_id: int, duration: int):
@@ -152,11 +157,10 @@ class MCPThroughputBenchmark(BaseBenchmark):
             "performance",
             "react hooks",
             "authentication",
-            "testing strategies"
+            "testing strategies",
         ]
         await self.server._search_standards(
-            query=random.choice(queries),
-            limit=random.randint(5, 20)
+            query=random.choice(queries), limit=random.randint(5, 20)
         )
 
     async def _make_get_standard_request(self):
@@ -168,8 +172,7 @@ class MCPThroughputBenchmark(BaseBenchmark):
         """Make a list standards request."""
         categories = [None, "frontend", "backend", "security", "testing"]
         await self.server._list_available_standards(
-            category=random.choice(categories),
-            limit=random.randint(10, 50)
+            category=random.choice(categories), limit=random.randint(10, 50)
         )
 
     async def _make_applicable_standards_request(self):
@@ -178,11 +181,9 @@ class MCPThroughputBenchmark(BaseBenchmark):
             {"language": "python"},
             {"language": "javascript", "framework": "react"},
             {"language": "java", "framework": "spring", "project_type": "api"},
-            {"language": "go", "project_type": "microservice"}
+            {"language": "go", "project_type": "microservice"},
         ]
-        await self.server._get_applicable_standards(
-            context=random.choice(contexts)
-        )
+        await self.server._get_applicable_standards(context=random.choice(contexts))
 
     async def _make_token_optimization_request(self):
         """Make a token optimization request."""
@@ -192,7 +193,7 @@ class MCPThroughputBenchmark(BaseBenchmark):
         await self.server._get_optimized_standard(
             standard_id=standard_id,
             format_type=random.choice(formats),
-            token_budget=random.randint(1000, 5000)
+            token_budget=random.randint(1000, 5000),
         )
 
     async def teardown(self):
@@ -204,10 +205,7 @@ class MCPScalabilityBenchmark(BaseBenchmark):
     """Test scalability with increasing load."""
 
     def __init__(
-        self,
-        max_clients: int = 100,
-        step_size: int = 10,
-        duration_per_step: int = 10
+        self, max_clients: int = 100, step_size: int = 10, duration_per_step: int = 10
     ):
         super().__init__("MCP Scalability Test", 1)
         self.max_clients = max_clients
@@ -231,8 +229,7 @@ class MCPScalabilityBenchmark(BaseBenchmark):
 
             # Run throughput test with this load
             bench = MCPThroughputBenchmark(
-                concurrent_clients=num_clients,
-                duration_seconds=self.duration_per_step
+                concurrent_clients=num_clients, duration_seconds=self.duration_per_step
             )
             bench.server = self.server  # Reuse server
 
@@ -277,8 +274,8 @@ class MCPScalabilityBenchmark(BaseBenchmark):
         # Find saturation point (throughput stops increasing)
         saturation_load = None
         for i in range(1, len(throughputs)):
-            if throughputs[i] < throughputs[i-1] * 0.95:  # 5% drop
-                saturation_load = loads[i-1]
+            if throughputs[i] < throughputs[i - 1] * 0.95:  # 5% drop
+                saturation_load = loads[i - 1]
                 break
 
         # Calculate efficiency
@@ -292,7 +289,9 @@ class MCPScalabilityBenchmark(BaseBenchmark):
             "optimal_load": optimal_load,
             "max_throughput": max_throughput,
             "saturation_load": saturation_load or loads[-1],
-            "efficiency_trend": "decreasing" if efficiencies[-1] < efficiencies[0] * 0.8 else "stable",
+            "efficiency_trend": (
+                "decreasing" if efficiencies[-1] < efficiencies[0] * 0.8 else "stable"
+            ),
             "latency_increase": latencies[-1] / latencies[0] if latencies[0] > 0 else 0,
         }
 

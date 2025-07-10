@@ -14,6 +14,7 @@ from pathlib import Path
 try:
     import matplotlib.pyplot as plt
     import numpy as np
+
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
@@ -23,7 +24,6 @@ except ImportError:
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 
 
 from src.core.standards.semantic_search import create_search_engine
@@ -43,12 +43,34 @@ class SemanticSearchBenchmark:
     def generate_test_documents(self, count: int) -> list:
         """Generate test documents for benchmarking."""
         topics = [
-            "React", "Angular", "Vue", "Python", "JavaScript", "TypeScript",
-            "API", "REST", "GraphQL", "Testing", "Security", "Performance",
-            "Database", "SQL", "NoSQL", "Docker", "Kubernetes", "Cloud"
+            "React",
+            "Angular",
+            "Vue",
+            "Python",
+            "JavaScript",
+            "TypeScript",
+            "API",
+            "REST",
+            "GraphQL",
+            "Testing",
+            "Security",
+            "Performance",
+            "Database",
+            "SQL",
+            "NoSQL",
+            "Docker",
+            "Kubernetes",
+            "Cloud",
         ]
 
-        categories = ["frontend", "backend", "testing", "security", "devops", "database"]
+        categories = [
+            "frontend",
+            "backend",
+            "testing",
+            "security",
+            "devops",
+            "database",
+        ]
 
         documents = []
         for i in range(count):
@@ -85,7 +107,7 @@ class SemanticSearchBenchmark:
                 "category": category,
                 "main_topic": main_topic,
                 "secondary_topic": secondary_topic,
-                "index": i
+                "index": i,
             }
 
             documents.append((metadata["id"], content, metadata))
@@ -112,13 +134,12 @@ class SemanticSearchBenchmark:
             indexing_times.append(elapsed)
             docs_per_second = size / elapsed
 
-            print(f"Indexed {size:4d} documents in {elapsed:6.2f}s "
-                  f"({docs_per_second:6.1f} docs/sec)")
+            print(
+                f"Indexed {size:4d} documents in {elapsed:6.2f}s "
+                f"({docs_per_second:6.1f} docs/sec)"
+            )
 
-        self.results['indexing'] = {
-            'batch_sizes': batch_sizes,
-            'times': indexing_times
-        }
+        self.results["indexing"] = {"batch_sizes": batch_sizes, "times": indexing_times}
 
         search.close()
         return batch_sizes, indexing_times
@@ -143,7 +164,7 @@ class SemanticSearchBenchmark:
             "Backend REST GraphQL",
             "Testing strategies patterns",
             "Security compliance standards",
-            "Cloud architecture patterns"
+            "Cloud architecture patterns",
         ]
 
         configurations = [
@@ -171,14 +192,16 @@ class SemanticSearchBenchmark:
             p95_latency = np.percentile(latencies, 95)
 
             results[config_name] = {
-                'avg': avg_latency,
-                'p95': p95_latency,
-                'all': latencies
+                "avg": avg_latency,
+                "p95": p95_latency,
+                "all": latencies,
             }
 
-            print(f"{config_name:15s}: avg={avg_latency:6.2f}ms, p95={p95_latency:6.2f}ms")
+            print(
+                f"{config_name:15s}: avg={avg_latency:6.2f}ms, p95={p95_latency:6.2f}ms"
+            )
 
-        self.results['latency'] = results
+        self.results["latency"] = results
         search.close()
         return results
 
@@ -194,7 +217,7 @@ class SemanticSearchBenchmark:
         queries = [
             "React component testing",
             "Python API development",
-            "JavaScript security"
+            "JavaScript security",
         ]
 
         # First pass - no cache
@@ -227,11 +250,11 @@ class SemanticSearchBenchmark:
         report = search.get_analytics_report()
         print(f"Cache hit rate: {report['cache_hit_rate']:.2%}")
 
-        self.results['cache'] = {
-            'first_pass': first_pass_times,
-            'second_pass': second_pass_times,
-            'speedups': speedups,
-            'hit_rate': report['cache_hit_rate']
+        self.results["cache"] = {
+            "first_pass": first_pass_times,
+            "second_pass": second_pass_times,
+            "speedups": speedups,
+            "hit_rate": report["cache_hit_rate"],
         }
 
         search.close()
@@ -282,8 +305,10 @@ class SemanticSearchBenchmark:
             time_diff = (fuzzy_time - no_fuzzy_time) * 1000
             time_differences.append(time_diff)
 
-            print(f"Query: '{typo_query[:30]}...' - Accuracy: {accuracy:.2%}, "
-                  f"Time diff: {time_diff:.2f}ms")
+            print(
+                f"Query: '{typo_query[:30]}...' - Accuracy: {accuracy:.2%}, "
+                f"Time diff: {time_diff:.2f}ms"
+            )
 
         avg_accuracy = statistics.mean(accuracies)
         avg_time_diff = statistics.mean(time_differences)
@@ -291,9 +316,9 @@ class SemanticSearchBenchmark:
         print(f"\nAverage fuzzy matching accuracy: {avg_accuracy:.2%}")
         print(f"Average additional latency: {avg_time_diff:.2f}ms")
 
-        self.results['fuzzy'] = {
-            'accuracies': accuracies,
-            'time_differences': time_differences
+        self.results["fuzzy"] = {
+            "accuracies": accuracies,
+            "time_differences": time_differences,
         }
 
         search.close()
@@ -316,7 +341,11 @@ class SemanticSearchBenchmark:
             search.index_documents_batch(documents)
 
             # Measure search performance
-            queries = ["testing best practices", "security guidelines", "performance optimization"]
+            queries = [
+                "testing best practices",
+                "security guidelines",
+                "performance optimization",
+            ]
             times = []
 
             for query in queries:
@@ -329,18 +358,23 @@ class SemanticSearchBenchmark:
 
             # Estimate memory usage (simplified)
             import sys
-            mem_usage = sys.getsizeof(search.documents) + sys.getsizeof(search.document_embeddings)
+
+            mem_usage = sys.getsizeof(search.documents) + sys.getsizeof(
+                search.document_embeddings
+            )
             memory_usage.append(mem_usage / 1024 / 1024)  # Convert to MB
 
-            print(f"{count:5d} documents: {avg_time*1000:6.2f}ms avg search, "
-                  f"{memory_usage[-1]:6.1f}MB memory")
+            print(
+                f"{count:5d} documents: {avg_time*1000:6.2f}ms avg search, "
+                f"{memory_usage[-1]:6.1f}MB memory"
+            )
 
             search.close()
 
-        self.results['scalability'] = {
-            'document_counts': document_counts,
-            'search_times': search_times,
-            'memory_usage': memory_usage
+        self.results["scalability"] = {
+            "document_counts": document_counts,
+            "search_times": search_times,
+            "memory_usage": memory_usage,
         }
 
         return document_counts, search_times
@@ -350,85 +384,89 @@ class SemanticSearchBenchmark:
         print("\n=== Generating Benchmark Report ===")
 
         if not MATPLOTLIB_AVAILABLE:
-            print("WARNING: matplotlib not available. Skipping visual report generation.")
+            print(
+                "WARNING: matplotlib not available. Skipping visual report generation."
+            )
             return
 
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-        fig.suptitle('Semantic Search Performance Benchmarks', fontsize=16)
+        fig.suptitle("Semantic Search Performance Benchmarks", fontsize=16)
 
         # 1. Indexing Performance
-        if 'indexing' in self.results:
+        if "indexing" in self.results:
             ax = axes[0, 0]
-            data = self.results['indexing']
-            ax.plot(data['batch_sizes'], data['times'], 'b-o')
-            ax.set_xlabel('Batch Size')
-            ax.set_ylabel('Time (seconds)')
-            ax.set_title('Indexing Performance')
+            data = self.results["indexing"]
+            ax.plot(data["batch_sizes"], data["times"], "b-o")
+            ax.set_xlabel("Batch Size")
+            ax.set_ylabel("Time (seconds)")
+            ax.set_title("Indexing Performance")
             ax.grid(True)
 
         # 2. Search Latency Comparison
-        if 'latency' in self.results:
+        if "latency" in self.results:
             ax = axes[0, 1]
-            data = self.results['latency']
+            data = self.results["latency"]
             configs = list(data.keys())
-            avg_latencies = [data[c]['avg'] for c in configs]
+            avg_latencies = [data[c]["avg"] for c in configs]
             ax.bar(configs, avg_latencies)
-            ax.set_ylabel('Latency (ms)')
-            ax.set_title('Search Latency by Configuration')
-            ax.tick_params(axis='x', rotation=45)
+            ax.set_ylabel("Latency (ms)")
+            ax.set_title("Search Latency by Configuration")
+            ax.tick_params(axis="x", rotation=45)
 
         # 3. Cache Speedup
-        if 'cache' in self.results:
+        if "cache" in self.results:
             ax = axes[0, 2]
-            data = self.results['cache']
-            speedups = data['speedups']
+            data = self.results["cache"]
+            speedups = data["speedups"]
             ax.bar(range(len(speedups)), speedups)
-            ax.axhline(y=1, color='r', linestyle='--', label='No speedup')
-            ax.set_xlabel('Query')
-            ax.set_ylabel('Speedup Factor')
-            ax.set_title('Cache Speedup')
+            ax.axhline(y=1, color="r", linestyle="--", label="No speedup")
+            ax.set_xlabel("Query")
+            ax.set_ylabel("Speedup Factor")
+            ax.set_title("Cache Speedup")
             ax.legend()
 
         # 4. Fuzzy Matching Accuracy
-        if 'fuzzy' in self.results:
+        if "fuzzy" in self.results:
             ax = axes[1, 0]
-            data = self.results['fuzzy']
-            ax.bar(range(len(data['accuracies'])), data['accuracies'])
-            ax.set_xlabel('Test Case')
-            ax.set_ylabel('Accuracy')
-            ax.set_title('Fuzzy Matching Accuracy')
+            data = self.results["fuzzy"]
+            ax.bar(range(len(data["accuracies"])), data["accuracies"])
+            ax.set_xlabel("Test Case")
+            ax.set_ylabel("Accuracy")
+            ax.set_title("Fuzzy Matching Accuracy")
             ax.set_ylim(0, 1)
 
         # 5. Scalability
-        if 'scalability' in self.results:
+        if "scalability" in self.results:
             ax = axes[1, 1]
-            data = self.results['scalability']
-            ax.plot(data['document_counts'],
-                   [t*1000 for t in data['search_times']], 'g-o')
-            ax.set_xlabel('Number of Documents')
-            ax.set_ylabel('Search Time (ms)')
-            ax.set_title('Search Scalability')
+            data = self.results["scalability"]
+            ax.plot(
+                data["document_counts"], [t * 1000 for t in data["search_times"]], "g-o"
+            )
+            ax.set_xlabel("Number of Documents")
+            ax.set_ylabel("Search Time (ms)")
+            ax.set_title("Search Scalability")
             ax.grid(True)
 
         # 6. Memory Usage
-        if 'scalability' in self.results:
+        if "scalability" in self.results:
             ax = axes[1, 2]
-            data = self.results['scalability']
-            ax.plot(data['document_counts'], data['memory_usage'], 'r-o')
-            ax.set_xlabel('Number of Documents')
-            ax.set_ylabel('Memory Usage (MB)')
-            ax.set_title('Memory Scalability')
+            data = self.results["scalability"]
+            ax.plot(data["document_counts"], data["memory_usage"], "r-o")
+            ax.set_xlabel("Number of Documents")
+            ax.set_ylabel("Memory Usage (MB)")
+            ax.set_title("Memory Scalability")
             ax.grid(True)
 
         plt.tight_layout()
-        report_path = Path(self.temp_dir) / 'benchmark_report.png'
-        plt.savefig(report_path, dpi=300, bbox_inches='tight')
+        report_path = Path(self.temp_dir) / "benchmark_report.png"
+        plt.savefig(report_path, dpi=300, bbox_inches="tight")
         print(f"Report saved to: {report_path}")
 
         # Also save raw results
         import json
-        results_path = Path(self.temp_dir) / 'benchmark_results.json'
-        with open(results_path, 'w') as f:
+
+        results_path = Path(self.temp_dir) / "benchmark_results.json"
+        with open(results_path, "w") as f:
             # Convert numpy arrays to lists for JSON serialization
             serializable_results = {}
             for key, value in self.results.items():

@@ -29,10 +29,7 @@ async def basic_cache_example():
 
     # Create Redis configuration
     redis_config = CacheConfig(
-        host="localhost",
-        port=6379,
-        default_ttl=300,
-        enable_compression=True
+        host="localhost", port=6379, default_ttl=300, enable_compression=True
     )
 
     # Create Redis client
@@ -48,7 +45,7 @@ async def basic_cache_example():
         "id": "secure-api-design",
         "name": "Secure API Design Standards",
         "version": "1.0.0",
-        "guidelines": ["Use HTTPS", "Implement rate limiting", "Validate inputs"]
+        "guidelines": ["Use HTTPS", "Implement rate limiting", "Validate inputs"],
     }
 
     # Set in cache
@@ -82,7 +79,7 @@ async def decorator_example():
 
         return {
             "results": [f"Result for {arguments['query']}" for _ in range(10)],
-            "call_count": call_count
+            "call_count": call_count,
         }
 
     # First call - will execute the function
@@ -109,19 +106,18 @@ async def custom_config_example():
             tool_name="frequent_tool",
             strategy=CacheStrategy.SHORT_TTL,
             ttl_seconds=60,
-            compress_threshold=512
+            compress_threshold=512,
         ),
         "stable_tool": ToolCacheConfig(
             tool_name="stable_tool",
             strategy=CacheStrategy.LONG_TTL,
             ttl_seconds=86400,  # 24 hours
             warm_on_startup=True,
-            warm_args=[{"id": 1}, {"id": 2}]
+            warm_args=[{"id": 1}, {"id": 2}],
         ),
         "write_tool": ToolCacheConfig(
-            tool_name="write_tool",
-            strategy=CacheStrategy.NO_CACHE
-        )
+            tool_name="write_tool", strategy=CacheStrategy.NO_CACHE
+        ),
     }
 
     # Create cache with custom configs
@@ -130,8 +126,10 @@ async def custom_config_example():
     # Test different strategies
     for tool_name in ["frequent_tool", "stable_tool", "write_tool"]:
         config = cache.tool_configs[tool_name]
-        print(f"{tool_name}: strategy={config.strategy.value}, "
-              f"ttl={config.ttl_seconds or cache.DEFAULT_TTLS.get(config.strategy)}s")
+        print(
+            f"{tool_name}: strategy={config.strategy.value}, "
+            f"ttl={config.ttl_seconds or cache.DEFAULT_TTLS.get(config.strategy)}s"
+        )
 
 
 # Example 4: Cache Management
@@ -153,7 +151,9 @@ async def cache_management_example():
 
     print("Initial cache state:")
     metrics = cache.get_metrics()
-    print(f"  Total entries: {metrics['overall']['hits'] + metrics['overall']['misses']}")
+    print(
+        f"  Total entries: {metrics['overall']['hits'] + metrics['overall']['misses']}"
+    )
 
     # Invalidate specific entry
     await cache.invalidate("tool1", {"arg": 1})
@@ -183,11 +183,7 @@ async def cache_warming_example():
         "api_standards",
         strategy=CacheStrategy.LONG_TTL,
         warm_on_startup=True,
-        warm_args=[
-            {"category": "rest"},
-            {"category": "graphql"},
-            {"category": "grpc"}
-        ]
+        warm_args=[{"category": "rest"}, {"category": "graphql"}, {"category": "grpc"}],
     )
 
     # Mock tool executor
@@ -195,7 +191,7 @@ async def cache_warming_example():
         return {
             "tool": tool_name,
             "category": args.get("category"),
-            "standards": [f"{args.get('category')}-standard-{i}" for i in range(3)]
+            "standards": [f"{args.get('category')}-standard-{i}" for i in range(3)],
         }
 
     # Warm the cache
@@ -234,7 +230,7 @@ async def monitoring_example():
     print(f"  Avg Miss Time: {metrics['performance']['avg_miss_time_ms']:.2f}ms")
 
     print("\nPer-Tool Metrics:")
-    for tool, stats in metrics['by_tool'].items():
+    for tool, stats in metrics["by_tool"].items():
         print(f"  {tool}: {stats}")
 
     # Health check
@@ -249,14 +245,16 @@ class MockMCPServer:
     def __init__(self):
         self.tools_executed = 0
 
-    async def _execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_tool(
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         """Simulate tool execution."""
         self.tools_executed += 1
         await asyncio.sleep(0.1)  # Simulate work
         return {
             "tool": tool_name,
             "arguments": arguments,
-            "result": f"Executed at call #{self.tools_executed}"
+            "result": f"Executed at call #{self.tools_executed}",
         }
 
 
@@ -286,7 +284,7 @@ async def main():
         cache_management_example,
         cache_warming_example,
         monitoring_example,
-        integration_example
+        integration_example,
     ]
 
     for example in examples:

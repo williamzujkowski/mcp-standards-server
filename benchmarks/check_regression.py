@@ -15,10 +15,12 @@ THRESHOLDS = {
     "throughput_critical": -0.20,  # 20% decrease is critical
 }
 
+
 def load_results(filepath: Path) -> dict:
     """Load benchmark results from file."""
     with open(filepath) as f:
         return json.load(f)
+
 
 def compare_metrics(baseline: dict, current: dict) -> list[tuple[str, str, float, str]]:
     """Compare current metrics against baseline."""
@@ -39,19 +41,13 @@ def compare_metrics(baseline: dict, current: dict) -> list[tuple[str, str, float
                 change = (current_mean - baseline_mean) / baseline_mean
 
                 if change > THRESHOLDS["response_time_critical"]:
-                    regressions.append((
-                        benchmark_name,
-                        "response_time",
-                        change,
-                        "CRITICAL"
-                    ))
+                    regressions.append(
+                        (benchmark_name, "response_time", change, "CRITICAL")
+                    )
                 elif change > THRESHOLDS["response_time"]:
-                    regressions.append((
-                        benchmark_name,
-                        "response_time",
-                        change,
-                        "WARNING"
-                    ))
+                    regressions.append(
+                        (benchmark_name, "response_time", change, "WARNING")
+                    )
 
         # Compare throughput
         if "throughput" in current_metrics and "throughput" in baseline_metrics:
@@ -59,22 +55,18 @@ def compare_metrics(baseline: dict, current: dict) -> list[tuple[str, str, float
             current_throughput = current_metrics["throughput"]
 
             if baseline_throughput > 0:
-                change = (current_throughput - baseline_throughput) / baseline_throughput
+                change = (
+                    current_throughput - baseline_throughput
+                ) / baseline_throughput
 
                 if change < THRESHOLDS["throughput_critical"]:
-                    regressions.append((
-                        benchmark_name,
-                        "throughput",
-                        change,
-                        "CRITICAL"
-                    ))
+                    regressions.append(
+                        (benchmark_name, "throughput", change, "CRITICAL")
+                    )
                 elif change < THRESHOLDS["throughput"]:
-                    regressions.append((
-                        benchmark_name,
-                        "throughput",
-                        change,
-                        "WARNING"
-                    ))
+                    regressions.append(
+                        (benchmark_name, "throughput", change, "WARNING")
+                    )
 
         # Compare memory usage
         if "memory_mb" in current_metrics and "memory_mb" in baseline_metrics:
@@ -85,23 +77,16 @@ def compare_metrics(baseline: dict, current: dict) -> list[tuple[str, str, float
                 change = (current_memory - baseline_memory) / baseline_memory
 
                 if change > THRESHOLDS["memory_critical"]:
-                    regressions.append((
-                        benchmark_name,
-                        "memory",
-                        change,
-                        "CRITICAL"
-                    ))
+                    regressions.append((benchmark_name, "memory", change, "CRITICAL"))
                 elif change > THRESHOLDS["memory"]:
-                    regressions.append((
-                        benchmark_name,
-                        "memory",
-                        change,
-                        "WARNING"
-                    ))
+                    regressions.append((benchmark_name, "memory", change, "WARNING"))
 
     return regressions
 
-def print_report(baseline: dict, current: dict, regressions: list[tuple[str, str, float, str]]):
+
+def print_report(
+    baseline: dict, current: dict, regressions: list[tuple[str, str, float, str]]
+):
     """Print regression report."""
     print("Performance Regression Analysis")
     print("=" * 60)
@@ -142,18 +127,31 @@ def print_report(baseline: dict, current: dict, regressions: list[tuple[str, str
         if "response_time" in current_metrics and "response_time" in baseline_metrics:
             baseline_mean = baseline_metrics["response_time"]["mean"]
             current_mean = current_metrics["response_time"]["mean"]
-            change = ((current_mean - baseline_mean) / baseline_mean * 100) if baseline_mean > 0 else 0
+            change = (
+                ((current_mean - baseline_mean) / baseline_mean * 100)
+                if baseline_mean > 0
+                else 0
+            )
 
             status = "✓" if abs(change) < 10 else "⚠" if abs(change) < 20 else "✗"
-            print(f"  Response Time: {baseline_mean:.4f}s → {current_mean:.4f}s ({change:+.1f}%) {status}")
+            print(
+                f"  Response Time: {baseline_mean:.4f}s → {current_mean:.4f}s ({change:+.1f}%) {status}"
+            )
 
         if "throughput" in current_metrics and "throughput" in baseline_metrics:
             baseline_tps = baseline_metrics["throughput"]
             current_tps = current_metrics["throughput"]
-            change = ((current_tps - baseline_tps) / baseline_tps * 100) if baseline_tps > 0 else 0
+            change = (
+                ((current_tps - baseline_tps) / baseline_tps * 100)
+                if baseline_tps > 0
+                else 0
+            )
 
             status = "✓" if change > -10 else "⚠" if change > -20 else "✗"
-            print(f"  Throughput: {baseline_tps:.1f} → {current_tps:.1f} ops/s ({change:+.1f}%) {status}")
+            print(
+                f"  Throughput: {baseline_tps:.1f} → {current_tps:.1f} ops/s ({change:+.1f}%) {status}"
+            )
+
 
 def main():
     """Main entry point."""
@@ -164,17 +162,15 @@ def main():
         "--baseline",
         type=str,
         default="benchmark_results/baseline/comprehensive_baseline.json",
-        help="Path to baseline results"
+        help="Path to baseline results",
     )
     parser.add_argument(
-        "--current",
-        type=str,
-        help="Path to current results (defaults to latest)"
+        "--current", type=str, help="Path to current results (defaults to latest)"
     )
     parser.add_argument(
         "--fail-on-regression",
         action="store_true",
-        help="Exit with non-zero code if regressions found"
+        help="Exit with non-zero code if regressions found",
     )
 
     args = parser.parse_args()
@@ -225,6 +221,7 @@ def main():
             sys.exit(1)  # Warning regression
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

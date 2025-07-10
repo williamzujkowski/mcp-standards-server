@@ -25,7 +25,10 @@ class TestCombinedServerIntegration:
         """Create MCP configuration."""
         return {
             "auth": {"enabled": False},  # Disable for testing
-            "privacy": {"detect_pii": False, "redact_pii": False},  # Disable for testing
+            "privacy": {
+                "detect_pii": False,
+                "redact_pii": False,
+            },  # Disable for testing
             "rate_limit_window": 60,
             "rate_limit_max_requests": 1000,  # High limit for testing
         }

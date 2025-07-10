@@ -67,10 +67,7 @@ class MemoryUsageBenchmark(BaseBenchmark):
         await self.memory_profiler.start()
 
         # Initialize server
-        MCPStandardsServer({
-            "search": {"enabled": True},
-            "token_model": "gpt-4"
-        })
+        MCPStandardsServer({"search": {"enabled": True}, "token_model": "gpt-4"})
 
         # Stop monitoring
         await self.memory_profiler.stop()
@@ -80,7 +77,7 @@ class MemoryUsageBenchmark(BaseBenchmark):
         return {
             "memory_increase_mb": end_memory["rss"] - start_memory["rss"],
             "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"],
-            "allocations": self._get_top_allocations()
+            "allocations": self._get_top_allocations(),
         }
 
     async def _profile_standards_loading(self) -> dict[str, Any]:
@@ -110,18 +107,24 @@ class MemoryUsageBenchmark(BaseBenchmark):
         return {
             "standards_loaded": len(standards_loaded),
             "memory_increase_mb": end_memory["rss"] - start_memory["rss"],
-            "memory_per_standard_mb": (end_memory["rss"] - start_memory["rss"]) / len(standards_loaded) if standards_loaded else 0,
-            "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"]
+            "memory_per_standard_mb": (
+                (end_memory["rss"] - start_memory["rss"]) / len(standards_loaded)
+                if standards_loaded
+                else 0
+            ),
+            "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"],
         }
 
     async def _profile_search_operations(self) -> dict[str, Any]:
         """Profile memory during search operations."""
         gc.collect()
 
-        server = MCPStandardsServer({
-            "search": {"enabled": True},
-            "search_model": "sentence-transformers/all-MiniLM-L6-v2"
-        })
+        server = MCPStandardsServer(
+            {
+                "search": {"enabled": True},
+                "search_model": "sentence-transformers/all-MiniLM-L6-v2",
+            }
+        )
 
         start_memory = self._get_memory_info()
         await self.memory_profiler.start()
@@ -132,7 +135,7 @@ class MemoryUsageBenchmark(BaseBenchmark):
             "react performance optimization",
             "microservices architecture patterns",
             "testing strategies unit integration",
-            "deployment kubernetes docker"
+            "deployment kubernetes docker",
         ]
 
         for query in searches:
@@ -145,17 +148,16 @@ class MemoryUsageBenchmark(BaseBenchmark):
             "searches_performed": len(searches),
             "memory_increase_mb": end_memory["rss"] - start_memory["rss"],
             "search_index_size_mb": self._estimate_search_index_size(server),
-            "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"]
+            "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"],
         }
 
     async def _profile_token_operations(self) -> dict[str, Any]:
         """Profile memory during token optimization."""
         gc.collect()
 
-        server = MCPStandardsServer({
-            "search": {"enabled": False},
-            "token_model": "gpt-4"
-        })
+        server = MCPStandardsServer(
+            {"search": {"enabled": False}, "token_model": "gpt-4"}
+        )
 
         # Create large standard for testing
         await self._create_large_standard()
@@ -168,9 +170,7 @@ class MemoryUsageBenchmark(BaseBenchmark):
 
         for fmt in formats:
             await server._get_optimized_standard(
-                "large-memory-test",
-                format_type=fmt,
-                token_budget=5000
+                "large-memory-test", format_type=fmt, token_budget=5000
             )
 
         await self.memory_profiler.stop()
@@ -180,7 +180,8 @@ class MemoryUsageBenchmark(BaseBenchmark):
             "formats_tested": len(formats),
             "memory_increase_mb": end_memory["rss"] - start_memory["rss"],
             "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"],
-            "avg_memory_per_format_mb": (end_memory["rss"] - start_memory["rss"]) / len(formats)
+            "avg_memory_per_format_mb": (end_memory["rss"] - start_memory["rss"])
+            / len(formats),
         }
 
     async def _profile_concurrent_operations(self) -> dict[str, Any]:
@@ -214,7 +215,8 @@ class MemoryUsageBenchmark(BaseBenchmark):
             "concurrent_tasks": len(tasks),
             "memory_increase_mb": end_memory["rss"] - start_memory["rss"],
             "peak_memory_mb": self.memory_profiler.get_summary()["rss"]["peak_mb"],
-            "memory_per_task_mb": (end_memory["rss"] - start_memory["rss"]) / len(tasks)
+            "memory_per_task_mb": (end_memory["rss"] - start_memory["rss"])
+            / len(tasks),
         }
 
     def _get_memory_info(self) -> dict[str, float]:
@@ -225,7 +227,7 @@ class MemoryUsageBenchmark(BaseBenchmark):
         return {
             "rss": mem_info.rss / 1024 / 1024,  # MB
             "vms": mem_info.vms / 1024 / 1024,  # MB
-            "percent": process.memory_percent()
+            "percent": process.memory_percent(),
         }
 
     def _get_top_allocations(self, limit: int = 5) -> list[dict[str, Any]]:
@@ -234,22 +236,24 @@ class MemoryUsageBenchmark(BaseBenchmark):
             return []
 
         snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('lineno')
+        top_stats = snapshot.statistics("lineno")
 
         allocations = []
         for stat in top_stats[:limit]:
-            allocations.append({
-                "file": stat.traceback.format()[0],
-                "size_mb": stat.size / 1024 / 1024,
-                "count": stat.count
-            })
+            allocations.append(
+                {
+                    "file": stat.traceback.format()[0],
+                    "size_mb": stat.size / 1024 / 1024,
+                    "count": stat.count,
+                }
+            )
 
         return allocations
 
     def _estimate_search_index_size(self, server) -> float:
         """Estimate search index size in memory."""
         # This is a rough estimate
-        if hasattr(server, 'search') and server.search:
+        if hasattr(server, "search") and server.search:
             # Estimate based on loaded embeddings
             return 50.0  # Placeholder
         return 0.0
@@ -273,12 +277,12 @@ class MemoryUsageBenchmark(BaseBenchmark):
                 "content": {
                     "overview": "x" * content_size,
                     "guidelines": ["y" * 50 for _ in range(i + 1)],
-                    "examples": ["z" * 100 for _ in range(i)]
-                }
+                    "examples": ["z" * 100 for _ in range(i)],
+                },
             }
 
             filepath = cache_dir / f"{standard['id']}.json"
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 json.dump(standard, f)
 
     async def _create_large_standard(self):
@@ -302,12 +306,12 @@ class MemoryUsageBenchmark(BaseBenchmark):
                     "section1": "a" * 50000,
                     "section2": "b" * 50000,
                     "section3": "c" * 50000,
-                }
-            }
+                },
+            },
         }
 
         filepath = cache_dir / f"{large_standard['id']}.json"
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(large_standard, f)
 
     async def teardown(self):
@@ -327,7 +331,7 @@ class MemoryUsageBenchmark(BaseBenchmark):
         report = {
             "baseline_memory_mb": self.baseline_memory["rss"],
             "components": self.component_profiles,
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Add recommendations based on findings
