@@ -169,7 +169,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
-          pip install memory-profiler pympler tracemalloc-ng
+          pip install memory-profiler pympler
       
       - name: Run memory benchmarks
         timeout-minutes: 20

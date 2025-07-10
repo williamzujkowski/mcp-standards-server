@@ -95,7 +95,6 @@ performance = [
     "memory-profiler>=0.60.0",
     "psutil>=5.9.0",
     "pympler>=1.0.0",
-    "tracemalloc-ng>=1.0.0",
     "pytest-memprof>=0.2.0",
 ]
 visualization = [
