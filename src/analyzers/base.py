@@ -3,10 +3,11 @@
 import hashlib
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 
 class IssueType(Enum):

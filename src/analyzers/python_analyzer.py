@@ -51,7 +51,7 @@ class PythonAnalyzer(BaseAnalyzer):
         # Store additional metrics
         metrics["total_lines"] = len(code.splitlines())
         metrics["analyzed_files"] = 1 if file_path else 0
-        
+
         return AnalyzerResult(
             file_path=file_path or "",
             language=self.language,

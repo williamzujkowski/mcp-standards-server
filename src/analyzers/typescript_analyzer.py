@@ -2,7 +2,6 @@
 
 import re
 from pathlib import Path
-from typing import Optional
 
 from .ast_utils import ASTNode
 from .base import (
@@ -1014,7 +1013,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
                 )
 
     def _analyze_testing_patterns(
-        self, content: str, result: AnalyzerResult, ast: Optional[ASTNode] = None
+        self, content: str, result: AnalyzerResult, ast: ASTNode | None = None
     ) -> None:
         """Analyze testing patterns."""
         # Check if this is a test file
