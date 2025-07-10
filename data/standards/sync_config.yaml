@@ -1,58 +1,10 @@
-advanced:
-  timeout: 30
-  update_rules: true
-  use_etags: true
-  user_agent: MCP-Standards-Server/1.0
-  validate_after_sync: true
-  verify_ssl: true
-cache:
-  cleanup:
-    enabled: true
-    max_age_days: 7
-    run_on_startup: false
-  directory: data/standards/cache
-  max_size_mb: 100
-  ttl_hours: 24
-logging:
-  level: INFO
-  log_files: true
-  log_rate_limits: true
-  log_syncs: true
-notifications:
-  channels:
-  - events:
-    - sync_complete
-    - sync_failed
-    - rate_limit_exceeded
-    type: webhook
-    url: ${SYNC_WEBHOOK_URL}
-  enabled: false
-rate_limit:
-  max_concurrent: 3
-  min_delay_ms: 100
-  respect_limits: true
-  use_auth: true
+paths:
+  metadata: metadata/
+  standards: standards/
 repository:
-  branch: master
-  owner: williamzujkowski
-  path: docs/standards
+  branch: main
+  owner: test
+  path: standards/
   repo: standards
 sync:
-  exclude_patterns:
-  - '*test*'
-  - '*draft*'
-  - '*example*'
-  - .*
-  file_patterns:
-  - '*.md'
-  - '*.yaml'
-  - '*.yml'
-  - '*.json'
-  incremental:
-    check_modified_time: false
-    check_sha: true
-    enabled: true
-  max_file_size: 1048576
-  retry_attempts: 3
-  retry_delay: 5
-  schedule: 0 */6 * * *
+  enabled: false
