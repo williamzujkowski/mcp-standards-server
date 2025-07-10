@@ -43,7 +43,7 @@ class StandardMetadata:
     # Custom fields
     custom_fields: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Post-initialization processing."""
         if self.created_date is None:
             self.created_date = datetime.now()
