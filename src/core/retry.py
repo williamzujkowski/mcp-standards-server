@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from src.core.errors import ErrorCode, MCPError
 from src.core.metrics import get_mcp_metrics

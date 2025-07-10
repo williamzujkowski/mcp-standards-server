@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .async_semantic_search import AsyncSemanticSearch
 from .models import Requirement, Standard, StandardMetadata
 from .rule_engine import RuleEngine
 from .semantic_search import SemanticSearch, create_search_engine
-from .async_semantic_search import AsyncSemanticSearch
 from .sync import StandardsSynchronizer
 from .token_optimizer import TokenOptimizer
 
