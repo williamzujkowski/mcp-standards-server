@@ -81,11 +81,11 @@ class BatchProcessor:
 
     def __init__(self, config: AsyncSearchConfig) -> None:
         self.config = config
-        self.embedding_queue = asyncio.Queue()
-        self.search_queue = asyncio.Queue()
-        self.embedding_results = {}
-        self.search_results = {}
-        self.processing_tasks = set()
+        self.embedding_queue: asyncio.Queue[Any] = asyncio.Queue()
+        self.search_queue: asyncio.Queue[Any] = asyncio.Queue()
+        self.embedding_results: dict[str, Any] = {}
+        self.search_results: dict[str, Any] = {}
+        self.processing_tasks: set[asyncio.Task[Any]] = set()
         self.shutdown_event = asyncio.Event()
 
     async def start(self) -> None:
@@ -113,7 +113,7 @@ class BatchProcessor:
 
     async def queue_search(
         self, query: SearchQuery, params: dict[str, Any], future: asyncio.Future
-    ):
+    ) -> None:
         """Queue search query for processing."""
         await self.search_queue.put((query, params, future))
 
@@ -214,7 +214,7 @@ class BatchProcessor:
 
     async def _process_search_batch(
         self, batch: list[tuple[SearchQuery, dict[str, Any], asyncio.Future]]
-    ):
+    ) -> None:
         """Process a batch of search requests."""
         try:
             # This would contain actual search logic
@@ -247,11 +247,11 @@ class VectorIndexCache:
     def __init__(self, config: AsyncSearchConfig, redis_cache: RedisCache) -> None:
         self.config = config
         self.redis_cache = redis_cache
-        self.local_cache = TTLCache(
+        self.local_cache: TTLCache[str, Any] = TTLCache(
             maxsize=config.vector_cache_size, ttl=config.vector_cache_ttl
         )
-        self.warming_queue = asyncio.Queue()
-        self.warming_task = None
+        self.warming_queue: asyncio.Queue[Any] = asyncio.Queue()
+        self.warming_task: asyncio.Task[None] | None = None
         self.index_stats = {"cache_hits": 0, "cache_misses": 0, "warming_operations": 0}
 
     async def start_warming(self) -> None:
@@ -376,14 +376,14 @@ class MemoryManager:
 
     def __init__(self, config: AsyncSearchConfig) -> None:
         self.config = config
-        self.memory_stats = {
+        self.memory_stats: dict[str, Any] = {
             "current_usage_mb": 0,
             "peak_usage_mb": 0,
             "cleanup_operations": 0,
             "last_cleanup": None,
         }
-        self.cleanup_task = None
-        self.weak_references = weakref.WeakSet()
+        self.cleanup_task: asyncio.Task[None] | None = None
+        self.weak_references: weakref.WeakSet[Any] = weakref.WeakSet()
 
     async def start_monitoring(self) -> None:
         """Start memory monitoring task."""
@@ -398,7 +398,7 @@ class MemoryManager:
             except asyncio.CancelledError:
                 pass
 
-    def register_object(self, obj) -> None:
+    def register_object(self, obj: Any) -> None:
         """Register an object for memory tracking."""
         # Skip numpy arrays as they are not weakly referenceable
         if isinstance(obj, np.ndarray):
@@ -481,8 +481,8 @@ class AsyncSemanticSearch:
         self.memory_manager = MemoryManager(self.config)
 
         # Document storage
-        self.documents = {}
-        self.document_embeddings = {}
+        self.documents: dict[str, Any] = {}
+        self.document_embeddings: dict[str, Any] = {}
         self.document_metadata = {}
 
         # HTTP client for external APIs

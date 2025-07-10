@@ -426,21 +426,21 @@ class MemoryManager:
         self.tracker = MemoryTracker(self.config)
 
         # Object pools
-        self.object_pools = {}
+        self.object_pools: dict[type, Any] = {}
         if self.config.enable_object_pooling:
             self._setup_object_pools()
 
         # Memory-efficient data structures
-        self.efficient_dicts = {}
-        self.efficient_lists = {}
+        self.efficient_dicts: dict[str, Any] = {}
+        self.efficient_lists: dict[str, Any] = {}
 
         # Monitoring
-        self.monitor_task = None
-        self.cleanup_task = None
-        self.profiling_task = None
+        self.monitor_task: asyncio.Task[None] | None = None
+        self.cleanup_task: asyncio.Task[None] | None = None
+        self.profiling_task: asyncio.Task[None] | None = None
 
         # Alerts
-        self.alert_callbacks = []
+        self.alert_callbacks: list[Callable[[str], None]] = []
         self.last_alert_time = 0
 
         # GC optimization

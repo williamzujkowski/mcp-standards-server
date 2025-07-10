@@ -90,7 +90,7 @@ class RetryManager:
         return max(0, delay)  # Ensure non-negative
 
     async def retry_async(
-        self, func: Callable[..., T], *args, operation_name: str = "operation", **kwargs
+        self, func: Callable[..., T], *args: Any, operation_name: str = "operation", **kwargs: Any
     ) -> T:
         """
         Retry an async operation with exponential backoff.
@@ -130,8 +130,7 @@ class RetryManager:
                         labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
-                return result  # type: ignore[no-any-return]
-
+                return result
             except self.config.retry_on as e:  # type: ignore[misc]
                 last_exception = e
 
@@ -171,7 +170,7 @@ class RetryManager:
             raise RuntimeError(f"Operation '{operation_name}' failed without exception")
 
     def retry_sync(
-        self, func: Callable[..., T], *args, operation_name: str = "operation", **kwargs
+        self, func: Callable[..., T], *args: Any, operation_name: str = "operation", **kwargs: Any
     ) -> T:
         """
         Retry a sync operation with exponential backoff.
@@ -211,8 +210,7 @@ class RetryManager:
                         labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
-                return result  # type: ignore[no-any-return]
-
+                return result
             except self.config.retry_on as e:  # type: ignore[misc]
                 last_exception = e
 
@@ -257,7 +255,7 @@ def with_retry(
     initial_delay: float = 1.0,
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL,
     operation_name: str | None = None,
-):
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator to add retry logic to functions.
 
@@ -276,23 +274,27 @@ def with_retry(
 
         if asyncio.iscoroutinefunction(func):
 
-            async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 name = operation_name or func.__name__
                 return await retry_manager.retry_async(
                     func, *args, operation_name=name, **kwargs
                 )
 
+            async_wrapper.__name__ = func.__name__
+            async_wrapper.__doc__ = func.__doc__
+            return async_wrapper
+
         else:
 
-            def wrapper(*args: Any, **kwargs: Any) -> Any:
+            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 name = operation_name or func.__name__
                 return retry_manager.retry_sync(
                     func, *args, operation_name=name, **kwargs
                 )
 
-        wrapper.__name__ = func.__name__
-        wrapper.__doc__ = func.__doc__
-        return wrapper
+            sync_wrapper.__name__ = func.__name__
+            sync_wrapper.__doc__ = func.__doc__
+            return sync_wrapper
 
     return decorator
 
@@ -319,7 +321,7 @@ class CircuitBreaker:
         self.expected_exception = expected_exception
 
         self._failure_count = 0
-        self._last_failure_time = None
+        self._last_failure_time: float | None = None
         self._state = "closed"  # closed, open, half-open
 
     @property
@@ -331,7 +333,7 @@ class CircuitBreaker:
                 self._state = "half-open"
         return self._state
 
-    def call(self, func: Callable[..., T], *args, **kwargs) -> T:
+    def call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """
         Call function through circuit breaker.
 
@@ -351,7 +353,7 @@ class CircuitBreaker:
                 code=ErrorCode.SYSTEM_UNAVAILABLE,
                 message="Circuit breaker is open - service temporarily unavailable",
                 details={
-                    "recovery_time": self._last_failure_time + self.recovery_timeout
+                    "recovery_time": (self._last_failure_time or 0.0) + self.recovery_timeout
                 },
             )
 
@@ -359,29 +361,29 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-
-        except self.expected_exception:
-            self._on_failure()
+        except Exception as e:
+            if isinstance(e, self.expected_exception):
+                self._on_failure()
             raise
 
-    async def call_async(self, func: Callable[..., T], *args, **kwargs) -> T:
+    async def call_async(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """Async version of call."""
         if self.state == "open":
             raise MCPError(
                 code=ErrorCode.SYSTEM_UNAVAILABLE,
                 message="Circuit breaker is open - service temporarily unavailable",
                 details={
-                    "recovery_time": self._last_failure_time + self.recovery_timeout
+                    "recovery_time": (self._last_failure_time or 0.0) + self.recovery_timeout
                 },
             )
 
         try:
-            result = await func(*args, **kwargs)
+            result = await func(*args, **kwargs)  # type: ignore[misc]
             self._on_success()
             return result
-
-        except self.expected_exception:
-            self._on_failure()
+        except Exception as e:
+            if isinstance(e, self.expected_exception):
+                self._on_failure()
             raise
 
     def _on_success(self) -> None:

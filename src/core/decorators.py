@@ -344,7 +344,7 @@ def with_metrics(
     return decorator
 
 
-def with_context(**context_kwargs) -> Callable[[F], F]:
+def with_context(**context_kwargs: Any) -> Callable[[F], F]:
     """
     Decorator to add context to log messages within a function.
 
@@ -437,11 +437,11 @@ def deprecated(
 
                 return await func(*args, **kwargs)
 
-            return async_wrapper
+            return async_wrapper  # type: ignore[return-value]
 
         # Update docstring
         wrapper.__doc__ = f"DEPRECATED: {reason}\n\n{func.__doc__ or ''}"
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator

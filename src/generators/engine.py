@@ -135,8 +135,9 @@ class TemplateEngine:
     def _get_template_variables(self, template_name: str) -> list[str]:
         """Extract template variables using Jinja2 meta."""
         try:
-            template_source = self.env.get_template(template_name).source
-            ast = self.env.parse(template_source)
+            # Get the source directly from the loader
+            source, _ = self.env.get_or_select_template(template_name).environment.loader.get_source(self.env, template_name)  # type: ignore
+            ast = self.env.parse(source)
             return list(meta.find_undeclared_variables(ast))
         except Exception:
             return []
@@ -164,7 +165,8 @@ class TemplateEngine:
         try:
             template = self.env.get_template(template_name)
             # Try to parse the template
-            self.env.parse(template.source)
+            source, _ = self.env.loader.get_source(self.env, template_name)  # type: ignore
+            self.env.parse(source)
 
             return {
                 "valid": True,
@@ -201,7 +203,7 @@ class TemplateEngine:
         """Create a custom template based on an existing one."""
         # Load base template
         base_template_obj = self.env.get_template(base_template)
-        base_content = base_template_obj.source
+        base_content, _ = self.env.loader.get_source(self.env, base_template)  # type: ignore
 
         # Apply customizations
         custom_content = self._apply_customizations(base_content, customizations)

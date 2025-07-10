@@ -141,20 +141,20 @@ class MetricCollector:
 
     def __init__(self, config: PerformanceConfig) -> None:
         self.config = config
-        self.metrics_registry = {}
+        self.metrics_registry: dict[str, Any] = {}
         self.prometheus_registry = CollectorRegistry()
-        self.prometheus_metrics = {}
+        self.prometheus_metrics: dict[str, Any] = {}
 
         # Data storage
-        self.metric_data = defaultdict(
+        self.metric_data: defaultdict[str, Any] = defaultdict(
             lambda: deque(maxlen=config.max_samples_per_metric)
         )
-        self.metric_locks = defaultdict(threading.Lock)
+        self.metric_locks: defaultdict[str, Any] = defaultdict(threading.Lock)
 
         # Alerting
-        self.thresholds = {}
-        self.active_alerts = {}
-        self.alert_callbacks = []
+        self.thresholds: dict[str, Any] = {}
+        self.active_alerts: dict[str, Any] = {}
+        self.alert_callbacks: list[Callable[[str, Any], None]] = []
 
         # Task management
         self.collection_task = None
