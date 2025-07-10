@@ -9,10 +9,19 @@ import tempfile
 import time
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
 import sys
 from pathlib import Path
+
+# Optional matplotlib imports - gracefully handle missing dependency
+try:
+    import matplotlib.pyplot as plt
+    import numpy as np
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    # Create dummy classes/functions for when matplotlib is not available
+    plt = None
+    np = None
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -341,6 +350,10 @@ class SemanticSearchBenchmark:
     def generate_report(self):
         """Generate a visual benchmark report."""
         print("\n=== Generating Benchmark Report ===")
+        
+        if not MATPLOTLIB_AVAILABLE:
+            print("WARNING: matplotlib not available. Skipping visual report generation.")
+            return
 
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
         fig.suptitle('Semantic Search Performance Benchmarks', fontsize=16)

@@ -14,6 +14,15 @@ from pathlib import Path
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+# Optional matplotlib imports - gracefully handle missing dependency
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    # Create dummy classes/functions for when matplotlib is not available
+    plt = None
+
 
 
 from src.core.standards.token_optimizer import (
@@ -480,9 +489,7 @@ Proper monitoring ensures system health:
 
     def plot_results(self):
         """Generate visualization plots."""
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
+        if not MATPLOTLIB_AVAILABLE:
             print("Matplotlib not available, skipping plots")
             return
 

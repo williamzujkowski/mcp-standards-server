@@ -5,10 +5,20 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.figure import Figure
+# Optional matplotlib imports - gracefully handle missing dependency
+try:
+    import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FuncAnimation
+    from matplotlib.figure import Figure
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    # Create dummy classes/functions for when matplotlib is not available
+    mdates = None
+    plt = None
+    FuncAnimation = None
+    Figure = None
 
 from .metrics import MetricsCollector
 
@@ -28,6 +38,10 @@ class PerformanceDashboard:
 
     def create_live_dashboard(self) -> Figure:
         """Create a live updating dashboard."""
+        if not MATPLOTLIB_AVAILABLE:
+            print("WARNING: matplotlib not available. Dashboard visualization disabled.")
+            return None
+        
         fig = plt.figure(figsize=(16, 10))
         fig.suptitle('MCP Standards Server - Performance Dashboard', fontsize=16)
 
@@ -246,6 +260,10 @@ class PerformanceDashboard:
 
     def save_snapshot(self, filepath: Path):
         """Save dashboard snapshot as image."""
+        if not MATPLOTLIB_AVAILABLE:
+            print("WARNING: matplotlib not available. Cannot save snapshot.")
+            return
+        
         if self.figures:
             self.figures[0].savefig(filepath, dpi=150, bbox_inches='tight')
 
