@@ -163,7 +163,6 @@ class TemplateEngine:
     def validate_template(self, template_name: str) -> dict[str, Any]:
         """Validate a template file."""
         try:
-            template = self.env.get_template(template_name)
             # Try to parse the template
             source, _ = self.env.loader.get_source(self.env, template_name)  # type: ignore
             self.env.parse(source)
@@ -201,8 +200,7 @@ class TemplateEngine:
         self, template_name: str, base_template: str, customizations: dict[str, Any]
     ) -> str:
         """Create a custom template based on an existing one."""
-        # Load base template
-        base_template_obj = self.env.get_template(base_template)
+        # Load base template content
         base_content, _ = self.env.loader.get_source(self.env, base_template)  # type: ignore
 
         # Apply customizations
