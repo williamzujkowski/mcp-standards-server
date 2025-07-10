@@ -1,0 +1,258 @@
+{
+  "timestamp": "2025-07-10T10:31:14.025967",
+  "environment": {
+    "cpu_count": 16,
+    "memory_gb": 62.51093292236328,
+    "python_version": "3.12.3 (main, Apr 28 2024, 20:18:57) [GCC 13.2.0]",
+    "platform": "linux"
+  },
+  "benchmarks": {
+    "get_sync_status": {
+      "name": "mcp_tool_get_sync_status",
+      "measurements": 50,
+      "errors": 0,
+      "response_time": {
+        "mean": 2.2072066785767673e-05,
+        "median": 2.1606538211926818e-05,
+        "min": 2.0761974155902863e-05,
+        "max": 2.6341003831475973e-05,
+        "stdev": 1.238888703948701e-06,
+        "p95": 2.5171029847115278e-05,
+        "p99": 2.6341003831475973e-05
+      },
+      "memory_mb": {
+        "mean": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "cpu_percent": {
+        "mean": 0.0,
+        "max": 0.0
+      },
+      "throughput": 12888.894351914449
+    },
+    "list_available_standards": {
+      "name": "mcp_tool_list_available_standards",
+      "measurements": 50,
+      "errors": 0,
+      "response_time": {
+        "mean": 0.0022790236619766803,
+        "median": 0.0022692255151923746,
+        "min": 0.002168381994124502,
+        "max": 0.0024816259974613786,
+        "stdev": 7.090286845511042e-05,
+        "p95": 0.002393464033957571,
+        "p99": 0.0024816259974613786
+      },
+      "memory_mb": {
+        "mean": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "cpu_percent": {
+        "mean": 103.046,
+        "max": 446.0
+      },
+      "throughput": 382.8848105980384
+    },
+    "get_standard_details": {
+      "name": "mcp_tool_get_standard_details",
+      "measurements": 50,
+      "errors": 0,
+      "response_time": {
+        "mean": 6.7504943581298e-05,
+        "median": 6.468151696026325e-05,
+        "min": 6.240798393264413e-05,
+        "max": 9.743397822603583e-05,
+        "stdev": 6.80776631603152e-06,
+        "p95": 8.151301881298423e-05,
+        "p99": 9.743397822603583e-05
+      },
+      "memory_mb": {
+        "mean": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "cpu_percent": {
+        "mean": 218.718,
+        "max": 10935.9
+      },
+      "throughput": 7767.22962962963
+    },
+    "search_standards": {
+      "name": "mcp_tool_search_standards",
+      "measurements": 50,
+      "errors": 0,
+      "response_time": {
+        "mean": 5.848030559718609e-07,
+        "median": 5.530018825083971e-07,
+        "min": 4.540197551250458e-07,
+        "max": 1.634994987398386e-06,
+        "stdev": 1.7137516439004792e-07,
+        "p95": 7.859780453145504e-07,
+        "p99": 1.634994987398386e-06
+      },
+      "memory_mb": {
+        "mean": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "cpu_percent": {
+        "mean": 0.0,
+        "max": 0.0
+      },
+      "throughput": 19695.26671675432
+    },
+    "get_applicable_standards": {
+      "name": "mcp_tool_get_applicable_standards",
+      "measurements": 50,
+      "errors": 0,
+      "response_time": {
+        "mean": 7.789375958964228e-06,
+        "median": 7.664522854611278e-06,
+        "min": 7.1249669417738914e-06,
+        "max": 1.1052994523197412e-05,
+        "stdev": 6.136750988367019e-07,
+        "p95": 8.568982593715191e-06,
+        "p99": 1.1052994523197412e-05
+      },
+      "memory_mb": {
+        "mean": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "cpu_percent": {
+        "mean": 0.0,
+        "max": 0.0
+      },
+      "throughput": 17133.59477124183
+    },
+    "estimate_token_usage": {
+      "name": "mcp_tool_estimate_token_usage",
+      "measurements": 50,
+      "errors": 0,
+      "response_time": {
+        "mean": 0.006286067463224754,
+        "median": 0.0062239705002866685,
+        "min": 0.005893617053516209,
+        "max": 0.007661344017833471,
+        "stdev": 0.00032160163044723145,
+        "p95": 0.006892090023029596,
+        "p99": 0.007661344017833471
+      },
+      "memory_mb": {
+        "mean": 0.0,
+        "max": 0.0,
+        "min": 0.0
+      },
+      "cpu_percent": {
+        "mean": 97.468,
+        "max": 167.8
+      },
+      "throughput": 141.789898421696
+    },
+    "redis_cache": {
+      "error": "No measurements collected"
+    },
+    "memory_cache": {
+      "name": "memory_cache",
+      "measurements": 1000,
+      "errors": 0,
+      "response_time": {
+        "mean": 2.063303254544735e-07,
+        "median": 1.9202707335352898e-07,
+        "min": 1.634762156754732e-07,
+        "max": 2.2744934540241957e-06,
+        "stdev": 1.2836924065431662e-07,
+        "p95": 2.3300526663661003e-07,
+        "p99": 6.034970283508301e-07
+      },
+      "memory_mb": {
+        "mean": 0.013571372985839844,
+        "max": 0.0248260498046875,
+        "min": 0.00017547607421875
+      },
+      "cpu_percent": {
+        "mean": 0,
+        "max": 0
+      },
+      "throughput": 1116397.1253659835
+    },
+    "rule_engine": {
+      "name": "rule_engine",
+      "measurements": 250,
+      "errors": 0,
+      "response_time": {
+        "mean": 1.1751593556255102e-06,
+        "median": 1.1489610187709332e-06,
+        "min": 1.1039664968848228e-06,
+        "max": 5.530018825083971e-06,
+        "stdev": 2.889831526933349e-07,
+        "p95": 1.200998667627573e-06,
+        "p99": 1.4379620552062988e-06
+      },
+      "memory_mb": {
+        "mean": 0,
+        "max": 0,
+        "min": 0
+      },
+      "cpu_percent": {
+        "mean": 0,
+        "max": 0
+      },
+      "throughput": 707064.0593391773
+    },
+    "memory_usage": {
+      "name": "memory_usage",
+      "measurements": 1,
+      "errors": 0,
+      "response_time": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "stdev": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "memory_mb": {
+        "mean": 0.25,
+        "max": 0.25,
+        "min": 0.25
+      },
+      "cpu_percent": {
+        "mean": 0,
+        "max": 0
+      },
+      "throughput": 0
+    },
+    "throughput": {
+      "name": "throughput",
+      "measurements": 4116,
+      "errors": 0,
+      "response_time": {
+        "mean": 0.00242859365139281,
+        "median": 0.0023807064862921834,
+        "min": 0.0020378530025482178,
+        "max": 0.00467773899435997,
+        "stdev": 0.0002067309703485188,
+        "p95": 0.0028270509792491794,
+        "p99": 0.0031696310034021735
+      },
+      "memory_mb": {
+        "mean": 0,
+        "max": 0,
+        "min": 0
+      },
+      "cpu_percent": {
+        "mean": 0,
+        "max": 0
+      },
+      "throughput": 411.53692971744005
+    }
+  },
+  "summary": {
+    "total_benchmarks": 11,
+    "total_errors": 100
+  }
+}

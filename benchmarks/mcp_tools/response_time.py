@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.mcp_server import MCPStandardsServer
 
-from ..framework import BaseBenchmark
+from benchmarks.framework import BaseBenchmark
 
 
 class MCPResponseTimeBenchmark(BaseBenchmark):

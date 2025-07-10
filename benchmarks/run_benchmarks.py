@@ -6,22 +6,22 @@ from datetime import datetime
 from pathlib import Path
 
 # Import all benchmark components
-from framework import BenchmarkSuite, BenchmarkVisualizer, RegressionDetector
-from load import StressTestBenchmark
-from mcp_tools import (
+from benchmarks.framework import BenchmarkSuite, BenchmarkVisualizer, RegressionDetector
+from benchmarks.load import StressTestBenchmark
+from benchmarks.mcp_tools import (
     MCPColdStartBenchmark,
     MCPLatencyBenchmark,
     MCPResponseTimeBenchmark,
     MCPThroughputBenchmark,
 )
-from memory import (
+from benchmarks.memory import (
     AllocationTrackingBenchmark,
     LeakDetectionBenchmark,
     MemoryGrowthBenchmark,
     MemoryUsageBenchmark,
 )
 
-from monitoring import AlertSystem, MetricsCollector, PerformanceDashboard
+from benchmarks.monitoring import AlertSystem, MetricsCollector, PerformanceDashboard
 
 
 async def run_quick_benchmarks():

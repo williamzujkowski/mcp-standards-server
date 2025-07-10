@@ -174,7 +174,7 @@ class BaseBenchmark(ABC):
         await self.teardown()
 
         # Calculate statistics
-        from .stats import StatisticalAnalyzer
+        from benchmarks.framework.stats import StatisticalAnalyzer
         stats = StatisticalAnalyzer()
 
         result = BenchmarkResult(
@@ -227,7 +227,7 @@ class BaseBenchmark(ABC):
         for metrics in metrics_list:
             all_keys.update(metrics.keys())
 
-        from .stats import StatisticalAnalyzer
+        from benchmarks.framework.stats import StatisticalAnalyzer
         stats = StatisticalAnalyzer()
 
         for key in all_keys:
