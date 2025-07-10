@@ -2,11 +2,16 @@
 
 import asyncio
 import gc
+import sys
 import tracemalloc
 import weakref
+from pathlib import Path
 from typing import Any
 
 import psutil
+
+# Add project root to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.mcp_server import MCPStandardsServer
 
