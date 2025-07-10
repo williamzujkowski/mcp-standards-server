@@ -1,13 +1,24 @@
 """Visualization tools for benchmark results."""
 
 from pathlib import Path
-
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.figure import Figure
+from typing import Optional
 
 from .base import BenchmarkResult
+
+# Optional matplotlib imports - gracefully handle missing dependency
+try:
+    import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib.figure import Figure
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    # Create dummy classes/functions for when matplotlib is not available
+    mdates = None
+    plt = None
+    np = None
+    Figure = None
 
 
 class BenchmarkVisualizer:
@@ -15,17 +26,31 @@ class BenchmarkVisualizer:
 
     def __init__(self, style: str = "seaborn"):
         """Initialize visualizer with matplotlib style."""
+        if not MATPLOTLIB_AVAILABLE:
+            self.figures = []
+            return
+        
         if style in plt.style.available:
             plt.style.use(style)
         self.figures: list[Figure] = []
+
+    def _check_matplotlib_available(self) -> bool:
+        """Check if matplotlib is available and warn if not."""
+        if not MATPLOTLIB_AVAILABLE:
+            print("WARNING: matplotlib not available. Visualization features disabled.")
+            return False
+        return True
 
     def plot_timing_distribution(
         self,
         result: BenchmarkResult,
         bins: int = 50,
         figsize: tuple[int, int] = (10, 6)
-    ) -> Figure:
+    ) -> Optional[Figure]:
         """Plot timing distribution histogram."""
+        if not self._check_matplotlib_available():
+            return None
+        
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
 
         # Histogram
@@ -61,8 +86,11 @@ class BenchmarkVisualizer:
         self,
         result: BenchmarkResult,
         figsize: tuple[int, int] = (12, 6)
-    ) -> Figure:
+    ) -> Optional[Figure]:
         """Plot memory usage over time."""
+        if not self._check_matplotlib_available():
+            return None
+        
         fig, ax = plt.subplots(figsize=figsize)
 
         if result.memory_samples:
@@ -97,8 +125,11 @@ class BenchmarkVisualizer:
         results: list[BenchmarkResult],
         metric: str = "mean_time",
         figsize: tuple[int, int] = (12, 8)
-    ) -> Figure:
+    ) -> Optional[Figure]:
         """Compare multiple benchmark results."""
+        if not self._check_matplotlib_available():
+            return None
+        
         fig, axes = plt.subplots(2, 2, figsize=figsize)
         axes = axes.flatten()
 
@@ -173,8 +204,11 @@ class BenchmarkVisualizer:
         results: list[BenchmarkResult],
         metrics: list[str] = None,
         figsize: tuple[int, int] = (14, 10)
-    ) -> Figure:
+    ) -> Optional[Figure]:
         """Plot performance trends over time."""
+        if not self._check_matplotlib_available():
+            return None
+        
         if metrics is None:
             metrics = ["mean_time", "throughput", "peak_memory_mb"]
         fig, axes = plt.subplots(len(metrics), 1, figsize=figsize, sharex=True)
@@ -229,8 +263,11 @@ class BenchmarkVisualizer:
         result: BenchmarkResult,
         percentiles: list[int] = None,
         figsize: tuple[int, int] = (10, 6)
-    ) -> Figure:
+    ) -> Optional[Figure]:
         """Plot latency percentiles."""
+        if not self._check_matplotlib_available():
+            return None
+        
         if percentiles is None:
             percentiles = [50, 90, 95, 99]
         fig, ax = plt.subplots(figsize=figsize)
@@ -268,8 +305,11 @@ class BenchmarkVisualizer:
         results: BenchmarkResult | list[BenchmarkResult],
         output_path: Path | None = None,
         figsize: tuple[int, int] = (16, 12)
-    ) -> Figure:
+    ) -> Optional[Figure]:
         """Create a comprehensive dashboard with multiple plots."""
+        if not self._check_matplotlib_available():
+            return None
+        
         if isinstance(results, BenchmarkResult):
             results = [results]
 
@@ -369,6 +409,9 @@ class BenchmarkVisualizer:
 
     def save_all_figures(self, directory: Path, format: str = 'png', dpi: int = 150):
         """Save all generated figures to directory."""
+        if not self._check_matplotlib_available():
+            return
+        
         directory.mkdir(parents=True, exist_ok=True)
 
         for i, fig in enumerate(self.figures):
@@ -377,6 +420,9 @@ class BenchmarkVisualizer:
 
     def close_all(self):
         """Close all figures to free memory."""
+        if not self._check_matplotlib_available():
+            return
+        
         for fig in self.figures:
             plt.close(fig)
         self.figures.clear()

@@ -102,7 +102,8 @@ async def run_full_benchmarks():
 
             # Create dashboard
             fig = visualizer.create_dashboard(latest_result)
-            fig.savefig(output_dir / f"{benchmark_name.replace(' ', '_')}_dashboard.png")
+            if fig:  # Only save if visualization is available
+                fig.savefig(output_dir / f"{benchmark_name.replace(' ', '_')}_dashboard.png")
 
     visualizer.close_all()
 
