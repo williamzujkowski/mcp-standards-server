@@ -476,7 +476,9 @@ class SemanticSearch:
         tokens = word_tokenize(content.lower())
         self.fuzzy_matcher.add_known_terms(tokens)
 
-    def index_documents_batch(self, documents: list[tuple[str, str, dict[str, Any]]]) -> None:
+    def index_documents_batch(
+        self, documents: list[tuple[str, str, dict[str, Any]]]
+    ) -> None:
         """Index multiple documents efficiently."""
         # Extract components
         doc_ids = [doc[0] for doc in documents]

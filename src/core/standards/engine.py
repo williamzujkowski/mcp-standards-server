@@ -155,9 +155,9 @@ class StandardsEngine:
 
                             standard = Standard(
                                 id=data.get("id", json_file.stem.lower()),
-                                title=str(data.get(
-                                    "name", data.get("title", json_file.stem)
-                                )),
+                                title=str(
+                                    data.get("name", data.get("title", json_file.stem))
+                                ),
                                 description=data.get("description", ""),
                                 content=data.get("content", ""),
                                 category=category,

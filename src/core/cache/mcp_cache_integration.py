@@ -389,7 +389,9 @@ def integrate_cache_with_mcp_server(
     original_call_tool = mcp_server.server.call_tool
 
     @mcp_server.server.call_tool()
-    async def enhanced_call_tool(name: str, arguments: dict[str, Any], **kwargs: Any) -> Any:
+    async def enhanced_call_tool(
+        name: str, arguments: dict[str, Any], **kwargs: Any
+    ) -> Any:
         # Handle cache-specific tools
         if name == "get_cache_stats":
             return await middleware.handle_cache_stats(arguments)
