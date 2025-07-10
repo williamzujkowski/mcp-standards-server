@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 import time
-from contextlib import asynccontextmanager
+from types import TracebackType
 from pathlib import Path
 from typing import Any
 
@@ -31,45 +31,63 @@ class MCPTestClient:
         self._read = None
         self._write = None
 
-    @asynccontextmanager
-    async def connect(self):
-        """Connect to the MCP server as an async context manager."""
+    async def __aenter__(self):
+        """Async context manager entry."""
         logger.debug("Connecting to MCP server...")
         try:
-            async with stdio_client(self.server_params) as (read, write):
-                self._read = read
-                self._write = write
-                try:
-                    async with ClientSession(read, write) as session:
-                        self.session = session
-                        try:
-                            # Initialize the session
-                            logger.debug("Initializing MCP session...")
-                            await session.initialize()
-                            logger.debug("MCP session initialized successfully")
-                            yield self
-                        finally:
-                            logger.debug("Closing MCP session...")
-                            self.session = None
-                except Exception as e:
-                    # Log but don't re-raise asyncio cancellation errors
-                    if "cancel scope" not in str(e):
-                        logger.error(f"Error in ClientSession: {e}")
-                        raise
-                    else:
-                        logger.warning(f"Ignoring asyncio cancellation error: {e}")
-                finally:
-                    self._read = None
-                    self._write = None
-        except Exception as e:
-            # Log but don't re-raise asyncio cancellation errors during cleanup
-            if "cancel scope" not in str(e):
-                logger.error(f"Error in stdio_client: {e}")
+            # Store the context managers
+            self._stdio_cm = stdio_client(self.server_params)
+            self._read, self._write = await self._stdio_cm.__aenter__()
+            
+            try:
+                self._session_cm = ClientSession(self._read, self._write)
+                self.session = await self._session_cm.__aenter__()
+                
+                # Initialize the session
+                logger.debug("Initializing MCP session...")
+                await self.session.initialize()
+                logger.debug("MCP session initialized successfully")
+                return self
+                
+            except Exception as e:
+                # Clean up session if it was created
+                if hasattr(self, '_session_cm'):
+                    try:
+                        await self._session_cm.__aexit__(type(e), e, e.__traceback__)
+                    except:
+                        pass
+                # Clean up stdio
+                await self._stdio_cm.__aexit__(type(e), e, e.__traceback__)
                 raise
-            else:
-                logger.warning(
-                    f"Ignoring asyncio cancellation error during cleanup: {e}"
-                )
+                
+        except Exception as e:
+            logger.error(f"Error connecting to MCP server: {e}")
+            raise
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        logger.debug("Closing MCP session...")
+        
+        # Close session first
+        if hasattr(self, '_session_cm') and self._session_cm:
+            try:
+                await self._session_cm.__aexit__(exc_type, exc_val, exc_tb)
+            except Exception as e:
+                logger.warning(f"Error closing session: {e}")
+            finally:
+                self.session = None
+                self._session_cm = None
+        
+        # Close stdio connection
+        if hasattr(self, '_stdio_cm') and self._stdio_cm:
+            try:
+                await self._stdio_cm.__aexit__(exc_type, exc_val, exc_tb)
+            except Exception as e:
+                logger.warning(f"Error closing stdio: {e}")
+            finally:
+                self._read = None
+                self._write = None
+                self._stdio_cm = None
 
     async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Call a tool on the MCP server."""
@@ -225,7 +243,7 @@ async def mcp_client(mcp_server):
     """Fixture to provide connected MCP client for tests."""
     logger.info("Creating MCP client...")
     client = MCPTestClient(mcp_server)
-    async with client.connect() as connected_client:
+    async with client as connected_client:
         logger.info("MCP client connected")
         yield connected_client
         logger.info("MCP client disconnecting...")
