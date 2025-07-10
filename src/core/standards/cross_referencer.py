@@ -708,5 +708,12 @@ class CrossReferencer:
                         )
 
         # Sort by confidence
-        suggestions.sort(key=lambda x: float(x["confidence"]) if isinstance(x["confidence"], int | float | str) else 0.0, reverse=True)
+        suggestions.sort(
+            key=lambda x: (
+                float(x["confidence"])
+                if isinstance(x["confidence"], int | float | str)
+                else 0.0
+            ),
+            reverse=True,
+        )
         return suggestions[:20]  # Return top 20 suggestions

@@ -90,7 +90,11 @@ class RetryManager:
         return max(0, delay)  # Ensure non-negative
 
     async def retry_async(
-        self, func: Callable[..., T], *args: Any, operation_name: str = "operation", **kwargs: Any
+        self,
+        func: Callable[..., T],
+        *args: Any,
+        operation_name: str = "operation",
+        **kwargs: Any,
     ) -> T:
         """
         Retry an async operation with exponential backoff.
@@ -170,7 +174,11 @@ class RetryManager:
             raise RuntimeError(f"Operation '{operation_name}' failed without exception")
 
     def retry_sync(
-        self, func: Callable[..., T], *args: Any, operation_name: str = "operation", **kwargs: Any
+        self,
+        func: Callable[..., T],
+        *args: Any,
+        operation_name: str = "operation",
+        **kwargs: Any,
     ) -> T:
         """
         Retry a sync operation with exponential backoff.
@@ -353,7 +361,8 @@ class CircuitBreaker:
                 code=ErrorCode.SYSTEM_UNAVAILABLE,
                 message="Circuit breaker is open - service temporarily unavailable",
                 details={
-                    "recovery_time": (self._last_failure_time or 0.0) + self.recovery_timeout
+                    "recovery_time": (self._last_failure_time or 0.0)
+                    + self.recovery_timeout
                 },
             )
 
@@ -373,7 +382,8 @@ class CircuitBreaker:
                 code=ErrorCode.SYSTEM_UNAVAILABLE,
                 message="Circuit breaker is open - service temporarily unavailable",
                 details={
-                    "recovery_time": (self._last_failure_time or 0.0) + self.recovery_timeout
+                    "recovery_time": (self._last_failure_time or 0.0)
+                    + self.recovery_timeout
                 },
             )
 

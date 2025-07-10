@@ -195,7 +195,10 @@ class SecurityValidator:
 
     def validate_content_type(self, content_type: str) -> None:
         """Validate content type is allowed."""
-        if self.config.allowed_content_types and content_type not in self.config.allowed_content_types:
+        if (
+            self.config.allowed_content_types
+            and content_type not in self.config.allowed_content_types
+        ):
             raise ValueError(f"Content type '{content_type}' not allowed")
 
     def validate_json_structure(self, data: Any, max_depth: int = 0) -> None:
