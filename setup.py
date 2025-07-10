@@ -51,6 +51,13 @@ setup(
         "asyncpg>=0.29.0",
         "aiomysql>=0.2.0",
         "sqlalchemy>=2.0.0",
+        # Performance monitoring and profiling dependencies
+        "prometheus_client>=0.16.0",  # For metrics collection
+        "pympler>=1.0.0",  # For memory profiling
+        "memory-profiler>=0.60.0",  # For memory analysis
+        "faiss-cpu>=1.7.0",  # For vector operations
+        "psutil>=5.9.0",  # For system monitoring
+        "msgpack>=1.0.0",  # For efficient serialization
     ],
     extras_require={
         "test": [
