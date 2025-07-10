@@ -301,7 +301,7 @@ class RuleEngine:
                                 "rules": [
                                     r["rule_id"]
                                     for r in matched_rules
-                                    if standard in r["standards"]
+                                    if "standards" in r and isinstance(r["standards"], list) and standard in r["standards"]
                                 ],
                             }
                         )

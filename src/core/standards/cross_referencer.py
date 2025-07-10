@@ -223,7 +223,7 @@ class CrossReferencer:
 
         # Save concept index
         concepts_data = {}
-        for concept, refs in self.concept_index.items():
+        for concept, concept_refs in self.concept_index.items():
             concepts_data[concept] = [
                 {
                     "concept": ref.concept,
@@ -233,7 +233,7 @@ class CrossReferencer:
                     "frequency": ref.frequency,
                     "importance": ref.importance,
                 }
-                for ref in refs
+                for ref in concept_refs
             ]
 
         with open(self.cache_dir / "concept_index.json", "w") as f:
@@ -708,5 +708,5 @@ class CrossReferencer:
                         )
 
         # Sort by confidence
-        suggestions.sort(key=lambda x: x["confidence"], reverse=True)
+        suggestions.sort(key=lambda x: float(x["confidence"]), reverse=True)
         return suggestions[:20]  # Return top 20 suggestions

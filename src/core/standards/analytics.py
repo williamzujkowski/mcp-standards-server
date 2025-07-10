@@ -189,7 +189,8 @@ class StandardsAnalytics:
         config_file = self.analytics_dir / "config.yaml"
         if config_file.exists():
             with open(config_file) as f:
-                return yaml.safe_load(f)
+                config = yaml.safe_load(f)
+                return config if isinstance(config, dict) else {}
 
         # Default configuration
         default_config = {
@@ -760,7 +761,7 @@ class StandardsAnalytics:
             "code_examples",
         ]
 
-        completeness = sum(1 for field in required_fields if standard.get(field))
+        completeness = float(sum(1 for field in required_fields if standard.get(field)))
         completeness += sum(0.5 for field in optional_fields if standard.get(field))
         scores["completeness"] = min(
             completeness / (len(required_fields) + len(optional_fields) * 0.5), 1.0
@@ -822,7 +823,7 @@ class StandardsAnalytics:
         # Calculate weighted score
         overall_score = sum(scores[aspect] * weights[aspect] for aspect in weights)
 
-        return overall_score
+        return float(overall_score)
 
     def _identify_quality_issues(
         self, standard: dict[str, Any]
