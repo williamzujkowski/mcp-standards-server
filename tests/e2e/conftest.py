@@ -50,7 +50,7 @@ class MCPTestClient:
 
             except Exception as e:
                 # Clean up session if it was created
-                if hasattr(self, '_session_cm'):
+                if hasattr(self, "_session_cm"):
                     try:
                         await self._session_cm.__aexit__(type(e), e, e.__traceback__)
                     except Exception:
@@ -68,7 +68,7 @@ class MCPTestClient:
         logger.debug("Closing MCP session...")
 
         # Close session first
-        if hasattr(self, '_session_cm') and self._session_cm:
+        if hasattr(self, "_session_cm") and self._session_cm:
             try:
                 await self._session_cm.__aexit__(exc_type, exc_val, exc_tb)
             except Exception as e:
@@ -78,7 +78,7 @@ class MCPTestClient:
                 self._session_cm = None
 
         # Close stdio connection
-        if hasattr(self, '_stdio_cm') and self._stdio_cm:
+        if hasattr(self, "_stdio_cm") and self._stdio_cm:
             try:
                 await self._stdio_cm.__aexit__(exc_type, exc_val, exc_tb)
             except Exception as e:
