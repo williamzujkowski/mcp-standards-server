@@ -71,13 +71,13 @@ jobs:
           MCP_TEST_MODE: "true"
         run: |
           # Run all benchmarks
-          python benchmarks/run_benchmarks.py --output-dir benchmark-results
+          python -m benchmarks.run_benchmarks --output benchmark-results
           
           # Run specific benchmark suites
-          python benchmarks/analyzer_performance.py --json > benchmark-results/analyzer.json
-          python benchmarks/cache_performance.py --json > benchmark-results/cache.json
-          python benchmarks/semantic_search_benchmark.py --json > benchmark-results/search.json
-          python benchmarks/token_optimization_benchmark.py --json > benchmark-results/token.json
+          python -m benchmarks.analyzer_performance --json > benchmark-results/analyzer.json
+          python -m benchmarks.cache_performance --json > benchmark-results/cache.json
+          python -m benchmarks.semantic_search_benchmark --json > benchmark-results/search.json
+          python -m benchmarks.token_optimization_benchmark --json > benchmark-results/token.json
       
       - name: Process benchmark results
         run: |
@@ -178,9 +178,9 @@ jobs:
           MCP_TEST_MODE: "true"
         run: |
           # Run memory profiling
-          python benchmarks/memory/memory_usage.py --output memory-profile.json
-          python benchmarks/memory/leak_detection.py --output leak-report.json
-          python benchmarks/memory/allocation_tracking.py --output allocation-report.json
+          python -m benchmarks.memory.memory_usage --output memory-profile.json
+          python -m benchmarks.memory.leak_detection --output leak-report.json
+          python -m benchmarks.memory.allocation_tracking --output allocation-report.json
       
       - name: Analyze memory usage
         run: |
@@ -260,12 +260,12 @@ jobs:
         timeout-minutes: 25
         run: |
           # Run different load scenarios
-          python benchmarks/load/stress_test.py --users 10 --duration 60 --output load-test-10users.json
-          python benchmarks/load/stress_test.py --users 50 --duration 60 --output load-test-50users.json
-          python benchmarks/load/stress_test.py --users 100 --duration 60 --output load-test-100users.json
+          python -m benchmarks.load.stress_test --users 10 --duration 60 --output load-test-10users.json
+          python -m benchmarks.load.stress_test --users 50 --duration 60 --output load-test-50users.json
+          python -m benchmarks.load.stress_test --users 100 --duration 60 --output load-test-100users.json
           
           # Run breaking point test
-          python benchmarks/load/breaking_point.py --output breaking-point.json
+          python -m benchmarks.load.breaking_point --output breaking-point.json
       
       - name: Stop server
         if: always()
@@ -346,7 +346,7 @@ jobs:
         env:
           REDIS_URL: redis://localhost:6379
         run: |
-          python benchmarks/run_benchmarks.py --output-dir pr-benchmarks
+          python -m benchmarks.run_benchmarks --output pr-benchmarks
       
       - name: Checkout base branch
         uses: actions/checkout@v4
@@ -358,7 +358,7 @@ jobs:
         env:
           REDIS_URL: redis://localhost:6379
         run: |
-          python benchmarks/run_benchmarks.py --output-dir base-benchmarks
+          python -m benchmarks.run_benchmarks --output base-benchmarks
       
       - name: Compare results
         run: |
