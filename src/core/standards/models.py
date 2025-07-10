@@ -248,7 +248,7 @@ class RuleCondition:
         actual_value = context[self.field]
 
         if self.operator == "equals":
-            return actual_value == self.value
+            return bool(actual_value == self.value)
         elif self.operator == "contains":
             return (
                 self.value in actual_value
@@ -262,9 +262,9 @@ class RuleCondition:
                 else False
             )
         elif self.operator == "greater_than":
-            return actual_value > self.value
+            return bool(actual_value > self.value)
         elif self.operator == "less_than":
-            return actual_value < self.value
+            return bool(actual_value < self.value)
         elif self.operator == "matches":
             import re
 

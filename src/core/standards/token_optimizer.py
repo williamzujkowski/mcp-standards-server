@@ -720,7 +720,7 @@ class TokenOptimizer:
         sections = self._parse_standard_sections(standard)
 
         # Build dependency graph
-        dependency_graph = {}
+        dependency_graph: dict[str, dict[str, Any]] = {}
         for section in sections:
             dependency_graph[section.id] = {
                 "section": section,
@@ -766,7 +766,11 @@ class TokenOptimizer:
             to_load = next_batch - loaded
             depth += 1
 
-        return loading_plan
+        # Flatten the loading plan
+        flattened_plan: list[tuple[str, int]] = []
+        for batch in loading_plan:
+            flattened_plan.extend(batch)
+        return flattened_plan
 
     def estimate_tokens(
         self,

@@ -74,20 +74,28 @@ class QualityAssuranceSystem:
             "maintainability": 0.10,
         }
 
-        overall_score = sum(
-            results["scores"][metric] * weights[metric]
-            for metric in self.quality_metrics
-        )
+        scores_dict = results["scores"]
+        if isinstance(scores_dict, dict):
+            overall_score = sum(
+                scores_dict.get(metric, 0.0) * weights[metric]
+                for metric in self.quality_metrics
+            )
+        else:
+            overall_score = 0.0
         results["overall_score"] = round(overall_score, 2)
 
         # Generate recommendations
-        results["recommendations"] = self._generate_recommendations(results["scores"])
+        scores_dict = results["scores"]
+        if isinstance(scores_dict, dict):
+            results["recommendations"] = self._generate_recommendations(scores_dict)
+        else:
+            results["recommendations"] = []
 
         return results
 
     def _assess_completeness(self, content: str, metadata: StandardMetadata) -> float:
         """Assess document completeness."""
-        score = 0
+        score: float = 0.0
         max_score = 100
 
         # Required sections check
@@ -137,7 +145,7 @@ class QualityAssuranceSystem:
 
     def _assess_consistency(self, content: str, metadata: StandardMetadata) -> float:
         """Assess document consistency."""
-        score = 0
+        score: float = 0.0
         max_score = 100
 
         # Heading consistency
@@ -182,7 +190,7 @@ class QualityAssuranceSystem:
 
     def _assess_clarity(self, content: str) -> float:
         """Assess document clarity."""
-        score = 0
+        score: float = 0.0
         max_score = 100
 
         # Sentence length analysis
@@ -248,7 +256,7 @@ class QualityAssuranceSystem:
         self, content: str, metadata: StandardMetadata
     ) -> float:
         """Assess compliance framework coverage."""
-        score = 0
+        score: float = 0.0
         max_score = 100
 
         # NIST controls coverage
@@ -284,7 +292,7 @@ class QualityAssuranceSystem:
         self, content: str, metadata: StandardMetadata
     ) -> float:
         """Assess implementation guidance quality."""
-        score = 0
+        score: float = 0.0
         max_score = 100
 
         # Code examples
@@ -326,7 +334,7 @@ class QualityAssuranceSystem:
         self, content: str, metadata: StandardMetadata
     ) -> float:
         """Assess document maintainability."""
-        score = 0
+        score: float = 0.0
         max_score = 100
 
         # Version information

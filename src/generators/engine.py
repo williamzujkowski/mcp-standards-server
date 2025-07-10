@@ -6,7 +6,7 @@ Jinja2-based template engine for generating standards documents.
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, meta, select_autoescape
@@ -87,7 +87,8 @@ class TemplateEngine:
         """
         try:
             template = self.env.get_template(template_name)
-            return template.render(**context)
+            result = template.render(**context)
+            return str(result)
         except TemplateNotFound:
             raise ValueError(f"Template '{template_name}' not found")
         except TemplateSyntaxError as e:
@@ -147,7 +148,8 @@ class TemplateEngine:
 
         if schema_path.exists():
             with open(schema_path, encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                return cast(dict[str, Any], data)
 
         # Generate basic schema from template variables
         variables = self._get_template_variables(template_name)

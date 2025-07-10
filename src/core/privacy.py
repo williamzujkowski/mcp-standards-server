@@ -94,11 +94,13 @@ class PIIDetector:
     def __init__(self, config: PrivacyConfig | None = None):
         """Initialize PII detector with configuration."""
         self.config = config or PrivacyConfig()
-        self._compiled_patterns: dict[PIIType, re.Pattern[str]] = {}
+        self._compiled_patterns: dict[PIIType | str, re.Pattern[str]] = {}
         self._compile_patterns()
 
     def _compile_patterns(self) -> None:
         """Compile regex patterns for efficiency."""
+        if self.config.pii_types is None:
+            return
         for pii_type in self.config.pii_types:
             if pii_type in self.PATTERNS:
                 self._compiled_patterns[pii_type] = re.compile(
@@ -306,8 +308,8 @@ class PrivacyFilter:
         Returns:
             Tuple of (filtered_dict, matches_by_path)
         """
-        filtered_data = {}
-        all_matches = {}
+        filtered_data: dict[str, Any] = {}
+        all_matches: dict[str, list[PIIMatch]] = {}
 
         for key, value in data.items():
             filtered_key, key_matches = self.filter_text(str(key))
@@ -322,13 +324,13 @@ class PrivacyFilter:
                 filtered_data[filtered_key] = filtered_value
 
             elif isinstance(value, dict):
-                filtered_value, nested_matches = self.filter_dict(value)
-                filtered_data[filtered_key] = filtered_value
+                filtered_dict, nested_matches = self.filter_dict(value)
+                filtered_data[filtered_key] = filtered_dict
                 for nested_key, matches in nested_matches.items():
                     all_matches[f"{key}.{nested_key}"] = matches
 
             elif isinstance(value, list):
-                filtered_list = []
+                filtered_list: list[Any] = []
                 for i, item in enumerate(value):
                     if isinstance(item, str):
                         filtered_item, item_matches = self.filter_text(item)
@@ -336,9 +338,9 @@ class PrivacyFilter:
                             all_matches[f"{key}[{i}]"] = item_matches
                         filtered_list.append(filtered_item)
                     elif isinstance(item, dict):
-                        filtered_item, item_matches = self.filter_dict(item)
-                        filtered_list.append(filtered_item)
-                        for nested_key, matches in item_matches.items():
+                        filtered_dict_item, dict_item_matches = self.filter_dict(item)
+                        filtered_list.append(filtered_dict_item)
+                        for nested_key, matches in dict_item_matches.items():
                             all_matches[f"{key}[{i}].{nested_key}"] = matches
                     else:
                         filtered_list.append(item)
@@ -384,7 +386,7 @@ class PrivacyFilter:
 
     def get_privacy_report(self, data: Any) -> dict[str, Any]:
         """Generate privacy report for data."""
-        report = {
+        report: dict[str, Any] = {
             "has_pii": False,
             "pii_types_found": set(),
             "pii_count": 0,
@@ -418,7 +420,9 @@ class PrivacyFilter:
                             }
                         )
 
-        report["pii_types_found"] = list(report["pii_types_found"])
+        pii_types_found = report["pii_types_found"]
+        if isinstance(pii_types_found, set):
+            report["pii_types_found"] = list(pii_types_found)
         return report
 
 

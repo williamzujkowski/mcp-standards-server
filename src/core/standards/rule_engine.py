@@ -67,6 +67,7 @@ class RuleCondition:
                 return False
 
             # Normalize strings for case-insensitive comparison
+            compare_value: Any
             if isinstance(field_value, str) and not self.case_sensitive:
                 field_value = field_value.lower()
                 if isinstance(self.value, str):
@@ -82,9 +83,9 @@ class RuleCondition:
 
             # Evaluate based on operator
             if self.operator == RuleOperator.EQUALS:
-                return field_value == compare_value
+                return bool(field_value == compare_value)
             elif self.operator == RuleOperator.NOT_EQUALS:
-                return field_value != compare_value
+                return bool(field_value != compare_value)
             elif self.operator == RuleOperator.CONTAINS:
                 if isinstance(field_value, list | set | str):
                     return compare_value in field_value
@@ -394,7 +395,7 @@ class RuleEngine:
         Returns:
             Dictionary representing the decision tree structure
         """
-        tree = {"type": "root", "total_rules": len(self.rules), "branches": []}
+        tree: dict[str, Any] = {"type": "root", "total_rules": len(self.rules), "branches": []}
 
         # Group rules by common patterns
         grouped: dict[tuple[str, ...], list[StandardRule]] = {}
@@ -421,7 +422,9 @@ class RuleEngine:
                     for rule in sorted(rules, key=lambda r: r.priority)
                 ],
             }
-            tree["branches"].append(branch)
+            branches = tree["branches"]
+            if isinstance(branches, list):
+                branches.append(branch)
 
         return tree
 

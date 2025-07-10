@@ -28,8 +28,8 @@ class StandardValidator:
 
     def __init__(self) -> None:
         """Initialize the validator."""
-        self.nist_controls = self._load_nist_controls()
-        self.compliance_frameworks = self._load_compliance_frameworks()
+        self.nist_controls: list[str] = []
+        self.compliance_frameworks: list[str] = []
 
     def validate(self, content: dict[str, Any] | str) -> ValidationResult:
         """
@@ -65,13 +65,18 @@ class StandardValidator:
         # Required fields validation
         required_fields = ["title", "description", "domain"]
         for field in required_fields:
-            if not content.get(field):
+            if isinstance(content, dict) and not content.get(field):
                 errors.append(f"Missing required field: {field}")
 
         # Quality metrics calculation
-        quality_metrics["completeness"] = self._calculate_completeness(content)
-        quality_metrics["clarity"] = self._calculate_clarity(content)
-        quality_metrics["actionability"] = self._calculate_actionability(content)
+        if isinstance(content, dict):
+            quality_metrics["completeness"] = self._calculate_completeness(content)
+            quality_metrics["clarity"] = self._calculate_clarity(content)
+            quality_metrics["actionability"] = self._calculate_actionability(content)
+        else:
+            quality_metrics["completeness"] = 0.0
+            quality_metrics["clarity"] = 0.0
+            quality_metrics["actionability"] = 0.0
 
         # Calculate overall completeness score
         completeness_score = quality_metrics["completeness"]
@@ -317,46 +322,77 @@ class StandardsValidator:
         Returns:
             Validation results
         """
-        results = {"valid": True, "errors": [], "warnings": [], "checks": {}}
+        results: dict[str, Any] = {
+            "valid": True,
+            "errors": [],
+            "warnings": [],
+            "checks": {}
+        }
 
         # Validate metadata
         metadata_validation = metadata.validate()
         if not metadata_validation["valid"]:
             results["valid"] = False
-            results["errors"].extend(metadata_validation["errors"])
-        results["warnings"].extend(metadata_validation["warnings"])
+            errors_list = results["errors"]
+            if isinstance(errors_list, list):
+                errors_list.extend(metadata_validation["errors"])
+        warnings_list = results["warnings"]
+        if isinstance(warnings_list, list):
+            warnings_list.extend(metadata_validation["warnings"])
 
         # Validate content structure
         structure_check = self._validate_structure(content)
-        results["checks"]["structure"] = structure_check
+        checks_dict = results["checks"]
+        if isinstance(checks_dict, dict):
+            checks_dict["structure"] = structure_check
         if not structure_check["valid"]:
             results["valid"] = False
-            results["errors"].extend(structure_check["errors"])
-        results["warnings"].extend(structure_check["warnings"])
+            errors_list = results["errors"]
+            if isinstance(errors_list, list):
+                errors_list.extend(structure_check["errors"])
+        warnings_list = results["warnings"]
+        if isinstance(warnings_list, list):
+            warnings_list.extend(structure_check["warnings"])
 
         # Validate NIST controls
         nist_check = self._validate_nist_controls(content, metadata)
-        results["checks"]["nist_controls"] = nist_check
+        checks_dict = results["checks"]
+        if isinstance(checks_dict, dict):
+            checks_dict["nist_controls"] = nist_check
         if not nist_check["valid"]:
-            results["warnings"].extend(nist_check["warnings"])
+            warnings_list = results["warnings"]
+            if isinstance(warnings_list, list):
+                warnings_list.extend(nist_check["warnings"])
 
         # Validate compliance frameworks
         compliance_check = self._validate_compliance_frameworks(content, metadata)
-        results["checks"]["compliance"] = compliance_check
+        checks_dict = results["checks"]
+        if isinstance(checks_dict, dict):
+            checks_dict["compliance"] = compliance_check
         if not compliance_check["valid"]:
-            results["warnings"].extend(compliance_check["warnings"])
+            warnings_list = results["warnings"]
+            if isinstance(warnings_list, list):
+                warnings_list.extend(compliance_check["warnings"])
 
         # Validate cross-references
         xref_check = self._validate_cross_references(content)
-        results["checks"]["cross_references"] = xref_check
+        checks_dict = results["checks"]
+        if isinstance(checks_dict, dict):
+            checks_dict["cross_references"] = xref_check
         if not xref_check["valid"]:
-            results["warnings"].extend(xref_check["warnings"])
+            warnings_list = results["warnings"]
+            if isinstance(warnings_list, list):
+                warnings_list.extend(xref_check["warnings"])
 
         # Validate completeness
         completeness_check = self._validate_completeness(content, metadata)
-        results["checks"]["completeness"] = completeness_check
+        checks_dict = results["checks"]
+        if isinstance(checks_dict, dict):
+            checks_dict["completeness"] = completeness_check
         if not completeness_check["valid"]:
-            results["warnings"].extend(completeness_check["warnings"])
+            warnings_list = results["warnings"]
+            if isinstance(warnings_list, list):
+                warnings_list.extend(completeness_check["warnings"])
 
         return results
 

@@ -188,7 +188,7 @@ class StandardMetadata:
 class MetadataSchema:
     """Schema definitions for different types of standards."""
 
-    BASE_SCHEMA = {
+    BASE_SCHEMA: dict[str, Any] = {
         "type": "object",
         "properties": {
             "title": {"type": "string", "minLength": 1},
@@ -230,7 +230,7 @@ class MetadataSchema:
         "additionalProperties": True,
     }
 
-    TECHNICAL_SCHEMA = {
+    TECHNICAL_SCHEMA: dict[str, Any] = {
         **BASE_SCHEMA,
         "properties": {
             **BASE_SCHEMA["properties"],
@@ -243,7 +243,7 @@ class MetadataSchema:
         },
     }
 
-    COMPLIANCE_SCHEMA = {
+    COMPLIANCE_SCHEMA: dict[str, Any] = {
         **BASE_SCHEMA,
         "properties": {
             **BASE_SCHEMA["properties"],
@@ -254,7 +254,7 @@ class MetadataSchema:
         },
     }
 
-    PROCESS_SCHEMA = {
+    PROCESS_SCHEMA: dict[str, Any] = {
         **BASE_SCHEMA,
         "properties": {
             **BASE_SCHEMA["properties"],
@@ -265,7 +265,7 @@ class MetadataSchema:
         },
     }
 
-    ARCHITECTURE_SCHEMA = {
+    ARCHITECTURE_SCHEMA: dict[str, Any] = {
         **BASE_SCHEMA,
         "properties": {
             **BASE_SCHEMA["properties"],
