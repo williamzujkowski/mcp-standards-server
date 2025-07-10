@@ -20,10 +20,7 @@ class TestCoverageBasic:
     @pytest.mark.asyncio
     async def test_list_standards_tool(self, mcp_client):
         """Test basic tool call to ensure coverage tracks it."""
-        result = await mcp_client.call_tool(
-            "list_available_standards",
-            {}
-        )
+        result = await mcp_client.call_tool("list_available_standards", {})
 
         assert "standards" in result
         assert isinstance(result["standards"], list)

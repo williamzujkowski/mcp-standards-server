@@ -22,7 +22,7 @@ class CachedSemanticSearch:
         prefix="search",
         ttl=300,  # 5 minutes
         exclude_args=["limit", "offset"],  # Pagination doesn't affect search results
-        condition=lambda *args, **kwargs: kwargs.get("use_cache", True)
+        condition=lambda *args, **kwargs: kwargs.get("use_cache", True),
     )
     async def search(
         self,
@@ -31,15 +31,11 @@ class CachedSemanticSearch:
         threshold: float = 0.7,
         filters: dict[str, Any] | None = None,
         use_cache: bool = True,
-        **kwargs
+        **kwargs,
     ) -> list[dict[str, Any]]:
         """Search standards with caching."""
         results = await self.semantic_search.search(
-            query=query,
-            k=k,
-            threshold=threshold,
-            filters=filters,
-            **kwargs
+            query=query, k=k, threshold=threshold, filters=filters, **kwargs
         )
         return results
 
@@ -48,16 +44,11 @@ class CachedSemanticSearch:
         ttl=600,  # 10 minutes
     )
     async def find_similar(
-        self,
-        standard_id: str,
-        k: int = 5,
-        threshold: float = 0.8
+        self, standard_id: str, k: int = 5, threshold: float = 0.8
     ) -> list[dict[str, Any]]:
         """Find similar standards with caching."""
         results = await self.semantic_search.find_similar(
-            standard_id=standard_id,
-            k=k,
-            threshold=threshold
+            standard_id=standard_id, k=k, threshold=threshold
         )
         return results
 
@@ -74,37 +65,24 @@ class CachedStandardsEngine:
         self.engine = engine
         self.cache = cache or get_cache()
 
-    @cache_result(
-        prefix="standards:data",
-        ttl=3600,  # 1 hour
-        version="v2"
-    )
+    @cache_result(prefix="standards:data", ttl=3600, version="v2")  # 1 hour
     async def get_standard(
-        self,
-        standard_id: str,
-        version: str | None = None
+        self, standard_id: str, version: str | None = None
     ) -> Standard | None:
         """Get standard with caching."""
         return await self.engine.get_standard(standard_id, version)
 
-    @cache_result(
-        prefix="standards:list",
-        ttl=1800,  # 30 minutes
-        include_kwargs=True
-    )
+    @cache_result(prefix="standards:list", ttl=1800, include_kwargs=True)  # 30 minutes
     async def list_standards(
         self,
         category: str | None = None,
         tags: list[str] | None = None,
         offset: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[Standard]:
         """List standards with caching."""
         return await self.engine.list_standards(
-            category=category,
-            tags=tags,
-            offset=offset,
-            limit=limit
+            category=category, tags=tags, offset=offset, limit=limit
         )
 
     @cache_result(
@@ -112,18 +90,14 @@ class CachedStandardsEngine:
         ttl=1800,  # 30 minutes
     )
     async def get_requirements(
-        self,
-        standard_id: str,
-        requirement_ids: list[str] | None = None
+        self, standard_id: str, requirement_ids: list[str] | None = None
     ) -> list[Requirement]:
         """Get requirements with caching."""
         return await self.engine.get_requirements(standard_id, requirement_ids)
 
     @invalidate_cache(pattern="standards:*:{standard_id}:*")
     async def update_standard(
-        self,
-        standard_id: str,
-        updates: dict[str, Any]
+        self, standard_id: str, updates: dict[str, Any]
     ) -> Standard:
         """Update standard and invalidate cache."""
         return await self.engine.update_standard(standard_id, updates)
@@ -142,12 +116,10 @@ class CachedRuleEngine:
         custom_key_func=lambda func, args, kwargs: (
             f"rules:v1:evaluation:{kwargs.get('rule_id')}:"
             f"{hash(str(kwargs.get('context', {})))}"
-        )
+        ),
     )
     async def evaluate_rule(
-        self,
-        rule_id: str,
-        context: dict[str, Any]
+        self, rule_id: str, context: dict[str, Any]
     ) -> dict[str, Any]:
         """Evaluate rule with caching."""
         return await self.rule_engine.evaluate_rule(rule_id, context)
@@ -157,19 +129,13 @@ class CachedRuleEngine:
         ttl=180,  # 3 minutes
     )
     async def evaluate_rules_batch(
-        self,
-        rule_ids: list[str],
-        context: dict[str, Any]
+        self, rule_ids: list[str], context: dict[str, Any]
     ) -> dict[str, dict[str, Any]]:
         """Evaluate multiple rules with caching."""
         return await self.rule_engine.evaluate_rules_batch(rule_ids, context)
 
     @invalidate_cache(prefix="rules")
-    async def update_rule(
-        self,
-        rule_id: str,
-        rule_definition: dict[str, Any]
-    ):
+    async def update_rule(self, rule_id: str, rule_definition: dict[str, Any]):
         """Update rule and invalidate cache."""
         await self.rule_engine.update_rule(rule_id, rule_definition)
 
@@ -185,10 +151,7 @@ class CachedSyncStatus:
         prefix="sync:status",
         ttl=30,  # 30 seconds
     )
-    async def get_sync_status(
-        self,
-        source: str | None = None
-    ) -> dict[str, Any]:
+    async def get_sync_status(self, source: str | None = None) -> dict[str, Any]:
         """Get sync status with caching."""
         return await self.sync_manager.get_sync_status(source)
 
@@ -197,19 +160,13 @@ class CachedSyncStatus:
         ttl=60,  # 1 minute
     )
     async def get_sync_metadata(
-        self,
-        source: str,
-        resource_type: str
+        self, source: str, resource_type: str
     ) -> dict[str, Any]:
         """Get sync metadata with caching."""
         return await self.sync_manager.get_sync_metadata(source, resource_type)
 
     @invalidate_cache(prefix="sync")
-    async def trigger_sync(
-        self,
-        source: str,
-        force: bool = False
-    ) -> dict[str, Any]:
+    async def trigger_sync(self, source: str, force: bool = False) -> dict[str, Any]:
         """Trigger sync and invalidate cache."""
         return await self.sync_manager.trigger_sync(source, force)
 
@@ -221,7 +178,7 @@ class CacheWarmer:
         self,
         standards_engine: CachedStandardsEngine,
         semantic_search: CachedSemanticSearch,
-        cache: RedisCache | None = None
+        cache: RedisCache | None = None,
     ):
         self.standards_engine = standards_engine
         self.semantic_search = semantic_search
@@ -272,11 +229,11 @@ class CacheMetricsCollector:
             "health": health,
             "performance": {
                 "avg_hit_rate": (
-                    metrics.get("l1_hit_rate", 0) * 0.7 +
-                    metrics.get("l2_hit_rate", 0) * 0.3
+                    metrics.get("l1_hit_rate", 0) * 0.7
+                    + metrics.get("l2_hit_rate", 0) * 0.3
                 ),
                 "cache_efficiency": self._calculate_efficiency(metrics),
-            }
+            },
         }
 
     def _calculate_efficiency(self, metrics: dict[str, Any]) -> float:

@@ -37,7 +37,10 @@ except (TypeError, ImportError) as e:
             @staticmethod
             async def from_url(*args, **kwargs):
                 return None
-        aioredis = type('aioredis', (), {'Redis': MockRedis, 'from_url': MockRedis.from_url})()
+
+        aioredis = type(
+            "aioredis", (), {"Redis": MockRedis, "from_url": MockRedis.from_url}
+        )()
     else:
         raise
 
@@ -53,6 +56,7 @@ logger = logging.getLogger(__name__)
 
 class ConnectionState(Enum):
     """Connection states."""
+
     CONNECTING = "connecting"
     CONNECTED = "connected"
     DISCONNECTING = "disconnecting"
@@ -63,6 +67,7 @@ class ConnectionState(Enum):
 @dataclass
 class ConnectionInfo:
     """Information about a client connection."""
+
     id: str
     remote_addr: str
     user_agent: str | None
@@ -81,17 +86,17 @@ class ConnectionInfo:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'id': self.id,
-            'remote_addr': self.remote_addr,
-            'user_agent': self.user_agent,
-            'connection_time': self.connection_time,
-            'last_activity': self.last_activity,
-            'state': self.state.value,
-            'request_count': self.request_count,
-            'error_count': self.error_count,
-            'bytes_sent': self.bytes_sent,
-            'bytes_received': self.bytes_received,
-            'duration': time.time() - self.connection_time
+            "id": self.id,
+            "remote_addr": self.remote_addr,
+            "user_agent": self.user_agent,
+            "connection_time": self.connection_time,
+            "last_activity": self.last_activity,
+            "state": self.state.value,
+            "request_count": self.request_count,
+            "error_count": self.error_count,
+            "bytes_sent": self.bytes_sent,
+            "bytes_received": self.bytes_received,
+            "duration": time.time() - self.connection_time,
         }
 
 
@@ -172,25 +177,33 @@ class RequestMetrics:
 
     def get_summary(self) -> dict[str, Any]:
         """Get metrics summary."""
-        avg_request_time = sum(self.request_times) / len(self.request_times) if self.request_times else 0
-        avg_batch_time = sum(self.batch_times) / len(self.batch_times) if self.batch_times else 0
+        avg_request_time = (
+            sum(self.request_times) / len(self.request_times)
+            if self.request_times
+            else 0
+        )
+        avg_batch_time = (
+            sum(self.batch_times) / len(self.batch_times) if self.batch_times else 0
+        )
 
-        error_rate = self.failed_requests / self.total_requests if self.total_requests > 0 else 0
+        error_rate = (
+            self.failed_requests / self.total_requests if self.total_requests > 0 else 0
+        )
 
         return {
-            'total_requests': self.total_requests,
-            'active_requests': self.active_requests,
-            'completed_requests': self.completed_requests,
-            'failed_requests': self.failed_requests,
-            'error_rate': error_rate,
-            'average_request_time': avg_request_time,
-            'average_batch_time': avg_batch_time,
-            'active_connections': self.active_connections,
-            'total_connections': self.total_connections,
-            'connection_errors': self.connection_errors,
-            'bytes_sent': self.bytes_sent,
-            'bytes_received': self.bytes_received,
-            'method_counts': dict(self.method_counts)
+            "total_requests": self.total_requests,
+            "active_requests": self.active_requests,
+            "completed_requests": self.completed_requests,
+            "failed_requests": self.failed_requests,
+            "error_rate": error_rate,
+            "average_request_time": avg_request_time,
+            "average_batch_time": avg_batch_time,
+            "active_connections": self.active_connections,
+            "total_connections": self.total_connections,
+            "connection_errors": self.connection_errors,
+            "bytes_sent": self.bytes_sent,
+            "bytes_received": self.bytes_received,
+            "method_counts": dict(self.method_counts),
         }
 
 
@@ -230,13 +243,15 @@ class RequestBatcher:
         request_id = str(uuid.uuid4())
 
         # Add to batch queue
-        await self.batch_queue.put({
-            'id': request_id,
-            'request': request,
-            'connection_id': connection_id,
-            'future': result_future,
-            'timestamp': time.time()
-        })
+        await self.batch_queue.put(
+            {
+                "id": request_id,
+                "request": request,
+                "connection_id": connection_id,
+                "future": result_future,
+                "timestamp": time.time(),
+            }
+        )
 
         # Store in pending requests
         self.pending_requests[request_id] = result_future
@@ -258,8 +273,7 @@ class RequestBatcher:
                 try:
                     # Wait for first item
                     item = await asyncio.wait_for(
-                        self.batch_queue.get(),
-                        timeout=self.config.batch_timeout
+                        self.batch_queue.get(), timeout=self.config.batch_timeout
                     )
                     batch.append(item)
 
@@ -268,7 +282,7 @@ class RequestBatcher:
                         try:
                             item = await asyncio.wait_for(
                                 self.batch_queue.get(),
-                                timeout=0.001  # Very short timeout
+                                timeout=0.001,  # Very short timeout
                             )
                             batch.append(item)
                         except asyncio.TimeoutError:
@@ -295,7 +309,7 @@ class RequestBatcher:
             # Group requests by type for optimization
             request_groups = defaultdict(list)
             for item in batch:
-                method = item['request'].get('method', 'unknown')
+                method = item["request"].get("method", "unknown")
                 request_groups[method].append(item)
 
             # Process each group
@@ -306,16 +320,16 @@ class RequestBatcher:
                     for item in items:
                         try:
                             # Mock processing
-                            result = await self._process_single_request(item['request'])
-                            item['future'].set_result(result)
+                            result = await self._process_single_request(item["request"])
+                            item["future"].set_result(result)
                         except Exception as e:
-                            item['future'].set_exception(e)
+                            item["future"].set_exception(e)
 
                 except Exception as e:
                     # Set exception for all items in group
                     for item in items:
-                        if not item['future'].done():
-                            item['future'].set_exception(e)
+                        if not item["future"].done():
+                            item["future"].set_exception(e)
 
             # Update metrics
             batch_time = time.time() - start_time
@@ -325,21 +339,21 @@ class RequestBatcher:
             logger.error(f"Error processing batch: {e}")
             # Set exception for all items
             for item in batch:
-                if not item['future'].done():
-                    item['future'].set_exception(e)
+                if not item["future"].done():
+                    item["future"].set_exception(e)
 
     async def _process_single_request(self, request: dict[str, Any]) -> dict[str, Any]:
         """Process a single request."""
         # This would be replaced with actual request processing logic
-        method = request.get('method', 'unknown')
+        method = request.get("method", "unknown")
 
         # Simulate processing time
         await asyncio.sleep(0.001)
 
         return {
-            'id': str(uuid.uuid4()),
-            'result': f"Processed {method}",
-            'timestamp': time.time()
+            "id": str(uuid.uuid4()),
+            "result": f"Processed {method}",
+            "timestamp": time.time(),
         }
 
 
@@ -379,11 +393,13 @@ class ConnectionManager:
             except asyncio.CancelledError:
                 pass
 
-    async def add_connection(self,
-                           connection_id: str,
-                           remote_addr: str,
-                           user_agent: str | None = None,
-                           websocket: WebSocketResponse | None = None) -> bool:
+    async def add_connection(
+        self,
+        connection_id: str,
+        remote_addr: str,
+        user_agent: str | None = None,
+        websocket: WebSocketResponse | None = None,
+    ) -> bool:
         """Add a new connection."""
         # Check connection limit
         if len(self.connections) >= self.max_connections:
@@ -405,7 +421,7 @@ class ConnectionManager:
                     user_agent=user_agent,
                     connection_time=time.time(),
                     last_activity=time.time(),
-                    state=ConnectionState.CONNECTED
+                    state=ConnectionState.CONNECTED,
                 )
 
                 self.connections[connection_id] = connection_info
@@ -472,7 +488,9 @@ class ConnectionManager:
 
         with self.connection_lock:
             for connection_id, connection_info in self.connections.items():
-                if (current_time - connection_info.last_activity) > self.config.inactive_connection_timeout:
+                if (
+                    current_time - connection_info.last_activity
+                ) > self.config.inactive_connection_timeout:
                     inactive_connections.append(connection_id)
 
         # Remove inactive connections
@@ -492,7 +510,8 @@ class ConnectionManager:
         with self.connection_lock:
             total_connections = len(self.connections)
             active_connections = sum(
-                1 for conn in self.connections.values()
+                1
+                for conn in self.connections.values()
                 if conn.state == ConnectionState.CONNECTED
             )
 
@@ -505,11 +524,11 @@ class ConnectionManager:
             avg_duration = sum(durations) / len(durations) if durations else 0
 
             return {
-                'total_connections': total_connections,
-                'active_connections': active_connections,
-                'max_connections': self.max_connections,
-                'average_connection_duration': avg_duration,
-                'websocket_connections': len(self.websockets)
+                "total_connections": total_connections,
+                "active_connections": active_connections,
+                "max_connections": self.max_connections,
+                "average_connection_duration": avg_duration,
+                "websocket_connections": len(self.websockets),
             }
 
 
@@ -523,8 +542,8 @@ class MCPSession:
         self.writer = writer
         self.authenticated = False
         self.client_info = {
-            "address": writer.get_extra_info('peername') if writer else None,
-            "connected_at": time.time()
+            "address": writer.get_extra_info("peername") if writer else None,
+            "connected_at": time.time(),
         }
         self.last_activity = time.time()
 
@@ -555,60 +574,58 @@ class MCPSession:
         """Process a single message."""
         self.last_activity = time.time()
 
-        msg_type = message.get('type', 'unknown')
+        msg_type = message.get("type", "unknown")
 
-        if msg_type == 'hello':
-            await self.send_message({
-                'type': 'hello',
-                'version': '1.0.0',
-                'capabilities': ['tools', 'resources']
-            })
-        elif msg_type == 'ping':
-            await self.send_message({'type': 'pong'})
-        elif msg_type == 'request':
+        if msg_type == "hello":
+            await self.send_message(
+                {
+                    "type": "hello",
+                    "version": "1.0.0",
+                    "capabilities": ["tools", "resources"],
+                }
+            )
+        elif msg_type == "ping":
+            await self.send_message({"type": "pong"})
+        elif msg_type == "request":
             await self._handle_request(message)
         else:
             await self.send_error_message(f"Unknown message type: {msg_type}")
 
     async def _handle_request(self, message: dict[str, Any]):
         """Handle a request message."""
-        request_id = message.get('id')
-        method = message.get('method')
-        params = message.get('params', {})
+        request_id = message.get("id")
+        method = message.get("method")
+        params = message.get("params", {})
 
         try:
             # Check authentication if required
-            if self.server.config.get('auth', {}).get('enabled', False) and not self.authenticated:
+            if (
+                self.server.config.get("auth", {}).get("enabled", False)
+                and not self.authenticated
+            ):
                 raise Exception("Authentication required")
 
             # Call tool on server
             result = await self.server.mcp_server._execute_tool(method, params)
 
-            await self.send_message({
-                'type': 'response',
-                'id': request_id,
-                'result': result
-            })
+            await self.send_message(
+                {"type": "response", "id": request_id, "result": result}
+            )
         except Exception as e:
-            await self.send_message({
-                'type': 'error',
-                'id': request_id,
-                'error': str(e)
-            })
+            await self.send_message(
+                {"type": "error", "id": request_id, "error": str(e)}
+            )
 
     async def send_message(self, message: dict[str, Any]):
         """Send a message to the client."""
         if self.writer and not self.writer.is_closing():
-            data = json.dumps(message).encode() + b'\n'
+            data = json.dumps(message).encode() + b"\n"
             self.writer.write(data)
             await self.writer.drain()
 
     async def send_error_message(self, error: str):
         """Send an error message to the client."""
-        await self.send_message({
-            'type': 'error',
-            'error': error
-        })
+        await self.send_message({"type": "error", "error": error})
 
     async def close(self):
         """Close the session."""
@@ -622,20 +639,18 @@ class MCPSession:
     def get_info(self) -> dict[str, Any]:
         """Get session information."""
         return {
-            'id': self.id,
-            'authenticated': self.authenticated,
-            'client_info': self.client_info,
-            'last_activity': self.last_activity,
-            'connected_at': self.client_info.get('connected_at')
+            "id": self.id,
+            "authenticated": self.authenticated,
+            "client_info": self.client_info,
+            "last_activity": self.last_activity,
+            "connected_at": self.client_info.get("connected_at"),
         }
 
 
 class AsyncMCPServer:
     """Async MCP server with enhanced performance."""
 
-    def __init__(self,
-                 config: ServerConfig | None = None,
-                 standards_engine=None):
+    def __init__(self, config: ServerConfig | None = None, standards_engine=None):
         self.config = config or ServerConfig()
         self.standards_engine = standards_engine
 
@@ -647,7 +662,7 @@ class AsyncMCPServer:
         # Handlers
         self.handlers = {}
         if standards_engine:
-            self.handlers['standards'] = StandardsHandler(standards_engine)
+            self.handlers["standards"] = StandardsHandler(standards_engine)
 
         # Middleware
         self.security_middleware = get_security_middleware()
@@ -692,7 +707,9 @@ class AsyncMCPServer:
             self.app.router.add_get(self.config.websocket_path, self._handle_websocket)
 
         if self.config.enable_health_check:
-            self.app.router.add_get(self.config.health_check_path, self._handle_health_check)
+            self.app.router.add_get(
+                self.config.health_check_path, self._handle_health_check
+            )
 
         # Add middleware
         if self.config.enable_cors:
@@ -703,9 +720,7 @@ class AsyncMCPServer:
         await self.runner.setup()
 
         self.site = web.TCPSite(
-            self.runner,
-            host=self.config.host,
-            port=self.config.port
+            self.runner, host=self.config.host, port=self.config.port
         )
         await self.site.start()
 
@@ -714,7 +729,9 @@ class AsyncMCPServer:
             self.metrics_task = asyncio.create_task(self._metrics_worker())
 
         self.running = True
-        logger.info(f"Async MCP server started on {self.config.host}:{self.config.port}")
+        logger.info(
+            f"Async MCP server started on {self.config.host}:{self.config.port}"
+        )
 
     async def stop(self):
         """Stop the async MCP server."""
@@ -755,19 +772,14 @@ class AsyncMCPServer:
         try:
             # Add connection
             await self.connection_manager.add_connection(
-                connection_id,
-                request.remote,
-                request.headers.get('User-Agent')
+                connection_id, request.remote, request.headers.get("User-Agent")
             )
 
             # Read request data
             try:
                 data = await request.json()
             except Exception:
-                return web.json_response(
-                    {'error': 'Invalid JSON'},
-                    status=400
-                )
+                return web.json_response({"error": "Invalid JSON"}, status=400)
 
             # Process request
             result = await self._process_request(data, connection_id)
@@ -783,10 +795,7 @@ class AsyncMCPServer:
 
         except Exception as e:
             logger.error(f"Error handling HTTP request: {e}")
-            return web.json_response(
-                {'error': 'Internal server error'},
-                status=500
-            )
+            return web.json_response({"error": "Internal server error"}, status=500)
         finally:
             # Remove connection
             await self.connection_manager.remove_connection(connection_id)
@@ -801,14 +810,11 @@ class AsyncMCPServer:
         try:
             # Add connection
             success = await self.connection_manager.add_connection(
-                connection_id,
-                request.remote,
-                request.headers.get('User-Agent'),
-                ws
+                connection_id, request.remote, request.headers.get("User-Agent"), ws
             )
 
             if not success:
-                await ws.close(code=1013, message=b'Server overloaded')
+                await ws.close(code=1013, message=b"Server overloaded")
                 return ws
 
             # Handle messages
@@ -820,10 +826,9 @@ class AsyncMCPServer:
                         await ws.send_text(json.dumps(result))
                     except Exception as e:
                         logger.error(f"Error processing WebSocket message: {e}")
-                        await ws.send_text(json.dumps({
-                            'error': 'Processing error',
-                            'message': str(e)
-                        }))
+                        await ws.send_text(
+                            json.dumps({"error": "Processing error", "message": str(e)})
+                        )
                 elif msg.type == WSMsgType.ERROR:
                     logger.error(f"WebSocket error: {ws.exception()}")
                     break
@@ -845,12 +850,11 @@ class AsyncMCPServer:
             return web.json_response(health_data)
         except Exception as e:
             logger.error(f"Error in health check: {e}")
-            return web.json_response(
-                {'status': 'error', 'message': str(e)},
-                status=500
-            )
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
 
-    async def _process_request(self, request: dict[str, Any], connection_id: str) -> dict[str, Any]:
+    async def _process_request(
+        self, request: dict[str, Any], connection_id: str
+    ) -> dict[str, Any]:
         """Process an MCP request."""
         # Acquire request semaphore
         async with self.request_semaphore:
@@ -866,29 +870,34 @@ class AsyncMCPServer:
 
                 # Apply security middleware
                 try:
-                    request = self.security_middleware.validate_and_sanitize_request(request)
+                    request = self.security_middleware.validate_and_sanitize_request(
+                        request
+                    )
                 except Exception as e:
-                    return {'error': 'Security validation failed', 'message': str(e)}
+                    return {"error": "Security validation failed", "message": str(e)}
 
                 # Apply rate limiting
-                is_allowed, limit_info = self.rate_limiter.check_all_limits(connection_id)
+                is_allowed, limit_info = self.rate_limiter.check_all_limits(
+                    connection_id
+                )
                 if not is_allowed:
-                    return {
-                        'error': 'Rate limit exceeded',
-                        'rate_limit': limit_info
-                    }
+                    return {"error": "Rate limit exceeded", "rate_limit": limit_info}
 
                 # Get method
-                method = request.get('method')
+                method = request.get("method")
                 if not method:
-                    return {'error': 'Missing method'}
+                    return {"error": "Missing method"}
 
                 # Update method metrics
-                self.metrics.method_counts[method] = self.metrics.method_counts.get(method, 0) + 1
+                self.metrics.method_counts[method] = (
+                    self.metrics.method_counts.get(method, 0) + 1
+                )
 
                 # Process request
                 if self.config.enable_request_batching:
-                    result = await self.request_batcher.queue_request(request, connection_id)
+                    result = await self.request_batcher.queue_request(
+                        request, connection_id
+                    )
                 else:
                     result = await self._handle_request_direct(request, connection_id)
 
@@ -900,8 +909,10 @@ class AsyncMCPServer:
                 self.metrics.request_times.append(request_time)
 
                 # Record performance metrics
-                record_metric('mcp_request_duration_seconds', request_time, {'method': method})
-                record_metric('mcp_request_count', 1, {'method': method})
+                record_metric(
+                    "mcp_request_duration_seconds", request_time, {"method": method}
+                )
+                record_metric("mcp_request_count", 1, {"method": method})
 
                 return result
 
@@ -910,55 +921,60 @@ class AsyncMCPServer:
                 self.metrics.failed_requests += 1
 
                 # Record error metrics
-                record_metric('mcp_request_errors', 1, {'method': method, 'error_type': type(e).__name__})
+                record_metric(
+                    "mcp_request_errors",
+                    1,
+                    {"method": method, "error_type": type(e).__name__},
+                )
 
                 # Handle error
                 return self.error_handler.handle_exception(
-                    e,
-                    context={'method': method, 'connection_id': connection_id}
+                    e, context={"method": method, "connection_id": connection_id}
                 )
             finally:
                 self.metrics.active_requests -= 1
 
-    async def _handle_request_direct(self, request: dict[str, Any], connection_id: str) -> dict[str, Any]:
+    async def _handle_request_direct(
+        self, request: dict[str, Any], connection_id: str
+    ) -> dict[str, Any]:
         """Handle request directly without batching."""
-        method = request.get('method')
-        params = request.get('params', {})
+        method = request.get("method")
+        params = request.get("params", {})
 
-        if method == 'list_tools':
+        if method == "list_tools":
             return await self._list_tools()
-        elif method == 'call_tool':
+        elif method == "call_tool":
             return await self._call_tool(params)
         else:
-            return {'error': f'Unknown method: {method}'}
+            return {"error": f"Unknown method: {method}"}
 
     async def _list_tools(self) -> dict[str, Any]:
         """List available tools."""
         tools = []
 
         for handler in self.handlers.values():
-            if hasattr(handler, 'get_tools'):
+            if hasattr(handler, "get_tools"):
                 handler_tools = await handler.get_tools()
                 tools.extend(handler_tools)
 
-        return {'tools': tools}
+        return {"tools": tools}
 
     async def _call_tool(self, params: dict[str, Any]) -> dict[str, Any]:
         """Call a specific tool."""
-        tool_name = params.get('name')
-        tool_args = params.get('arguments', {})
+        tool_name = params.get("name")
+        tool_args = params.get("arguments", {})
 
         if not tool_name:
-            return {'error': 'Missing tool name'}
+            return {"error": "Missing tool name"}
 
         # Find appropriate handler
         for handler in self.handlers.values():
-            if hasattr(handler, 'handle_tool'):
+            if hasattr(handler, "handle_tool"):
                 result = await handler.handle_tool(tool_name, tool_args)
                 if result is not None:
                     return result
 
-        return {'error': f'Tool not found: {tool_name}'}
+        return {"error": f"Tool not found: {tool_name}"}
 
     @web.middleware
     async def _cors_middleware(self, request: web.Request, handler):
@@ -966,9 +982,11 @@ class AsyncMCPServer:
         response = await handler(request)
 
         if self.config.enable_cors:
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = (
+                "Content-Type, Authorization"
+            )
 
         return response
 
@@ -988,18 +1006,20 @@ class AsyncMCPServer:
         """Collect server metrics."""
         # Connection metrics
         connection_stats = self.connection_manager.get_connection_stats()
-        record_metric('mcp_active_connections', connection_stats['active_connections'])
-        record_metric('mcp_total_connections', connection_stats['total_connections'])
+        record_metric("mcp_active_connections", connection_stats["active_connections"])
+        record_metric("mcp_total_connections", connection_stats["total_connections"])
 
         # Request metrics
         metrics_summary = self.metrics.get_summary()
-        record_metric('mcp_total_requests', metrics_summary['total_requests'])
-        record_metric('mcp_active_requests', metrics_summary['active_requests'])
-        record_metric('mcp_request_error_rate', metrics_summary['error_rate'])
+        record_metric("mcp_total_requests", metrics_summary["total_requests"])
+        record_metric("mcp_active_requests", metrics_summary["active_requests"])
+        record_metric("mcp_request_error_rate", metrics_summary["error_rate"])
 
         # Memory metrics
         memory_stats = self.memory_manager.get_memory_stats()
-        record_metric('mcp_memory_usage_mb', memory_stats['memory_stats']['current_usage_mb'])
+        record_metric(
+            "mcp_memory_usage_mb", memory_stats["memory_stats"]["current_usage_mb"]
+        )
 
     async def get_health_status(self) -> dict[str, Any]:
         """Get server health status."""
@@ -1007,34 +1027,39 @@ class AsyncMCPServer:
         metrics_summary = self.metrics.get_summary()
 
         # Determine overall health
-        health_status = 'healthy'
-        if metrics_summary['error_rate'] > 0.1:  # 10% error rate
-            health_status = 'degraded'
-        if connection_stats['active_connections'] >= self.config.max_connections:
-            health_status = 'overloaded'
+        health_status = "healthy"
+        if metrics_summary["error_rate"] > 0.1:  # 10% error rate
+            health_status = "degraded"
+        if connection_stats["active_connections"] >= self.config.max_connections:
+            health_status = "overloaded"
 
         return {
-            'status': health_status,
-            'timestamp': time.time(),
-            'version': '1.0.0',
-            'uptime': time.time() - (self.metrics.request_times[0] if self.metrics.request_times else time.time()),
-            'connections': connection_stats,
-            'requests': metrics_summary,
-            'memory': self.memory_manager.get_memory_stats()['memory_stats'],
-            'config': {
-                'max_connections': self.config.max_connections,
-                'max_concurrent_requests': self.config.max_concurrent_requests,
-                'enable_batching': self.config.enable_request_batching
-            }
+            "status": health_status,
+            "timestamp": time.time(),
+            "version": "1.0.0",
+            "uptime": time.time()
+            - (
+                self.metrics.request_times[0]
+                if self.metrics.request_times
+                else time.time()
+            ),
+            "connections": connection_stats,
+            "requests": metrics_summary,
+            "memory": self.memory_manager.get_memory_stats()["memory_stats"],
+            "config": {
+                "max_connections": self.config.max_connections,
+                "max_concurrent_requests": self.config.max_concurrent_requests,
+                "enable_batching": self.config.enable_request_batching,
+            },
         }
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics."""
         return {
-            'metrics': self.metrics.get_summary(),
-            'connections': self.connection_manager.get_connection_stats(),
-            'batch_metrics': self.request_batcher.batch_metrics.get_summary(),
-            'memory': self.memory_manager.get_memory_stats()
+            "metrics": self.metrics.get_summary(),
+            "connections": self.connection_manager.get_connection_stats(),
+            "batch_metrics": self.request_batcher.batch_metrics.get_summary(),
+            "memory": self.memory_manager.get_memory_stats(),
         }
 
     def get_active_connections(self) -> list[dict[str, Any]]:
@@ -1045,9 +1070,7 @@ class AsyncMCPServer:
 
 # Factory function
 async def create_async_mcp_server(
-    config: ServerConfig | None = None,
-    standards_engine=None,
-    auto_start: bool = True
+    config: ServerConfig | None = None, standards_engine=None, auto_start: bool = True
 ) -> AsyncMCPServer:
     """Create and optionally start an async MCP server."""
     server = AsyncMCPServer(config, standards_engine)

@@ -51,32 +51,32 @@ class FileMetadata:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            'path': self.path,
-            'sha': self.sha,
-            'size': self.size,
-            'last_modified': self.last_modified,
-            'local_path': str(self.local_path),
-            'version': self.version,
-            'content_hash': self.content_hash,
-            'sync_time': self.sync_time.isoformat() if self.sync_time else None
+            "path": self.path,
+            "sha": self.sha,
+            "size": self.size,
+            "last_modified": self.last_modified,
+            "local_path": str(self.local_path),
+            "version": self.version,
+            "content_hash": self.content_hash,
+            "sync_time": self.sync_time.isoformat() if self.sync_time else None,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'FileMetadata':
+    def from_dict(cls, data: dict[str, Any]) -> "FileMetadata":
         """Create from dictionary."""
         sync_time = None
-        if data.get('sync_time'):
-            sync_time = datetime.fromisoformat(data['sync_time'])
+        if data.get("sync_time"):
+            sync_time = datetime.fromisoformat(data["sync_time"])
 
         return cls(
-            path=data['path'],
-            sha=data['sha'],
-            size=data['size'],
-            last_modified=data['last_modified'],
-            local_path=Path(data['local_path']),
-            version=data.get('version'),
-            content_hash=data.get('content_hash'),
-            sync_time=sync_time
+            path=data["path"],
+            sha=data["sha"],
+            size=data["size"],
+            last_modified=data["last_modified"],
+            local_path=Path(data["local_path"]),
+            version=data.get("version"),
+            content_hash=data.get("content_hash"),
+            sync_time=sync_time,
         )
 
 
@@ -118,12 +118,14 @@ class GitHubRateLimiter:
     def update_from_headers(self, headers: dict[str, str]) -> None:
         """Update rate limit info from response headers."""
         try:
-            if 'X-RateLimit-Remaining' in headers:
-                self.remaining = int(headers['X-RateLimit-Remaining'])
-            if 'X-RateLimit-Reset' in headers:
-                self.reset_time = datetime.fromtimestamp(int(headers['X-RateLimit-Reset']))
-            if 'X-RateLimit-Limit' in headers:
-                self.limit = int(headers['X-RateLimit-Limit'])
+            if "X-RateLimit-Remaining" in headers:
+                self.remaining = int(headers["X-RateLimit-Remaining"])
+            if "X-RateLimit-Reset" in headers:
+                self.reset_time = datetime.fromtimestamp(
+                    int(headers["X-RateLimit-Reset"])
+                )
+            if "X-RateLimit-Limit" in headers:
+                self.limit = int(headers["X-RateLimit-Limit"])
         except (ValueError, TypeError) as e:
             logger.warning(f"Failed to parse rate limit headers: {e}")
 
@@ -179,21 +181,21 @@ class StandardsSynchronizer:
             return False
 
         # Check for null bytes, newlines, and other control characters
-        if any(char in path_str for char in ['\x00', '\n', '\r', '\t']):
+        if any(char in path_str for char in ["\x00", "\n", "\r", "\t"]):
             logger.warning(f"Path contains control characters: {repr(path_str)}")
             return False
 
         # Check for directory traversal patterns
         traversal_patterns = [
-            r'\.\./',           # Unix-style parent directory
-            r'\.\.\\',          # Windows-style parent directory
-            r'\.\.(?:/|\\|$)',  # Parent directory at end
-            r'^\.\.(?:/|\\|$)', # Parent directory at start
-            r'/\.\./',          # Parent directory in middle
-            r'\\\.\.\\',        # Windows parent directory in middle
-            r'^~',              # Home directory expansion
-            r'^\$',             # Environment variable expansion
-            r'^%',              # Windows environment variable
+            r"\.\./",  # Unix-style parent directory
+            r"\.\.\\",  # Windows-style parent directory
+            r"\.\.(?:/|\\|$)",  # Parent directory at end
+            r"^\.\.(?:/|\\|$)",  # Parent directory at start
+            r"/\.\./",  # Parent directory in middle
+            r"\\\.\.\\",  # Windows parent directory in middle
+            r"^~",  # Home directory expansion
+            r"^\$",  # Environment variable expansion
+            r"^%",  # Windows environment variable
         ]
 
         for pattern in traversal_patterns:
@@ -210,10 +212,16 @@ class StandardsSynchronizer:
 
             # Additional checks for Windows-style absolute paths
             # These might not be detected as absolute on non-Windows systems
-            if (path_str.startswith('/') or
-                path_str.startswith('\\') or
-                (len(path_str) > 2 and path_str[1] == ':' and path_str[2] in ['/', '\\']) or  # C:\ or C:/
-                path_str.startswith('\\\\')):  # UNC path
+            if (
+                path_str.startswith("/")
+                or path_str.startswith("\\")
+                or (
+                    len(path_str) > 2
+                    and path_str[1] == ":"
+                    and path_str[2] in ["/", "\\"]
+                )  # C:\ or C:/
+                or path_str.startswith("\\\\")
+            ):  # UNC path
                 logger.warning(f"Path is absolute: {path_str}")
                 return False
 
@@ -223,25 +231,36 @@ class StandardsSynchronizer:
 
         # Check for special file names that could cause issues
         unsafe_names = [
-            '.', '..', '',  # Special directory references
-            '.git', '.svn', '.hg',  # Version control directories
-            '.ssh', '.gnupg',  # Security-sensitive directories
+            ".",
+            "..",
+            "",  # Special directory references
+            ".git",
+            ".svn",
+            ".hg",  # Version control directories
+            ".ssh",
+            ".gnupg",  # Security-sensitive directories
         ]
 
-        path_parts = path_str.replace('\\', '/').split('/')
+        path_parts = path_str.replace("\\", "/").split("/")
         for part in path_parts:
             if part in unsafe_names:
                 logger.warning(f"Path contains unsafe component: {part}")
                 return False
 
             # Check for hidden files (except .gitignore, .github, etc. which might be valid)
-            if part.startswith('.') and part not in ['.gitignore', '.github', '.gitlab-ci.yml']:
+            if part.startswith(".") and part not in [
+                ".gitignore",
+                ".github",
+                ".gitlab-ci.yml",
+            ]:
                 logger.warning(f"Path contains hidden file/directory: {part}")
                 return False
 
         return True
 
-    def _validate_and_resolve_path(self, base_path: Path, relative_path: str) -> Path | None:
+    def _validate_and_resolve_path(
+        self, base_path: Path, relative_path: str
+    ) -> Path | None:
         """
         Safely validate and resolve a path within a base directory.
 
@@ -283,24 +302,21 @@ class StandardsSynchronizer:
         else:
             # Default configuration
             self.config = {
-                'repository': {
-                    'owner': 'williamzujkowski',
-                    'repo': 'standards',
-                    'branch': 'master',
-                    'path': 'docs/standards'
+                "repository": {
+                    "owner": "williamzujkowski",
+                    "repo": "standards",
+                    "branch": "master",
+                    "path": "docs/standards",
                 },
-                'sync': {
-                    'schedule': '0 */6 * * *',  # Every 6 hours
-                    'file_patterns': ['*.md', '*.yaml', '*.yml', '*.json'],
-                    'exclude_patterns': ['*test*', '*draft*'],
-                    'max_file_size': 1048576,  # 1MB
-                    'retry_attempts': 3,
-                    'retry_delay': 5
+                "sync": {
+                    "schedule": "0 */6 * * *",  # Every 6 hours
+                    "file_patterns": ["*.md", "*.yaml", "*.yml", "*.json"],
+                    "exclude_patterns": ["*test*", "*draft*"],
+                    "max_file_size": 1048576,  # 1MB
+                    "retry_attempts": 3,
+                    "retry_delay": 5,
                 },
-                'cache': {
-                    'ttl_hours': 24,
-                    'max_size_mb': 100
-                }
+                "cache": {"ttl_hours": 24, "max_size_mb": 100},
             }
             # Save default config
             self._save_config()
@@ -308,7 +324,7 @@ class StandardsSynchronizer:
     def _save_config(self) -> None:
         """Save current configuration to file."""
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.config_path, 'w') as f:
+        with open(self.config_path, "w") as f:
             yaml.dump(self.config, f, default_flow_style=False)
 
     def _load_metadata(self) -> None:
@@ -329,11 +345,8 @@ class StandardsSynchronizer:
 
     def _save_metadata(self) -> None:
         """Save file metadata to cache."""
-        data = {
-            path: meta.to_dict()
-            for path, meta in self.file_metadata.items()
-        }
-        with open(self.metadata_file, 'w') as f:
+        data = {path: meta.to_dict() for path, meta in self.file_metadata.items()}
+        with open(self.metadata_file, "w") as f:
             json.dump(data, f, indent=2)
 
     async def sync(self, force: bool = False) -> SyncResult:
@@ -366,23 +379,31 @@ class StandardsSynchronizer:
                 for file_info in filtered_files:
                     if self.rate_limiter.should_wait():
                         wait_time = self.rate_limiter.wait_time()
-                        logger.info(f"Rate limit reached, waiting {wait_time:.0f} seconds")
+                        logger.info(
+                            f"Rate limit reached, waiting {wait_time:.0f} seconds"
+                        )
                         await asyncio.sleep(wait_time)
 
                     success = await self._sync_file(session, file_info, force)
 
                     if success:
-                        result.synced_files.append(self.file_metadata[file_info['path']])
+                        result.synced_files.append(
+                            self.file_metadata[file_info["path"]]
+                        )
                     else:
-                        result.failed_files.append((file_info['path'], "Sync failed"))
+                        result.failed_files.append((file_info["path"], "Sync failed"))
 
                 # Determine overall status
                 if len(result.synced_files) == result.total_files:
                     result.status = SyncStatus.SUCCESS
-                    result.message = f"Successfully synced all {result.total_files} files"
+                    result.message = (
+                        f"Successfully synced all {result.total_files} files"
+                    )
                 elif result.synced_files:
                     result.status = SyncStatus.PARTIAL
-                    result.message = f"Synced {len(result.synced_files)}/{result.total_files} files"
+                    result.message = (
+                        f"Synced {len(result.synced_files)}/{result.total_files} files"
+                    )
                 else:
                     result.status = SyncStatus.FAILED
                     result.message = "Failed to sync any files"
@@ -401,18 +422,20 @@ class StandardsSynchronizer:
 
         return result
 
-    async def _list_repository_files(self, session: aiohttp.ClientSession) -> list[dict[str, Any]]:
+    async def _list_repository_files(
+        self, session: aiohttp.ClientSession
+    ) -> list[dict[str, Any]]:
         """List all files in the repository path."""
-        repo = self.config['repository']
+        repo = self.config["repository"]
         api_url = f"https://api.github.com/repos/{repo['owner']}/{repo['repo']}/contents/{repo['path']}"
 
-        params = {'ref': repo.get('branch', 'master')}
-        headers = {'Accept': 'application/vnd.github.v3+json'}
+        params = {"ref": repo.get("branch", "master")}
+        headers = {"Accept": "application/vnd.github.v3+json"}
 
         # Add authentication if available
-        github_token = os.environ.get('GITHUB_TOKEN')
+        github_token = os.environ.get("GITHUB_TOKEN")
         if github_token:
-            headers['Authorization'] = f'token {github_token}'
+            headers["Authorization"] = f"token {github_token}"
 
         files = []
 
@@ -425,16 +448,18 @@ class StandardsSynchronizer:
 
                     # Process directory recursively
                     for item in content:
-                        if item['type'] == 'file':
+                        if item["type"] == "file":
                             files.append(item)
-                        elif item['type'] == 'dir':
+                        elif item["type"] == "dir":
                             # Recursively get files from subdirectories
-                            subfiles = await self._list_directory(session, item['path'])
+                            subfiles = await self._list_directory(session, item["path"])
                             files.extend(subfiles)
                 elif response.status == 403:
                     logger.error("Rate limit exceeded")
                     if self.rate_limiter.reset_time:
-                        logger.info(f"Rate limit resets at {self.rate_limiter.reset_time}")
+                        logger.info(
+                            f"Rate limit resets at {self.rate_limiter.reset_time}"
+                        )
                 else:
                     logger.error(f"Failed to list repository: {response.status}")
 
@@ -446,17 +471,19 @@ class StandardsSynchronizer:
 
         return files
 
-    async def _list_directory(self, session: aiohttp.ClientSession, path: str) -> list[dict[str, Any]]:
+    async def _list_directory(
+        self, session: aiohttp.ClientSession, path: str
+    ) -> list[dict[str, Any]]:
         """List files in a specific directory."""
-        repo = self.config['repository']
+        repo = self.config["repository"]
         api_url = f"https://api.github.com/repos/{repo['owner']}/{repo['repo']}/contents/{path}"
 
-        params = {'ref': repo.get('branch', 'master')}
-        headers = {'Accept': 'application/vnd.github.v3+json'}
+        params = {"ref": repo.get("branch", "master")}
+        headers = {"Accept": "application/vnd.github.v3+json"}
 
-        github_token = os.environ.get('GITHUB_TOKEN')
+        github_token = os.environ.get("GITHUB_TOKEN")
         if github_token:
-            headers['Authorization'] = f'token {github_token}'
+            headers["Authorization"] = f"token {github_token}"
 
         files = []
 
@@ -467,10 +494,10 @@ class StandardsSynchronizer:
                 if response.status == 200:
                     content = await response.json()
                     for item in content:
-                        if item['type'] == 'file':
+                        if item["type"] == "file":
                             files.append(item)
-                        elif item['type'] == 'dir':
-                            subfiles = await self._list_directory(session, item['path'])
+                        elif item["type"] == "dir":
+                            subfiles = await self._list_directory(session, item["path"])
                             files.extend(subfiles)
         except (ClientError, asyncio.TimeoutError):
             # Re-raise network errors to be handled by sync()
@@ -484,26 +511,28 @@ class StandardsSynchronizer:
         """Filter files based on configured patterns and security validation."""
         from fnmatch import fnmatch
 
-        patterns = self.config['sync'].get('file_patterns', ['*'])
-        exclude_patterns = self.config['sync'].get('exclude_patterns', [])
-        max_size = self.config['sync'].get('max_file_size', 1048576)
+        patterns = self.config["sync"].get("file_patterns", ["*"])
+        exclude_patterns = self.config["sync"].get("exclude_patterns", [])
+        max_size = self.config["sync"].get("max_file_size", 1048576)
 
         filtered = []
 
         for file_info in files:
             # First validate the full path for security
-            file_path = file_info.get('path', '')
+            file_path = file_info.get("path", "")
             if not self._is_safe_path(file_path):
                 logger.warning(f"Skipping file with unsafe path: {file_path}")
                 continue
 
             # Get the raw filename for additional checks
-            raw_name = file_info.get('name', '')
+            raw_name = file_info.get("name", "")
 
             # Security validation on raw name
             # 1. Check for directory traversal attempts on raw name
-            if raw_name in ['.', '..'] or raw_name.startswith('..'):
-                logger.warning(f"Skipping dangerous filename with directory traversal: {raw_name}")
+            if raw_name in [".", ".."] or raw_name.startswith(".."):
+                logger.warning(
+                    f"Skipping dangerous filename with directory traversal: {raw_name}"
+                )
                 continue
 
             # Extract filename component
@@ -519,19 +548,44 @@ class StandardsSynchronizer:
                 continue
 
             # 2. Check for control characters (null bytes, newlines, carriage returns, tabs)
-            if any(char in filename for char in ['\x00', '\n', '\r', '\t']):
-                logger.warning(f"Skipping dangerous filename with control characters: {repr(filename)}")
+            if any(char in filename for char in ["\x00", "\n", "\r", "\t"]):
+                logger.warning(
+                    f"Skipping dangerous filename with control characters: {repr(filename)}"
+                )
                 continue
 
             # 3. Check for Windows reserved names (case-insensitive)
             # These are reserved on Windows and can cause issues
             windows_reserved = [
-                'con', 'prn', 'aux', 'nul',
-                'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
-                'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9'
+                "con",
+                "prn",
+                "aux",
+                "nul",
+                "com1",
+                "com2",
+                "com3",
+                "com4",
+                "com5",
+                "com6",
+                "com7",
+                "com8",
+                "com9",
+                "lpt1",
+                "lpt2",
+                "lpt3",
+                "lpt4",
+                "lpt5",
+                "lpt6",
+                "lpt7",
+                "lpt8",
+                "lpt9",
             ]
             filename_lower = filename.lower()
-            base_name = filename_lower.rsplit('.', 1)[0] if '.' in filename_lower else filename_lower
+            base_name = (
+                filename_lower.rsplit(".", 1)[0]
+                if "." in filename_lower
+                else filename_lower
+            )
             if base_name in windows_reserved:
                 logger.warning(f"Skipping Windows reserved filename: {filename}")
                 continue
@@ -545,14 +599,16 @@ class StandardsSynchronizer:
                 continue
 
             # Check file size
-            if file_info.get('size', 0) > max_size:
+            if file_info.get("size", 0) > max_size:
                 logger.warning(f"Skipping {filename}: exceeds size limit")
                 continue
 
             # Validate download URL if present
-            download_url = file_info.get('download_url', '')
+            download_url = file_info.get("download_url", "")
             if download_url and not self._is_safe_url(download_url):
-                logger.warning(f"Skipping file with unsafe download URL: {download_url}")
+                logger.warning(
+                    f"Skipping file with unsafe download URL: {download_url}"
+                )
                 continue
 
             filtered.append(file_info)
@@ -580,12 +636,12 @@ class StandardsSynchronizer:
             return False
 
         # Only allow HTTPS URLs
-        if parsed.scheme != 'https':
+        if parsed.scheme != "https":
             logger.warning(f"Insecure URL scheme: {parsed.scheme}")
             return False
 
         # Check for dangerous schemes
-        dangerous_schemes = ['file', 'ftp', 'javascript', 'data', 'vbscript']
+        dangerous_schemes = ["file", "ftp", "javascript", "data", "vbscript"]
         if parsed.scheme in dangerous_schemes:
             logger.warning(f"Dangerous URL scheme: {parsed.scheme}")
             return False
@@ -597,29 +653,35 @@ class StandardsSynchronizer:
 
         # Allow GitHub domains and configured trusted domains
         trusted_domains = [
-            'github.com',
-            'raw.githubusercontent.com',
-            'api.github.com',
+            "github.com",
+            "raw.githubusercontent.com",
+            "api.github.com",
         ]
 
         # Add any custom trusted domains from config
-        custom_trusted = self.config.get('security', {}).get('trusted_domains', [])
+        custom_trusted = self.config.get("security", {}).get("trusted_domains", [])
         trusted_domains.extend(custom_trusted)
 
         # Check if hostname ends with any trusted domain
         hostname_lower = parsed.hostname.lower()
-        if not any(hostname_lower == domain or hostname_lower.endswith('.' + domain)
-                  for domain in trusted_domains):
+        if not any(
+            hostname_lower == domain or hostname_lower.endswith("." + domain)
+            for domain in trusted_domains
+        ):
             logger.warning(f"Untrusted domain: {parsed.hostname}")
             return False
 
         return True
 
-    async def _sync_file(self, session: aiohttp.ClientSession,
-                        file_info: dict[str, Any], force: bool = False) -> bool:
+    async def _sync_file(
+        self,
+        session: aiohttp.ClientSession,
+        file_info: dict[str, Any],
+        force: bool = False,
+    ) -> bool:
         """Sync a single file from the repository with enhanced security validation."""
-        file_path = file_info.get('path', '')
-        file_sha = file_info.get('sha', '')
+        file_path = file_info.get("path", "")
+        file_sha = file_info.get("sha", "")
 
         # Validate the file path first
         if not self._is_safe_path(file_path):
@@ -634,25 +696,29 @@ class StandardsSynchronizer:
                 return True
 
         # Validate download URL
-        download_url = file_info.get('download_url', '')
+        download_url = file_info.get("download_url", "")
         if not self._is_safe_url(download_url):
             logger.error(f"Unsafe download URL for {file_path}: {download_url}")
             return False
 
         # Determine local path with security validation
-        repo_path = Path(self.config['repository']['path'])
+        repo_path = Path(self.config["repository"]["path"])
         try:
             # Remove repo path prefix to get relative path
             if file_path.startswith(str(repo_path)):
-                relative_path_str = file_path[len(str(repo_path)):].lstrip('/')
+                relative_path_str = file_path[len(str(repo_path)) :].lstrip("/")
             else:
                 relative_path_str = Path(file_path).relative_to(repo_path).as_posix()
         except (ValueError, RuntimeError) as e:
-            logger.error(f"Path {file_path} is outside repository path {repo_path}: {e}")
+            logger.error(
+                f"Path {file_path} is outside repository path {repo_path}: {e}"
+            )
             return False
 
         # Use the secure path validation method
-        resolved_local_path = self._validate_and_resolve_path(self.cache_dir, relative_path_str)
+        resolved_local_path = self._validate_and_resolve_path(
+            self.cache_dir, relative_path_str
+        )
         if resolved_local_path is None:
             logger.error(f"Path validation failed for: {file_path}")
             return False
@@ -664,9 +730,11 @@ class StandardsSynchronizer:
                 return False
 
             # Validate content size
-            max_size = self.config['sync'].get('max_file_size', 1048576)
+            max_size = self.config["sync"].get("max_file_size", 1048576)
             if len(content) > max_size:
-                logger.error(f"Downloaded content exceeds size limit for {file_path}: {len(content)} > {max_size}")
+                logger.error(
+                    f"Downloaded content exceeds size limit for {file_path}: {len(content)} > {max_size}"
+                )
                 return False
 
             # Create directory structure securely
@@ -676,19 +744,23 @@ class StandardsSynchronizer:
             # Special case: if parent is the cache directory itself, it's safe
             if parent_dir != self.cache_dir.resolve():
                 parent_relative = parent_dir.relative_to(self.cache_dir).as_posix()
-                if parent_relative != '.' and not self._validate_and_resolve_path(self.cache_dir, parent_relative):
-                    logger.error(f"Parent directory validation failed for: {parent_dir}")
+                if parent_relative != "." and not self._validate_and_resolve_path(
+                    self.cache_dir, parent_relative
+                ):
+                    logger.error(
+                        f"Parent directory validation failed for: {parent_dir}"
+                    )
                     return False
 
             # Create directories with secure permissions
             parent_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
 
             # Write file atomically using a temporary file
-            temp_path = resolved_local_path.with_suffix('.tmp')
+            temp_path = resolved_local_path.with_suffix(".tmp")
 
             try:
                 # Write to temporary file first
-                with open(temp_path, 'wb') as f:
+                with open(temp_path, "wb") as f:
                     f.write(content)
 
                 # Set secure file permissions before moving
@@ -711,10 +783,10 @@ class StandardsSynchronizer:
                 path=file_path,
                 sha=file_sha,
                 size=len(content),
-                last_modified=file_info.get('last_modified', ''),
+                last_modified=file_info.get("last_modified", ""),
                 local_path=resolved_local_path,
                 content_hash=content_hash,
-                sync_time=datetime.now()
+                sync_time=datetime.now(),
             )
 
             logger.info(f"Securely synced {file_path} ({len(content)} bytes)")
@@ -730,10 +802,12 @@ class StandardsSynchronizer:
                     pass
             return False
 
-    async def _download_file(self, session: aiohttp.ClientSession, url: str) -> bytes | None:
+    async def _download_file(
+        self, session: aiohttp.ClientSession, url: str
+    ) -> bytes | None:
         """Download file content from URL."""
-        retry_attempts = self.config['sync'].get('retry_attempts', 3)
-        retry_delay = self.config['sync'].get('retry_delay', 5)
+        retry_attempts = self.config["sync"].get("retry_attempts", 3)
+        retry_delay = self.config["sync"].get("retry_delay", 5)
 
         for attempt in range(retry_attempts):
             try:
@@ -762,27 +836,29 @@ class StandardsSynchronizer:
         outdated = []
         current = []
         # Safely get cache config with defaults
-        cache_config = self.config.get('cache', {})
-        cache_ttl = timedelta(hours=cache_config.get('ttl_hours', 24))
+        cache_config = self.config.get("cache", {})
+        cache_ttl = timedelta(hours=cache_config.get("ttl_hours", 24))
         now = datetime.now()
 
         for path, metadata in self.file_metadata.items():
             if metadata.sync_time:
                 age = now - metadata.sync_time
                 if age > cache_ttl:
-                    outdated.append({
-                        'path': path,
-                        'last_sync': metadata.sync_time.isoformat(),
-                        'age_hours': age.total_seconds() / 3600
-                    })
+                    outdated.append(
+                        {
+                            "path": path,
+                            "last_sync": metadata.sync_time.isoformat(),
+                            "age_hours": age.total_seconds() / 3600,
+                        }
+                    )
                 else:
                     current.append(path)
 
         return {
-            'outdated_files': outdated,
-            'current_files': current,
-            'total_cached': len(self.file_metadata),
-            'cache_ttl_hours': cache_config.get('ttl_hours', 24)
+            "outdated_files": outdated,
+            "current_files": current,
+            "total_cached": len(self.file_metadata),
+            "cache_ttl_hours": cache_config.get("ttl_hours", 24),
         }
 
     def get_cached_standards(self) -> list[Path]:
@@ -818,7 +894,9 @@ class StandardsSynchronizer:
                     # Safe to delete
                     meta.local_path.unlink()
             except (ValueError, OSError) as e:
-                logger.warning(f"Skipping deletion of file outside cache: {meta.local_path}: {e}")
+                logger.warning(
+                    f"Skipping deletion of file outside cache: {meta.local_path}: {e}"
+                )
 
         # Clear metadata
         self.file_metadata.clear()
@@ -831,18 +909,22 @@ class StandardsSynchronizer:
         total_size = sum(meta.size for meta in self.file_metadata.values())
 
         return {
-            'total_files': len(self.file_metadata),
-            'total_size_mb': total_size / (1024 * 1024),
-            'last_sync_times': {
+            "total_files": len(self.file_metadata),
+            "total_size_mb": total_size / (1024 * 1024),
+            "last_sync_times": {
                 path: meta.sync_time.isoformat() if meta.sync_time else None
                 for path, meta in self.file_metadata.items()
             },
-            'rate_limit': {
-                'remaining': self.rate_limiter.remaining,
-                'limit': self.rate_limiter.limit,
-                'reset_time': self.rate_limiter.reset_time.isoformat() if self.rate_limiter.reset_time else None
+            "rate_limit": {
+                "remaining": self.rate_limiter.remaining,
+                "limit": self.rate_limiter.limit,
+                "reset_time": (
+                    self.rate_limiter.reset_time.isoformat()
+                    if self.rate_limiter.reset_time
+                    else None
+                ),
             },
-            'config': self.config
+            "config": self.config,
         }
 
 

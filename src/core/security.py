@@ -48,9 +48,9 @@ class SecurityConfig:
     def __post_init__(self):
         if self.allowed_content_types is None:
             self.allowed_content_types = [
-                'application/json',
-                'application/x-msgpack',
-                'text/plain'
+                "application/json",
+                "application/x-msgpack",
+                "text/plain",
             ]
 
 
@@ -61,13 +61,13 @@ class SecurityHeaders:
     def get_security_headers() -> dict[str, str]:
         """Get standard security headers."""
         return {
-            'X-Content-Type-Options': 'nosniff',
-            'X-Frame-Options': 'DENY',
-            'X-XSS-Protection': '1; mode=block',
-            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-            'Referrer-Policy': 'strict-origin-when-cross-origin',
-            'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; media-src 'self'; form-action 'self'; frame-ancestors 'none';",
-            'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()'
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "X-XSS-Protection": "1; mode=block",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; media-src 'self'; form-action 'self'; frame-ancestors 'none';",
+            "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()",
         }
 
 
@@ -85,12 +85,14 @@ class InputSanitizer:
         max_len = max_length or self.config.max_string_length
 
         # Remove null bytes and control characters
-        value = value.replace('\x00', '')
-        value = re.sub(r'[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', value)
+        value = value.replace("\x00", "")
+        value = re.sub(r"[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f]", "", value)
 
         # Limit length
         if len(value) > max_len:
-            logger.warning(f"String truncated from {len(value)} to {max_len} characters")
+            logger.warning(
+                f"String truncated from {len(value)} to {max_len} characters"
+            )
             value = value[:max_len]
 
         return value
@@ -101,10 +103,14 @@ class InputSanitizer:
             raise ValueError("Input must be a dictionary")
 
         if max_depth > self.config.max_json_depth:
-            raise ValueError(f"JSON depth exceeds maximum of {self.config.max_json_depth}")
+            raise ValueError(
+                f"JSON depth exceeds maximum of {self.config.max_json_depth}"
+            )
 
         if len(data) > self.config.max_object_keys:
-            raise ValueError(f"Object has too many keys: {len(data)} > {self.config.max_object_keys}")
+            raise ValueError(
+                f"Object has too many keys: {len(data)} > {self.config.max_object_keys}"
+            )
 
         sanitized = {}
         for key, value in data.items():
@@ -137,7 +143,9 @@ class InputSanitizer:
             raise ValueError("Input must be a list")
 
         if len(data) > self.config.max_array_length:
-            raise ValueError(f"Array length exceeds maximum of {self.config.max_array_length}")
+            raise ValueError(
+                f"Array length exceeds maximum of {self.config.max_array_length}"
+            )
 
         sanitized = []
         for item in data:
@@ -170,16 +178,19 @@ class SecurityValidator:
     def validate_request_size(self, data: Any) -> None:
         """Validate request size limits."""
         if isinstance(data, str):
-            size = len(data.encode('utf-8'))
+            size = len(data.encode("utf-8"))
         elif isinstance(data, bytes):
             size = len(data)
         else:
             # Estimate size for complex objects
             import sys
+
             size = sys.getsizeof(data)
 
         if size > self.config.max_request_size:
-            raise ValueError(f"Request size {size} exceeds maximum of {self.config.max_request_size}")
+            raise ValueError(
+                f"Request size {size} exceeds maximum of {self.config.max_request_size}"
+            )
 
     def validate_content_type(self, content_type: str) -> None:
         """Validate content type is allowed."""
@@ -189,7 +200,9 @@ class SecurityValidator:
     def validate_json_structure(self, data: Any, max_depth: int = 0) -> None:
         """Validate JSON structure for security issues."""
         if max_depth > self.config.max_json_depth:
-            raise ValueError(f"JSON depth exceeds maximum of {self.config.max_json_depth}")
+            raise ValueError(
+                f"JSON depth exceeds maximum of {self.config.max_json_depth}"
+            )
 
         if isinstance(data, dict):
             if len(data) > self.config.max_object_keys:
@@ -226,7 +239,9 @@ class SecurityValidator:
             for pattern in sql_patterns:
                 if re.search(pattern, data):
                     logger.warning(f"Potential SQL injection detected: {pattern}")
-                    raise ValueError("Input contains potentially dangerous SQL patterns")
+                    raise ValueError(
+                        "Input contains potentially dangerous SQL patterns"
+                    )
 
             # Script injection patterns
             script_patterns = [
@@ -243,7 +258,9 @@ class SecurityValidator:
             for pattern in script_patterns:
                 if re.search(pattern, data):
                     logger.warning(f"Potential script injection detected: {pattern}")
-                    raise ValueError("Input contains potentially dangerous script patterns")
+                    raise ValueError(
+                        "Input contains potentially dangerous script patterns"
+                    )
 
         elif isinstance(data, dict):
             for key, value in data.items():
@@ -294,7 +311,7 @@ class SecurityMiddleware:
             # Convert to security error
             raise SecurityError(
                 message=self.error_handler.sanitize_error_message(str(e)),
-                code=ErrorCode.SECURITY_INVALID_INPUT
+                code=ErrorCode.SECURITY_INVALID_INPUT,
             )
 
     def add_security_headers(self, headers: dict[str, str]) -> dict[str, str]:
@@ -310,14 +327,14 @@ class SecurityMiddleware:
             return {
                 "error": "An error occurred while processing your request",
                 "code": "INTERNAL_ERROR",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
         else:
             # Return actual error (for development)
             return {
                 "error": str(error),
                 "type": type(error).__name__,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
 
@@ -355,6 +372,7 @@ def security_middleware(config: SecurityConfig | None = None):
                 raise ValueError(middleware.sanitize_error_response(e))
 
         return wrapper
+
     return decorator
 
 

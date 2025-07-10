@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StandardsEngineConfig:
     """Configuration for StandardsEngine."""
+
     data_dir: Path
     enable_semantic_search: bool = True
     enable_rule_engine: bool = True
@@ -36,7 +37,7 @@ class StandardsEngine:
         enable_rule_engine: bool = True,
         enable_token_optimization: bool = True,
         enable_caching: bool = True,
-        config: StandardsEngineConfig | None = None
+        config: StandardsEngineConfig | None = None,
     ):
         self.data_dir = Path(data_dir)
         self.config = config or StandardsEngineConfig(
@@ -44,7 +45,7 @@ class StandardsEngine:
             enable_semantic_search=enable_semantic_search,
             enable_rule_engine=enable_rule_engine,
             enable_token_optimization=enable_token_optimization,
-            enable_caching=enable_caching
+            enable_caching=enable_caching,
         )
 
         # Create data directory if it doesn't exist
@@ -71,7 +72,7 @@ class StandardsEngine:
         if self.config.enable_semantic_search:
             self.semantic_search = await create_search_engine(
                 data_dir=self.data_dir / "search",
-                enable_cache=self.config.enable_caching
+                enable_cache=self.config.enable_caching,
             )
 
         # Initialize rule engine
@@ -81,12 +82,11 @@ class StandardsEngine:
         # Initialize token optimizer
         if self.config.enable_token_optimization:
             from .token_optimizer import create_token_optimizer
+
             self.token_optimizer = create_token_optimizer()
 
         # Initialize sync
-        self.sync = StandardsSynchronizer(
-            cache_dir=self.data_dir / "cache"
-        )
+        self.sync = StandardsSynchronizer(cache_dir=self.data_dir / "cache")
 
         # Load standards
         await self._load_standards()
@@ -111,24 +111,28 @@ class StandardsEngine:
                     with open(yaml_file) as f:
                         data = yaml.safe_load(f)
 
-                    if isinstance(data, dict) and 'standards' in data:
-                        category = yaml_file.stem.replace('_STANDARDS', '').replace('_', ' ').title()
+                    if isinstance(data, dict) and "standards" in data:
+                        category = (
+                            yaml_file.stem.replace("_STANDARDS", "")
+                            .replace("_", " ")
+                            .title()
+                        )
 
-                        for std_data in data['standards']:
+                        for std_data in data["standards"]:
                             standard = Standard(
-                                id=std_data.get('id', ''),
-                                title=std_data.get('title', ''),
-                                description=std_data.get('description', ''),
+                                id=std_data.get("id", ""),
+                                title=std_data.get("title", ""),
+                                description=std_data.get("description", ""),
                                 category=category,
-                                subcategory=std_data.get('subcategory', ''),
-                                tags=std_data.get('tags', []),
-                                priority=std_data.get('priority', 'medium'),
-                                version=std_data.get('version', '1.0.0'),
-                                examples=std_data.get('examples', []),
-                                rules=std_data.get('rules', {}),
+                                subcategory=std_data.get("subcategory", ""),
+                                tags=std_data.get("tags", []),
+                                priority=std_data.get("priority", "medium"),
+                                version=std_data.get("version", "1.0.0"),
+                                examples=std_data.get("examples", []),
+                                rules=std_data.get("rules", {}),
                                 metadata=StandardMetadata(
-                                    **std_data.get('metadata', {})
-                                )
+                                    **std_data.get("metadata", {})
+                                ),
                             )
 
                             self._standards_cache[standard.id] = standard
@@ -140,28 +144,32 @@ class StandardsEngine:
             if self.semantic_search:
                 documents = []
                 for standard in self._standards_cache.values():
-                    documents.append({
-                        'id': standard.id,
-                        'title': standard.title,
-                        'description': standard.description,
-                        'category': standard.category,
-                        'tags': standard.tags,
-                        'content': f"{standard.title}\n{standard.description}",
-                        'metadata': {
-                            'category': standard.category,
-                            'subcategory': standard.subcategory,
-                            'tags': standard.tags,
-                            'priority': standard.priority,
-                            'version': standard.version
+                    documents.append(
+                        {
+                            "id": standard.id,
+                            "title": standard.title,
+                            "description": standard.description,
+                            "category": standard.category,
+                            "tags": standard.tags,
+                            "content": f"{standard.title}\n{standard.description}",
+                            "metadata": {
+                                "category": standard.category,
+                                "subcategory": standard.subcategory,
+                                "tags": standard.tags,
+                                "priority": standard.priority,
+                                "version": standard.version,
+                            },
                         }
-                    })
+                    )
 
                 await self.semantic_search.index_documents_batch(documents)
 
         except Exception as e:
             logger.error(f"Error loading standards: {e}")
 
-    async def get_standard(self, standard_id: str, version: str | None = None) -> Standard | None:
+    async def get_standard(
+        self, standard_id: str, version: str | None = None
+    ) -> Standard | None:
         """Get a specific standard by ID."""
         if not self._initialized:
             await self.initialize()
@@ -173,7 +181,7 @@ class StandardsEngine:
         category: str | None = None,
         tags: list[str] | None = None,
         offset: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[Standard]:
         """List standards with optional filtering."""
         if not self._initialized:
@@ -189,12 +197,10 @@ class StandardsEngine:
             standards = [s for s in standards if any(tag in s.tags for tag in tags)]
 
         # Apply pagination
-        return standards[offset:offset + limit]
+        return standards[offset : offset + limit]
 
     async def get_requirements(
-        self,
-        standard_id: str,
-        requirement_ids: list[str] | None = None
+        self, standard_id: str, requirement_ids: list[str] | None = None
     ) -> list[Requirement]:
         """Get requirements for a standard."""
         if not self._initialized:
@@ -213,20 +219,18 @@ class StandardsEngine:
             req = Requirement(
                 id=rule_id,
                 standard_id=standard_id,
-                title=rule_data.get('title', rule_id),
-                description=rule_data.get('description', ''),
-                priority=rule_data.get('priority', 'medium'),
-                category=rule_data.get('category', 'general'),
-                tags=rule_data.get('tags', [])
+                title=rule_data.get("title", rule_id),
+                description=rule_data.get("description", ""),
+                priority=rule_data.get("priority", "medium"),
+                category=rule_data.get("category", "general"),
+                tags=rule_data.get("tags", []),
             )
             requirements.append(req)
 
         return requirements
 
     async def update_standard(
-        self,
-        standard_id: str,
-        updates: dict[str, Any]
+        self, standard_id: str, updates: dict[str, Any]
     ) -> Standard:
         """Update a standard."""
         if not self._initialized:
@@ -246,21 +250,25 @@ class StandardsEngine:
 
         # Re-index in semantic search
         if self.semantic_search:
-            await self.semantic_search.index_documents([{
-                'id': standard.id,
-                'title': standard.title,
-                'description': standard.description,
-                'category': standard.category,
-                'tags': standard.tags,
-                'content': f"{standard.title}\n{standard.description}",
-                'metadata': {
-                    'category': standard.category,
-                    'subcategory': standard.subcategory,
-                    'tags': standard.tags,
-                    'priority': standard.priority,
-                    'version': standard.version
-                }
-            }])
+            await self.semantic_search.index_documents(
+                [
+                    {
+                        "id": standard.id,
+                        "title": standard.title,
+                        "description": standard.description,
+                        "category": standard.category,
+                        "tags": standard.tags,
+                        "content": f"{standard.title}\n{standard.description}",
+                        "metadata": {
+                            "category": standard.category,
+                            "subcategory": standard.subcategory,
+                            "tags": standard.tags,
+                            "priority": standard.priority,
+                            "version": standard.version,
+                        },
+                    }
+                ]
+            )
 
         return standard
 
@@ -270,7 +278,7 @@ class StandardsEngine:
         category: str | None = None,
         tags: list[str] | None = None,
         limit: int = 20,
-        threshold: float = 0.7
+        threshold: float = 0.7,
     ) -> list[dict[str, Any]]:
         """Search standards using semantic search."""
         if not self._initialized:
@@ -283,29 +291,28 @@ class StandardsEngine:
         # Prepare filters
         filters = {}
         if category:
-            filters['category'] = category
+            filters["category"] = category
         if tags:
-            filters['tags'] = tags
+            filters["tags"] = tags
 
         # Perform semantic search
         results = await self.semantic_search.search(
-            query=query,
-            k=limit,
-            threshold=threshold,
-            filters=filters
+            query=query, k=limit, threshold=threshold, filters=filters
         )
 
         # Enrich results with full standard objects
         enriched_results = []
         for result in results:
-            standard = self._standards_cache.get(result.get('id'))
+            standard = self._standards_cache.get(result.get("id"))
             if standard:
-                enriched_results.append({
-                    'standard': standard,
-                    'score': result.get('score', 0.0),
-                    'highlights': result.get('highlights', {}),
-                    'metadata': result.get('metadata', {})
-                })
+                enriched_results.append(
+                    {
+                        "standard": standard,
+                        "score": result.get("score", 0.0),
+                        "highlights": result.get("highlights", {}),
+                        "metadata": result.get("metadata", {}),
+                    }
+                )
 
         return enriched_results
 
@@ -314,7 +321,7 @@ class StandardsEngine:
         query: str,
         category: str | None = None,
         tags: list[str] | None = None,
-        limit: int = 20
+        limit: int = 20,
     ) -> list[dict[str, Any]]:
         """Simple text-based search fallback."""
         results = []
@@ -335,19 +342,20 @@ class StandardsEngine:
                 score += 0.3
 
             if score > 0:
-                results.append({
-                    'standard': standard,
-                    'score': score,
-                    'highlights': {},
-                    'metadata': {}
-                })
+                results.append(
+                    {
+                        "standard": standard,
+                        "score": score,
+                        "highlights": {},
+                        "metadata": {},
+                    }
+                )
 
-        results.sort(key=lambda x: x['score'], reverse=True)
+        results.sort(key=lambda x: x["score"], reverse=True)
         return results[:limit]
 
     async def get_applicable_standards(
-        self,
-        project_context: dict[str, Any]
+        self, project_context: dict[str, Any]
     ) -> list[dict[str, Any]]:
         """Get standards applicable to a project context."""
         if not self._initialized:
@@ -360,11 +368,13 @@ class StandardsEngine:
         applicable = []
         for standard in self._standards_cache.values():
             if await self.rule_engine.is_applicable(standard, project_context):
-                applicable.append({
-                    'standard': standard,
-                    'confidence': 0.8,  # Default confidence
-                    'reasoning': 'Rule-based match'
-                })
+                applicable.append(
+                    {
+                        "standard": standard,
+                        "confidence": 0.8,  # Default confidence
+                        "reasoning": "Rule-based match",
+                    }
+                )
 
         return applicable
 

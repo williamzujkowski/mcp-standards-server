@@ -43,11 +43,10 @@ class TestSemanticSearchStandardsIntegration:
     def standards_engine(self, temp_dir):
         """Create standards engine with semantic search."""
         # Mock the standards engine components
-        with patch('src.core.standards.engine.ChromaDBTier'):
-            with patch('src.core.standards.engine.RedisCache'):
+        with patch("src.core.standards.engine.ChromaDBTier"):
+            with patch("src.core.standards.engine.RedisCache"):
                 engine = StandardsEngine(
-                    data_dir=temp_dir / "standards",
-                    enable_semantic_search=True
+                    data_dir=temp_dir / "standards", enable_semantic_search=True
                 )
                 yield engine
 
@@ -75,8 +74,8 @@ class TestSemanticSearchStandardsIntegration:
                     version="2.0",
                     last_updated=datetime.now().isoformat(),
                     authors=["Security Team"],
-                    source="internal"
-                )
+                    source="internal",
+                ),
             ),
             Standard(
                 id="react-testing-001",
@@ -97,16 +96,21 @@ class TestSemanticSearchStandardsIntegration:
                     version="1.5",
                     last_updated=datetime.now().isoformat(),
                     authors=["Frontend Team"],
-                    source="internal"
-                )
-            )
+                    source="internal",
+                ),
+            ),
         ]
 
         # Index standards
         for standard in standards:
             # Simulate engine indexing
-            if hasattr(standards_engine, 'semantic_search') and standards_engine.semantic_search:
-                doc_content = f"{standard.title}\n{standard.description}\n{standard.content}"
+            if (
+                hasattr(standards_engine, "semantic_search")
+                and standards_engine.semantic_search
+            ):
+                doc_content = (
+                    f"{standard.title}\n{standard.description}\n{standard.content}"
+                )
                 standards_engine.semantic_search.index_document(
                     doc_id=standard.id,
                     content=doc_content,
@@ -114,15 +118,17 @@ class TestSemanticSearchStandardsIntegration:
                         "category": standard.category,
                         "subcategory": standard.subcategory,
                         "tags": standard.tags,
-                        "version": standard.metadata.version
-                    }
+                        "version": standard.metadata.version,
+                    },
                 )
 
         # Search for standards
-        if hasattr(standards_engine, 'semantic_search') and standards_engine.semantic_search:
+        if (
+            hasattr(standards_engine, "semantic_search")
+            and standards_engine.semantic_search
+        ):
             results = standards_engine.semantic_search.search(
-                "API authentication security",
-                top_k=5
+                "API authentication security", top_k=5
             )
 
             # Should find API security standard
@@ -144,9 +150,7 @@ class TestSemanticSearchStandardsIntegration:
 
         # Search with category filter
         results = mock_search.search(
-            "testing best practices",
-            filters={"category": "testing"},
-            top_k=10
+            "testing best practices", filters={"category": "testing"}, top_k=10
         )
 
         # Verify filtering
@@ -155,11 +159,8 @@ class TestSemanticSearchStandardsIntegration:
         # Search with multiple filters
         results = mock_search.search(
             "programming standards",
-            filters={
-                "category": "security",
-                "language": ["python", "javascript"]
-            },
-            top_k=10
+            filters={"category": "security", "language": ["python", "javascript"]},
+            top_k=10,
         )
 
         # Verify all filters applied
@@ -176,7 +177,7 @@ class TestSemanticSearchStandardsIntegration:
         # Initial indexing
         initial_docs = [
             ("std-001", "Python coding standards", {"category": "coding"}),
-            ("std-002", "API design guidelines", {"category": "api"})
+            ("std-002", "API design guidelines", {"category": "api"}),
         ]
 
         for doc_id, content, metadata in initial_docs:
@@ -190,7 +191,7 @@ class TestSemanticSearchStandardsIntegration:
         # Add new standards incrementally
         new_docs = [
             ("std-003", "Security best practices", {"category": "security"}),
-            ("std-004", "Testing methodologies", {"category": "testing"})
+            ("std-004", "Testing methodologies", {"category": "testing"}),
         ]
 
         for doc_id, content, metadata in new_docs:
@@ -212,7 +213,7 @@ class TestSemanticSearchMCPIntegration:
     @patch_ml_dependencies()
     async def mcp_server(self):
         """Create MCP server with semantic search enabled."""
-        with patch('src.core.mcp.server.StandardsEngine') as mock_engine:
+        with patch("src.core.mcp.server.StandardsEngine") as mock_engine:
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -223,10 +224,7 @@ class TestSemanticSearchMCPIntegration:
             # Configure mock engine
             mock_engine.return_value.semantic_search = mock_search
 
-            server = MCPServer(
-                name="test-mcp-server",
-                version="1.0.0"
-            )
+            server = MCPServer(name="test-mcp-server", version="1.0.0")
 
             # Attach handlers
             handler = StandardsHandler(mock_engine.return_value)
@@ -245,26 +243,23 @@ class TestSemanticSearchMCPIntegration:
                 "arguments": {
                     "query": "React security best practices",
                     "top_k": 5,
-                    "use_fuzzy": True
-                }
-            }
+                    "use_fuzzy": True,
+                },
+            },
         }
 
         # Mock the tool execution
-        with patch.object(mcp_server, 'handle_request') as mock_handle:
+        with patch.object(mcp_server, "handle_request") as mock_handle:
             # Simulate search results
             mock_results = [
                 {
                     "id": "std-001",
                     "title": "React Security Guidelines",
                     "score": 0.95,
-                    "highlights": ["React security best practices"]
+                    "highlights": ["React security best practices"],
                 }
             ]
-            mock_handle.return_value = {
-                "results": mock_results,
-                "total": 1
-            }
+            mock_handle.return_value = {"results": mock_results, "total": 1}
 
             # Execute search
             response = await mock_handle(search_request)
@@ -283,20 +278,14 @@ class TestSemanticSearchMCPIntegration:
                 "name": "search_standards",
                 "arguments": {
                     "query": "testing standards",
-                    "filters": {
-                        "category": "testing",
-                        "framework": ["react", "vue"]
-                    },
-                    "top_k": 10
-                }
-            }
+                    "filters": {"category": "testing", "framework": ["react", "vue"]},
+                    "top_k": 10,
+                },
+            },
         }
 
-        with patch.object(mcp_server, 'handle_request') as mock_handle:
-            mock_handle.return_value = {
-                "results": [],
-                "total": 0
-            }
+        with patch.object(mcp_server, "handle_request") as mock_handle:
+            mock_handle.return_value = {"results": [], "total": 0}
 
             await mock_handle(search_request)
 
@@ -304,7 +293,7 @@ class TestSemanticSearchMCPIntegration:
             call_args = mock_handle.call_args[0][0]
             assert call_args["params"]["arguments"]["filters"] == {
                 "category": "testing",
-                "framework": ["react", "vue"]
+                "framework": ["react", "vue"],
             }
 
     @pytest.mark.asyncio
@@ -315,10 +304,10 @@ class TestSemanticSearchMCPIntegration:
             "python security",
             "react testing",
             "api design",
-            "python security"  # Duplicate
+            "python security",  # Duplicate
         ]
 
-        with patch.object(mcp_server, 'handle_request') as mock_handle:
+        with patch.object(mcp_server, "handle_request") as mock_handle:
             mock_handle.return_value = {"results": [], "total": 0}
 
             for query in queries:
@@ -326,25 +315,22 @@ class TestSemanticSearchMCPIntegration:
                     "method": "tools/call",
                     "params": {
                         "name": "search_standards",
-                        "arguments": {"query": query}
-                    }
+                        "arguments": {"query": query},
+                    },
                 }
                 await mock_handle(request)
 
         # Request analytics
         analytics_request = {
             "method": "tools/call",
-            "params": {
-                "name": "get_search_analytics",
-                "arguments": {}
-            }
+            "params": {"name": "get_search_analytics", "arguments": {}},
         }
 
-        with patch.object(mcp_server, 'handle_request') as mock_handle:
+        with patch.object(mcp_server, "handle_request") as mock_handle:
             mock_handle.return_value = {
                 "total_queries": 4,
                 "unique_queries": 3,
-                "top_queries": [("python security", 2)]
+                "top_queries": [("python security", 2)],
             }
 
             response = await mock_handle(analytics_request)
@@ -363,10 +349,9 @@ class TestSemanticSearchCrossComponent:
         temp_dir = tempfile.mkdtemp()
 
         try:
-            with patch('redis.Redis', MockRedisClient):
+            with patch("redis.Redis", MockRedisClient):
                 engine = create_search_engine(
-                    cache_dir=Path(temp_dir),
-                    enable_analytics=True
+                    cache_dir=Path(temp_dir), enable_analytics=True
                 )
 
                 # Index documents
@@ -408,7 +393,7 @@ class TestSemanticSearchCrossComponent:
             metadata = {
                 "version": version,
                 "category": "api",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
             engine.index_document(doc_id, content, metadata)
 
@@ -422,11 +407,7 @@ class TestSemanticSearchCrossComponent:
         assert any("v1.0" in vid for vid in version_ids)
 
         # Filter by version
-        results = engine.search(
-            "API security",
-            filters={"version": "2.0"},
-            top_k=10
-        )
+        results = engine.search("API security", filters={"version": "2.0"}, top_k=10)
 
         # Should only find v2.0
         assert all("v2.0" in r.id for r in results)
@@ -464,9 +445,7 @@ class TestSemanticSearchCrossComponent:
 
         # Run all components concurrently
         await asyncio.gather(
-            standards_component(),
-            mcp_component(),
-            analytics_component()
+            standards_component(), mcp_component(), analytics_component()
         )
 
         # Verify no errors and get final analytics
@@ -493,7 +472,9 @@ class TestSemanticSearchErrorRecovery:
                     raise RuntimeError("Model loading failed")
                 super().__init__(*args, **kwargs)
 
-        with patch('sentence_transformers.SentenceTransformer', FailingThenSucceedingModel):
+        with patch(
+            "sentence_transformers.SentenceTransformer", FailingThenSucceedingModel
+        ):
             # First two attempts should fail
             for _i in range(2):
                 with pytest.raises(RuntimeError):
@@ -552,7 +533,7 @@ class TestSemanticSearchErrorRecovery:
         cache_files = list(temp_dir.glob("*.npy"))
         if cache_files:
             # Write invalid data
-            with open(cache_files[0], 'wb') as f:
+            with open(cache_files[0], "wb") as f:
                 f.write(b"CORRUPTED DATA")
 
         # Clear memory cache to force file read

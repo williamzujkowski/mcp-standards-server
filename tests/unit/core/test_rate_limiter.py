@@ -33,7 +33,7 @@ class TestRateLimiter:
     @pytest.fixture
     def rate_limiter(self, mock_redis):
         """Create rate limiter with mock Redis."""
-        with patch('src.core.rate_limiter.get_redis_client', return_value=mock_redis):
+        with patch("src.core.rate_limiter.get_redis_client", return_value=mock_redis):
             limiter = RateLimiter(max_requests=10, window_seconds=60)
             limiter.redis_client = mock_redis
             return limiter
@@ -71,7 +71,7 @@ class TestRateLimiter:
 
     def test_no_redis_allows_all(self):
         """Test that missing Redis allows all requests."""
-        with patch('src.core.rate_limiter.get_redis_client', return_value=None):
+        with patch("src.core.rate_limiter.get_redis_client", return_value=None):
             limiter = RateLimiter()
 
         is_allowed, limit_info = limiter.check_rate_limit("test_user")
@@ -113,7 +113,7 @@ class TestMultiTierRateLimiter:
     @pytest.fixture
     def multi_limiter(self, mock_redis):
         """Create multi-tier rate limiter with mock Redis."""
-        with patch('src.core.rate_limiter.get_redis_client', return_value=mock_redis):
+        with patch("src.core.rate_limiter.get_redis_client", return_value=mock_redis):
             limiter = MultiTierRateLimiter()
             # Patch Redis for all tiers
             for tier_limiter in limiter.tiers.values():
@@ -133,6 +133,7 @@ class TestMultiTierRateLimiter:
 
     def test_minute_tier_blocks(self, multi_limiter, mock_redis):
         """Test when minute tier blocks request."""
+
         # Make minute tier fail
         def zcard_side_effect(key):
             if "minute" in key:
@@ -170,7 +171,7 @@ class TestAdaptiveRateLimiter:
     @pytest.fixture
     def adaptive_limiter(self, mock_redis):
         """Create adaptive rate limiter with mock Redis."""
-        with patch('src.core.rate_limiter.get_redis_client', return_value=mock_redis):
+        with patch("src.core.rate_limiter.get_redis_client", return_value=mock_redis):
             limiter = AdaptiveRateLimiter(base_limit=100)
             limiter.redis_client = mock_redis
             return limiter

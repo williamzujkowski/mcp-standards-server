@@ -7,7 +7,9 @@ from typing import Any, Optional
 class ASTNode:
     """Generic AST node representation."""
 
-    def __init__(self, node_type: str, value: Any = None, children: list['ASTNode'] = None):
+    def __init__(
+        self, node_type: str, value: Any = None, children: list["ASTNode"] = None
+    ):
         self.type = node_type
         self.value = value
         self.children = children or []
@@ -18,12 +20,12 @@ class ASTNode:
         for child in self.children:
             child.parent = self
 
-    def add_child(self, child: 'ASTNode'):
+    def add_child(self, child: "ASTNode"):
         """Add a child node."""
         child.parent = self
         self.children.append(child)
 
-    def find_all(self, node_type: str) -> list['ASTNode']:
+    def find_all(self, node_type: str) -> list["ASTNode"]:
         """Find all nodes of a specific type."""
         results = []
         if self.type == node_type:
@@ -32,7 +34,7 @@ class ASTNode:
             results.extend(child.find_all(node_type))
         return results
 
-    def find_parent(self, node_type: str) -> Optional['ASTNode']:
+    def find_parent(self, node_type: str) -> Optional["ASTNode"]:
         """Find the first parent of a specific type."""
         current = self.parent
         while current:
@@ -43,7 +45,7 @@ class ASTNode:
 
     def get_source_location(self) -> tuple[int, int]:
         """Get line and column number."""
-        return self.metadata.get('line', 0), self.metadata.get('column', 0)
+        return self.metadata.get("line", 0), self.metadata.get("column", 0)
 
 
 class ASTParser(ABC):
@@ -105,14 +107,14 @@ class SecurityPatternDetector:
 
     def __init__(self):
         self.detectors = {
-            'sql_injection': self._detect_sql_injection,
-            'xss': self._detect_xss,
-            'path_traversal': self._detect_path_traversal,
-            'command_injection': self._detect_command_injection,
-            'hardcoded_secrets': self._detect_hardcoded_secrets,
-            'unsafe_deserialization': self._detect_unsafe_deserialization,
-            'weak_crypto': self._detect_weak_crypto,
-            'race_condition': self._detect_race_condition
+            "sql_injection": self._detect_sql_injection,
+            "xss": self._detect_xss,
+            "path_traversal": self._detect_path_traversal,
+            "command_injection": self._detect_command_injection,
+            "hardcoded_secrets": self._detect_hardcoded_secrets,
+            "unsafe_deserialization": self._detect_unsafe_deserialization,
+            "weak_crypto": self._detect_weak_crypto,
+            "race_condition": self._detect_race_condition,
         }
 
     def detect_all(self, ast: ASTNode) -> dict[str, list[ASTNode]]:
@@ -129,14 +131,14 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # Look for string concatenation in SQL queries
-        sql_keywords = {'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE'}
+        sql_keywords = {"SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "CREATE"}
 
-        for node in ast.find_all('string_concat'):
+        for node in ast.find_all("string_concat"):
             if any(keyword in str(node.value).upper() for keyword in sql_keywords):
                 vulnerable_nodes.append(node)
 
         # Look for format strings in SQL contexts
-        for node in ast.find_all('format_string'):
+        for node in ast.find_all("format_string"):
             if any(keyword in str(node.value).upper() for keyword in sql_keywords):
                 vulnerable_nodes.append(node)
 
@@ -147,9 +149,9 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # Dangerous DOM operations
-        dangerous_ops = ['innerHTML', 'outerHTML', 'document.write', 'eval']
+        dangerous_ops = ["innerHTML", "outerHTML", "document.write", "eval"]
 
-        for node in ast.find_all('assignment'):
+        for node in ast.find_all("assignment"):
             if any(op in str(node.value) for op in dangerous_ops):
                 vulnerable_nodes.append(node)
 
@@ -160,13 +162,13 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # File operations with user input
-        file_ops = ['open', 'read', 'write', 'readFile', 'writeFile']
+        file_ops = ["open", "read", "write", "readFile", "writeFile"]
 
-        for node in ast.find_all('function_call'):
+        for node in ast.find_all("function_call"):
             if any(op in str(node.value) for op in file_ops):
                 # Check if arguments contain user input
                 for arg in node.children:
-                    if arg.type == 'variable' and 'user' in str(arg.value).lower():
+                    if arg.type == "variable" and "user" in str(arg.value).lower():
                         vulnerable_nodes.append(node)
 
         return vulnerable_nodes
@@ -176,9 +178,9 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # Dangerous functions
-        dangerous_funcs = ['exec', 'system', 'popen', 'subprocess', 'shell_exec']
+        dangerous_funcs = ["exec", "system", "popen", "subprocess", "shell_exec"]
 
-        for node in ast.find_all('function_call'):
+        for node in ast.find_all("function_call"):
             if any(func in str(node.value) for func in dangerous_funcs):
                 vulnerable_nodes.append(node)
 
@@ -190,15 +192,24 @@ class SecurityPatternDetector:
 
         # Secret-related variable names
         secret_names = [
-            'password', 'passwd', 'pwd', 'secret', 'key', 'token',
-            'api_key', 'apikey', 'auth', 'credential', 'private_key'
+            "password",
+            "passwd",
+            "pwd",
+            "secret",
+            "key",
+            "token",
+            "api_key",
+            "apikey",
+            "auth",
+            "credential",
+            "private_key",
         ]
 
-        for node in ast.find_all('assignment'):
+        for node in ast.find_all("assignment"):
             var_name = str(node.value).lower()
             if any(secret in var_name for secret in secret_names):
                 # Check if assigned value is a string literal
-                if node.children and node.children[0].type == 'string_literal':
+                if node.children and node.children[0].type == "string_literal":
                     vulnerable_nodes.append(node)
 
         return vulnerable_nodes
@@ -208,9 +219,9 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # Dangerous deserialization functions
-        unsafe_funcs = ['pickle.loads', 'yaml.load', 'eval', 'exec']
+        unsafe_funcs = ["pickle.loads", "yaml.load", "eval", "exec"]
 
-        for node in ast.find_all('function_call'):
+        for node in ast.find_all("function_call"):
             if any(func in str(node.value) for func in unsafe_funcs):
                 vulnerable_nodes.append(node)
 
@@ -221,9 +232,9 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # Weak algorithms
-        weak_algos = ['MD5', 'SHA1', 'DES', 'RC4']
+        weak_algos = ["MD5", "SHA1", "DES", "RC4"]
 
-        for node in ast.find_all('function_call'):
+        for node in ast.find_all("function_call"):
             if any(algo in str(node.value).upper() for algo in weak_algos):
                 vulnerable_nodes.append(node)
 
@@ -234,13 +245,13 @@ class SecurityPatternDetector:
         vulnerable_nodes = []
 
         # Look for check-then-act patterns
-        for node in ast.find_all('if_statement'):
+        for node in ast.find_all("if_statement"):
             # Check if condition involves file/resource existence
-            if 'exists' in str(node.value) or 'isfile' in str(node.value):
+            if "exists" in str(node.value) or "isfile" in str(node.value):
                 # Check if body contains file operations
                 for child in node.children:
-                    if child.type == 'function_call' and any(
-                        op in str(child.value) for op in ['open', 'create', 'write']
+                    if child.type == "function_call" and any(
+                        op in str(child.value) for op in ["open", "create", "write"]
                     ):
                         vulnerable_nodes.append(node)
 
@@ -252,11 +263,11 @@ class PerformancePatternDetector:
 
     def __init__(self):
         self.detectors = {
-            'n_plus_one': self._detect_n_plus_one,
-            'inefficient_loop': self._detect_inefficient_loop,
-            'memory_leak': self._detect_memory_leak,
-            'blocking_io': self._detect_blocking_io,
-            'excessive_allocation': self._detect_excessive_allocation
+            "n_plus_one": self._detect_n_plus_one,
+            "inefficient_loop": self._detect_inefficient_loop,
+            "memory_leak": self._detect_memory_leak,
+            "blocking_io": self._detect_blocking_io,
+            "excessive_allocation": self._detect_excessive_allocation,
         }
 
     def detect_all(self, ast: ASTNode) -> dict[str, list[ASTNode]]:
@@ -273,10 +284,11 @@ class PerformancePatternDetector:
         vulnerable_nodes = []
 
         # Look for loops containing database queries
-        for loop_node in ast.find_all('loop'):
+        for loop_node in ast.find_all("loop"):
             for child in loop_node.children:
-                if child.type == 'function_call' and any(
-                    db_op in str(child.value) for db_op in ['query', 'find', 'select', 'get']
+                if child.type == "function_call" and any(
+                    db_op in str(child.value)
+                    for db_op in ["query", "find", "select", "get"]
                 ):
                     vulnerable_nodes.append(loop_node)
 
@@ -287,8 +299,8 @@ class PerformancePatternDetector:
         vulnerable_nodes = []
 
         # Look for nested loops with high complexity
-        for loop_node in ast.find_all('loop'):
-            nested_loops = loop_node.find_all('loop')
+        for loop_node in ast.find_all("loop"):
+            nested_loops = loop_node.find_all("loop")
             if len(nested_loops) > 1:  # Nested loop detected
                 vulnerable_nodes.append(loop_node)
 
@@ -299,17 +311,19 @@ class PerformancePatternDetector:
         vulnerable_nodes = []
 
         # Look for resource allocation without cleanup
-        resource_allocs = ['open', 'connect', 'allocate', 'new', 'malloc']
+        resource_allocs = ["open", "connect", "allocate", "new", "malloc"]
 
-        for node in ast.find_all('function_call'):
+        for node in ast.find_all("function_call"):
             if any(alloc in str(node.value) for alloc in resource_allocs):
                 # Check if there's a corresponding cleanup in the same scope
-                scope = node.find_parent('function') or node.find_parent('method')
+                scope = node.find_parent("function") or node.find_parent("method")
                 if scope:
                     cleanup_found = False
-                    for child in scope.find_all('function_call'):
-                        if any(cleanup in str(child.value)
-                               for cleanup in ['close', 'disconnect', 'free', 'delete']):
+                    for child in scope.find_all("function_call"):
+                        if any(
+                            cleanup in str(child.value)
+                            for cleanup in ["close", "disconnect", "free", "delete"]
+                        ):
                             cleanup_found = True
                             break
                     if not cleanup_found:
@@ -322,9 +336,9 @@ class PerformancePatternDetector:
         vulnerable_nodes = []
 
         # Blocking I/O operations
-        blocking_ops = ['readFileSync', 'writeFileSync', 'sleep', 'time.sleep']
+        blocking_ops = ["readFileSync", "writeFileSync", "sleep", "time.sleep"]
 
-        for node in ast.find_all('function_call'):
+        for node in ast.find_all("function_call"):
             if any(op in str(node.value) for op in blocking_ops):
                 vulnerable_nodes.append(node)
 
@@ -335,10 +349,10 @@ class PerformancePatternDetector:
         vulnerable_nodes = []
 
         # Look for large allocations in loops
-        for loop_node in ast.find_all('loop'):
+        for loop_node in ast.find_all("loop"):
             for child in loop_node.children:
-                if child.type == 'assignment' and any(
-                    alloc in str(child.value) for alloc in ['new', 'malloc', 'allocate']
+                if child.type == "assignment" and any(
+                    alloc in str(child.value) for alloc in ["new", "malloc", "allocate"]
                 ):
                     vulnerable_nodes.append(child)
 

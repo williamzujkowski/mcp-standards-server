@@ -19,7 +19,7 @@ PATTERNS = {
     "identifier": r"^[a-zA-Z][a-zA-Z0-9_-]*$",
     "version": r"^\d+\.\d+\.\d+$",
     "language": r"^[a-z]+$",
-    "category": r"^[a-z_]+$"
+    "category": r"^[a-z_]+$",
 }
 
 # Maximum sizes for various inputs
@@ -30,6 +30,7 @@ MAX_ARRAY_SIZE = 1000
 
 class ContextModel(BaseModel):
     """Validation model for project context."""
+
     model_config = ConfigDict(extra="allow")
 
     project_type: str | None = Field(None, pattern=r"^[a-z_]+$")
@@ -52,12 +53,14 @@ class ContextModel(BaseModel):
 
 class GetApplicableStandardsInput(BaseModel):
     """Input validation for get_applicable_standards."""
+
     context: ContextModel
     include_resolution_details: bool = False
 
 
 class ValidateAgainstStandardInput(BaseModel):
     """Input validation for validate_against_standard."""
+
     code: str = Field(..., min_length=1, max_length=MAX_CODE_SIZE)
     standard: str = Field(..., pattern=PATTERNS["identifier"])
     language: str = Field(..., pattern=PATTERNS["language"])
@@ -72,18 +75,21 @@ class ValidateAgainstStandardInput(BaseModel):
             r"exec\s*\(",
             r"compile\s*\(",
             r"globals\s*\(",
-            r"locals\s*\("
+            r"locals\s*\(",
         ]
 
         for pattern in dangerous_patterns:
             if re.search(pattern, v, re.IGNORECASE):
-                raise ValueError(f"Code contains potentially dangerous pattern: {pattern}")
+                raise ValueError(
+                    f"Code contains potentially dangerous pattern: {pattern}"
+                )
 
         return v
 
 
 class SearchStandardsInput(BaseModel):
     """Input validation for search_standards."""
+
     query: str = Field(..., min_length=1, max_length=MAX_QUERY_LENGTH)
     limit: int = Field(default=10, ge=1, le=100)
     min_relevance: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -93,41 +99,49 @@ class SearchStandardsInput(BaseModel):
     @classmethod
     def sanitize_query(cls, v: str) -> str:
         # Remove potential injection patterns
-        v = re.sub(r'[<>\"\'`;]', '', v)
+        v = re.sub(r"[<>\"\'`;]", "", v)
         return v.strip()
 
 
 class GetStandardDetailsInput(BaseModel):
     """Input validation for get_standard_details."""
+
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
 
 
 class ListAvailableStandardsInput(BaseModel):
     """Input validation for list_available_standards."""
+
     category: str | None = Field(None, pattern=PATTERNS["category"])
     limit: int = Field(default=100, ge=1, le=1000)
 
 
 class SuggestImprovementsInput(BaseModel):
     """Input validation for suggest_improvements."""
+
     code: str = Field(..., min_length=1, max_length=MAX_CODE_SIZE)
     context: ContextModel
 
 
 class SyncStandardsInput(BaseModel):
     """Input validation for sync_standards."""
+
     force: bool = False
 
 
 class GenerateCrossReferencesInput(BaseModel):
     """Input validation for generate_cross_references."""
+
     force_refresh: bool = False
 
 
 class GetOptimizedStandardInput(BaseModel):
     """Input validation for get_optimized_standard."""
+
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
-    format_type: str = Field(default="condensed", pattern=r"^(full|condensed|reference|summary)$")
+    format_type: str = Field(
+        default="condensed", pattern=r"^(full|condensed|reference|summary)$"
+    )
     token_budget: int | None = Field(None, ge=100, le=100000)
     required_sections: list[str] | None = Field(None, max_length=50)
     context: dict[str, Any] | None = None
@@ -135,6 +149,7 @@ class GetOptimizedStandardInput(BaseModel):
 
 class AutoOptimizeStandardsInput(BaseModel):
     """Input validation for auto_optimize_standards."""
+
     standard_ids: list[str] = Field(..., min_length=1, max_length=MAX_ARRAY_SIZE)
     total_token_budget: int = Field(..., ge=1000, le=1000000)
     context: dict[str, Any] | None = None
@@ -150,6 +165,7 @@ class AutoOptimizeStandardsInput(BaseModel):
 
 class ProgressiveLoadStandardInput(BaseModel):
     """Input validation for progressive_load_standard."""
+
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
     initial_sections: list[str] = Field(..., min_length=1, max_length=20)
     max_depth: int = Field(default=3, ge=1, le=10)
@@ -157,6 +173,7 @@ class ProgressiveLoadStandardInput(BaseModel):
 
 class EstimateTokenUsageInput(BaseModel):
     """Input validation for estimate_token_usage."""
+
     standard_ids: list[str] = Field(..., min_length=1, max_length=MAX_ARRAY_SIZE)
     format_types: list[str] | None = None
 
@@ -181,6 +198,7 @@ class EstimateTokenUsageInput(BaseModel):
 
 class GenerateStandardInput(BaseModel):
     """Input validation for generate_standard."""
+
     template_name: str = Field(..., pattern=PATTERNS["identifier"])
     context: dict[str, Any]
     title: str = Field(..., min_length=3, max_length=200)
@@ -189,17 +207,20 @@ class GenerateStandardInput(BaseModel):
 
 class ValidateStandardInput(BaseModel):
     """Input validation for validate_standard."""
+
     standard_content: str = Field(..., min_length=10, max_length=MAX_CODE_SIZE)
     format: str = Field(default="yaml", pattern=r"^(yaml|json)$")
 
 
 class ListTemplatesInput(BaseModel):
     """Input validation for list_templates."""
+
     domain: str | None = Field(None, pattern=PATTERNS["identifier"])
 
 
 class GetCrossReferencesInput(BaseModel):
     """Input validation for get_cross_references."""
+
     standard_id: str | None = Field(None, pattern=PATTERNS["identifier"])
     concept: str | None = Field(None, min_length=1, max_length=200)
     max_depth: int = Field(default=2, ge=1, le=5)
@@ -209,13 +230,14 @@ class GetCrossReferencesInput(BaseModel):
     def sanitize_concept(cls, v: str | None) -> str | None:
         if v:
             # Remove potential injection patterns
-            v = re.sub(r'[<>"\';]', '', v)
+            v = re.sub(r'[<>"\';]', "", v)
             return v.strip()
         return v
 
 
 class GetStandardsAnalyticsInput(BaseModel):
     """Input validation for get_standards_analytics."""
+
     metric_type: str = Field(default="usage", pattern=r"^(usage|popularity|gaps)$")
     time_range: str = Field(default="30d", pattern=r"^\d+[dwmyh]$")
     standard_ids: list[str] | None = Field(None, max_length=100)
@@ -232,6 +254,7 @@ class GetStandardsAnalyticsInput(BaseModel):
 
 class TrackStandardsUsageInput(BaseModel):
     """Input validation for track_standards_usage."""
+
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
     usage_type: str = Field(..., pattern=r"^(view|apply|reference)$")
     section_id: str | None = Field(None, pattern=PATTERNS["identifier"])
@@ -240,6 +263,7 @@ class TrackStandardsUsageInput(BaseModel):
 
 class GetRecommendationsInput(BaseModel):
     """Input validation for get_recommendations."""
+
     analysis_type: str = Field(default="gaps", pattern=r"^(gaps|quality|usage)$")
     context: dict[str, Any] | None = None
 
@@ -265,7 +289,7 @@ TOOL_VALIDATORS = {
     "generate_cross_references": GenerateCrossReferencesInput,
     "get_standards_analytics": GetStandardsAnalyticsInput,
     "track_standards_usage": TrackStandardsUsageInput,
-    "get_recommendations": GetRecommendationsInput
+    "get_recommendations": GetRecommendationsInput,
 }
 
 
@@ -276,7 +300,9 @@ class InputValidator:
         self.validators = TOOL_VALIDATORS
         self.error_handler = get_secure_error_handler()
 
-    def validate_tool_input(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    def validate_tool_input(
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Validate tool input arguments.
 
@@ -310,7 +336,7 @@ class InputValidator:
             raise ValidationError(
                 message=error_msg,
                 field=field,
-                code=ErrorCode.VALIDATION_INVALID_PARAMETERS
+                code=ErrorCode.VALIDATION_INVALID_PARAMETERS,
             )
         except Exception as e:
             # Handle security validation errors
@@ -318,10 +344,12 @@ class InputValidator:
             raise ValidationError(
                 message=sanitized_message,
                 field="security",
-                code=ErrorCode.VALIDATION_INVALID_PARAMETERS
+                code=ErrorCode.VALIDATION_INVALID_PARAMETERS,
             )
 
-    def validate_against_schema(self, data: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
+    def validate_against_schema(
+        self, data: dict[str, Any], schema: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Validate data against a JSON schema.
 
@@ -343,7 +371,7 @@ class InputValidator:
                 raise ValidationError(
                     message=error.message,
                     field=field or "root",
-                    code=ErrorCode.VALIDATION_TYPE_MISMATCH
+                    code=ErrorCode.VALIDATION_TYPE_MISMATCH,
                 )
 
             return data
@@ -352,31 +380,31 @@ class InputValidator:
             raise ValidationError(
                 message=f"Invalid schema: {str(e)}",
                 field="schema",
-                code=ErrorCode.VALIDATION_INVALID_PARAMETERS
+                code=ErrorCode.VALIDATION_INVALID_PARAMETERS,
             )
 
     def sanitize_string(self, value: str, max_length: int = 1000) -> str:
         """Sanitize a string input."""
         # Remove null bytes
-        value = value.replace('\x00', '')
+        value = value.replace("\x00", "")
 
         # Limit length
         if len(value) > max_length:
             value = value[:max_length]
 
         # Remove control characters except newlines and tabs
-        value = re.sub(r'[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', value)
+        value = re.sub(r"[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f]", "", value)
 
         return value
 
     def sanitize_identifier(self, value: str) -> str:
         """Sanitize an identifier (alphanumeric + dash/underscore)."""
         # Keep only allowed characters
-        value = re.sub(r'[^a-zA-Z0-9_-]', '', value)
+        value = re.sub(r"[^a-zA-Z0-9_-]", "", value)
 
         # Ensure it starts with a letter
         if value and not value[0].isalpha():
-            value = 'id_' + value
+            value = "id_" + value
 
         return value[:100]  # Limit length
 

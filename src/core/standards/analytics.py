@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class UsageType(Enum):
     """Types of standards usage."""
+
     VIEW = "view"
     APPLY = "apply"
     REFERENCE = "reference"
@@ -31,6 +32,7 @@ class UsageType(Enum):
 
 class MetricType(Enum):
     """Types of analytics metrics."""
+
     USAGE = "usage"
     POPULARITY = "popularity"
     QUALITY = "quality"
@@ -131,7 +133,8 @@ class StandardsAnalytics:
     def _init_database(self) -> None:
         """Initialize the SQLite database for usage tracking."""
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS usage_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     standard_id TEXT NOT NULL,
@@ -143,19 +146,25 @@ class StandardsAnalytics:
                     session_id TEXT,
                     user_agent TEXT
                 )
-            """)
+            """
+            )
 
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_standard_timestamp
                 ON usage_events(standard_id, timestamp)
-            """)
+            """
+            )
 
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_usage_type_timestamp
                 ON usage_events(usage_type, timestamp)
-            """)
+            """
+            )
 
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS quality_assessments (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     standard_id TEXT NOT NULL,
@@ -170,7 +179,8 @@ class StandardsAnalytics:
                     assessor TEXT,
                     notes TEXT
                 )
-            """)
+            """
+            )
 
             conn.commit()
 
@@ -189,23 +199,23 @@ class StandardsAnalytics:
                 "clarity": 0.20,
                 "actionability": 0.15,
                 "coverage": 0.10,
-                "maintenance": 0.10
+                "maintenance": 0.10,
             },
             "popularity_factors": {
                 "usage_frequency": 0.4,
                 "unique_users": 0.3,
                 "recency": 0.2,
-                "growth_trend": 0.1
+                "growth_trend": 0.1,
             },
             "gap_thresholds": {
                 "low_usage": 10,
                 "quality_minimum": 0.6,
-                "coverage_minimum": 0.7
-            }
+                "coverage_minimum": 0.7,
+            },
         }
 
         # Save default config
-        with open(config_file, 'w') as f:
+        with open(config_file, "w") as f:
             yaml.dump(default_config, f, default_flow_style=False)
 
         return default_config
@@ -217,7 +227,7 @@ class StandardsAnalytics:
         section_id: str | None = None,
         context: dict[str, Any] | None = None,
         session_id: str | None = None,
-        user_agent: str | None = None
+        user_agent: str | None = None,
     ) -> None:
         """
         Track a standards usage event.
@@ -237,20 +247,23 @@ class StandardsAnalytics:
             return
 
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO usage_events
                 (standard_id, usage_type, timestamp, section_id, user_context, metadata, session_id, user_agent)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                standard_id,
-                usage_type,
-                datetime.utcnow().isoformat(),
-                section_id,
-                json.dumps(context or {}),
-                json.dumps({}),  # Reserved for future metadata
-                session_id,
-                user_agent
-            ))
+            """,
+                (
+                    standard_id,
+                    usage_type,
+                    datetime.utcnow().isoformat(),
+                    section_id,
+                    json.dumps(context or {}),
+                    json.dumps({}),  # Reserved for future metadata
+                    session_id,
+                    user_agent,
+                ),
+            )
             conn.commit()
 
         # Invalidate cache for this standard
@@ -263,7 +276,7 @@ class StandardsAnalytics:
         self,
         standard_ids: list[str] | None = None,
         time_range: str = "30d",
-        usage_types: list[str] | None = None
+        usage_types: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Get usage metrics for standards.
@@ -300,12 +313,12 @@ class StandardsAnalytics:
         params = [since.isoformat()]
 
         if standard_ids:
-            placeholders = ','.join(['?' for _ in standard_ids])
+            placeholders = ",".join(["?" for _ in standard_ids])
             query += f" AND standard_id IN ({placeholders})"
             params.extend(standard_ids)
 
         if usage_types:
-            placeholders = ','.join(['?' for _ in usage_types])
+            placeholders = ",".join(["?" for _ in usage_types])
             query += f" AND usage_type IN ({placeholders})"
             params.extend(usage_types)
 
@@ -321,37 +334,37 @@ class StandardsAnalytics:
         total_usage = 0
 
         for row in results:
-            std_id = row['standard_id']
+            std_id = row["standard_id"]
             if std_id not in metrics:
                 metrics[std_id] = {
-                    'standard_id': std_id,
-                    'total_usage': 0,
-                    'usage_by_type': {},
-                    'unique_sessions': 0,
-                    'first_usage': row['first_usage'],
-                    'last_usage': row['last_usage']
+                    "standard_id": std_id,
+                    "total_usage": 0,
+                    "usage_by_type": {},
+                    "unique_sessions": 0,
+                    "first_usage": row["first_usage"],
+                    "last_usage": row["last_usage"],
                 }
 
-            metrics[std_id]['total_usage'] += row['usage_count']
-            metrics[std_id]['usage_by_type'][row['usage_type']] = row['usage_count']
-            metrics[std_id]['unique_sessions'] += row['unique_sessions']
-            total_usage += row['usage_count']
+            metrics[std_id]["total_usage"] += row["usage_count"]
+            metrics[std_id]["usage_by_type"][row["usage_type"]] = row["usage_count"]
+            metrics[std_id]["unique_sessions"] += row["unique_sessions"]
+            total_usage += row["usage_count"]
 
         # Calculate trends
         for std_data in metrics.values():
-            std_data['trend'] = self._calculate_usage_trend(std_data['standard_id'], since)
+            std_data["trend"] = self._calculate_usage_trend(
+                std_data["standard_id"], since
+            )
 
         return {
-            'time_range': time_range,
-            'total_usage': total_usage,
-            'standards_count': len(metrics),
-            'metrics': list(metrics.values())
+            "time_range": time_range,
+            "total_usage": total_usage,
+            "standards_count": len(metrics),
+            "metrics": list(metrics.values()),
         }
 
     def get_popularity_metrics(
-        self,
-        standard_ids: list[str] | None = None,
-        time_range: str = "30d"
+        self, standard_ids: list[str] | None = None, time_range: str = "30d"
     ) -> dict[str, Any]:
         """
         Get popularity metrics for standards.
@@ -369,58 +382,61 @@ class StandardsAnalytics:
         weights = self.config["popularity_factors"]
         popularity_metrics = []
 
-        max_usage = max((s['total_usage'] for s in usage_data['metrics']), default=1)
-        max_sessions = max((s['unique_sessions'] for s in usage_data['metrics']), default=1)
+        max_usage = max((s["total_usage"] for s in usage_data["metrics"]), default=1)
+        max_sessions = max(
+            (s["unique_sessions"] for s in usage_data["metrics"]), default=1
+        )
 
-        for std_data in usage_data['metrics']:
+        for std_data in usage_data["metrics"]:
             # Normalize factors
-            usage_score = std_data['total_usage'] / max_usage
-            session_score = std_data['unique_sessions'] / max_sessions
+            usage_score = std_data["total_usage"] / max_usage
+            session_score = std_data["unique_sessions"] / max_sessions
 
             # Recency score (higher for more recent usage)
-            last_usage = datetime.fromisoformat(std_data['last_usage'])
+            last_usage = datetime.fromisoformat(std_data["last_usage"])
             days_since = (datetime.utcnow() - last_usage).days
             recency_score = max(0, 1 - (days_since / 30))  # Decay over 30 days
 
             # Growth trend score
             trend_score = 0.5  # Default neutral
-            if std_data.get('trend', {}).get('direction') == 'increasing':
+            if std_data.get("trend", {}).get("direction") == "increasing":
                 trend_score = 0.8
-            elif std_data.get('trend', {}).get('direction') == 'decreasing':
+            elif std_data.get("trend", {}).get("direction") == "decreasing":
                 trend_score = 0.2
 
             # Calculate overall popularity score
             popularity_score = (
-                usage_score * weights["usage_frequency"] +
-                session_score * weights["unique_users"] +
-                recency_score * weights["recency"] +
-                trend_score * weights["growth_trend"]
+                usage_score * weights["usage_frequency"]
+                + session_score * weights["unique_users"]
+                + recency_score * weights["recency"]
+                + trend_score * weights["growth_trend"]
             )
 
-            popularity_metrics.append({
-                'standard_id': std_data['standard_id'],
-                'popularity_score': popularity_score,
-                'usage_score': usage_score,
-                'session_score': session_score,
-                'recency_score': recency_score,
-                'trend_score': trend_score,
-                'rank': 0  # Will be set after sorting
-            })
+            popularity_metrics.append(
+                {
+                    "standard_id": std_data["standard_id"],
+                    "popularity_score": popularity_score,
+                    "usage_score": usage_score,
+                    "session_score": session_score,
+                    "recency_score": recency_score,
+                    "trend_score": trend_score,
+                    "rank": 0,  # Will be set after sorting
+                }
+            )
 
         # Sort by popularity and assign ranks
-        popularity_metrics.sort(key=lambda x: x['popularity_score'], reverse=True)
+        popularity_metrics.sort(key=lambda x: x["popularity_score"], reverse=True)
         for i, metric in enumerate(popularity_metrics):
-            metric['rank'] = i + 1
+            metric["rank"] = i + 1
 
         return {
-            'time_range': time_range,
-            'ranking': popularity_metrics,
-            'top_standards': popularity_metrics[:10]
+            "time_range": time_range,
+            "ranking": popularity_metrics,
+            "top_standards": popularity_metrics[:10],
         }
 
     def analyze_coverage_gaps(
-        self,
-        standard_ids: list[str] | None = None
+        self, standard_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
         Analyze coverage gaps in the standards collection.
@@ -442,15 +458,15 @@ class StandardsAnalytics:
         frameworks = Counter()
 
         for _std_id, standard in standards.items():
-            domain = standard.get('domain', 'unknown')
+            domain = standard.get("domain", "unknown")
             domains[domain] += 1
 
             # Extract technologies and frameworks
-            for tech_field in ['technologies', 'frameworks', 'platforms']:
+            for tech_field in ["technologies", "frameworks", "platforms"]:
                 if tech_field in standard:
                     if isinstance(standard[tech_field], list):
                         for item in standard[tech_field]:
-                            if tech_field == 'frameworks':
+                            if tech_field == "frameworks":
                                 frameworks[str(item)] += 1
                             else:
                                 technologies[str(item)] += 1
@@ -463,9 +479,20 @@ class StandardsAnalytics:
 
         # Find technology gaps
         popular_technologies = [
-            'kubernetes', 'docker', 'aws', 'azure', 'gcp',
-            'react', 'vue', 'angular', 'nodejs', 'python',
-            'java', 'golang', 'rust', 'typescript'
+            "kubernetes",
+            "docker",
+            "aws",
+            "azure",
+            "gcp",
+            "react",
+            "vue",
+            "angular",
+            "nodejs",
+            "python",
+            "java",
+            "golang",
+            "rust",
+            "typescript",
         ]
 
         for tech in popular_technologies:
@@ -477,11 +504,13 @@ class StandardsAnalytics:
         for std_id, standard in standards.items():
             quality_score = self._assess_standard_quality(standard)
             if quality_score < self.config["gap_thresholds"]["quality_minimum"]:
-                quality_gaps.append({
-                    'standard_id': std_id,
-                    'quality_score': quality_score,
-                    'issues': self._identify_quality_issues(standard)
-                })
+                quality_gaps.append(
+                    {
+                        "standard_id": std_id,
+                        "quality_score": quality_score,
+                        "issues": self._identify_quality_issues(standard),
+                    }
+                )
 
         gap_analysis.quality_gaps = quality_gaps
 
@@ -489,33 +518,34 @@ class StandardsAnalytics:
         usage_data = self.get_usage_metrics(time_range="90d")
         low_usage_threshold = self.config["gap_thresholds"]["low_usage"]
 
-        for std_data in usage_data['metrics']:
-            if std_data['total_usage'] < low_usage_threshold:
-                gap_analysis.usage_gaps.append({
-                    'standard_id': std_data['standard_id'],
-                    'usage_count': std_data['total_usage'],
-                    'last_used': std_data['last_usage']
-                })
+        for std_data in usage_data["metrics"]:
+            if std_data["total_usage"] < low_usage_threshold:
+                gap_analysis.usage_gaps.append(
+                    {
+                        "standard_id": std_data["standard_id"],
+                        "usage_count": std_data["total_usage"],
+                        "last_used": std_data["last_usage"],
+                    }
+                )
 
         return {
-            'analysis_date': datetime.utcnow().isoformat(),
-            'total_standards_analyzed': len(standards),
-            'gaps': {
-                'missing_domains': gap_analysis.missing_domains,
-                'underrepresented_concepts': gap_analysis.underrepresented_concepts,
-                'quality_gaps': gap_analysis.quality_gaps,
-                'usage_gaps': gap_analysis.usage_gaps
+            "analysis_date": datetime.utcnow().isoformat(),
+            "total_standards_analyzed": len(standards),
+            "gaps": {
+                "missing_domains": gap_analysis.missing_domains,
+                "underrepresented_concepts": gap_analysis.underrepresented_concepts,
+                "quality_gaps": gap_analysis.quality_gaps,
+                "usage_gaps": gap_analysis.usage_gaps,
             },
-            'coverage_summary': {
-                'domains_covered': len(domains),
-                'technologies_covered': len(technologies),
-                'frameworks_covered': len(frameworks)
-            }
+            "coverage_summary": {
+                "domains_covered": len(domains),
+                "technologies_covered": len(technologies),
+                "frameworks_covered": len(frameworks),
+            },
         }
 
     def get_quality_recommendations(
-        self,
-        context: dict[str, Any] | None = None
+        self, context: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         """Get recommendations for improving standards quality."""
         recommendations = []
@@ -530,22 +560,23 @@ class StandardsAnalytics:
                 issues = self._identify_quality_issues(standard)
 
                 for issue in issues:
-                    recommendations.append({
-                        'type': 'quality',
-                        'priority': 'high' if quality_score < 0.5 else 'medium',
-                        'title': f"Improve {issue['aspect']} in {std_id}",
-                        'description': issue['description'],
-                        'affected_standards': [std_id],
-                        'estimated_effort': issue.get('effort', 'medium'),
-                        'impact': 'high' if quality_score < 0.5 else 'medium',
-                        'actionable_steps': issue.get('steps', [])
-                    })
+                    recommendations.append(
+                        {
+                            "type": "quality",
+                            "priority": "high" if quality_score < 0.5 else "medium",
+                            "title": f"Improve {issue['aspect']} in {std_id}",
+                            "description": issue["description"],
+                            "affected_standards": [std_id],
+                            "estimated_effort": issue.get("effort", "medium"),
+                            "impact": "high" if quality_score < 0.5 else "medium",
+                            "actionable_steps": issue.get("steps", []),
+                        }
+                    )
 
         return recommendations[:20]  # Return top 20 recommendations
 
     def get_usage_recommendations(
-        self,
-        context: dict[str, Any] | None = None
+        self, context: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         """Get recommendations for improving standards usage."""
         recommendations = []
@@ -554,31 +585,37 @@ class StandardsAnalytics:
         usage_data = self.get_usage_metrics(time_range="90d")
 
         # Find underused standards
-        avg_usage = sum(s['total_usage'] for s in usage_data['metrics']) / len(usage_data['metrics']) if usage_data['metrics'] else 0
+        avg_usage = (
+            sum(s["total_usage"] for s in usage_data["metrics"])
+            / len(usage_data["metrics"])
+            if usage_data["metrics"]
+            else 0
+        )
 
-        for std_data in usage_data['metrics']:
-            if std_data['total_usage'] < avg_usage * 0.3:  # Less than 30% of average
-                recommendations.append({
-                    'type': 'usage',
-                    'priority': 'medium',
-                    'title': f"Promote usage of {std_data['standard_id']}",
-                    'description': f"Standard has low usage ({std_data['total_usage']} events in 90 days)",
-                    'affected_standards': [std_data['standard_id']],
-                    'estimated_effort': 'low',
-                    'impact': 'medium',
-                    'actionable_steps': [
-                        'Review standard visibility in documentation',
-                        'Add more practical examples',
-                        'Create integration guides',
-                        'Promote in developer communications'
-                    ]
-                })
+        for std_data in usage_data["metrics"]:
+            if std_data["total_usage"] < avg_usage * 0.3:  # Less than 30% of average
+                recommendations.append(
+                    {
+                        "type": "usage",
+                        "priority": "medium",
+                        "title": f"Promote usage of {std_data['standard_id']}",
+                        "description": f"Standard has low usage ({std_data['total_usage']} events in 90 days)",
+                        "affected_standards": [std_data["standard_id"]],
+                        "estimated_effort": "low",
+                        "impact": "medium",
+                        "actionable_steps": [
+                            "Review standard visibility in documentation",
+                            "Add more practical examples",
+                            "Create integration guides",
+                            "Promote in developer communications",
+                        ],
+                    }
+                )
 
         return recommendations
 
     def get_gap_recommendations(
-        self,
-        context: dict[str, Any] | None = None
+        self, context: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         """Get recommendations for filling coverage gaps."""
         recommendations = []
@@ -586,58 +623,67 @@ class StandardsAnalytics:
         gap_analysis = self.analyze_coverage_gaps()
 
         # Recommendations for missing domains
-        for domain in gap_analysis['gaps']['missing_domains']:
-            recommendations.append({
-                'type': 'coverage',
-                'priority': 'high',
-                'title': f"Create standards for {domain} domain",
-                'description': f"The {domain} domain is underrepresented in the standards collection",
-                'affected_standards': [],
-                'estimated_effort': 'high',
-                'impact': 'high',
-                'actionable_steps': [
-                    f'Research {domain} best practices',
-                    f'Identify key {domain} patterns',
-                    f'Create comprehensive {domain} standard',
-                    'Get expert review and validation'
-                ]
-            })
+        for domain in gap_analysis["gaps"]["missing_domains"]:
+            recommendations.append(
+                {
+                    "type": "coverage",
+                    "priority": "high",
+                    "title": f"Create standards for {domain} domain",
+                    "description": f"The {domain} domain is underrepresented in the standards collection",
+                    "affected_standards": [],
+                    "estimated_effort": "high",
+                    "impact": "high",
+                    "actionable_steps": [
+                        f"Research {domain} best practices",
+                        f"Identify key {domain} patterns",
+                        f"Create comprehensive {domain} standard",
+                        "Get expert review and validation",
+                    ],
+                }
+            )
 
         # Recommendations for underrepresented concepts
-        for concept in gap_analysis['gaps']['underrepresented_concepts']:
-            recommendations.append({
-                'type': 'coverage',
-                'priority': 'medium',
-                'title': f"Add {concept} guidelines",
-                'description': f"The {concept} technology/framework needs better coverage",
-                'affected_standards': [],
-                'estimated_effort': 'medium',
-                'impact': 'medium',
-                'actionable_steps': [
-                    f'Create {concept}-specific patterns',
-                    f'Add {concept} examples to existing standards',
-                    f'Document {concept} best practices'
-                ]
-            })
+        for concept in gap_analysis["gaps"]["underrepresented_concepts"]:
+            recommendations.append(
+                {
+                    "type": "coverage",
+                    "priority": "medium",
+                    "title": f"Add {concept} guidelines",
+                    "description": f"The {concept} technology/framework needs better coverage",
+                    "affected_standards": [],
+                    "estimated_effort": "medium",
+                    "impact": "medium",
+                    "actionable_steps": [
+                        f"Create {concept}-specific patterns",
+                        f"Add {concept} examples to existing standards",
+                        f"Document {concept} best practices",
+                    ],
+                }
+            )
 
         return recommendations
 
-    def _calculate_usage_trend(self, standard_id: str, since: datetime) -> dict[str, Any]:
+    def _calculate_usage_trend(
+        self, standard_id: str, since: datetime
+    ) -> dict[str, Any]:
         """Calculate usage trend for a standard."""
         # Get daily usage counts
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT DATE(timestamp) as usage_date, COUNT(*) as daily_count
                 FROM usage_events
                 WHERE standard_id = ? AND timestamp >= ?
                 GROUP BY DATE(timestamp)
                 ORDER BY usage_date
-            """, (standard_id, since.isoformat()))
+            """,
+                (standard_id, since.isoformat()),
+            )
 
             daily_usage = cursor.fetchall()
 
         if len(daily_usage) < 2:
-            return {'direction': 'stable', 'slope': 0, 'confidence': 0}
+            return {"direction": "stable", "slope": 0, "confidence": 0}
 
         # Simple linear regression to determine trend
         x_values = list(range(len(daily_usage)))
@@ -647,7 +693,9 @@ class StandardsAnalytics:
         x_mean = sum(x_values) / n
         y_mean = sum(y_values) / n
 
-        numerator = sum((x_values[i] - x_mean) * (y_values[i] - y_mean) for i in range(n))
+        numerator = sum(
+            (x_values[i] - x_mean) * (y_values[i] - y_mean) for i in range(n)
+        )
         denominator = sum((x_values[i] - x_mean) ** 2 for i in range(n))
 
         if denominator == 0:
@@ -657,23 +705,25 @@ class StandardsAnalytics:
 
         # Determine trend direction
         if slope > 0.1:
-            direction = 'increasing'
+            direction = "increasing"
         elif slope < -0.1:
-            direction = 'decreasing'
+            direction = "decreasing"
         else:
-            direction = 'stable'
+            direction = "stable"
 
         # Calculate confidence based on data consistency
         confidence = min(len(daily_usage) / 14, 1.0)  # Higher confidence with more data
 
         return {
-            'direction': direction,
-            'slope': slope,
-            'confidence': confidence,
-            'data_points': len(daily_usage)
+            "direction": direction,
+            "slope": slope,
+            "confidence": confidence,
+            "data_points": len(daily_usage),
         }
 
-    def _load_standards_for_analysis(self, standard_ids: list[str] | None = None) -> dict[str, dict[str, Any]]:
+    def _load_standards_for_analysis(
+        self, standard_ids: list[str] | None = None
+    ) -> dict[str, dict[str, Any]]:
         """Load standards for analysis."""
         standards = {}
 
@@ -702,25 +752,32 @@ class StandardsAnalytics:
         scores = {}
 
         # Completeness: Check for required fields
-        required_fields = ['title', 'description', 'domain', 'created_date']
-        optional_fields = ['examples', 'guidelines', 'implementation_guides', 'code_examples']
+        required_fields = ["title", "description", "domain", "created_date"]
+        optional_fields = [
+            "examples",
+            "guidelines",
+            "implementation_guides",
+            "code_examples",
+        ]
 
         completeness = sum(1 for field in required_fields if standard.get(field))
         completeness += sum(0.5 for field in optional_fields if standard.get(field))
-        scores['completeness'] = min(completeness / (len(required_fields) + len(optional_fields) * 0.5), 1.0)
+        scores["completeness"] = min(
+            completeness / (len(required_fields) + len(optional_fields) * 0.5), 1.0
+        )
 
         # Consistency: Check field formats and naming conventions
         consistency = 1.0
-        if 'created_date' in standard:
+        if "created_date" in standard:
             try:
-                datetime.fromisoformat(standard['created_date'].replace('Z', '+00:00'))
+                datetime.fromisoformat(standard["created_date"].replace("Z", "+00:00"))
             except Exception:
                 consistency -= 0.2
 
-        scores['consistency'] = max(consistency, 0.0)
+        scores["consistency"] = max(consistency, 0.0)
 
         # Clarity: Based on description length and structure
-        description = standard.get('description', '')
+        description = standard.get("description", "")
         if len(description) < 50:
             clarity = 0.3
         elif len(description) < 200:
@@ -728,88 +785,102 @@ class StandardsAnalytics:
         else:
             clarity = 1.0
 
-        scores['clarity'] = clarity
+        scores["clarity"] = clarity
 
         # Actionability: Presence of examples and implementation guides
         actionability = 0.0
-        if standard.get('code_examples'):
+        if standard.get("code_examples"):
             actionability += 0.4
-        if standard.get('implementation_guides'):
+        if standard.get("implementation_guides"):
             actionability += 0.4
-        if standard.get('examples'):
+        if standard.get("examples"):
             actionability += 0.2
 
-        scores['actionability'] = min(actionability, 1.0)
+        scores["actionability"] = min(actionability, 1.0)
 
         # Coverage: Domain-specific completeness
         coverage = 0.8  # Default assumption
-        scores['coverage'] = coverage
+        scores["coverage"] = coverage
 
         # Maintenance: Recency and update frequency
         maintenance = 1.0
-        if 'created_date' in standard:
+        if "created_date" in standard:
             try:
-                created = datetime.fromisoformat(standard['created_date'].replace('Z', '+00:00'))
-                days_old = (datetime.utcnow().replace(tzinfo=created.tzinfo) - created).days
+                created = datetime.fromisoformat(
+                    standard["created_date"].replace("Z", "+00:00")
+                )
+                days_old = (
+                    datetime.utcnow().replace(tzinfo=created.tzinfo) - created
+                ).days
                 if days_old > 365:
                     maintenance = max(0.5, 1 - (days_old - 365) / 1000)
             except Exception:
                 pass
 
-        scores['maintenance'] = maintenance
+        scores["maintenance"] = maintenance
 
         # Calculate weighted score
         overall_score = sum(scores[aspect] * weights[aspect] for aspect in weights)
 
         return overall_score
 
-    def _identify_quality_issues(self, standard: dict[str, Any]) -> list[dict[str, Any]]:
+    def _identify_quality_issues(
+        self, standard: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Identify specific quality issues in a standard."""
         issues = []
 
         # Check for missing required fields
         required_fields = {
-            'title': 'Add a clear, descriptive title',
-            'description': 'Add a comprehensive description',
-            'domain': 'Specify the domain or category',
-            'created_date': 'Add creation date for tracking'
+            "title": "Add a clear, descriptive title",
+            "description": "Add a comprehensive description",
+            "domain": "Specify the domain or category",
+            "created_date": "Add creation date for tracking",
         }
 
         for field_name, suggestion in required_fields.items():
             if not standard.get(field_name):
-                issues.append({
-                    'aspect': 'completeness',
-                    'description': f"Missing {field_name}",
-                    'effort': 'low',
-                    'steps': [suggestion]
-                })
+                issues.append(
+                    {
+                        "aspect": "completeness",
+                        "description": f"Missing {field_name}",
+                        "effort": "low",
+                        "steps": [suggestion],
+                    }
+                )
 
         # Check description quality
-        description = standard.get('description', '')
+        description = standard.get("description", "")
         if len(description) < 100:
-            issues.append({
-                'aspect': 'clarity',
-                'description': 'Description is too brief',
-                'effort': 'medium',
-                'steps': [
-                    'Expand description with more detail',
-                    'Add context and rationale',
-                    'Include scope and objectives'
-                ]
-            })
+            issues.append(
+                {
+                    "aspect": "clarity",
+                    "description": "Description is too brief",
+                    "effort": "medium",
+                    "steps": [
+                        "Expand description with more detail",
+                        "Add context and rationale",
+                        "Include scope and objectives",
+                    ],
+                }
+            )
 
         # Check for actionable content
-        if not standard.get('code_examples') and not standard.get('implementation_guides'):
-            issues.append({
-                'aspect': 'actionability',
-                'description': 'Lacks practical examples',
-                'effort': 'medium',
-                'steps': [
-                    'Add code examples',
-                    'Create implementation guides',
-                    'Include common use cases'
-                ]
-            })
+        if not standard.get("code_examples") and not standard.get(
+            "implementation_guides"
+        ):
+            issues.append(
+                {
+                    "aspect": "actionability",
+                    "description": "Lacks practical examples",
+                    "effort": "medium",
+                    "steps": [
+                        "Add code examples",
+                        "Create implementation guides",
+                        "Include common use cases",
+                    ],
+                }
+            )
 
         return issues
 
@@ -820,16 +891,16 @@ class StandardsAnalytics:
     def export_analytics_report(self, output_path: Path) -> None:
         """Export comprehensive analytics report."""
         report = {
-            'generated_at': self.get_current_timestamp(),
-            'usage_metrics': self.get_usage_metrics(),
-            'popularity_metrics': self.get_popularity_metrics(),
-            'coverage_analysis': self.analyze_coverage_gaps(),
-            'quality_recommendations': self.get_quality_recommendations(),
-            'usage_recommendations': self.get_usage_recommendations(),
-            'gap_recommendations': self.get_gap_recommendations()
+            "generated_at": self.get_current_timestamp(),
+            "usage_metrics": self.get_usage_metrics(),
+            "popularity_metrics": self.get_popularity_metrics(),
+            "coverage_analysis": self.analyze_coverage_gaps(),
+            "quality_recommendations": self.get_quality_recommendations(),
+            "usage_recommendations": self.get_usage_recommendations(),
+            "gap_recommendations": self.get_gap_recommendations(),
         }
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(report, f, indent=2)
 
         logger.info(f"Analytics report exported to {output_path}")

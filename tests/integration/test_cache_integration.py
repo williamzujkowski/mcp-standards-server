@@ -22,12 +22,13 @@ def pytest_configure(config):
         "--integration",
         action="store_true",
         default=False,
-        help="Run integration tests"
+        help="Run integration tests",
     )
+
 
 pytestmark = pytest.mark.skipif(
     True,  # Always skip for now as we don't have Redis running
-    reason="Integration tests require Redis server"
+    reason="Integration tests require Redis server",
 )
 
 
@@ -39,7 +40,7 @@ def redis_config():
         port=6379,
         db=15,  # Use separate DB for tests
         key_prefix="test",
-        default_ttl=60
+        default_ttl=60,
     )
 
 
@@ -50,7 +51,9 @@ def cache(redis_config):
 
     # Clear test database
     try:
-        with redis.Redis(host=redis_config.host, port=redis_config.port, db=redis_config.db) as r:
+        with redis.Redis(
+            host=redis_config.host, port=redis_config.port, db=redis_config.db
+        ) as r:
             r.flushdb()
     except Exception:
         pytest.skip("Redis not available")
@@ -60,7 +63,9 @@ def cache(redis_config):
     # Cleanup
     cache.close()
     try:
-        with redis.Redis(host=redis_config.host, port=redis_config.port, db=redis_config.db) as r:
+        with redis.Redis(
+            host=redis_config.host, port=redis_config.port, db=redis_config.db
+        ) as r:
             r.flushdb()
     except Exception:
         pass
@@ -93,11 +98,7 @@ class TestRedisCacheIntegration:
     def test_multi_operations(self, cache):
         """Test multi-get/set operations."""
         # Multi-set
-        data = {
-            "key1": "value1",
-            "key2": {"nested": "data"},
-            "key3": [1, 2, 3]
-        }
+        data = {"key1": "value1", "key2": {"nested": "data"}, "key3": [1, 2, 3]}
         assert cache.mset(data) is True
 
         # Multi-get
@@ -105,7 +106,7 @@ class TestRedisCacheIntegration:
         assert results == {
             "key1": "value1",
             "key2": {"nested": "data"},
-            "key3": [1, 2, 3]
+            "key3": [1, 2, 3],
         }
 
     def test_pattern_deletion(self, cache):
@@ -141,9 +142,7 @@ class TestRedisCacheIntegration:
     def test_large_values(self, cache):
         """Test caching large values with compression."""
         # Create large data
-        large_data = {
-            "items": [{"id": i, "data": "x" * 100} for i in range(100)]
-        }
+        large_data = {"items": [{"id": i, "data": "x" * 100} for i in range(100)]}
 
         # Should compress automatically
         assert cache.set("large_key", large_data) is True
@@ -165,9 +164,7 @@ class TestRedisCacheIntegration:
 
         # Fix connection pool
         cache._sync_pool = redis.ConnectionPool(
-            host=cache.config.host,
-            port=cache.config.port,
-            db=cache.config.db
+            host=cache.config.host, port=cache.config.port, db=cache.config.db
         )
 
         # Wait for timeout
@@ -231,6 +228,7 @@ class TestCacheDecoratorsIntegration:
 
     def test_invalidate_decorator(self, cache):
         """Test cache invalidation decorator."""
+
         @cache_result("data", cache=cache)
         def get_data(key: str) -> str:
             return f"data_{key}"
@@ -259,12 +257,15 @@ class TestCacheIntegrationComponents:
     @pytest.fixture
     def mock_semantic_search(self):
         """Mock semantic search component."""
+
         class MockSemanticSearch:
             async def search(self, query, k=10, threshold=0.7, filters=None, **kwargs):
-                return [{"id": f"doc_{i}", "score": 0.9 - i*0.1} for i in range(k)]
+                return [{"id": f"doc_{i}", "score": 0.9 - i * 0.1} for i in range(k)]
 
             async def find_similar(self, standard_id, k=5, threshold=0.8):
-                return [{"id": f"similar_{i}", "score": 0.95 - i*0.05} for i in range(k)]
+                return [
+                    {"id": f"similar_{i}", "score": 0.95 - i * 0.05} for i in range(k)
+                ]
 
             async def reindex(self):
                 return True
@@ -303,7 +304,9 @@ class TestCacheIntegrationComponents:
                 return {"id": standard_id, "version": version or "1.0"}
 
             async def get_requirements(self, standard_id, requirement_ids=None):
-                return [{"id": f"req_{i}", "standard_id": standard_id} for i in range(3)]
+                return [
+                    {"id": f"req_{i}", "standard_id": standard_id} for i in range(3)
+                ]
 
         cached_engine = CachedStandardsEngine(MockStandardsEngine(), cache)
 
@@ -311,7 +314,9 @@ class TestCacheIntegrationComponents:
         warmer = CacheWarmer(cached_engine, cached_search, cache)
 
         # Warm popular searches
-        await warmer.warm_popular_searches(["security", "compliance", "data protection"])
+        await warmer.warm_popular_searches(
+            ["security", "compliance", "data protection"]
+        )
 
         # Verify searches are cached
         start_time = time.time()
@@ -331,7 +336,7 @@ class TestCacheIntegrationComponents:
         # Perform some operations
         cache.set("metric_test1", "value1")
         cache.get("metric_test1")  # Hit
-        cache.get("missing_key")   # Miss
+        cache.get("missing_key")  # Miss
 
         collector = CacheMetricsCollector(cache)
         metrics = collector.collect_metrics()

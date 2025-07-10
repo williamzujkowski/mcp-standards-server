@@ -69,7 +69,7 @@ class PerformanceMetrics:
             "percentiles": self.get_percentiles(),
             "avg_memory_mb": np.mean(self.memory_usage),
             "max_memory_mb": np.max(self.memory_usage),
-            "avg_cpu_percent": np.mean(self.cpu_usage)
+            "avg_cpu_percent": np.mean(self.cpu_usage),
         }
 
     def plot_metrics(self, output_path: Path):
@@ -78,21 +78,21 @@ class PerformanceMetrics:
 
         # Latency over time
         ax1.plot(self.timestamps, [latency * 1000 for latency in self.latencies])
-        ax1.set_ylabel('Latency (ms)')
-        ax1.set_title('Search Latency Over Time')
+        ax1.set_ylabel("Latency (ms)")
+        ax1.set_title("Search Latency Over Time")
         ax1.grid(True)
 
         # Memory usage over time
-        ax2.plot(self.timestamps, self.memory_usage, color='orange')
-        ax2.set_ylabel('Memory (MB)')
-        ax2.set_title('Memory Usage Over Time')
+        ax2.plot(self.timestamps, self.memory_usage, color="orange")
+        ax2.set_ylabel("Memory (MB)")
+        ax2.set_title("Memory Usage Over Time")
         ax2.grid(True)
 
         # CPU usage over time
-        ax3.plot(self.timestamps, self.cpu_usage, color='green')
-        ax3.set_ylabel('CPU (%)')
-        ax3.set_xlabel('Time')
-        ax3.set_title('CPU Usage Over Time')
+        ax3.plot(self.timestamps, self.cpu_usage, color="green")
+        ax3.set_ylabel("CPU (%)")
+        ax3.set_xlabel("Time")
+        ax3.set_title("CPU Usage Over Time")
         ax3.grid(True)
 
         plt.tight_layout()
@@ -135,7 +135,7 @@ class TestSemanticSearchLatency:
             "cloud deployment strategies",
             "security AND authentication",
             "testing NOT integration",
-            "performance OR optimization"
+            "performance OR optimization",
         ] * 20  # Repeat for more samples
 
         metrics = PerformanceMetrics()
@@ -158,9 +158,9 @@ class TestSemanticSearchLatency:
         print(f"P99: {percentiles['p99']:.2f}ms")
 
         # Performance assertions
-        assert percentiles['p50'] < 50  # P50 under 50ms
-        assert percentiles['p90'] < 100  # P90 under 100ms
-        assert percentiles['p99'] < 200  # P99 under 200ms
+        assert percentiles["p50"] < 50  # P50 under 50ms
+        assert percentiles["p90"] < 100  # P90 under 100ms
+        assert percentiles["p99"] < 200  # P99 under 200ms
 
     @patch_ml_dependencies()
     def test_cold_vs_warm_cache_latency(self, search_engine):
@@ -228,7 +228,9 @@ class TestSemanticSearchLatency:
         scaling_factor = latencies[-1] / latencies[0]
         size_factor = corpus_sizes[-1] / corpus_sizes[0]
 
-        print(f"\nScaling factor: {scaling_factor:.2f}x for {size_factor}x size increase")
+        print(
+            f"\nScaling factor: {scaling_factor:.2f}x for {size_factor}x size increase"
+        )
         assert scaling_factor < size_factor * 0.5  # Sub-linear scaling
 
 
@@ -303,11 +305,13 @@ class TestSemanticSearchThroughput:
             results[num_threads] = {
                 "throughput": throughput,
                 "avg_latency_ms": avg_latency,
-                "total_time": total_time
+                "total_time": total_time,
             }
 
-            print(f"Threads: {num_threads:2d}, Throughput: {throughput:.2f} q/s, "
-                  f"Avg latency: {avg_latency:.2f}ms")
+            print(
+                f"Threads: {num_threads:2d}, Throughput: {throughput:.2f} q/s, "
+                f"Avg latency: {avg_latency:.2f}ms"
+            )
 
         # Throughput should scale with threads (not linearly due to contention)
         assert results[4]["throughput"] > results[1]["throughput"] * 2
@@ -334,7 +338,7 @@ class TestSemanticSearchThroughput:
         # Create tasks in batches to avoid overwhelming
         batch_size = 100
         for i in range(0, num_queries, batch_size):
-            batch = queries[i:i+batch_size]
+            batch = queries[i : i + batch_size]
             tasks = [engine.search_async(q, top_k=5) for q in batch]
             await asyncio.gather(*tasks)
 
@@ -437,7 +441,9 @@ class TestSemanticSearchMemory:
         memory_growth = memory_samples[-1] - baseline_memory
         avg_growth_per_iteration = memory_growth / len(memory_samples)
 
-        print(f"\nMemory growth: {memory_growth:.2f}MB over {len(memory_samples)} iterations")
+        print(
+            f"\nMemory growth: {memory_growth:.2f}MB over {len(memory_samples)} iterations"
+        )
         print(f"Average growth per iteration: {avg_growth_per_iteration:.2f}MB")
 
         # Memory growth should be minimal
@@ -540,19 +546,30 @@ class TestSemanticSearchScalability:
 
             # Add specific documents we'll search for
             target_docs = [
-                ("python-security", "Python security best practices for web applications",
-                 {"category": "security", "language": "python"}),
-                ("react-testing", "React component testing with Jest and React Testing Library",
-                 {"category": "testing", "framework": "react"}),
-                ("api-design", "RESTful API design patterns and guidelines",
-                 {"category": "api", "type": "design"})
+                (
+                    "python-security",
+                    "Python security best practices for web applications",
+                    {"category": "security", "language": "python"},
+                ),
+                (
+                    "react-testing",
+                    "React component testing with Jest and React Testing Library",
+                    {"category": "testing", "framework": "react"},
+                ),
+                (
+                    "api-design",
+                    "RESTful API design patterns and guidelines",
+                    {"category": "api", "type": "design"},
+                ),
             ]
 
             for doc_id, content, metadata in target_docs:
                 docs.append((doc_id, content, metadata))
 
             # Add noise documents
-            noise_docs = TestDataGenerator.generate_standards_corpus(size - len(target_docs))
+            noise_docs = TestDataGenerator.generate_standards_corpus(
+                size - len(target_docs)
+            )
             docs.extend(noise_docs)
 
             # Index all documents
@@ -562,7 +579,7 @@ class TestSemanticSearchScalability:
             searches = [
                 ("Python security", "python-security"),
                 ("React testing Jest", "react-testing"),
-                ("API design patterns", "api-design")
+                ("API design patterns", "api-design"),
             ]
 
             hits_at_1 = 0
@@ -579,7 +596,7 @@ class TestSemanticSearchScalability:
 
             quality_metrics[size] = {
                 "precision_at_1": hits_at_1 / len(searches),
-                "precision_at_5": hits_at_5 / len(searches)
+                "precision_at_5": hits_at_5 / len(searches),
             }
 
             engine.close()
@@ -587,8 +604,10 @@ class TestSemanticSearchScalability:
         # Print results
         print("\nSearch quality at different scales:")
         for size, metrics in quality_metrics.items():
-            print(f"Size {size}: P@1={metrics['precision_at_1']:.2f}, "
-                  f"P@5={metrics['precision_at_5']:.2f}")
+            print(
+                f"Size {size}: P@1={metrics['precision_at_1']:.2f}, "
+                f"P@5={metrics['precision_at_5']:.2f}"
+            )
 
         # Quality should remain high regardless of scale
         for _size, metrics in quality_metrics.items():
@@ -638,7 +657,9 @@ class TestSemanticSearchStressTest:
                     errors.append(str(e))
 
         # Run load test
-        print(f"\nRunning stress test for {duration_seconds}s at {queries_per_second} q/s...")
+        print(
+            f"\nRunning stress test for {duration_seconds}s at {queries_per_second} q/s..."
+        )
         load_generator()
 
         # Analyze results
@@ -653,7 +674,7 @@ class TestSemanticSearchStressTest:
 
         # System should remain stable
         assert len(errors) == 0
-        assert summary['percentiles']['p99'] < 500  # P99 under 500ms even under load
+        assert summary["percentiles"]["p99"] < 500  # P99 under 500ms even under load
 
         engine.close()
 
@@ -679,8 +700,7 @@ class TestSemanticSearchStressTest:
             start = time.time()
             with ThreadPoolExecutor(max_workers=burst_size) as executor:
                 futures = [
-                    executor.submit(engine.search, query, top_k=5)
-                    for query in queries
+                    executor.submit(engine.search, query, top_k=5) for query in queries
                 ]
 
                 # Wait for all to complete
@@ -713,10 +733,7 @@ def test_performance_regression_suite():
     to detect performance regressions in CI/CD pipelines.
     """
     with patch_ml_dependencies():
-        results = {
-            "timestamp": datetime.now().isoformat(),
-            "tests": {}
-        }
+        results = {"timestamp": datetime.now().isoformat(), "tests": {}}
 
         # Test 1: Basic search latency
         engine = create_search_engine()
@@ -733,7 +750,7 @@ def test_performance_regression_suite():
         results["tests"]["basic_search"] = {
             "p50_ms": np.percentile(latencies, 50) * 1000,
             "p90_ms": np.percentile(latencies, 90) * 1000,
-            "p99_ms": np.percentile(latencies, 99) * 1000
+            "p99_ms": np.percentile(latencies, 99) * 1000,
         }
 
         # Test 2: Indexing throughput
@@ -744,7 +761,7 @@ def test_performance_regression_suite():
 
         results["tests"]["indexing"] = {
             "docs_per_second": 1000 / indexing_time,
-            "total_time_seconds": indexing_time
+            "total_time_seconds": indexing_time,
         }
 
         # Test 3: Memory efficiency
@@ -753,14 +770,14 @@ def test_performance_regression_suite():
 
         results["tests"]["memory"] = {
             "total_memory_mb": memory_mb,
-            "memory_per_doc_kb": (memory_mb * 1024) / 2000  # 2000 total docs
+            "memory_per_doc_kb": (memory_mb * 1024) / 2000,  # 2000 total docs
         }
 
         engine.close()
 
         # Save results for comparison
         output_path = Path("performance_baseline.json")
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(results, f, indent=2)
 
         print(f"\nPerformance baseline saved to {output_path}")

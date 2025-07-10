@@ -14,13 +14,13 @@ from .semantic_search_mocks import (
 )
 
 __all__ = [
-    'MockSentenceTransformer',
-    'MockRedisClient',
-    'MockNLTKComponents',
-    'MockFuzz',
-    'MockProcess',
-    'MockCosineSimilarity',
-    'MockNearestNeighbors',
-    'TestDataGenerator',
-    'patch_ml_dependencies'
+    "MockSentenceTransformer",
+    "MockRedisClient",
+    "MockNLTKComponents",
+    "MockFuzz",
+    "MockProcess",
+    "MockCosineSimilarity",
+    "MockNearestNeighbors",
+    "TestDataGenerator",
+    "patch_ml_dependencies",
 ]

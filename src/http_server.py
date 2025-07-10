@@ -38,9 +38,11 @@ class HTTPServer:
         async def cors_middleware(request: Request, handler):
             """Add CORS headers."""
             response = await handler(request)
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = (
+                "Content-Type, Authorization"
+            )
             return response
 
         # Setup comprehensive error handling
@@ -52,39 +54,43 @@ class HTTPServer:
     def setup_routes(self):
         """Setup HTTP routes."""
         # Health check endpoints
-        self.app.router.add_get('/health', self.health_check)
-        self.app.router.add_get('/health/live', self.liveness_check)
-        self.app.router.add_get('/health/ready', self.readiness_check)
+        self.app.router.add_get("/health", self.health_check)
+        self.app.router.add_get("/health/live", self.liveness_check)
+        self.app.router.add_get("/health/ready", self.readiness_check)
 
         # Metrics endpoint
-        self.app.router.add_get('/metrics', self.metrics)
+        self.app.router.add_get("/metrics", self.metrics)
 
         # Status endpoints
-        self.app.router.add_get('/status', self.status)
-        self.app.router.add_get('/info', self.info)
+        self.app.router.add_get("/status", self.status)
+        self.app.router.add_get("/info", self.info)
 
         # Standards endpoints
-        self.app.router.add_get('/api/standards', self.list_standards)
-        self.app.router.add_get('/api/standards/{standard_id}', self.get_standard)
+        self.app.router.add_get("/api/standards", self.list_standards)
+        self.app.router.add_get("/api/standards/{standard_id}", self.get_standard)
 
         # Root endpoint
-        self.app.router.add_get('/', self.root)
+        self.app.router.add_get("/", self.root)
 
         # Handle OPTIONS for CORS
-        self.app.router.add_options('/{path:.*}', self.options_handler)
+        self.app.router.add_options("/{path:.*}", self.options_handler)
 
     async def health_check(self, request: Request) -> Response:
         """Comprehensive health check endpoint."""
         try:
             # Get optional check names from query params
-            check_names = request.query.get('checks', '').split(',') if request.query.get('checks') else None
+            check_names = (
+                request.query.get("checks", "").split(",")
+                if request.query.get("checks")
+                else None
+            )
 
             result = await health_check_endpoint(check_names)
 
             # Determine HTTP status code based on health status
-            if result['status'] == 'healthy':
+            if result["status"] == "healthy":
                 status_code = 200
-            elif result['status'] == 'degraded':
+            elif result["status"] == "degraded":
                 status_code = 200  # Still serving traffic
             else:
                 status_code = 503  # Service unavailable
@@ -93,39 +99,48 @@ class HTTPServer:
 
         except Exception as e:
             logger.error(f"Health check failed: {e}")
-            return web.json_response({
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=503)
+            return web.json_response(
+                {
+                    "status": "unhealthy",
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                },
+                status=503,
+            )
 
     async def liveness_check(self, request: Request) -> Response:
         """Kubernetes liveness probe endpoint."""
         try:
             result = await liveness_check()
-            status_code = 200 if result['alive'] else 503
+            status_code = 200 if result["alive"] else 503
             return web.json_response(result, status=status_code)
         except Exception as e:
             logger.error(f"Liveness check failed: {e}")
-            return web.json_response({
-                "alive": False,
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=503)
+            return web.json_response(
+                {
+                    "alive": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                },
+                status=503,
+            )
 
     async def readiness_check(self, request: Request) -> Response:
         """Kubernetes readiness probe endpoint."""
         try:
             result = await readiness_check()
-            status_code = 200 if result['ready'] else 503
+            status_code = 200 if result["ready"] else 503
             return web.json_response(result, status=status_code)
         except Exception as e:
             logger.error(f"Readiness check failed: {e}")
-            return web.json_response({
-                "ready": False,
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=503)
+            return web.json_response(
+                {
+                    "ready": False,
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                },
+                status=503,
+            )
 
     async def metrics(self, request: Request) -> Response:
         """Prometheus metrics endpoint."""
@@ -137,15 +152,15 @@ class HTTPServer:
 
             return web.Response(
                 text=metrics_data,
-                content_type='text/plain; version=0.0.4',
-                charset='utf-8'
+                content_type="text/plain; version=0.0.4",
+                charset="utf-8",
             )
         except Exception as e:
             logger.error(f"Metrics export failed: {e}")
             return web.Response(
                 text="# Error exporting metrics\n",
-                content_type='text/plain',
-                status=500
+                content_type="text/plain",
+                status=500,
             )
 
     async def status(self, request: Request) -> Response:
@@ -161,17 +176,16 @@ class HTTPServer:
                     "host": self.host,
                     "port": self.port,
                     "data_dir": os.environ.get("DATA_DIR", "data"),
-                    "log_level": os.environ.get("LOG_LEVEL", "INFO")
-                }
+                    "log_level": os.environ.get("LOG_LEVEL", "INFO"),
+                },
             }
 
             return web.json_response(status_info)
         except Exception as e:
             logger.error(f"Status check failed: {e}")
-            return web.json_response({
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=500)
+            return web.json_response(
+                {"error": str(e), "timestamp": datetime.now().isoformat()}, status=500
+            )
 
     async def info(self, request: Request) -> Response:
         """Service information endpoint."""
@@ -187,18 +201,17 @@ class HTTPServer:
                     "readiness": "/health/ready",
                     "metrics": "/metrics",
                     "status": "/status",
-                    "standards": "/api/standards"
+                    "standards": "/api/standards",
                 },
-                "documentation": "https://github.com/williamzujkowski/mcp-standards-server"
+                "documentation": "https://github.com/williamzujkowski/mcp-standards-server",
             }
 
             return web.json_response(info)
         except Exception as e:
             logger.error(f"Info endpoint failed: {e}")
-            return web.json_response({
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=500)
+            return web.json_response(
+                {"error": str(e), "timestamp": datetime.now().isoformat()}, status=500
+            )
 
     async def list_standards(self, request: Request) -> Response:
         """List available standards."""
@@ -214,27 +227,32 @@ class HTTPServer:
                     "id": std.get("id"),
                     "title": std.get("title"),
                     "category": std.get("category"),
-                    "description": std.get("description", "")[:200] + "..." if len(std.get("description", "")) > 200 else std.get("description", "")
+                    "description": (
+                        std.get("description", "")[:200] + "..."
+                        if len(std.get("description", "")) > 200
+                        else std.get("description", "")
+                    ),
                 }
                 for std in standards
             ]
 
-            return web.json_response({
-                "standards": standards_list,
-                "total": len(standards_list),
-                "timestamp": datetime.now().isoformat()
-            })
+            return web.json_response(
+                {
+                    "standards": standards_list,
+                    "total": len(standards_list),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
         except Exception as e:
             logger.error(f"List standards failed: {e}")
-            return web.json_response({
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=500)
+            return web.json_response(
+                {"error": str(e), "timestamp": datetime.now().isoformat()}, status=500
+            )
 
     async def get_standard(self, request: Request) -> Response:
         """Get specific standard details."""
         try:
-            standard_id = request.match_info['standard_id']
+            standard_id = request.match_info["standard_id"]
 
             from .core.standards.engine import StandardsEngine
 
@@ -242,36 +260,39 @@ class HTTPServer:
             standard = await engine.get_standard(standard_id)
 
             if not standard:
-                return web.json_response({
-                    "error": f"Standard not found: {standard_id}",
-                    "timestamp": datetime.now().isoformat()
-                }, status=404)
+                return web.json_response(
+                    {
+                        "error": f"Standard not found: {standard_id}",
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    status=404,
+                )
 
-            return web.json_response({
-                "standard": standard,
-                "timestamp": datetime.now().isoformat()
-            })
+            return web.json_response(
+                {"standard": standard, "timestamp": datetime.now().isoformat()}
+            )
         except Exception as e:
             logger.error(f"Get standard failed: {e}")
-            return web.json_response({
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }, status=500)
+            return web.json_response(
+                {"error": str(e), "timestamp": datetime.now().isoformat()}, status=500
+            )
 
     async def root(self, request: Request) -> Response:
         """Root endpoint with service information."""
-        return web.json_response({
-            "service": "MCP Standards Server",
-            "status": "running",
-            "version": "1.0.0",
-            "endpoints": {
-                "health": "/health",
-                "info": "/info",
-                "standards": "/api/standards",
-                "metrics": "/metrics"
-            },
-            "timestamp": datetime.now().isoformat()
-        })
+        return web.json_response(
+            {
+                "service": "MCP Standards Server",
+                "status": "running",
+                "version": "1.0.0",
+                "endpoints": {
+                    "health": "/health",
+                    "info": "/info",
+                    "standards": "/api/standards",
+                    "metrics": "/metrics",
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
     async def options_handler(self, request: Request) -> Response:
         """Handle OPTIONS requests for CORS."""
@@ -304,11 +325,12 @@ async def start_http_server(host: str = None, port: int = None) -> web.AppRunner
 
 
 if __name__ == "__main__":
+
     async def main():
         # Setup logging
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
 
         # Start HTTP server

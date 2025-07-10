@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class PIIType(str, Enum):
     """Types of PII that can be detected."""
+
     EMAIL = "email"
     PHONE = "phone"
     SSN = "ssn"
@@ -36,6 +37,7 @@ class PIIType(str, Enum):
 @dataclass
 class PIIMatch:
     """Represents a detected PII match."""
+
     pii_type: PIIType
     value: str
     start_pos: int
@@ -46,6 +48,7 @@ class PIIMatch:
 @dataclass
 class PrivacyConfig:
     """Configuration for privacy filtering."""
+
     detect_pii: bool = True
     redact_pii: bool = True
     hash_pii: bool = False
@@ -66,7 +69,7 @@ class PrivacyConfig:
                 PIIType.AWS_KEY,
                 PIIType.API_KEY,
                 PIIType.JWT_TOKEN,
-                PIIType.PASSWORD
+                PIIType.PASSWORD,
             }
 
 
@@ -75,17 +78,17 @@ class PIIDetector:
 
     # Regex patterns for common PII types
     PATTERNS = {
-        PIIType.EMAIL: r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
-        PIIType.PHONE: r'(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})',
-        PIIType.SSN: r'\b(?!000|666|9\d{2})\d{3}[-\s]?(?!00)\d{2}[-\s]?(?!0000)\d{4}\b',
-        PIIType.CREDIT_CARD: r'\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|6(?:011|5[0-9]{2})[0-9]{12}|(?:2131|1800|35\d{3})\d{11})\b',
-        PIIType.IP_ADDRESS: r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b',
-        PIIType.AWS_KEY: r'(?:AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}',
+        PIIType.EMAIL: r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        PIIType.PHONE: r"(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})",
+        PIIType.SSN: r"\b(?!000|666|9\d{2})\d{3}[-\s]?(?!00)\d{2}[-\s]?(?!0000)\d{4}\b",
+        PIIType.CREDIT_CARD: r"\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|6(?:011|5[0-9]{2})[0-9]{12}|(?:2131|1800|35\d{3})\d{11})\b",
+        PIIType.IP_ADDRESS: r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b",
+        PIIType.AWS_KEY: r"(?:AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}",
         PIIType.API_KEY: r'(?:api[_-]?key|apikey|api_token)[\s]*[:=][\s]*["\']?([a-zA-Z0-9_\-]{20,})["\']?',
-        PIIType.JWT_TOKEN: r'eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*',
+        PIIType.JWT_TOKEN: r"eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*",
         PIIType.PASSWORD: r'(?:password|passwd|pwd)[\s]*[:=][\s]*["\']?([^\s"\']{8,})["\']?',
-        PIIType.BANK_ACCOUNT: r'\b[0-9]{8,17}\b',  # Simplified pattern
-        PIIType.DRIVER_LICENSE: r'\b[A-Z]{1,2}[0-9]{5,8}\b',  # Simplified pattern
+        PIIType.BANK_ACCOUNT: r"\b[0-9]{8,17}\b",  # Simplified pattern
+        PIIType.DRIVER_LICENSE: r"\b[A-Z]{1,2}[0-9]{5,8}\b",  # Simplified pattern
     }
 
     def __init__(self, config: PrivacyConfig | None = None):
@@ -100,7 +103,7 @@ class PIIDetector:
             if pii_type in self.PATTERNS:
                 self._compiled_patterns[pii_type] = re.compile(
                     self.PATTERNS[pii_type],
-                    re.IGNORECASE if pii_type != PIIType.AWS_KEY else 0
+                    re.IGNORECASE if pii_type != PIIType.AWS_KEY else 0,
                 )
 
         # Add custom patterns
@@ -130,13 +133,19 @@ class PIIDetector:
                 confidence = self._calculate_confidence(pii_type, match.group())
 
                 if confidence >= self.config.min_confidence:
-                    matches.append(PIIMatch(
-                        pii_type=pii_type if isinstance(pii_type, PIIType) else PIIType.API_KEY,
-                        value=match.group(),
-                        start_pos=match.start(),
-                        end_pos=match.end(),
-                        confidence=confidence
-                    ))
+                    matches.append(
+                        PIIMatch(
+                            pii_type=(
+                                pii_type
+                                if isinstance(pii_type, PIIType)
+                                else PIIType.API_KEY
+                            ),
+                            value=match.group(),
+                            start_pos=match.start(),
+                            end_pos=match.end(),
+                            confidence=confidence,
+                        )
+                    )
 
         # Additional heuristic detection
         matches.extend(self._detect_person_names(text))
@@ -172,7 +181,7 @@ class PIIDetector:
 
     def _validate_credit_card(self, number: str) -> bool:
         """Validate credit card number using Luhn algorithm."""
-        number = re.sub(r'\D', '', number)
+        number = re.sub(r"\D", "", number)
         if not number:
             return False
 
@@ -199,15 +208,17 @@ class PIIDetector:
         # Common name prefixes
         prefixes = ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."]
         for prefix in prefixes:
-            pattern = f'{re.escape(prefix)}\\s+[A-Z][a-z]+ [A-Z][a-z]+'
+            pattern = f"{re.escape(prefix)}\\s+[A-Z][a-z]+ [A-Z][a-z]+"
             for match in re.finditer(pattern, text):
-                matches.append(PIIMatch(
-                    pii_type=PIIType.PERSON_NAME,
-                    value=match.group(),
-                    start_pos=match.start(),
-                    end_pos=match.end(),
-                    confidence=0.85
-                ))
+                matches.append(
+                    PIIMatch(
+                        pii_type=PIIType.PERSON_NAME,
+                        value=match.group(),
+                        start_pos=match.start(),
+                        end_pos=match.end(),
+                        confidence=0.85,
+                    )
+                )
 
         return matches
 
@@ -216,16 +227,18 @@ class PIIDetector:
         matches = []
 
         # Simple address pattern
-        address_pattern = r'\b\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl)\b'
+        address_pattern = r"\b\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl)\b"
 
         for match in re.finditer(address_pattern, text, re.IGNORECASE):
-            matches.append(PIIMatch(
-                pii_type=PIIType.ADDRESS,
-                value=match.group(),
-                start_pos=match.start(),
-                end_pos=match.end(),
-                confidence=0.75
-            ))
+            matches.append(
+                PIIMatch(
+                    pii_type=PIIType.ADDRESS,
+                    value=match.group(),
+                    start_pos=match.start(),
+                    end_pos=match.end(),
+                    confidence=0.75,
+                )
+            )
 
         return matches
 
@@ -281,7 +294,9 @@ class PrivacyFilter:
 
         return filtered_text, matches
 
-    def filter_dict(self, data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, list[PIIMatch]]]:
+    def filter_dict(
+        self, data: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, list[PIIMatch]]]:
         """
         Filter PII from dictionary recursively.
 
@@ -350,7 +365,7 @@ class PrivacyFilter:
         for match in sorted_matches:
             # Create redaction of same length
             redaction = self.config.redaction_char * (match.end_pos - match.start_pos)
-            result = result[:match.start_pos] + redaction + result[match.end_pos:]
+            result = result[: match.start_pos] + redaction + result[match.end_pos :]
 
         return result
 
@@ -363,7 +378,7 @@ class PrivacyFilter:
             # Create consistent hash for the value
             hash_value = hashlib.sha256(match.value.encode()).hexdigest()[:8]
             redaction = f"[{match.pii_type.value}:{hash_value}]"
-            result = result[:match.start_pos] + redaction + result[match.end_pos:]
+            result = result[: match.start_pos] + redaction + result[match.end_pos :]
 
         return result
 
@@ -373,7 +388,7 @@ class PrivacyFilter:
             "has_pii": False,
             "pii_types_found": set(),
             "pii_count": 0,
-            "details": []
+            "details": [],
         }
 
         if isinstance(data, str):
@@ -383,10 +398,9 @@ class PrivacyFilter:
                 report["pii_count"] = len(matches)
                 for match in matches:
                     report["pii_types_found"].add(match.pii_type.value)
-                    report["details"].append({
-                        "type": match.pii_type.value,
-                        "confidence": match.confidence
-                    })
+                    report["details"].append(
+                        {"type": match.pii_type.value, "confidence": match.confidence}
+                    )
 
         elif isinstance(data, dict):
             _, all_matches = self.filter_dict(data)
@@ -396,11 +410,13 @@ class PrivacyFilter:
                     report["pii_count"] += len(matches)
                     for match in matches:
                         report["pii_types_found"].add(match.pii_type.value)
-                        report["details"].append({
-                            "path": path,
-                            "type": match.pii_type.value,
-                            "confidence": match.confidence
-                        })
+                        report["details"].append(
+                            {
+                                "path": path,
+                                "type": match.pii_type.value,
+                                "confidence": match.confidence,
+                            }
+                        )
 
         report["pii_types_found"] = list(report["pii_types_found"])
         return report
@@ -416,4 +432,3 @@ def get_privacy_filter() -> PrivacyFilter:
     if _privacy_filter is None:
         _privacy_filter = PrivacyFilter()
     return _privacy_filter
-

@@ -55,11 +55,13 @@ class MemoryConfig:
     # Memory optimization
     enable_memory_mapping: bool = True
     enable_object_pooling: bool = True
-    pool_sizes: dict[str, int] = field(default_factory=lambda: {
-        'small_objects': 1000,
-        'medium_objects': 500,
-        'large_objects': 100
-    })
+    pool_sizes: dict[str, int] = field(
+        default_factory=lambda: {
+            "small_objects": 1000,
+            "medium_objects": 500,
+            "large_objects": 100,
+        }
+    )
 
     # Cleanup settings
     cleanup_interval: int = 60  # seconds
@@ -101,19 +103,21 @@ class MemoryStats:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'current_usage_mb': self.current_usage_mb,
-            'peak_usage_mb': self.peak_usage_mb,
-            'available_mb': self.available_mb,
-            'rss_mb': self.rss_mb,
-            'vms_mb': self.vms_mb,
-            'gc_counts': self.gc_counts,
-            'gc_collections': self.gc_collections,
-            'gc_collected': self.gc_collected,
-            'gc_uncollectable': self.gc_uncollectable,
-            'tracked_objects': self.tracked_objects,
-            'leaked_objects': self.leaked_objects,
-            'cleanup_operations': self.cleanup_operations,
-            'last_cleanup': self.last_cleanup.isoformat() if self.last_cleanup else None
+            "current_usage_mb": self.current_usage_mb,
+            "peak_usage_mb": self.peak_usage_mb,
+            "available_mb": self.available_mb,
+            "rss_mb": self.rss_mb,
+            "vms_mb": self.vms_mb,
+            "gc_counts": self.gc_counts,
+            "gc_collections": self.gc_collections,
+            "gc_collected": self.gc_collected,
+            "gc_uncollectable": self.gc_uncollectable,
+            "tracked_objects": self.tracked_objects,
+            "leaked_objects": self.leaked_objects,
+            "cleanup_operations": self.cleanup_operations,
+            "last_cleanup": (
+                self.last_cleanup.isoformat() if self.last_cleanup else None
+            ),
         }
 
 
@@ -203,11 +207,11 @@ class MemoryEfficientDict:
     def get_stats(self) -> dict[str, Any]:
         """Get dictionary statistics."""
         return {
-            'size': len(self._data),
-            'max_size': self._max_size,
-            'eviction_count': self._eviction_count,
-            'total_accesses': sum(self._access_counts.values()),
-            'unique_keys': len(self._access_counts)
+            "size": len(self._data),
+            "max_size": self._max_size,
+            "eviction_count": self._eviction_count,
+            "total_accesses": sum(self._access_counts.values()),
+            "unique_keys": len(self._access_counts),
         }
 
 
@@ -255,10 +259,10 @@ class MemoryEfficientList:
     def get_stats(self) -> dict[str, Any]:
         """Get list statistics."""
         return {
-            'size': len(self._data),
-            'max_size': self._max_size,
-            'total_additions': self._total_additions,
-            'eviction_count': self._eviction_count
+            "size": len(self._data),
+            "max_size": self._max_size,
+            "total_additions": self._total_additions,
+            "eviction_count": self._eviction_count,
         }
 
 
@@ -290,7 +294,7 @@ class ObjectPool:
         with self._lock:
             if len(self._pool) < self._max_size:
                 # Reset object if it has a reset method
-                if hasattr(obj, 'reset'):
+                if hasattr(obj, "reset"):
                     obj.reset()
                 self._pool.append(obj)
 
@@ -302,14 +306,15 @@ class ObjectPool:
     def get_stats(self) -> dict[str, Any]:
         """Get pool statistics."""
         return {
-            'pool_size': len(self._pool),
-            'max_size': self._max_size,
-            'created_count': self._created_count,
-            'reused_count': self._reused_count,
-            'reuse_rate': (
+            "pool_size": len(self._pool),
+            "max_size": self._max_size,
+            "created_count": self._created_count,
+            "reused_count": self._reused_count,
+            "reuse_rate": (
                 self._reused_count / (self._created_count + self._reused_count)
-                if (self._created_count + self._reused_count) > 0 else 0
-            )
+                if (self._created_count + self._reused_count) > 0
+                else 0
+            ),
         }
 
 
@@ -334,12 +339,14 @@ class MemoryTracker:
         self.object_counts[category] += 1
 
         # Record allocation
-        self.allocation_history.append({
-            'timestamp': time.time(),
-            'category': category,
-            'object_id': id(obj),
-            'size': sys.getsizeof(obj)
-        })
+        self.allocation_history.append(
+            {
+                "timestamp": time.time(),
+                "category": category,
+                "object_id": id(obj),
+                "size": sys.getsizeof(obj),
+            }
+        )
 
     def untrack_object(self, obj, category: str = "unknown"):
         """Untrack an object."""
@@ -358,16 +365,18 @@ class MemoryTracker:
         old_threshold = current_time - 3600  # 1 hour
 
         for allocation in self.allocation_history:
-            if allocation['timestamp'] < old_threshold:
+            if allocation["timestamp"] < old_threshold:
                 # Check if object still exists
                 for obj in self.tracked_objects:
-                    if id(obj) == allocation['object_id']:
-                        leaks.append({
-                            'object_id': allocation['object_id'],
-                            'category': allocation['category'],
-                            'age_seconds': current_time - allocation['timestamp'],
-                            'size': allocation['size']
-                        })
+                    if id(obj) == allocation["object_id"]:
+                        leaks.append(
+                            {
+                                "object_id": allocation["object_id"],
+                                "category": allocation["category"],
+                                "age_seconds": current_time - allocation["timestamp"],
+                                "size": allocation["size"],
+                            }
+                        )
                         break
 
         self.leak_suspects = leaks
@@ -376,10 +385,10 @@ class MemoryTracker:
     def get_object_summary(self) -> dict[str, Any]:
         """Get summary of tracked objects."""
         return {
-            'total_tracked': len(self.tracked_objects),
-            'by_category': dict(self.object_counts),
-            'recent_allocations': len(self.allocation_history),
-            'leak_suspects': len(self.leak_suspects)
+            "total_tracked": len(self.tracked_objects),
+            "by_category": dict(self.object_counts),
+            "recent_allocations": len(self.allocation_history),
+            "leak_suspects": len(self.leak_suspects),
         }
 
     def get_memory_profile(self) -> dict[str, Any] | None:
@@ -393,17 +402,15 @@ class MemoryTracker:
 
             # Get top memory consumers
             top_consumers = []
-            for item in sum_objects[:self.config.profile_top_n]:
-                top_consumers.append({
-                    'type': str(item[0]),
-                    'count': item[1],
-                    'size': item[2]
-                })
+            for item in sum_objects[: self.config.profile_top_n]:
+                top_consumers.append(
+                    {"type": str(item[0]), "count": item[1], "size": item[2]}
+                )
 
             return {
-                'timestamp': time.time(),
-                'total_objects': len(all_objects),
-                'top_consumers': top_consumers
+                "timestamp": time.time(),
+                "total_objects": len(all_objects),
+                "top_consumers": top_consumers,
             }
         except Exception as e:
             logger.error(f"Error getting memory profile: {e}")
@@ -450,19 +457,16 @@ class MemoryManager:
     def _setup_object_pools(self):
         """Setup object pools for common types."""
         # Example pools - can be customized based on usage patterns
-        self.object_pools['list'] = ObjectPool(
-            lambda: [],
-            self.config.pool_sizes.get('small_objects', 1000)
+        self.object_pools["list"] = ObjectPool(
+            lambda: [], self.config.pool_sizes.get("small_objects", 1000)
         )
 
-        self.object_pools['dict'] = ObjectPool(
-            lambda: {},
-            self.config.pool_sizes.get('medium_objects', 500)
+        self.object_pools["dict"] = ObjectPool(
+            lambda: {}, self.config.pool_sizes.get("medium_objects", 500)
         )
 
-        self.object_pools['set'] = ObjectPool(
-            lambda: set(),
-            self.config.pool_sizes.get('small_objects', 1000)
+        self.object_pools["set"] = ObjectPool(
+            lambda: set(), self.config.pool_sizes.get("small_objects", 1000)
         )
 
     def _optimize_gc(self):
@@ -470,7 +474,7 @@ class MemoryManager:
         gc.set_threshold(
             self.config.gc_threshold_0,
             self.config.gc_threshold_1,
-            self.config.gc_threshold_2
+            self.config.gc_threshold_2,
         )
 
         # Enable gc debugging if in development
@@ -504,7 +508,9 @@ class MemoryManager:
             self.profiling_task.cancel()
 
         # Wait for tasks to complete
-        tasks = [t for t in [self.monitor_task, self.cleanup_task, self.profiling_task] if t]
+        tasks = [
+            t for t in [self.monitor_task, self.cleanup_task, self.profiling_task] if t
+        ]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -531,7 +537,9 @@ class MemoryManager:
 
         # Update stats
         self.stats.current_usage_mb = memory_info.rss / 1024 / 1024
-        self.stats.peak_usage_mb = max(self.stats.peak_usage_mb, self.stats.current_usage_mb)
+        self.stats.peak_usage_mb = max(
+            self.stats.peak_usage_mb, self.stats.current_usage_mb
+        )
         self.stats.rss_mb = memory_info.rss / 1024 / 1024
         self.stats.vms_mb = memory_info.vms / 1024 / 1024
 
@@ -543,9 +551,11 @@ class MemoryManager:
         gc_stats = gc.get_stats()
         if gc_stats:
             self.stats.gc_counts = gc.get_count()
-            self.stats.gc_collections = sum(stat['collections'] for stat in gc_stats)
-            self.stats.gc_collected = sum(stat['collected'] for stat in gc_stats)
-            self.stats.gc_uncollectable = sum(stat['uncollectable'] for stat in gc_stats)
+            self.stats.gc_collections = sum(stat["collections"] for stat in gc_stats)
+            self.stats.gc_collected = sum(stat["collected"] for stat in gc_stats)
+            self.stats.gc_uncollectable = sum(
+                stat["uncollectable"] for stat in gc_stats
+            )
 
         # Update tracked objects count
         self.stats.tracked_objects = len(self.tracker.tracked_objects)
@@ -564,10 +574,13 @@ class MemoryManager:
         # Rate-limited alerts
         if current_time - self.last_alert_time > 300:  # 5 minutes
             if current_usage > self.config.warning_threshold:
-                await self._trigger_alert('memory_warning', {
-                    'current_usage_mb': current_usage,
-                    'threshold_mb': self.config.warning_threshold
-                })
+                await self._trigger_alert(
+                    "memory_warning",
+                    {
+                        "current_usage_mb": current_usage,
+                        "threshold_mb": self.config.warning_threshold,
+                    },
+                )
                 self.last_alert_time = current_time
 
     async def _handle_warning_memory(self):
@@ -617,7 +630,9 @@ class MemoryManager:
         self.stats.leaked_objects = len(leaks)
 
         cleanup_time = time.time() - start_time
-        logger.debug(f"Cleanup completed in {cleanup_time:.3f}s, collected {collected} objects")
+        logger.debug(
+            f"Cleanup completed in {cleanup_time:.3f}s, collected {collected} objects"
+        )
 
     async def _perform_aggressive_cleanup(self):
         """Perform aggressive memory cleanup."""
@@ -704,7 +719,9 @@ class MemoryManager:
         self.efficient_dicts[name] = efficient_dict
         return efficient_dict
 
-    def create_efficient_list(self, name: str, size: int = 10000) -> MemoryEfficientList:
+    def create_efficient_list(
+        self, name: str, size: int = 10000
+    ) -> MemoryEfficientList:
         """Create a memory-efficient list."""
         efficient_list = MemoryEfficientList(size)
         self.efficient_lists[name] = efficient_list
@@ -737,11 +754,13 @@ class MemoryManager:
             memory_diff = end_memory - start_memory
             time_diff = end_time - start_time
 
-            logger.debug(f"Memory context '{name}': {memory_diff:.1f}MB in {time_diff:.3f}s")
+            logger.debug(
+                f"Memory context '{name}': {memory_diff:.1f}MB in {time_diff:.3f}s"
+            )
 
             if self.config.enable_detailed_tracking:
                 snapshot_after = tracemalloc.take_snapshot()
-                top_stats = snapshot_after.compare_to(snapshot_before, 'lineno')
+                top_stats = snapshot_after.compare_to(snapshot_before, "lineno")
 
                 for stat in top_stats[:5]:
                     logger.debug(f"  {stat}")
@@ -749,22 +768,21 @@ class MemoryManager:
     def get_memory_stats(self) -> dict[str, Any]:
         """Get comprehensive memory statistics."""
         return {
-            'memory_stats': self.stats.to_dict(),
-            'object_summary': self.tracker.get_object_summary(),
-            'pool_stats': {
-                name: pool.get_stats()
-                for name, pool in self.object_pools.items()
+            "memory_stats": self.stats.to_dict(),
+            "object_summary": self.tracker.get_object_summary(),
+            "pool_stats": {
+                name: pool.get_stats() for name, pool in self.object_pools.items()
             },
-            'efficient_structures': {
-                'dicts': {
+            "efficient_structures": {
+                "dicts": {
                     name: data_dict.get_stats()
                     for name, data_dict in self.efficient_dicts.items()
                 },
-                'lists': {
+                "lists": {
                     name: data_list.get_stats()
                     for name, data_list in self.efficient_lists.items()
-                }
-            }
+                },
+            },
         }
 
     def get_memory_profile(self) -> dict[str, Any] | None:
@@ -792,7 +810,9 @@ def get_memory_manager() -> MemoryManager:
     return _global_memory_manager
 
 
-async def initialize_memory_manager(config: MemoryConfig | None = None) -> MemoryManager:
+async def initialize_memory_manager(
+    config: MemoryConfig | None = None,
+) -> MemoryManager:
     """Initialize and start global memory manager."""
     global _global_memory_manager
     _global_memory_manager = MemoryManager(config)

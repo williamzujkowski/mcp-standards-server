@@ -25,7 +25,7 @@ class TestContextModel:
             language="python",
             framework="django",
             requirements=["security", "performance"],
-            team_size="medium"
+            team_size="medium",
         )
 
         assert context.project_type == "web_application"
@@ -44,10 +44,7 @@ class TestContextModel:
 
     def test_extra_fields_allowed(self):
         """Test that extra fields are allowed."""
-        context = ContextModel(
-            project_type="api",
-            custom_field="custom_value"
-        )
+        context = ContextModel(project_type="api", custom_field="custom_value")
 
         assert context.project_type == "api"
         assert hasattr(context, "custom_field")
@@ -61,7 +58,7 @@ class TestValidateAgainstStandardInput:
         input_data = ValidateAgainstStandardInput(
             code="function test() { return true; }",
             standard="javascript-es6",
-            language="javascript"
+            language="javascript",
         )
 
         assert input_data.code == "function test() { return true; }"
@@ -73,15 +70,13 @@ class TestValidateAgainstStandardInput:
             "__import__('os').system('rm -rf /')",
             "eval('malicious code')",
             "exec(compile('bad', 'string', 'exec'))",
-            "globals()['__builtins__']['eval']('bad')"
+            "globals()['__builtins__']['eval']('bad')",
         ]
 
         for code in dangerous_codes:
             with pytest.raises(PydanticValidationError):
                 ValidateAgainstStandardInput(
-                    code=code,
-                    standard="python-security",
-                    language="python"
+                    code=code, standard="python-security", language="python"
                 )
 
     def test_code_size_limit(self):
@@ -90,9 +85,7 @@ class TestValidateAgainstStandardInput:
 
         with pytest.raises(PydanticValidationError):
             ValidateAgainstStandardInput(
-                code=huge_code,
-                standard="test",
-                language="python"
+                code=huge_code, standard="test", language="python"
             )
 
 
@@ -102,9 +95,7 @@ class TestSearchStandardsInput:
     def test_valid_search(self):
         """Test valid search input."""
         input_data = SearchStandardsInput(
-            query="React performance optimization",
-            limit=20,
-            min_relevance=0.7
+            query="React performance optimization", limit=20, min_relevance=0.7
         )
 
         assert input_data.query == "React performance optimization"
@@ -152,10 +143,7 @@ class TestInputValidator:
     def test_validate_get_applicable_standards(self, validator):
         """Test validation of get_applicable_standards input."""
         arguments = {
-            "context": {
-                "project_type": "web_application",
-                "framework": "react"
-            }
+            "context": {"project_type": "web_application", "framework": "react"}
         }
 
         validated = validator.validate_tool_input("get_applicable_standards", arguments)
@@ -173,7 +161,9 @@ class TestInputValidator:
         with pytest.raises(ValidationError) as exc_info:
             validator.validate_tool_input("get_applicable_standards", arguments)
 
-        assert exc_info.value.error_detail.code == ErrorCode.VALIDATION_INVALID_PARAMETERS
+        assert (
+            exc_info.value.error_detail.code == ErrorCode.VALIDATION_INVALID_PARAMETERS
+        )
 
     def test_validate_search_standards(self, validator):
         """Test validation of search_standards input."""
@@ -182,8 +172,8 @@ class TestInputValidator:
             "limit": 5,
             "filters": {
                 "categories": ["frontend", "react"],
-                "languages": ["javascript"]
-            }
+                "languages": ["javascript"],
+            },
         }
 
         validated = validator.validate_tool_input("search_standards", arguments)

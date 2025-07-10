@@ -66,15 +66,12 @@ def fixtures_dir() -> Path:
 def benchmark_data():
     """Provide data for benchmark tests."""
     return {
-        "small_context": {
-            "project_type": "api",
-            "language": "python"
-        },
+        "small_context": {"project_type": "api", "language": "python"},
         "medium_context": {
             "project_type": "web_application",
             "framework": "react",
             "language": "javascript",
-            "requirements": ["accessibility", "performance"]
+            "requirements": ["accessibility", "performance"],
         },
         "large_context": {
             "project_type": "microservice",
@@ -84,8 +81,8 @@ def benchmark_data():
             "deployment": "kubernetes",
             "database": ["postgresql", "redis"],
             "messaging": "kafka",
-            "team_size": "large"
-        }
+            "team_size": "large",
+        },
     }
 
 
@@ -103,6 +100,7 @@ def skip_without_mcp(request):
     """Skip tests that require MCP when it's not available."""
     if request.node.get_closest_marker("mcp"):
         import importlib.util
+
         if importlib.util.find_spec("mcp") is None:
             pytest.skip("MCP not installed")
 
@@ -145,6 +143,7 @@ def cleanup_after_test(request):
     # Only force GC for memory-intensive tests
     if request.node.get_closest_marker("memory_intensive"):
         import gc
+
         gc.collect()
 
     # Clear any test caches
@@ -157,7 +156,9 @@ class CustomAssertions:
     """Custom assertion helpers for tests."""
 
     @staticmethod
-    def assert_performance(duration: float, max_duration: float, operation: str = "Operation"):
+    def assert_performance(
+        duration: float, max_duration: float, operation: str = "Operation"
+    ):
         """Assert that an operation completed within time limit."""
         assert duration <= max_duration, (
             f"{operation} took {duration:.3f}s, "
@@ -168,8 +169,7 @@ class CustomAssertions:
     def assert_memory_usage(memory_mb: float, max_memory_mb: float):
         """Assert that memory usage is within limits."""
         assert memory_mb <= max_memory_mb, (
-            f"Memory usage {memory_mb:.2f}MB "
-            f"exceeds limit of {max_memory_mb:.2f}MB"
+            f"Memory usage {memory_mb:.2f}MB " f"exceeds limit of {max_memory_mb:.2f}MB"
         )
 
 
@@ -191,6 +191,7 @@ def use_ml_mocks(mock_ml_dependencies):
 @pytest.fixture
 def mock_github_api(monkeypatch):
     """Mock GitHub API calls."""
+
     class MockGitHubAPI:
         def __init__(self):
             self.calls = []
@@ -264,27 +265,29 @@ def mock_ml_dependencies():
         process = MockProcess()
 
     # Patch the imports
-    sys.modules['sentence_transformers'] = MockSentenceTransformersModule()
-    sys.modules['sklearn'] = MockSklearnModule()
-    sys.modules['sklearn.neighbors'] = MockNeighborsModule()
-    sys.modules['sklearn.metrics'] = MockMetricsModule()
-    sys.modules['sklearn.metrics.pairwise'] = MockPairwiseModule()
+    sys.modules["sentence_transformers"] = MockSentenceTransformersModule()
+    sys.modules["sklearn"] = MockSklearnModule()
+    sys.modules["sklearn.neighbors"] = MockNeighborsModule()
+    sys.modules["sklearn.metrics"] = MockMetricsModule()
+    sys.modules["sklearn.metrics.pairwise"] = MockPairwiseModule()
     # Don't replace NLTK modules globally - this causes import conflicts
     # Let individual tests handle their own mocking
     # sys.modules['nltk.stem'] = MockNLTKStemModule()
     # sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
-    sys.modules['fuzzywuzzy'] = MockFuzzyWuzzyModule()
-    sys.modules['redis'] = type(sys)('redis')
-    sys.modules['redis'].Redis = MockRedisClient
+    sys.modules["fuzzywuzzy"] = MockFuzzyWuzzyModule()
+    sys.modules["redis"] = type(sys)("redis")
+    sys.modules["redis"].Redis = MockRedisClient
 
     # Since this is session-scoped, we can't use monkeypatch
     # Apply patches at module level
     import sentence_transformers
+
     sentence_transformers.SentenceTransformer = MockSentenceTransformer
 
     # Apply Redis patch if available
     try:
         import redis
+
         redis.Redis = MockRedisClient
     except ImportError:
         pass
@@ -292,6 +295,7 @@ def mock_ml_dependencies():
     # Mock NLTK download function specifically
     try:
         import nltk
+
         nltk.download = mock_nltk_download
     except ImportError:
         pass  # NLTK not installed
@@ -306,15 +310,9 @@ def mock_ml_dependencies():
 def pytest_configure(config):
     """Configure pytest with custom settings."""
     # Register custom markers
-    config.addinivalue_line(
-        "markers", "skip_on_ci: skip test when running in CI"
-    )
-    config.addinivalue_line(
-        "markers", "requires_redis: test requires Redis server"
-    )
-    config.addinivalue_line(
-        "markers", "requires_docker: test requires Docker"
-    )
+    config.addinivalue_line("markers", "skip_on_ci: skip test when running in CI")
+    config.addinivalue_line("markers", "requires_redis: test requires Redis server")
+    config.addinivalue_line("markers", "requires_docker: test requires Docker")
 
 
 def pytest_collection_modifyitems(config, items):

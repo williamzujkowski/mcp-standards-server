@@ -38,6 +38,7 @@ class CombinedServer:
 
     def setup_signal_handlers(self):
         """Setup graceful shutdown signal handlers."""
+
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, starting graceful shutdown...")
             self.running = False
@@ -119,15 +120,19 @@ async def main():
     log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
         level=getattr(logging, log_level),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler('logs/mcp-server.log') if os.path.exists('logs') else logging.StreamHandler()
-        ]
+            (
+                logging.FileHandler("logs/mcp-server.log")
+                if os.path.exists("logs")
+                else logging.StreamHandler()
+            ),
+        ],
     )
 
     # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
 
     logger.info("Starting MCP Standards Server")
 
@@ -136,6 +141,7 @@ async def main():
     config_path = os.environ.get("MCP_CONFIG_PATH", "config.json")
     if os.path.exists(config_path):
         import json
+
         with open(config_path) as f:
             mcp_config = json.load(f)
         logger.info(f"Loaded configuration from {config_path}")

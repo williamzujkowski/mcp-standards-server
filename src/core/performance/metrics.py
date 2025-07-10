@@ -24,7 +24,14 @@ from typing import Any
 
 import numpy as np
 import psutil
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, Summary, generate_latest
+from prometheus_client import (
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Summary,
+    generate_latest,
+)
 
 from ..cache.redis_client import RedisCache
 
@@ -33,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 class MetricType(Enum):
     """Types of metrics."""
+
     COUNTER = "counter"
     GAUGE = "gauge"
     HISTOGRAM = "histogram"
@@ -42,6 +50,7 @@ class MetricType(Enum):
 
 class AlertLevel(Enum):
     """Alert levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -51,6 +60,7 @@ class AlertLevel(Enum):
 @dataclass
 class MetricDefinition:
     """Definition of a metric."""
+
     name: str
     type: MetricType
     description: str
@@ -63,6 +73,7 @@ class MetricDefinition:
 @dataclass
 class MetricValue:
     """A metric value with timestamp."""
+
     value: float
     timestamp: float
     labels: dict[str, str] = field(default_factory=dict)
@@ -71,6 +82,7 @@ class MetricValue:
 @dataclass
 class PerformanceThreshold:
     """Performance threshold configuration."""
+
     metric_name: str
     threshold_value: float
     comparison: str  # "gt", "lt", "eq"
@@ -82,6 +94,7 @@ class PerformanceThreshold:
 @dataclass
 class PerformanceAlert:
     """Performance alert."""
+
     metric_name: str
     current_value: float
     threshold: PerformanceThreshold
@@ -133,7 +146,9 @@ class MetricCollector:
         self.prometheus_metrics = {}
 
         # Data storage
-        self.metric_data = defaultdict(lambda: deque(maxlen=config.max_samples_per_metric))
+        self.metric_data = defaultdict(
+            lambda: deque(maxlen=config.max_samples_per_metric)
+        )
         self.metric_locks = defaultdict(threading.Lock)
 
         # Alerting
@@ -166,10 +181,10 @@ class MetricCollector:
     def _create_prometheus_metric(self, definition: MetricDefinition):
         """Create Prometheus metric."""
         metric_kwargs = {
-            'name': definition.name,
-            'documentation': definition.description,
-            'labelnames': definition.labels,
-            'registry': self.prometheus_registry
+            "name": definition.name,
+            "documentation": definition.description,
+            "labelnames": definition.labels,
+            "registry": self.prometheus_registry,
         }
 
         if definition.type == MetricType.COUNTER:
@@ -178,18 +193,20 @@ class MetricCollector:
             metric = Gauge(**metric_kwargs)
         elif definition.type == MetricType.HISTOGRAM:
             if definition.buckets:
-                metric_kwargs['buckets'] = definition.buckets
+                metric_kwargs["buckets"] = definition.buckets
             metric = Histogram(**metric_kwargs)
         elif definition.type == MetricType.SUMMARY:
             if definition.quantiles:
-                metric_kwargs['quantiles'] = definition.quantiles
+                metric_kwargs["quantiles"] = definition.quantiles
             metric = Summary(**metric_kwargs)
         else:
             return
 
         self.prometheus_metrics[definition.name] = metric
 
-    def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None):
+    def record_metric(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ):
         """Record a metric value."""
         if name not in self.metrics_registry:
             logger.warning(f"Metric {name} not registered")
@@ -229,9 +246,9 @@ class MetricCollector:
         try:
             key = f"{self.config.redis_key_prefix}:{name}:{int(metric_value.timestamp)}"
             data = {
-                'value': metric_value.value,
-                'timestamp': metric_value.timestamp,
-                'labels': metric_value.labels
+                "value": metric_value.value,
+                "timestamp": metric_value.timestamp,
+                "labels": metric_value.labels,
             }
 
             await self.redis_cache.async_set(key, data, ttl=self.config.redis_ttl)
@@ -259,7 +276,10 @@ class MetricCollector:
                 exceeded = True
             elif threshold.comparison == "lt" and value < threshold.threshold_value:
                 exceeded = True
-            elif threshold.comparison == "eq" and abs(value - threshold.threshold_value) < 0.001:
+            elif (
+                threshold.comparison == "eq"
+                and abs(value - threshold.threshold_value) < 0.001
+            ):
                 exceeded = True
 
             alert_key = f"{metric_name}:{threshold.alert_level.value}"
@@ -276,7 +296,7 @@ class MetricCollector:
                     metric_name=metric_name,
                     current_value=value,
                     threshold=threshold,
-                    timestamp=current_time
+                    timestamp=current_time,
                 )
 
                 self.active_alerts[alert_key] = alert
@@ -312,10 +332,12 @@ class MetricCollector:
         if callback in self.alert_callbacks:
             self.alert_callbacks.remove(callback)
 
-    def get_metric_data(self,
-                       metric_name: str,
-                       start_time: float | None = None,
-                       end_time: float | None = None) -> list[MetricValue]:
+    def get_metric_data(
+        self,
+        metric_name: str,
+        start_time: float | None = None,
+        end_time: float | None = None,
+    ) -> list[MetricValue]:
         """Get metric data for a time range."""
         if metric_name not in self.metric_data:
             return []
@@ -331,10 +353,12 @@ class MetricCollector:
 
         return data
 
-    def get_metric_statistics(self,
-                             metric_name: str,
-                             start_time: float | None = None,
-                             end_time: float | None = None) -> dict[str, Any]:
+    def get_metric_statistics(
+        self,
+        metric_name: str,
+        start_time: float | None = None,
+        end_time: float | None = None,
+    ) -> dict[str, Any]:
         """Get statistics for a metric."""
         data = self.get_metric_data(metric_name, start_time, end_time)
 
@@ -344,16 +368,16 @@ class MetricCollector:
         values = [d.value for d in data]
 
         return {
-            'count': len(values),
-            'min': min(values),
-            'max': max(values),
-            'mean': statistics.mean(values),
-            'median': statistics.median(values),
-            'std': statistics.stdev(values) if len(values) > 1 else 0,
-            'p95': np.percentile(values, 95),
-            'p99': np.percentile(values, 99),
-            'first_timestamp': data[0].timestamp,
-            'last_timestamp': data[-1].timestamp
+            "count": len(values),
+            "min": min(values),
+            "max": max(values),
+            "mean": statistics.mean(values),
+            "median": statistics.median(values),
+            "std": statistics.stdev(values) if len(values) > 1 else 0,
+            "p95": np.percentile(values, 95),
+            "p99": np.percentile(values, 99),
+            "first_timestamp": data[0].timestamp,
+            "last_timestamp": data[-1].timestamp,
         }
 
     def get_prometheus_metrics(self) -> str:
@@ -361,7 +385,7 @@ class MetricCollector:
         if not self.config.enable_prometheus:
             return ""
 
-        return generate_latest(self.prometheus_registry).decode('utf-8')
+        return generate_latest(self.prometheus_registry).decode("utf-8")
 
     async def start(self):
         """Start metric collection."""
@@ -413,7 +437,7 @@ class MetricCollector:
             self.record_metric("system_memory_percent", memory.percent)
 
             # Disk metrics
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             self.record_metric("system_disk_used_bytes", disk.used)
             self.record_metric("system_disk_free_bytes", disk.free)
             self.record_metric("system_disk_percent", disk.used / disk.total * 100)
@@ -446,36 +470,112 @@ class PerformanceMonitor:
         """Register standard application metrics."""
         metrics = [
             # System metrics
-            MetricDefinition("system_cpu_percent", MetricType.GAUGE, "CPU usage percentage"),
-            MetricDefinition("system_memory_used_bytes", MetricType.GAUGE, "Memory used in bytes"),
-            MetricDefinition("system_memory_available_bytes", MetricType.GAUGE, "Available memory in bytes"),
-            MetricDefinition("system_memory_percent", MetricType.GAUGE, "Memory usage percentage"),
-            MetricDefinition("system_disk_used_bytes", MetricType.GAUGE, "Disk space used in bytes"),
-            MetricDefinition("system_disk_free_bytes", MetricType.GAUGE, "Free disk space in bytes"),
-            MetricDefinition("system_disk_percent", MetricType.GAUGE, "Disk usage percentage"),
-            MetricDefinition("system_network_bytes_sent", MetricType.COUNTER, "Network bytes sent"),
-            MetricDefinition("system_network_bytes_recv", MetricType.COUNTER, "Network bytes received"),
-
+            MetricDefinition(
+                "system_cpu_percent", MetricType.GAUGE, "CPU usage percentage"
+            ),
+            MetricDefinition(
+                "system_memory_used_bytes", MetricType.GAUGE, "Memory used in bytes"
+            ),
+            MetricDefinition(
+                "system_memory_available_bytes",
+                MetricType.GAUGE,
+                "Available memory in bytes",
+            ),
+            MetricDefinition(
+                "system_memory_percent", MetricType.GAUGE, "Memory usage percentage"
+            ),
+            MetricDefinition(
+                "system_disk_used_bytes", MetricType.GAUGE, "Disk space used in bytes"
+            ),
+            MetricDefinition(
+                "system_disk_free_bytes", MetricType.GAUGE, "Free disk space in bytes"
+            ),
+            MetricDefinition(
+                "system_disk_percent", MetricType.GAUGE, "Disk usage percentage"
+            ),
+            MetricDefinition(
+                "system_network_bytes_sent", MetricType.COUNTER, "Network bytes sent"
+            ),
+            MetricDefinition(
+                "system_network_bytes_recv",
+                MetricType.COUNTER,
+                "Network bytes received",
+            ),
             # Application metrics
-            MetricDefinition("app_request_count", MetricType.COUNTER, "Total requests", ["method", "endpoint"]),
-            MetricDefinition("app_request_duration_seconds", MetricType.HISTOGRAM, "Request duration", ["method", "endpoint"]),
-            MetricDefinition("app_error_count", MetricType.COUNTER, "Total errors", ["error_type"]),
-            MetricDefinition("app_cache_hits", MetricType.COUNTER, "Cache hits", ["cache_type"]),
-            MetricDefinition("app_cache_misses", MetricType.COUNTER, "Cache misses", ["cache_type"]),
-            MetricDefinition("app_db_query_duration_seconds", MetricType.HISTOGRAM, "Database query duration", ["query_type"]),
-            MetricDefinition("app_active_connections", MetricType.GAUGE, "Active connections", ["connection_type"]),
-
+            MetricDefinition(
+                "app_request_count",
+                MetricType.COUNTER,
+                "Total requests",
+                ["method", "endpoint"],
+            ),
+            MetricDefinition(
+                "app_request_duration_seconds",
+                MetricType.HISTOGRAM,
+                "Request duration",
+                ["method", "endpoint"],
+            ),
+            MetricDefinition(
+                "app_error_count", MetricType.COUNTER, "Total errors", ["error_type"]
+            ),
+            MetricDefinition(
+                "app_cache_hits", MetricType.COUNTER, "Cache hits", ["cache_type"]
+            ),
+            MetricDefinition(
+                "app_cache_misses", MetricType.COUNTER, "Cache misses", ["cache_type"]
+            ),
+            MetricDefinition(
+                "app_db_query_duration_seconds",
+                MetricType.HISTOGRAM,
+                "Database query duration",
+                ["query_type"],
+            ),
+            MetricDefinition(
+                "app_active_connections",
+                MetricType.GAUGE,
+                "Active connections",
+                ["connection_type"],
+            ),
             # Search metrics
-            MetricDefinition("search_query_count", MetricType.COUNTER, "Search queries", ["query_type"]),
-            MetricDefinition("search_query_duration_seconds", MetricType.HISTOGRAM, "Search query duration", ["query_type"]),
-            MetricDefinition("search_results_count", MetricType.HISTOGRAM, "Search results count", ["query_type"]),
-            MetricDefinition("search_cache_hits", MetricType.COUNTER, "Search cache hits"),
-            MetricDefinition("search_cache_misses", MetricType.COUNTER, "Search cache misses"),
-
+            MetricDefinition(
+                "search_query_count",
+                MetricType.COUNTER,
+                "Search queries",
+                ["query_type"],
+            ),
+            MetricDefinition(
+                "search_query_duration_seconds",
+                MetricType.HISTOGRAM,
+                "Search query duration",
+                ["query_type"],
+            ),
+            MetricDefinition(
+                "search_results_count",
+                MetricType.HISTOGRAM,
+                "Search results count",
+                ["query_type"],
+            ),
+            MetricDefinition(
+                "search_cache_hits", MetricType.COUNTER, "Search cache hits"
+            ),
+            MetricDefinition(
+                "search_cache_misses", MetricType.COUNTER, "Search cache misses"
+            ),
             # MCP metrics
-            MetricDefinition("mcp_tool_calls", MetricType.COUNTER, "MCP tool calls", ["tool_name"]),
-            MetricDefinition("mcp_tool_duration_seconds", MetricType.HISTOGRAM, "MCP tool duration", ["tool_name"]),
-            MetricDefinition("mcp_tool_errors", MetricType.COUNTER, "MCP tool errors", ["tool_name", "error_type"]),
+            MetricDefinition(
+                "mcp_tool_calls", MetricType.COUNTER, "MCP tool calls", ["tool_name"]
+            ),
+            MetricDefinition(
+                "mcp_tool_duration_seconds",
+                MetricType.HISTOGRAM,
+                "MCP tool duration",
+                ["tool_name"],
+            ),
+            MetricDefinition(
+                "mcp_tool_errors",
+                MetricType.COUNTER,
+                "MCP tool errors",
+                ["tool_name", "error_type"],
+            ),
         ]
 
         for metric in metrics:
@@ -485,22 +585,84 @@ class PerformanceMonitor:
         """Register standard performance thresholds."""
         thresholds = [
             # System thresholds
-            PerformanceThreshold("system_cpu_percent", 80.0, "gt", AlertLevel.WARNING, "High CPU usage"),
-            PerformanceThreshold("system_cpu_percent", 95.0, "gt", AlertLevel.CRITICAL, "Critical CPU usage"),
-            PerformanceThreshold("system_memory_percent", 80.0, "gt", AlertLevel.WARNING, "High memory usage"),
-            PerformanceThreshold("system_memory_percent", 95.0, "gt", AlertLevel.CRITICAL, "Critical memory usage"),
-            PerformanceThreshold("system_disk_percent", 80.0, "gt", AlertLevel.WARNING, "High disk usage"),
-            PerformanceThreshold("system_disk_percent", 95.0, "gt", AlertLevel.CRITICAL, "Critical disk usage"),
-
+            PerformanceThreshold(
+                "system_cpu_percent", 80.0, "gt", AlertLevel.WARNING, "High CPU usage"
+            ),
+            PerformanceThreshold(
+                "system_cpu_percent",
+                95.0,
+                "gt",
+                AlertLevel.CRITICAL,
+                "Critical CPU usage",
+            ),
+            PerformanceThreshold(
+                "system_memory_percent",
+                80.0,
+                "gt",
+                AlertLevel.WARNING,
+                "High memory usage",
+            ),
+            PerformanceThreshold(
+                "system_memory_percent",
+                95.0,
+                "gt",
+                AlertLevel.CRITICAL,
+                "Critical memory usage",
+            ),
+            PerformanceThreshold(
+                "system_disk_percent", 80.0, "gt", AlertLevel.WARNING, "High disk usage"
+            ),
+            PerformanceThreshold(
+                "system_disk_percent",
+                95.0,
+                "gt",
+                AlertLevel.CRITICAL,
+                "Critical disk usage",
+            ),
             # Application thresholds
-            PerformanceThreshold("app_request_duration_seconds", 1.0, "gt", AlertLevel.WARNING, "Slow request"),
-            PerformanceThreshold("app_request_duration_seconds", 5.0, "gt", AlertLevel.CRITICAL, "Very slow request"),
-            PerformanceThreshold("app_db_query_duration_seconds", 0.5, "gt", AlertLevel.WARNING, "Slow database query"),
-            PerformanceThreshold("app_db_query_duration_seconds", 2.0, "gt", AlertLevel.CRITICAL, "Very slow database query"),
-
+            PerformanceThreshold(
+                "app_request_duration_seconds",
+                1.0,
+                "gt",
+                AlertLevel.WARNING,
+                "Slow request",
+            ),
+            PerformanceThreshold(
+                "app_request_duration_seconds",
+                5.0,
+                "gt",
+                AlertLevel.CRITICAL,
+                "Very slow request",
+            ),
+            PerformanceThreshold(
+                "app_db_query_duration_seconds",
+                0.5,
+                "gt",
+                AlertLevel.WARNING,
+                "Slow database query",
+            ),
+            PerformanceThreshold(
+                "app_db_query_duration_seconds",
+                2.0,
+                "gt",
+                AlertLevel.CRITICAL,
+                "Very slow database query",
+            ),
             # Search thresholds
-            PerformanceThreshold("search_query_duration_seconds", 0.5, "gt", AlertLevel.WARNING, "Slow search query"),
-            PerformanceThreshold("search_query_duration_seconds", 2.0, "gt", AlertLevel.CRITICAL, "Very slow search query"),
+            PerformanceThreshold(
+                "search_query_duration_seconds",
+                0.5,
+                "gt",
+                AlertLevel.WARNING,
+                "Slow search query",
+            ),
+            PerformanceThreshold(
+                "search_query_duration_seconds",
+                2.0,
+                "gt",
+                AlertLevel.CRITICAL,
+                "Very slow search query",
+            ),
         ]
 
         for threshold in thresholds:
@@ -514,7 +676,9 @@ class PerformanceMonitor:
         """Register a custom metric."""
         self.collector.register_metric(definition)
 
-    def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None):
+    def record_metric(
+        self, name: str, value: float, labels: dict[str, str] | None = None
+    ):
         """Record a metric value."""
         self.collector.record_metric(name, value, labels)
 
@@ -530,7 +694,7 @@ class PerformanceMonitor:
         """Context manager for timing operations."""
         return TimingContext(self, metric_name, labels)
 
-    def create_benchmark(self, name: str, operation: Callable) -> 'Benchmark':
+    def create_benchmark(self, name: str, operation: Callable) -> "Benchmark":
         """Create a performance benchmark."""
         benchmark = Benchmark(name, operation, self)
         self.benchmarks[name] = benchmark
@@ -553,39 +717,47 @@ class PerformanceMonitor:
         hour_ago = current_time - 3600
 
         dashboard = {
-            'timestamp': current_time,
-            'system_metrics': {},
-            'application_metrics': {},
-            'alerts': []
+            "timestamp": current_time,
+            "system_metrics": {},
+            "application_metrics": {},
+            "alerts": [],
         }
 
         # System metrics
-        for metric_name in ['system_cpu_percent', 'system_memory_percent', 'system_disk_percent']:
+        for metric_name in [
+            "system_cpu_percent",
+            "system_memory_percent",
+            "system_disk_percent",
+        ]:
             stats = self.collector.get_metric_statistics(metric_name, hour_ago)
             if stats:
-                dashboard['system_metrics'][metric_name] = {
-                    'current': stats['mean'],
-                    'max': stats['max'],
-                    'min': stats['min'],
-                    'trend': self._calculate_trend(metric_name, hour_ago)
+                dashboard["system_metrics"][metric_name] = {
+                    "current": stats["mean"],
+                    "max": stats["max"],
+                    "min": stats["min"],
+                    "trend": self._calculate_trend(metric_name, hour_ago),
                 }
 
         # Application metrics
-        for metric_name in ['app_request_count', 'app_request_duration_seconds', 'app_error_count']:
+        for metric_name in [
+            "app_request_count",
+            "app_request_duration_seconds",
+            "app_error_count",
+        ]:
             stats = self.collector.get_metric_statistics(metric_name, hour_ago)
             if stats:
-                dashboard['application_metrics'][metric_name] = stats
+                dashboard["application_metrics"][metric_name] = stats
 
         # Active alerts
-        dashboard['alerts'] = [
+        dashboard["alerts"] = [
             {
-                'metric': alert.metric_name,
-                'level': alert.threshold.alert_level.value,
-                'message': alert.threshold.message,
-                'value': alert.current_value,
-                'threshold': alert.threshold.threshold_value,
-                'timestamp': alert.timestamp,
-                'resolved': alert.resolved
+                "metric": alert.metric_name,
+                "level": alert.threshold.alert_level.value,
+                "message": alert.threshold.message,
+                "value": alert.current_value,
+                "threshold": alert.threshold.threshold_value,
+                "timestamp": alert.timestamp,
+                "resolved": alert.resolved,
             }
             for alert in self.collector.active_alerts.values()
         ]
@@ -599,8 +771,8 @@ class PerformanceMonitor:
             return "stable"
 
         # Simple trend calculation
-        first_half = data[:len(data)//2]
-        second_half = data[len(data)//2:]
+        first_half = data[: len(data) // 2]
+        second_half = data[len(data) // 2 :]
 
         first_avg = sum(d.value for d in first_half) / len(first_half)
         second_avg = sum(d.value for d in second_half) / len(second_half)
@@ -632,7 +804,12 @@ class PerformanceMonitor:
 class TimingContext:
     """Context manager for timing operations."""
 
-    def __init__(self, monitor: PerformanceMonitor, metric_name: str, labels: dict[str, str] | None = None):
+    def __init__(
+        self,
+        monitor: PerformanceMonitor,
+        metric_name: str,
+        labels: dict[str, str] | None = None,
+    ):
         self.monitor = monitor
         self.metric_name = metric_name
         self.labels = labels or {}
@@ -667,20 +844,24 @@ class Benchmark:
             try:
                 result = self.operation()
                 duration = time.time() - start_time
-                self.results.append({
-                    'iteration': i,
-                    'duration': duration,
-                    'success': True,
-                    'result': result
-                })
+                self.results.append(
+                    {
+                        "iteration": i,
+                        "duration": duration,
+                        "success": True,
+                        "result": result,
+                    }
+                )
             except Exception as e:
                 duration = time.time() - start_time
-                self.results.append({
-                    'iteration': i,
-                    'duration': duration,
-                    'success': False,
-                    'error': str(e)
-                })
+                self.results.append(
+                    {
+                        "iteration": i,
+                        "duration": duration,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
 
         return self.get_summary()
 
@@ -689,22 +870,24 @@ class Benchmark:
         if not self.results:
             return {}
 
-        durations = [r['duration'] for r in self.results]
-        successes = [r for r in self.results if r['success']]
+        durations = [r["duration"] for r in self.results]
+        successes = [r for r in self.results if r["success"]]
 
         return {
-            'name': self.name,
-            'iterations': len(self.results),
-            'success_rate': len(successes) / len(self.results),
-            'total_duration': sum(durations),
-            'average_duration': statistics.mean(durations),
-            'min_duration': min(durations),
-            'max_duration': max(durations),
-            'median_duration': statistics.median(durations),
-            'std_duration': statistics.stdev(durations) if len(durations) > 1 else 0,
-            'p95_duration': np.percentile(durations, 95),
-            'p99_duration': np.percentile(durations, 99),
-            'throughput': len(self.results) / sum(durations) if sum(durations) > 0 else 0
+            "name": self.name,
+            "iterations": len(self.results),
+            "success_rate": len(successes) / len(self.results),
+            "total_duration": sum(durations),
+            "average_duration": statistics.mean(durations),
+            "min_duration": min(durations),
+            "max_duration": max(durations),
+            "median_duration": statistics.median(durations),
+            "std_duration": statistics.stdev(durations) if len(durations) > 1 else 0,
+            "p95_duration": np.percentile(durations, 95),
+            "p99_duration": np.percentile(durations, 99),
+            "throughput": (
+                len(self.results) / sum(durations) if sum(durations) > 0 else 0
+            ),
         }
 
 
@@ -720,7 +903,9 @@ def get_performance_monitor() -> PerformanceMonitor:
     return _global_monitor
 
 
-async def initialize_performance_monitor(config: PerformanceConfig | None = None) -> PerformanceMonitor:
+async def initialize_performance_monitor(
+    config: PerformanceConfig | None = None,
+) -> PerformanceMonitor:
     """Initialize and start global performance monitor."""
     global _global_monitor
     _global_monitor = PerformanceMonitor(config)

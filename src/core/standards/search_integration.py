@@ -17,10 +17,12 @@ logger = logging.getLogger(__name__)
 class StandardsSearchIntegration:
     """Integrates semantic search with the MCP standards system."""
 
-    def __init__(self,
-                 standards_dir: Path,
-                 search_engine: SemanticSearch | None = None,
-                 enable_analytics: bool = True):
+    def __init__(
+        self,
+        standards_dir: Path,
+        search_engine: SemanticSearch | None = None,
+        enable_analytics: bool = True,
+    ):
         """
         Initialize the search integration.
 
@@ -54,6 +56,7 @@ class StandardsSearchIntegration:
                     # Load standard
                     with open(standards_file) as f:
                         import yaml
+
                         standard_data = yaml.safe_load(f)
 
                     # Extract searchable content
@@ -76,7 +79,9 @@ class StandardsSearchIntegration:
                     metadata = {
                         "type": "documentation",
                         "file": str(md_file.relative_to(self.standards_dir)),
-                        "modified": datetime.fromtimestamp(md_file.stat().st_mtime).isoformat()
+                        "modified": datetime.fromtimestamp(
+                            md_file.stat().st_mtime
+                        ).isoformat(),
                     }
 
                     documents.append((doc_id, content, metadata))
@@ -93,12 +98,14 @@ class StandardsSearchIntegration:
         else:
             logger.info("No new documents to index")
 
-    def search_standards(self,
-                        query: str,
-                        category: str | None = None,
-                        tags: list[str] | None = None,
-                        top_k: int = 10,
-                        **kwargs) -> list[dict[str, Any]]:
+    def search_standards(
+        self,
+        query: str,
+        category: str | None = None,
+        tags: list[str] | None = None,
+        top_k: int = 10,
+        **kwargs,
+    ) -> list[dict[str, Any]]:
         """
         Search for standards matching the query.
 
@@ -121,10 +128,7 @@ class StandardsSearchIntegration:
 
         # Perform search
         results = self.search_engine.search(
-            query=query,
-            top_k=top_k,
-            filters=filters,
-            **kwargs
+            query=query, top_k=top_k, filters=filters, **kwargs
         )
 
         # Convert to standard format
@@ -136,7 +140,7 @@ class StandardsSearchIntegration:
                 "content": result.content,
                 "metadata": result.metadata,
                 "highlights": result.highlights,
-                "explanation": result.explanation
+                "explanation": result.explanation,
             }
 
             # Load full standard if needed
@@ -150,9 +154,9 @@ class StandardsSearchIntegration:
 
         return standards_results
 
-    def find_applicable_standards(self,
-                                 context: dict[str, Any],
-                                 max_results: int = 5) -> list[dict[str, Any]]:
+    def find_applicable_standards(
+        self, context: dict[str, Any], max_results: int = 5
+    ) -> list[dict[str, Any]]:
         """
         Find standards applicable to a given context using semantic search.
 
@@ -187,7 +191,7 @@ class StandardsSearchIntegration:
             query=query,
             filters=filters,
             top_k=max_results,
-            rerank=True  # Use re-ranking for better relevance
+            rerank=True,  # Use re-ranking for better relevance
         )
 
         # Filter by applicability rules
@@ -198,9 +202,9 @@ class StandardsSearchIntegration:
 
         return applicable[:max_results]
 
-    def get_similar_standards(self,
-                            standard_id: str,
-                            top_k: int = 5) -> list[dict[str, Any]]:
+    def get_similar_standards(
+        self, standard_id: str, top_k: int = 5
+    ) -> list[dict[str, Any]]:
         """
         Find standards similar to a given standard.
 
@@ -225,8 +229,7 @@ class StandardsSearchIntegration:
 
         # Search using the reference content as query
         results = self.search_standards(
-            query=reference_content,
-            top_k=top_k + 1  # +1 to exclude self
+            query=reference_content, top_k=top_k + 1  # +1 to exclude self
         )
 
         # Remove the reference standard from results
@@ -269,11 +272,13 @@ class StandardsSearchIntegration:
 
         return "\n\n".join(content_parts)
 
-    def _extract_metadata(self, standard_data: dict[str, Any], file_path: Path) -> dict[str, Any]:
+    def _extract_metadata(
+        self, standard_data: dict[str, Any], file_path: Path
+    ) -> dict[str, Any]:
         """Extract metadata from standard data."""
         metadata = {
             "file": str(file_path.relative_to(self.standards_dir)),
-            "modified": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
+            "modified": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat(),
         }
 
         # Copy relevant fields
@@ -294,6 +299,7 @@ class StandardsSearchIntegration:
             try:
                 with open(standard_file) as f:
                     import yaml
+
                     return yaml.safe_load(f)
             except Exception as e:
                 logger.error(f"Failed to load standard {standard_name}: {e}")
@@ -318,7 +324,10 @@ class StandardsSearchIntegration:
         if "min_version" in metadata and "version" in context:
             try:
                 from packaging import version
-                if version.parse(context["version"]) < version.parse(metadata["min_version"]):
+
+                if version.parse(context["version"]) < version.parse(
+                    metadata["min_version"]
+                ):
                     return False
             except Exception:
                 pass
@@ -340,10 +349,10 @@ class StandardsSearchIntegration:
             "documents": dict(self.search_engine.documents),
             "metadata": dict(self.search_engine.document_metadata),
             "indexed_files": list(self._indexed_standards),
-            "export_date": datetime.now().isoformat()
+            "export_date": datetime.now().isoformat(),
         }
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(index_data, f, indent=2)
 
         logger.info(f"Exported search index to {output_path}")
@@ -373,27 +382,24 @@ MCP_SEARCH_TOOLS = [
         "parameters": {
             "type": "object",
             "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query"
-                },
+                "query": {"type": "string", "description": "Search query"},
                 "category": {
                     "type": "string",
-                    "description": "Optional category filter"
+                    "description": "Optional category filter",
                 },
                 "tags": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Optional tag filters"
+                    "description": "Optional tag filters",
                 },
                 "top_k": {
                     "type": "integer",
                     "description": "Number of results to return",
-                    "default": 10
-                }
+                    "default": 10,
+                },
             },
-            "required": ["query"]
-        }
+            "required": ["query"],
+        },
     },
     {
         "name": "find_applicable_standards",
@@ -403,16 +409,16 @@ MCP_SEARCH_TOOLS = [
             "properties": {
                 "context": {
                     "type": "object",
-                    "description": "Project context (language, framework, etc.)"
+                    "description": "Project context (language, framework, etc.)",
                 },
                 "max_results": {
                     "type": "integer",
                     "description": "Maximum number of results",
-                    "default": 5
-                }
+                    "default": 5,
+                },
             },
-            "required": ["context"]
-        }
+            "required": ["context"],
+        },
     },
     {
         "name": "get_similar_standards",
@@ -422,15 +428,15 @@ MCP_SEARCH_TOOLS = [
             "properties": {
                 "standard_id": {
                     "type": "string",
-                    "description": "ID of the reference standard"
+                    "description": "ID of the reference standard",
                 },
                 "top_k": {
                     "type": "integer",
                     "description": "Number of similar standards to return",
-                    "default": 5
-                }
+                    "default": 5,
+                },
             },
-            "required": ["standard_id"]
-        }
-    }
+            "required": ["standard_id"],
+        },
+    },
 ]

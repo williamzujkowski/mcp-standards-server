@@ -16,7 +16,7 @@ class RateLimiter:
         self,
         max_requests: int = 100,
         window_seconds: int = 60,
-        redis_prefix: str = "mcp:ratelimit"
+        redis_prefix: str = "mcp:ratelimit",
     ):
         """
         Initialize rate limiter.
@@ -66,7 +66,7 @@ class RateLimiter:
                     "remaining": 0,
                     "limit": self.max_requests,
                     "reset_time": reset_time,
-                    "retry_after": reset_time - current_time
+                    "retry_after": reset_time - current_time,
                 }
                 return False, limit_info
 
@@ -77,7 +77,7 @@ class RateLimiter:
             limit_info = {
                 "remaining": self.max_requests - len(request_times),
                 "limit": self.max_requests,
-                "reset_time": current_time + self.window_seconds
+                "reset_time": current_time + self.window_seconds,
             }
             return True, limit_info
 
@@ -101,7 +101,7 @@ class MultiTierRateLimiter:
         self.tiers = {
             "minute": RateLimiter(100, 60, f"{redis_prefix}:minute"),
             "hour": RateLimiter(5000, 3600, f"{redis_prefix}:hour"),
-            "day": RateLimiter(50000, 86400, f"{redis_prefix}:day")
+            "day": RateLimiter(50000, 86400, f"{redis_prefix}:day"),
         }
 
     def check_all_limits(self, identifier: str) -> tuple[bool, dict[str, any] | None]:
@@ -142,7 +142,7 @@ class AdaptiveRateLimiter:
         self,
         base_limit: int = 100,
         window_seconds: int = 60,
-        redis_prefix: str = "mcp:adaptive"
+        redis_prefix: str = "mcp:adaptive",
     ):
         """Initialize adaptive rate limiter."""
         self.base_limit = base_limit
@@ -187,11 +187,7 @@ class AdaptiveRateLimiter:
         new_value = 1.0 if is_good_request else 0.0
         reputation = (1 - alpha) * reputation + alpha * new_value
 
-        self.redis_client.set(
-            reputation_key,
-            str(reputation),
-            ttl=86400 * 7  # 7 days
-        )
+        self.redis_client.set(reputation_key, str(reputation), ttl=86400 * 7)  # 7 days
 
 
 # Default rate limiter instance

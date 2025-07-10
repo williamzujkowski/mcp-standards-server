@@ -23,7 +23,7 @@ class MockSentenceTransformer:
     realistic model behavior including latency and resource usage.
     """
 
-    def __init__(self, model_name: str, device: str = 'cpu'):
+    def __init__(self, model_name: str, device: str = "cpu"):
         self.model_name = model_name
         self.device = device
         self.embedding_dim = self._get_embedding_dim(model_name)
@@ -44,19 +44,21 @@ class MockSentenceTransformer:
     def _get_embedding_dim(self, model_name: str) -> int:
         """Get embedding dimension based on model name."""
         dims = {
-            'all-MiniLM-L6-v2': 384,
-            'all-mpnet-base-v2': 768,
-            'all-MiniLM-L12-v2': 384,
-            'multi-qa-MiniLM-L6-cos-v1': 384,
+            "all-MiniLM-L6-v2": 384,
+            "all-mpnet-base-v2": 768,
+            "all-MiniLM-L12-v2": 384,
+            "multi-qa-MiniLM-L6-cos-v1": 384,
         }
         return dims.get(model_name, 384)
 
-    def encode(self,
-               texts: str | list[str],
-               batch_size: int = 32,
-               show_progress_bar: bool = False,
-               convert_to_numpy: bool = True,
-               normalize_embeddings: bool = True) -> np.ndarray:
+    def encode(
+        self,
+        texts: str | list[str],
+        batch_size: int = 32,
+        show_progress_bar: bool = False,
+        convert_to_numpy: bool = True,
+        normalize_embeddings: bool = True,
+    ) -> np.ndarray:
         """Generate deterministic embeddings with realistic behavior."""
         if self._should_fail:
             raise RuntimeError(self._failure_message)
@@ -97,7 +99,7 @@ class MockSentenceTransformer:
     def _text_to_embedding(self, text: str) -> np.ndarray:
         """Generate deterministic embedding from text."""
         # Use SHA256 for deterministic hashing
-        text_bytes = text.encode('utf-8')
+        text_bytes = text.encode("utf-8")
         hash_hex = hashlib.sha256(text_bytes).hexdigest()
 
         # Convert hash to seed
@@ -124,10 +126,10 @@ class MockSentenceTransformer:
 
         # Word-based features
         features.append(len(text) / 100.0)  # Length feature
-        features.append(text_lower.count(' ') / 10.0)  # Word count
+        features.append(text_lower.count(" ") / 10.0)  # Word count
 
         # Keyword features
-        keywords = ['test', 'security', 'api', 'react', 'python', 'standard', 'mcp']
+        keywords = ["test", "security", "api", "react", "python", "standard", "mcp"]
         for keyword in keywords:
             features.append(1.0 if keyword in text_lower else 0.0)
 
@@ -140,8 +142,8 @@ class MockSentenceTransformer:
     def tokenize(self, texts: list[str]) -> dict[str, Any]:
         """Mock tokenization."""
         return {
-            'input_ids': [[1, 2, 3] for _ in texts],
-            'attention_mask': [[1, 1, 1] for _ in texts]
+            "input_ids": [[1, 2, 3] for _ in texts],
+            "attention_mask": [[1, 1, 1] for _ in texts],
         }
 
     def set_failure_mode(self, should_fail: bool, message: str = "Mock failure"):
@@ -152,10 +154,10 @@ class MockSentenceTransformer:
     def get_stats(self) -> dict[str, Any]:
         """Get usage statistics."""
         return {
-            'encode_count': self._encode_count,
-            'total_tokens': self._total_tokens_processed,
-            'model_name': self.model_name,
-            'device': self.device
+            "encode_count": self._encode_count,
+            "total_tokens": self._total_tokens_processed,
+            "model_name": self.model_name,
+            "device": self.device,
         }
 
 
@@ -166,7 +168,7 @@ class MockRedisClient:
     Simulates Redis behavior including expiration, pub/sub, and pipelines.
     """
 
-    def __init__(self, host='localhost', port=6379, decode_responses=True, **kwargs):
+    def __init__(self, host="localhost", port=6379, decode_responses=True, **kwargs):
         self.host = host
         self.port = port
         self.decode_responses = decode_responses
@@ -197,7 +199,7 @@ class MockRedisClient:
             value = self._store.get(key)
 
         if value is not None and self.decode_responses and isinstance(value, bytes):
-            return value.decode('utf-8')
+            return value.decode("utf-8")
         return value
 
     def set(self, key: str, value: str | bytes, ex: int | None = None) -> bool:
@@ -205,12 +207,12 @@ class MockRedisClient:
         self._check_connection()
 
         if self._pipeline_mode:
-            self._pipeline_commands.append(('set', key, value, ex))
+            self._pipeline_commands.append(("set", key, value, ex))
             return True
 
         with self._lock:
             if isinstance(value, str) and not self.decode_responses:
-                value = value.encode('utf-8')
+                value = value.encode("utf-8")
 
             self._store[key] = value
 
@@ -279,10 +281,11 @@ class MockRedisClient:
         self._cleanup_expired()
 
         import re
+
         pattern = None
         if match:
             # Convert Redis pattern to regex
-            regex_pattern = match.replace('*', '.*').replace('?', '.')
+            regex_pattern = match.replace("*", ".*").replace("?", ".")
             pattern = re.compile(f"^{regex_pattern}$")
 
         with self._lock:
@@ -335,17 +338,17 @@ class MockRedisPipeline:
 
     def set(self, key: str, value: str | bytes, ex: int | None = None):
         """Queue set command."""
-        self.commands.append(('set', key, value, ex))
+        self.commands.append(("set", key, value, ex))
         return self
 
     def get(self, key: str):
         """Queue get command."""
-        self.commands.append(('get', key))
+        self.commands.append(("get", key))
         return self
 
     def delete(self, key: str):
         """Queue delete command."""
-        self.commands.append(('delete', key))
+        self.commands.append(("delete", key))
         return self
 
     def execute(self) -> list[Any]:
@@ -353,15 +356,15 @@ class MockRedisPipeline:
         results = []
 
         for cmd in self.commands:
-            if cmd[0] == 'set':
+            if cmd[0] == "set":
                 _, key, value, ex = cmd
                 result = self.client.set(key, value, ex=ex)
                 results.append(result)
-            elif cmd[0] == 'get':
+            elif cmd[0] == "get":
                 _, key = cmd
                 result = self.client.get(key)
                 results.append(result)
-            elif cmd[0] == 'delete':
+            elif cmd[0] == "delete":
                 _, key = cmd
                 result = self.client.delete(key)
                 results.append(result)
@@ -378,7 +381,8 @@ class MockNLTKComponents:
         """Simple word tokenization."""
         # Basic tokenization - split on whitespace and punctuation
         import re
-        tokens = re.findall(r'\b\w+\b', text.lower())
+
+        tokens = re.findall(r"\b\w+\b", text.lower())
         return tokens
 
     @staticmethod
@@ -386,7 +390,8 @@ class MockNLTKComponents:
         """Simple sentence tokenization."""
         # Split on common sentence endings
         import re
-        sentences = re.split(r'[.!?]+', text)
+
+        sentences = re.split(r"[.!?]+", text)
         return [s.strip() for s in sentences if s.strip()]
 
 
@@ -398,10 +403,10 @@ class MockPorterStemmer:
         word = word.lower()
 
         # Simple suffix removal
-        suffixes = ['ing', 'ed', 'es', 's', 'er', 'est', 'ly']
+        suffixes = ["ing", "ed", "es", "s", "er", "est", "ly"]
         for suffix in suffixes:
             if word.endswith(suffix) and len(word) > len(suffix) + 2:
-                return word[:-len(suffix)]
+                return word[: -len(suffix)]
 
         return word
 
@@ -410,15 +415,47 @@ class MockStopwords:
     """Mock stopwords without NLTK download."""
 
     @staticmethod
-    def words(language: str = 'english') -> list[str]:
+    def words(language: str = "english") -> list[str]:
         """Return common stopwords."""
-        if language == 'english':
+        if language == "english":
             return [
-                'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for',
-                'from', 'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on',
-                'that', 'the', 'to', 'was', 'will', 'with', 'the', 'this',
-                'but', 'they', 'have', 'had', 'what', 'when', 'where', 'who',
-                'which', 'why', 'how'
+                "a",
+                "an",
+                "and",
+                "are",
+                "as",
+                "at",
+                "be",
+                "by",
+                "for",
+                "from",
+                "has",
+                "he",
+                "in",
+                "is",
+                "it",
+                "its",
+                "of",
+                "on",
+                "that",
+                "the",
+                "to",
+                "was",
+                "will",
+                "with",
+                "the",
+                "this",
+                "but",
+                "they",
+                "have",
+                "had",
+                "what",
+                "when",
+                "where",
+                "who",
+                "which",
+                "why",
+                "how",
             ]
         return []
 
@@ -464,7 +501,9 @@ class MockProcess:
     """Mock fuzzywuzzy process module."""
 
     @staticmethod
-    def extract(query: str, choices: list[str], scorer=None, limit: int = 5) -> list[tuple[str, int]]:
+    def extract(
+        query: str, choices: list[str], scorer=None, limit: int = 5
+    ) -> list[tuple[str, int]]:
         """Extract best matches."""
         if scorer is None:
             scorer = MockFuzz.ratio
@@ -502,7 +541,7 @@ class MockCosineSimilarity:
 class MockNearestNeighbors:
     """Mock sklearn NearestNeighbors."""
 
-    def __init__(self, n_neighbors=5, metric='cosine', algorithm='auto'):
+    def __init__(self, n_neighbors=5, metric="cosine", algorithm="auto"):
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.algorithm = algorithm
@@ -515,7 +554,9 @@ class MockNearestNeighbors:
         self.fitted = True
         return self
 
-    def kneighbors(self, X: np.ndarray, n_neighbors: int = None, return_distance: bool = True):
+    def kneighbors(
+        self, X: np.ndarray, n_neighbors: int = None, return_distance: bool = True
+    ):
         """Find k nearest neighbors."""
         if not self.fitted:
             raise ValueError("Model not fitted yet")
@@ -524,22 +565,20 @@ class MockNearestNeighbors:
             n_neighbors = self.n_neighbors
 
         # Calculate distances using cosine similarity
-        if self.metric == 'cosine':
+        if self.metric == "cosine":
             similarities = MockCosineSimilarity.cosine_similarity(X, self.X_train)
             distances = 1 - similarities  # Convert similarity to distance
         else:
             # Default to euclidean distance
-            distances = np.array([
-                [np.linalg.norm(x - y) for y in self.X_train]
-                for x in X
-            ])
+            distances = np.array(
+                [[np.linalg.norm(x - y) for y in self.X_train] for x in X]
+            )
 
         # Find k nearest neighbors
         neighbor_indices = np.argsort(distances, axis=1)[:, :n_neighbors]
-        neighbor_distances = np.array([
-            distances[i, neighbor_indices[i]]
-            for i in range(len(X))
-        ])
+        neighbor_distances = np.array(
+            [distances[i, neighbor_indices[i]] for i in range(len(X))]
+        )
 
         if return_distance:
             return neighbor_distances, neighbor_indices
@@ -551,11 +590,20 @@ class TestDataGenerator:
     """Generate realistic test data for semantic search tests."""
 
     @staticmethod
-    def generate_standards_corpus(num_documents: int = 100) -> list[tuple[str, str, dict[str, Any]]]:
+    def generate_standards_corpus(
+        num_documents: int = 100,
+    ) -> list[tuple[str, str, dict[str, Any]]]:
         """Generate a corpus of standards documents."""
-        frameworks = ['React', 'Angular', 'Vue', 'Django', 'FastAPI', 'Spring']
-        categories = ['security', 'testing', 'performance', 'accessibility', 'api', 'frontend']
-        languages = ['Python', 'JavaScript', 'Java', 'Go', 'TypeScript', 'Rust']
+        frameworks = ["React", "Angular", "Vue", "Django", "FastAPI", "Spring"]
+        categories = [
+            "security",
+            "testing",
+            "performance",
+            "accessibility",
+            "api",
+            "frontend",
+        ]
+        languages = ["Python", "JavaScript", "Java", "Go", "TypeScript", "Rust"]
 
         documents = []
         for i in range(num_documents):
@@ -584,12 +632,12 @@ class TestDataGenerator:
             """
 
             metadata = {
-                'framework': framework.lower(),
-                'category': category,
-                'language': language.lower(),
-                'version': f"{(i % 3) + 1}.0",
-                'timestamp': (datetime.now() - timedelta(days=i)).isoformat(),
-                'index': i
+                "framework": framework.lower(),
+                "category": category,
+                "language": language.lower(),
+                "version": f"{(i % 3) + 1}.0",
+                "timestamp": (datetime.now() - timedelta(days=i)).isoformat(),
+                "index": i,
             }
 
             documents.append((doc_id, content.strip(), metadata))
@@ -601,35 +649,35 @@ class TestDataGenerator:
         """Generate test queries with expected results."""
         return [
             {
-                'query': 'React security best practices',
-                'expected_keywords': ['react', 'security'],
-                'expected_categories': ['security'],
-                'min_results': 1
+                "query": "React security best practices",
+                "expected_keywords": ["react", "security"],
+                "expected_categories": ["security"],
+                "min_results": 1,
             },
             {
-                'query': 'Python API testing',
-                'expected_keywords': ['python', 'api', 'testing'],
-                'expected_languages': ['python'],
-                'min_results': 1
+                "query": "Python API testing",
+                "expected_keywords": ["python", "api", "testing"],
+                "expected_languages": ["python"],
+                "min_results": 1,
             },
             {
-                'query': 'frontend performance optimization',
-                'expected_keywords': ['frontend', 'performance'],
-                'expected_categories': ['performance', 'frontend'],
-                'min_results': 1
+                "query": "frontend performance optimization",
+                "expected_keywords": ["frontend", "performance"],
+                "expected_categories": ["performance", "frontend"],
+                "min_results": 1,
             },
             {
-                'query': 'testing NOT angular',
-                'expected_keywords': ['testing'],
-                'excluded_keywords': ['angular'],
-                'min_results': 1
+                "query": "testing NOT angular",
+                "expected_keywords": ["testing"],
+                "excluded_keywords": ["angular"],
+                "min_results": 1,
             },
             {
-                'query': 'security AND java',
-                'expected_keywords': ['security', 'java'],
-                'required_all': True,
-                'min_results': 1
-            }
+                "query": "security AND java",
+                "expected_keywords": ["security", "java"],
+                "required_all": True,
+                "min_results": 1,
+            },
         ]
 
 
@@ -664,16 +712,21 @@ def patch_ml_dependencies():
 
     def decorator(func):
         @functools.wraps(func)
-        @patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer)
-        @patch('redis.Redis', MockRedisClient)
-        @patch('nltk.stem.PorterStemmer', MockPorterStemmer)
-        @patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize)
-        @patch('nltk.corpus.stopwords', MockStopwords)
-        @patch('fuzzywuzzy.fuzz', MockFuzz)
-        @patch('fuzzywuzzy.process', MockProcess)
-        @patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity)
-        @patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors)
+        @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+        @patch("redis.Redis", MockRedisClient)
+        @patch("nltk.stem.PorterStemmer", MockPorterStemmer)
+        @patch("nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize)
+        @patch("nltk.corpus.stopwords", MockStopwords)
+        @patch("fuzzywuzzy.fuzz", MockFuzz)
+        @patch("fuzzywuzzy.process", MockProcess)
+        @patch(
+            "sklearn.metrics.pairwise.cosine_similarity",
+            MockCosineSimilarity.cosine_similarity,
+        )
+        @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
         def wrapped(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapped
+
     return decorator

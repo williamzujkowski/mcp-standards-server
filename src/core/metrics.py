@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class MetricType(str, Enum):
     """Types of metrics collected."""
+
     COUNTER = "counter"
     GAUGE = "gauge"
     HISTOGRAM = "histogram"
@@ -29,6 +30,7 @@ class MetricType(str, Enum):
 @dataclass
 class MetricPoint:
     """Single metric data point."""
+
     timestamp: float
     value: float
     labels: dict[str, str]
@@ -37,6 +39,7 @@ class MetricPoint:
 @dataclass
 class MetricSummary:
     """Summary statistics for a metric."""
+
     count: int
     sum: float
     min: float
@@ -54,7 +57,7 @@ class MetricsCollector:
         self,
         window_size: int = 300,  # 5 minutes
         max_samples: int = 10000,
-        export_interval: int = 60  # Export every minute
+        export_interval: int = 60,  # Export every minute
     ):
         """
         Initialize metrics collector.
@@ -71,7 +74,9 @@ class MetricsCollector:
         # Metric storage
         self._counters: dict[str, float] = defaultdict(float)
         self._gauges: dict[str, float] = defaultdict(float)
-        self._histograms: dict[str, deque] = defaultdict(lambda: deque(maxlen=max_samples))
+        self._histograms: dict[str, deque] = defaultdict(
+            lambda: deque(maxlen=max_samples)
+        )
         self._timers: dict[str, deque] = defaultdict(lambda: deque(maxlen=max_samples))
 
         # Labels for metrics
@@ -83,7 +88,9 @@ class MetricsCollector:
         # Background export task
         self._export_task: asyncio.Task | None = None
 
-    def increment(self, name: str, value: float = 1.0, labels: dict[str, str] | None = None):
+    def increment(
+        self, name: str, value: float = 1.0, labels: dict[str, str] | None = None
+    ):
         """Increment a counter metric."""
         key = self._make_key(name, labels)
         self._counters[key] += value
@@ -106,37 +113,59 @@ class MetricsCollector:
         """Context manager for timing operations."""
         return TimerContext(self, name, labels)
 
-    def record_duration(self, name: str, duration: float, labels: dict[str, str] | None = None):
+    def record_duration(
+        self, name: str, duration: float, labels: dict[str, str] | None = None
+    ):
         """Record a duration measurement."""
         key = self._make_key(name, labels)
         self._timers[key].append(MetricPoint(time.time(), duration, labels or {}))
 
-    def get_summary(self, name: str, metric_type: MetricType, labels: dict[str, str] | None = None) -> MetricSummary | None:
+    def get_summary(
+        self, name: str, metric_type: MetricType, labels: dict[str, str] | None = None
+    ) -> MetricSummary | None:
         """Get summary statistics for a metric."""
         key = self._make_key(name, labels)
 
         if metric_type == MetricType.COUNTER:
             value = self._counters.get(key, 0)
             return MetricSummary(
-                count=1, sum=value, min=value, max=value,
-                avg=value, p50=value, p95=value, p99=value
+                count=1,
+                sum=value,
+                min=value,
+                max=value,
+                avg=value,
+                p50=value,
+                p95=value,
+                p99=value,
             )
 
         elif metric_type == MetricType.GAUGE:
             value = self._gauges.get(key, 0)
             return MetricSummary(
-                count=1, sum=value, min=value, max=value,
-                avg=value, p50=value, p95=value, p99=value
+                count=1,
+                sum=value,
+                min=value,
+                max=value,
+                avg=value,
+                p50=value,
+                p95=value,
+                p99=value,
             )
 
         elif metric_type in [MetricType.HISTOGRAM, MetricType.TIMER]:
-            data = self._histograms[key] if metric_type == MetricType.HISTOGRAM else self._timers[key]
+            data = (
+                self._histograms[key]
+                if metric_type == MetricType.HISTOGRAM
+                else self._timers[key]
+            )
             if not data:
                 return None
 
             # Filter to window
             current_time = time.time()
-            values = [p.value for p in data if current_time - p.timestamp <= self.window_size]
+            values = [
+                p.value for p in data if current_time - p.timestamp <= self.window_size
+            ]
 
             if not values:
                 return None
@@ -150,7 +179,7 @@ class MetricsCollector:
                 avg=statistics.mean(values),
                 p50=self._percentile(values, 50),
                 p95=self._percentile(values, 95),
-                p99=self._percentile(values, 99)
+                p99=self._percentile(values, 99),
             )
 
         return None
@@ -162,39 +191,43 @@ class MetricsCollector:
             "counters": {},
             "gauges": {},
             "histograms": {},
-            "timers": {}
+            "timers": {},
         }
 
         # Export counters
         for key, value in self._counters.items():
             metrics["counters"][key] = {
                 "value": value,
-                "labels": self._labels.get(key, {})
+                "labels": self._labels.get(key, {}),
             }
 
         # Export gauges
         for key, value in self._gauges.items():
             metrics["gauges"][key] = {
                 "value": value,
-                "labels": self._labels.get(key, {})
+                "labels": self._labels.get(key, {}),
             }
 
         # Export histograms (create a copy to avoid dictionary change during iteration)
         for key, _data in list(self._histograms.items()):
-            summary = self.get_summary(key.split(":")[0], MetricType.HISTOGRAM, self._labels.get(key))
+            summary = self.get_summary(
+                key.split(":")[0], MetricType.HISTOGRAM, self._labels.get(key)
+            )
             if summary:
                 metrics["histograms"][key] = {
                     "summary": asdict(summary),
-                    "labels": self._labels.get(key, {})
+                    "labels": self._labels.get(key, {}),
                 }
 
         # Export timers (create a copy to avoid dictionary change during iteration)
         for key, _data in list(self._timers.items()):
-            summary = self.get_summary(key.split(":")[0], MetricType.TIMER, self._labels.get(key))
+            summary = self.get_summary(
+                key.split(":")[0], MetricType.TIMER, self._labels.get(key)
+            )
             if summary:
                 metrics["timers"][key] = {
                     "summary": asdict(summary),
-                    "labels": self._labels.get(key, {})
+                    "labels": self._labels.get(key, {}),
                 }
 
         return metrics
@@ -219,16 +252,20 @@ class MetricsCollector:
         # Histograms
         for key in self._histograms:
             name = key.split(":")[0]
-            summary = self.get_summary(name, MetricType.HISTOGRAM, self._labels.get(key))
+            summary = self.get_summary(
+                name, MetricType.HISTOGRAM, self._labels.get(key)
+            )
             if summary:
                 labels = self._format_labels(self._labels.get(key, {}))
-                lines.extend([
-                    f"{name}_count{labels} {summary.count} {timestamp}",
-                    f"{name}_sum{labels} {summary.sum} {timestamp}",
-                    f'{name}{labels.rstrip("}")},quantile="0.5"}} {summary.p50} {timestamp}',
-                    f'{name}{labels.rstrip("}")},quantile="0.95"}} {summary.p95} {timestamp}',
-                    f'{name}{labels.rstrip("}")},quantile="0.99"}} {summary.p99} {timestamp}'
-                ])
+                lines.extend(
+                    [
+                        f"{name}_count{labels} {summary.count} {timestamp}",
+                        f"{name}_sum{labels} {summary.sum} {timestamp}",
+                        f'{name}{labels.rstrip("}")},quantile="0.5"}} {summary.p50} {timestamp}',
+                        f'{name}{labels.rstrip("}")},quantile="0.95"}} {summary.p95} {timestamp}',
+                        f'{name}{labels.rstrip("}")},quantile="0.99"}} {summary.p99} {timestamp}',
+                    ]
+                )
 
         return "\n".join(lines)
 
@@ -300,7 +337,12 @@ class MetricsCollector:
 class TimerContext:
     """Context manager for timing operations."""
 
-    def __init__(self, collector: MetricsCollector, name: str, labels: dict[str, str] | None = None):
+    def __init__(
+        self,
+        collector: MetricsCollector,
+        name: str,
+        labels: dict[str, str] | None = None,
+    ):
         self.collector = collector
         self.name = name
         self.labels = labels
@@ -339,7 +381,13 @@ class MCPMetrics:
         self.HTTP_REQUESTS_TOTAL = "mcp_http_requests_total"
         self.HTTP_REQUEST_DURATION = "mcp_http_request_duration_seconds"
 
-    def record_tool_call(self, tool_name: str, duration: float, success: bool, error_type: str | None = None):
+    def record_tool_call(
+        self,
+        tool_name: str,
+        duration: float,
+        success: bool,
+        error_type: str | None = None,
+    ):
         """Record metrics for a tool call."""
         labels = {"tool": tool_name, "success": str(success).lower()}
 
@@ -385,30 +433,39 @@ class MCPMetrics:
         labels = {"tool": tool_name}
         self.collector.histogram(self.RESPONSE_SIZE, size, labels=labels)
 
-    def record_error(self, error_type: str, error_code: str, function: str | None = None):
+    def record_error(
+        self, error_type: str, error_code: str, function: str | None = None
+    ):
         """Record an error occurrence."""
         labels = {"error_type": error_type, "error_code": error_code}
         if function:
             labels["function"] = function
         self.collector.increment(self.ERRORS_TOTAL, labels=labels)
 
-    def record_http_request(self, method: str, path: str, status: int, duration: float, error: bool = False):
+    def record_http_request(
+        self, method: str, path: str, status: int, duration: float, error: bool = False
+    ):
         """Record HTTP request metrics."""
         labels = {
             "method": method,
             "path": path,
             "status": str(status),
-            "error": str(error).lower()
+            "error": str(error).lower(),
         }
         self.collector.increment(self.HTTP_REQUESTS_TOTAL, labels=labels)
-        self.collector.record_duration(self.HTTP_REQUEST_DURATION, duration, labels=labels)
+        self.collector.record_duration(
+            self.HTTP_REQUEST_DURATION, duration, labels=labels
+        )
 
-    def record_operation(self, operation: str, success: bool, error_type: str | None = None, labels: dict[str, str] | None = None):
+    def record_operation(
+        self,
+        operation: str,
+        success: bool,
+        error_type: str | None = None,
+        labels: dict[str, str] | None = None,
+    ):
         """Record operation metrics."""
-        operation_labels = {
-            "operation": operation,
-            "success": str(success).lower()
-        }
+        operation_labels = {"operation": operation, "success": str(success).lower()}
         if error_type:
             operation_labels["error_type"] = error_type
         if labels:
@@ -416,7 +473,9 @@ class MCPMetrics:
 
         self.collector.increment(f"{operation}_total", labels=operation_labels)
 
-    def record_duration(self, metric: str, duration: float, labels: dict[str, str] | None = None):
+    def record_duration(
+        self, metric: str, duration: float, labels: dict[str, str] | None = None
+    ):
         """Record duration metric."""
         self.collector.record_duration(metric, duration, labels=labels)
 
@@ -426,12 +485,14 @@ class MCPMetrics:
 
         # Calculate derived metrics
         total_calls = sum(
-            m["value"] for k, m in all_metrics["counters"].items()
+            m["value"]
+            for k, m in all_metrics["counters"].items()
             if k.startswith(self.TOOL_CALL_TOTAL)
         )
 
         total_errors = sum(
-            m["value"] for k, m in all_metrics["counters"].items()
+            m["value"]
+            for k, m in all_metrics["counters"].items()
             if k.startswith(self.TOOL_CALL_ERRORS)
         )
 
@@ -439,28 +500,36 @@ class MCPMetrics:
 
         # Get cache stats
         cache_hits = sum(
-            m["value"] for k, m in all_metrics["counters"].items()
+            m["value"]
+            for k, m in all_metrics["counters"].items()
             if k.startswith(self.CACHE_HITS)
         )
 
         cache_misses = sum(
-            m["value"] for k, m in all_metrics["counters"].items()
+            m["value"]
+            for k, m in all_metrics["counters"].items()
             if k.startswith(self.CACHE_MISSES)
         )
 
-        cache_hit_rate = (cache_hits / (cache_hits + cache_misses) * 100) if (cache_hits + cache_misses) > 0 else 0
+        cache_hit_rate = (
+            (cache_hits / (cache_hits + cache_misses) * 100)
+            if (cache_hits + cache_misses) > 0
+            else 0
+        )
 
         return {
             "summary": {
                 "total_calls": total_calls,
                 "error_rate": round(error_rate, 2),
                 "cache_hit_rate": round(cache_hit_rate, 2),
-                "active_connections": all_metrics["gauges"].get(self.ACTIVE_CONNECTIONS, {}).get("value", 0)
+                "active_connections": all_metrics["gauges"]
+                .get(self.ACTIVE_CONNECTIONS, {})
+                .get("value", 0),
             },
             "tool_performance": self._get_tool_performance(all_metrics),
             "rate_limits": self._get_rate_limit_stats(all_metrics),
             "auth_stats": self._get_auth_stats(all_metrics),
-            "raw_metrics": all_metrics
+            "raw_metrics": all_metrics,
         }
 
     def _get_tool_performance(self, metrics: dict[str, Any]) -> list[dict[str, Any]]:
@@ -477,7 +546,7 @@ class MCPMetrics:
                         "calls": 0,
                         "avg_duration": 0,
                         "p95_duration": 0,
-                        "p99_duration": 0
+                        "p99_duration": 0,
                     }
 
                 summary = data["summary"]
@@ -513,7 +582,9 @@ class MCPMetrics:
         return {
             "total_attempts": attempts,
             "total_failures": failures,
-            "success_rate": round((1 - failures / attempts) * 100, 2) if attempts > 0 else 100
+            "success_rate": (
+                round((1 - failures / attempts) * 100, 2) if attempts > 0 else 100
+            ),
         }
 
 

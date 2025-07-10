@@ -88,10 +88,11 @@ class MCPStandardsServer:
         self.rule_engine = RuleEngine(
             Path(self.config.get("rules_file", str(rules_file)))
         )
-        sync_config_path = self.config.get("sync_config", data_dir / "standards" / "sync_config.yaml")
+        sync_config_path = self.config.get(
+            "sync_config", data_dir / "standards" / "sync_config.yaml"
+        )
         self.synchronizer = StandardsSynchronizer(
-            config_path=sync_config_path,
-            cache_dir=data_dir / "standards" / "cache"
+            config_path=sync_config_path, cache_dir=data_dir / "standards" / "cache"
         )
 
         # Initialize cross-referencer and analytics
@@ -104,21 +105,25 @@ class MCPStandardsServer:
 
         # Initialize search only if enabled
         self.search = None
-        if os.environ.get("MCP_DISABLE_SEARCH") != "true" and self.config.get("search", {}).get("enabled", True):
+        if os.environ.get("MCP_DISABLE_SEARCH") != "true" and self.config.get(
+            "search", {}
+        ).get("enabled", True):
             try:
                 from .core.standards.semantic_search import SemanticSearch
+
                 self.search = SemanticSearch(
                     embedding_model=self.config.get("search_model", "all-MiniLM-L6-v2")
                 )
             except ImportError:
-                logger.warning("Semantic search disabled: sentence-transformers not installed")
+                logger.warning(
+                    "Semantic search disabled: sentence-transformers not installed"
+                )
 
         # Initialize token optimizer
         model_type = ModelType(self.config.get("token_model", "gpt-4"))
         default_budget = self.config.get("default_token_budget", 8000)
         self.token_optimizer = create_token_optimizer(
-            model_type=model_type,
-            default_budget=default_budget
+            model_type=model_type, default_budget=default_budget
         )
         self.dynamic_loader = DynamicLoader(self.token_optimizer)
 
@@ -140,16 +145,16 @@ class MCPStandardsServer:
                         "properties": {
                             "context": {
                                 "type": "object",
-                                "description": "Project context information"
+                                "description": "Project context information",
                             },
                             "include_resolution_details": {
                                 "type": "boolean",
                                 "description": "Include detailed resolution information",
-                                "default": False
-                            }
+                                "default": False,
+                            },
                         },
-                        "required": ["context"]
-                    }
+                        "required": ["context"],
+                    },
                 ),
                 Tool(
                     name="validate_against_standard",
@@ -157,12 +162,21 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "code": {"type": "string", "description": "Code to validate"},
-                            "standard": {"type": "string", "description": "Standard ID"},
-                            "language": {"type": "string", "description": "Programming language"}
+                            "code": {
+                                "type": "string",
+                                "description": "Code to validate",
+                            },
+                            "standard": {
+                                "type": "string",
+                                "description": "Standard ID",
+                            },
+                            "language": {
+                                "type": "string",
+                                "description": "Programming language",
+                            },
                         },
-                        "required": ["code", "standard"]
-                    }
+                        "required": ["code", "standard"],
+                    },
                 ),
                 Tool(
                     name="search_standards",
@@ -171,12 +185,23 @@ class MCPStandardsServer:
                         "type": "object",
                         "properties": {
                             "query": {"type": "string", "description": "Search query"},
-                            "limit": {"type": "integer", "description": "Maximum results", "default": 10},
-                            "min_relevance": {"type": "number", "description": "Minimum relevance score", "default": 0.0},
-                            "filters": {"type": "object", "description": "Additional filters"}
+                            "limit": {
+                                "type": "integer",
+                                "description": "Maximum results",
+                                "default": 10,
+                            },
+                            "min_relevance": {
+                                "type": "number",
+                                "description": "Minimum relevance score",
+                                "default": 0.0,
+                            },
+                            "filters": {
+                                "type": "object",
+                                "description": "Additional filters",
+                            },
                         },
-                        "required": ["query"]
-                    }
+                        "required": ["query"],
+                    },
                 ),
                 Tool(
                     name="get_standard_details",
@@ -184,10 +209,13 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_id": {"type": "string", "description": "Standard identifier"}
+                            "standard_id": {
+                                "type": "string",
+                                "description": "Standard identifier",
+                            }
                         },
-                        "required": ["standard_id"]
-                    }
+                        "required": ["standard_id"],
+                    },
                 ),
                 Tool(
                     name="list_available_standards",
@@ -195,10 +223,17 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "category": {"type": "string", "description": "Filter by category"},
-                            "limit": {"type": "integer", "description": "Maximum results", "default": 100}
-                        }
-                    }
+                            "category": {
+                                "type": "string",
+                                "description": "Filter by category",
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "description": "Maximum results",
+                                "default": 100,
+                            },
+                        },
+                    },
                 ),
                 Tool(
                     name="suggest_improvements",
@@ -206,11 +241,17 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "code": {"type": "string", "description": "Code to analyze"},
-                            "context": {"type": "object", "description": "Project context"}
+                            "code": {
+                                "type": "string",
+                                "description": "Code to analyze",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Project context",
+                            },
                         },
-                        "required": ["code", "context"]
-                    }
+                        "required": ["code", "context"],
+                    },
                 ),
                 Tool(
                     name="sync_standards",
@@ -218,9 +259,13 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "force": {"type": "boolean", "description": "Force sync", "default": False}
-                        }
-                    }
+                            "force": {
+                                "type": "boolean",
+                                "description": "Force sync",
+                                "default": False,
+                            }
+                        },
+                    },
                 ),
                 Tool(
                     name="get_optimized_standard",
@@ -228,14 +273,30 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_id": {"type": "string", "description": "Standard ID"},
-                            "format_type": {"type": "string", "description": "Format type", "default": "condensed"},
-                            "token_budget": {"type": "integer", "description": "Token budget"},
-                            "required_sections": {"type": "array", "items": {"type": "string"}},
-                            "context": {"type": "object", "description": "Additional context"}
+                            "standard_id": {
+                                "type": "string",
+                                "description": "Standard ID",
+                            },
+                            "format_type": {
+                                "type": "string",
+                                "description": "Format type",
+                                "default": "condensed",
+                            },
+                            "token_budget": {
+                                "type": "integer",
+                                "description": "Token budget",
+                            },
+                            "required_sections": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Additional context",
+                            },
                         },
-                        "required": ["standard_id"]
-                    }
+                        "required": ["standard_id"],
+                    },
                 ),
                 Tool(
                     name="auto_optimize_standards",
@@ -243,12 +304,21 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_ids": {"type": "array", "items": {"type": "string"}},
-                            "total_token_budget": {"type": "integer", "description": "Total token budget"},
-                            "context": {"type": "object", "description": "Additional context"}
+                            "standard_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "total_token_budget": {
+                                "type": "integer",
+                                "description": "Total token budget",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Additional context",
+                            },
                         },
-                        "required": ["standard_ids", "total_token_budget"]
-                    }
+                        "required": ["standard_ids", "total_token_budget"],
+                    },
                 ),
                 Tool(
                     name="progressive_load_standard",
@@ -256,12 +326,22 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_id": {"type": "string", "description": "Standard ID"},
-                            "initial_sections": {"type": "array", "items": {"type": "string"}},
-                            "max_depth": {"type": "integer", "description": "Maximum depth", "default": 3}
+                            "standard_id": {
+                                "type": "string",
+                                "description": "Standard ID",
+                            },
+                            "initial_sections": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "max_depth": {
+                                "type": "integer",
+                                "description": "Maximum depth",
+                                "default": 3,
+                            },
                         },
-                        "required": ["standard_id", "initial_sections"]
-                    }
+                        "required": ["standard_id", "initial_sections"],
+                    },
                 ),
                 Tool(
                     name="estimate_token_usage",
@@ -269,19 +349,22 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_ids": {"type": "array", "items": {"type": "string"}},
-                            "format_types": {"type": "array", "items": {"type": "string"}}
+                            "standard_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "format_types": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
                         },
-                        "required": ["standard_ids"]
-                    }
+                        "required": ["standard_ids"],
+                    },
                 ),
                 Tool(
                     name="get_sync_status",
                     description="Get current synchronization status",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {}
-                    }
+                    inputSchema={"type": "object", "properties": {}},
                 ),
                 Tool(
                     name="generate_standard",
@@ -289,13 +372,25 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "template_name": {"type": "string", "description": "Template name"},
-                            "context": {"type": "object", "description": "Generation context"},
-                            "domain": {"type": "string", "description": "Domain/category"},
-                            "title": {"type": "string", "description": "Standard title"}
+                            "template_name": {
+                                "type": "string",
+                                "description": "Template name",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Generation context",
+                            },
+                            "domain": {
+                                "type": "string",
+                                "description": "Domain/category",
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Standard title",
+                            },
                         },
-                        "required": ["template_name", "context", "title"]
-                    }
+                        "required": ["template_name", "context", "title"],
+                    },
                 ),
                 Tool(
                     name="validate_standard",
@@ -303,11 +398,18 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_content": {"type": "string", "description": "Standard content to validate"},
-                            "format": {"type": "string", "description": "Content format (yaml/json)", "default": "yaml"}
+                            "standard_content": {
+                                "type": "string",
+                                "description": "Standard content to validate",
+                            },
+                            "format": {
+                                "type": "string",
+                                "description": "Content format (yaml/json)",
+                                "default": "yaml",
+                            },
                         },
-                        "required": ["standard_content"]
-                    }
+                        "required": ["standard_content"],
+                    },
                 ),
                 Tool(
                     name="list_templates",
@@ -315,9 +417,12 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "domain": {"type": "string", "description": "Filter by domain"}
-                        }
-                    }
+                            "domain": {
+                                "type": "string",
+                                "description": "Filter by domain",
+                            }
+                        },
+                    },
                 ),
                 Tool(
                     name="get_cross_references",
@@ -325,11 +430,21 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_id": {"type": "string", "description": "Standard ID"},
-                            "concept": {"type": "string", "description": "Concept to find references for"},
-                            "max_depth": {"type": "integer", "description": "Maximum reference depth", "default": 2}
-                        }
-                    }
+                            "standard_id": {
+                                "type": "string",
+                                "description": "Standard ID",
+                            },
+                            "concept": {
+                                "type": "string",
+                                "description": "Concept to find references for",
+                            },
+                            "max_depth": {
+                                "type": "integer",
+                                "description": "Maximum reference depth",
+                                "default": 2,
+                            },
+                        },
+                    },
                 ),
                 Tool(
                     name="generate_cross_references",
@@ -337,9 +452,13 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "force_refresh": {"type": "boolean", "description": "Force refresh of references", "default": False}
-                        }
-                    }
+                            "force_refresh": {
+                                "type": "boolean",
+                                "description": "Force refresh of references",
+                                "default": False,
+                            }
+                        },
+                    },
                 ),
                 Tool(
                     name="get_standards_analytics",
@@ -347,11 +466,23 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "metric_type": {"type": "string", "description": "Type of metrics (usage/popularity/gaps)", "default": "usage"},
-                            "time_range": {"type": "string", "description": "Time range for metrics", "default": "30d"},
-                            "standard_ids": {"type": "array", "items": {"type": "string"}, "description": "Specific standards"}
-                        }
-                    }
+                            "metric_type": {
+                                "type": "string",
+                                "description": "Type of metrics (usage/popularity/gaps)",
+                                "default": "usage",
+                            },
+                            "time_range": {
+                                "type": "string",
+                                "description": "Time range for metrics",
+                                "default": "30d",
+                            },
+                            "standard_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Specific standards",
+                            },
+                        },
+                    },
                 ),
                 Tool(
                     name="track_standards_usage",
@@ -359,13 +490,25 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "standard_id": {"type": "string", "description": "Standard ID"},
-                            "section_id": {"type": "string", "description": "Section ID"},
-                            "usage_type": {"type": "string", "description": "Usage type (view/apply/reference)"},
-                            "context": {"type": "object", "description": "Usage context"}
+                            "standard_id": {
+                                "type": "string",
+                                "description": "Standard ID",
+                            },
+                            "section_id": {
+                                "type": "string",
+                                "description": "Section ID",
+                            },
+                            "usage_type": {
+                                "type": "string",
+                                "description": "Usage type (view/apply/reference)",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Usage context",
+                            },
                         },
-                        "required": ["standard_id", "usage_type"]
-                    }
+                        "required": ["standard_id", "usage_type"],
+                    },
                 ),
                 Tool(
                     name="get_recommendations",
@@ -373,31 +516,37 @@ class MCPStandardsServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "analysis_type": {"type": "string", "description": "Type of analysis (gaps/quality/usage)", "default": "gaps"},
-                            "context": {"type": "object", "description": "Analysis context"}
-                        }
-                    }
+                            "analysis_type": {
+                                "type": "string",
+                                "description": "Type of analysis (gaps/quality/usage)",
+                                "default": "gaps",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Analysis context",
+                            },
+                        },
+                    },
                 ),
                 Tool(
                     name="get_metrics_dashboard",
                     description="Get performance metrics dashboard",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {}
-                    }
-                )
+                    inputSchema={"type": "object", "properties": {}},
+                ),
             ]
 
         # Capture self in closure for nested function
         server_instance = self
 
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: dict[str, Any], **kwargs) -> list[TextContent]:
+        async def call_tool(
+            name: str, arguments: dict[str, Any], **kwargs
+        ) -> list[TextContent]:
             """Handle tool calls with authentication and validation."""
             logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
 
             # Track request size
-            request_size = len(json.dumps(arguments).encode('utf-8'))
+            request_size = len(json.dumps(arguments).encode("utf-8"))
             server_instance.metrics.record_request_size(request_size, name)
 
             # Start timing the tool call
@@ -406,7 +555,9 @@ class MCPStandardsServer:
             try:
                 # Extract authentication from request context if available
                 headers = kwargs.get("headers", {})
-                auth_type, credential = server_instance.auth_manager.extract_auth_from_headers(headers)
+                auth_type, credential = (
+                    server_instance.auth_manager.extract_auth_from_headers(headers)
+                )
 
                 # Verify authentication if enabled
                 if server_instance.auth_manager.is_enabled():
@@ -415,19 +566,25 @@ class MCPStandardsServer:
                         raise AuthenticationError("Authentication required")
 
                     if auth_type == "bearer":
-                        is_valid, payload, error_msg = server_instance.auth_manager.verify_token(credential)
+                        is_valid, payload, error_msg = (
+                            server_instance.auth_manager.verify_token(credential)
+                        )
                         server_instance.metrics.record_auth_attempt("bearer", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid token")
 
                         # Check tool permission
-                        if not server_instance.auth_manager.check_permission(payload, "mcp:tools"):
+                        if not server_instance.auth_manager.check_permission(
+                            payload, "mcp:tools"
+                        ):
                             raise AuthorizationError(
                                 "Insufficient permissions for tool access",
-                                required_scope="mcp:tools"
+                                required_scope="mcp:tools",
                             )
                     elif auth_type == "api_key":
-                        is_valid, user_id, error_msg = server_instance.auth_manager.verify_api_key(credential)
+                        is_valid, user_id, error_msg = (
+                            server_instance.auth_manager.verify_api_key(credential)
+                        )
                         server_instance.metrics.record_auth_attempt("api_key", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid API key")
@@ -435,28 +592,48 @@ class MCPStandardsServer:
                     # Check rate limits
                     user_key = credential if credential else "anonymous"
                     if not server_instance._check_rate_limit(user_key):
-                        server_instance.metrics.record_rate_limit_hit(user_key, "standard")
+                        server_instance.metrics.record_rate_limit_hit(
+                            user_key, "standard"
+                        )
                         raise RateLimitError(
                             limit=server_instance.rate_limit_max_requests,
                             window=f"{server_instance.rate_limit_window}s",
-                            retry_after=server_instance.rate_limit_window
+                            retry_after=server_instance.rate_limit_window,
                         )
 
                 # Validate tool exists
                 if name not in [
-                    "get_applicable_standards", "validate_against_standard", "search_standards",
-                    "get_standard_details", "list_available_standards", "suggest_improvements",
-                    "sync_standards", "get_optimized_standard", "auto_optimize_standards",
-                    "progressive_load_standard", "estimate_token_usage", "get_sync_status",
-                    "generate_standard", "validate_standard", "list_templates",
-                    "get_cross_references", "generate_cross_references", "get_standards_analytics",
-                    "track_standards_usage", "get_recommendations", "get_metrics_dashboard"
+                    "get_applicable_standards",
+                    "validate_against_standard",
+                    "search_standards",
+                    "get_standard_details",
+                    "list_available_standards",
+                    "suggest_improvements",
+                    "sync_standards",
+                    "get_optimized_standard",
+                    "auto_optimize_standards",
+                    "progressive_load_standard",
+                    "estimate_token_usage",
+                    "get_sync_status",
+                    "generate_standard",
+                    "validate_standard",
+                    "list_templates",
+                    "get_cross_references",
+                    "generate_cross_references",
+                    "get_standards_analytics",
+                    "track_standards_usage",
+                    "get_recommendations",
+                    "get_metrics_dashboard",
                 ]:
                     raise ToolNotFoundError(name)
 
                 # Validate input arguments
                 try:
-                    validated_args = server_instance.input_validator.validate_tool_input(name, arguments)
+                    validated_args = (
+                        server_instance.input_validator.validate_tool_input(
+                            name, arguments
+                        )
+                    )
                 except ValidationError:
                     # Re-raise our custom validation errors
                     raise
@@ -467,7 +644,7 @@ class MCPStandardsServer:
                     field = ".".join(str(loc) for loc in first_error.get("loc", []))
                     raise ValidationError(
                         message=first_error.get("msg", "Validation error"),
-                        field=field or "unknown"
+                        field=field or "unknown",
                     )
 
                 # Execute tool
@@ -483,7 +660,9 @@ class MCPStandardsServer:
                 # Apply privacy filtering if enabled
                 if server_instance.privacy_filter.config.detect_pii:
                     # Generate privacy report for monitoring
-                    privacy_report = server_instance.privacy_filter.get_privacy_report(result)
+                    privacy_report = server_instance.privacy_filter.get_privacy_report(
+                        result
+                    )
                     if privacy_report["has_pii"]:
                         logger.warning(
                             f"PII detected in response for tool {name}: "
@@ -491,107 +670,101 @@ class MCPStandardsServer:
                             f"{', '.join(privacy_report['pii_types_found'])}"
                         )
                         # Filter the response
-                        filtered_result, _ = server_instance.privacy_filter.filter_dict(result)
+                        filtered_result, _ = server_instance.privacy_filter.filter_dict(
+                            result
+                        )
                         result = filtered_result
 
                 # Track response size
                 response_text = json.dumps(result, indent=2)
-                response_size = len(response_text.encode('utf-8'))
+                response_size = len(response_text.encode("utf-8"))
                 server_instance.metrics.record_response_size(response_size, name)
 
                 # Return successful result
-                return [TextContent(
-                    type="text",
-                    text=response_text
-                )]
+                return [TextContent(type="text", text=response_text)]
 
             except MCPError as e:
                 # Handle structured errors
                 logger.error(f"MCP error in tool {name}: {e}", exc_info=True)
                 duration = time.time() - start_time
-                server_instance.metrics.record_tool_call(name, duration, False, e.code.value)
-                return [TextContent(
-                    type="text",
-                    text=json.dumps(e.to_dict(), indent=2)
-                )]
+                server_instance.metrics.record_tool_call(
+                    name, duration, False, e.code.value
+                )
+                return [
+                    TextContent(type="text", text=json.dumps(e.to_dict(), indent=2))
+                ]
             except Exception as e:
                 # Handle unexpected errors
                 logger.error(f"Unexpected error in tool {name}: {e}", exc_info=True)
                 duration = time.time() - start_time
-                server_instance.metrics.record_tool_call(name, duration, False, type(e).__name__)
+                server_instance.metrics.record_tool_call(
+                    name, duration, False, type(e).__name__
+                )
                 error = MCPError(
                     code=ErrorCode.SYSTEM_INTERNAL_ERROR,
                     message=f"Internal error: {str(e)}",
-                    details={"tool": name}
+                    details={"tool": name},
                 )
-                return [TextContent(
-                    type="text",
-                    text=json.dumps(error.to_dict(), indent=2)
-                )]
+                return [
+                    TextContent(type="text", text=json.dumps(error.to_dict(), indent=2))
+                ]
 
-    async def _execute_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _execute_tool(
+        self, name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a specific tool with validated arguments."""
         try:
             if name == "get_applicable_standards":
                 return await self._get_applicable_standards(
                     arguments["context"],
-                    arguments.get("include_resolution_details", False)
+                    arguments.get("include_resolution_details", False),
                 )
             elif name == "validate_against_standard":
                 return await self._validate_against_standard(
-                    arguments["code"],
-                    arguments["standard"],
-                    arguments.get("language")
+                    arguments["code"], arguments["standard"], arguments.get("language")
                 )
             elif name == "search_standards":
                 return await self._search_standards(
                     arguments["query"],
                     arguments.get("limit", 10),
                     arguments.get("min_relevance", 0.0),
-                    arguments.get("filters")
+                    arguments.get("filters"),
                 )
             elif name == "get_standard_details":
-                return await self._get_standard_details(
-                    arguments["standard_id"]
-                )
+                return await self._get_standard_details(arguments["standard_id"])
             elif name == "list_available_standards":
                 return await self._list_available_standards(
-                    arguments.get("category"),
-                    arguments.get("limit", 100)
+                    arguments.get("category"), arguments.get("limit", 100)
                 )
             elif name == "suggest_improvements":
                 return await self._suggest_improvements(
-                    arguments["code"],
-                    arguments["context"]
+                    arguments["code"], arguments["context"]
                 )
             elif name == "sync_standards":
-                return await self._sync_standards(
-                    arguments.get("force", False)
-                )
+                return await self._sync_standards(arguments.get("force", False))
             elif name == "get_optimized_standard":
                 return await self._get_optimized_standard(
                     arguments["standard_id"],
                     arguments.get("format_type", "condensed"),
                     arguments.get("token_budget"),
                     arguments.get("required_sections"),
-                    arguments.get("context")
+                    arguments.get("context"),
                 )
             elif name == "auto_optimize_standards":
                 return await self._auto_optimize_standards(
                     arguments["standard_ids"],
                     arguments["total_token_budget"],
-                    arguments.get("context")
+                    arguments.get("context"),
                 )
             elif name == "progressive_load_standard":
                 return await self._progressive_load_standard(
                     arguments["standard_id"],
                     arguments["initial_sections"],
-                    arguments.get("max_depth", 3)
+                    arguments.get("max_depth", 3),
                 )
             elif name == "estimate_token_usage":
                 return await self._estimate_token_usage(
-                    arguments["standard_ids"],
-                    arguments.get("format_types")
+                    arguments["standard_ids"], arguments.get("format_types")
                 )
             elif name == "get_sync_status":
                 return await self._get_sync_status()
@@ -600,22 +773,19 @@ class MCPStandardsServer:
                     arguments["template_name"],
                     arguments["context"],
                     arguments["title"],
-                    arguments.get("domain")
+                    arguments.get("domain"),
                 )
             elif name == "validate_standard":
                 return await self._validate_standard(
-                    arguments["standard_content"],
-                    arguments.get("format", "yaml")
+                    arguments["standard_content"], arguments.get("format", "yaml")
                 )
             elif name == "list_templates":
-                return await self._list_templates(
-                    arguments.get("domain")
-                )
+                return await self._list_templates(arguments.get("domain"))
             elif name == "get_cross_references":
                 return await self._get_cross_references(
                     arguments.get("standard_id"),
                     arguments.get("concept"),
-                    arguments.get("max_depth", 2)
+                    arguments.get("max_depth", 2),
                 )
             elif name == "generate_cross_references":
                 return await self._generate_cross_references(
@@ -625,19 +795,18 @@ class MCPStandardsServer:
                 return await self._get_standards_analytics(
                     arguments.get("metric_type", "usage"),
                     arguments.get("time_range", "30d"),
-                    arguments.get("standard_ids")
+                    arguments.get("standard_ids"),
                 )
             elif name == "track_standards_usage":
                 return await self._track_standards_usage(
                     arguments["standard_id"],
                     arguments["usage_type"],
                     arguments.get("section_id"),
-                    arguments.get("context")
+                    arguments.get("context"),
                 )
             elif name == "get_recommendations":
                 return await self._get_recommendations(
-                    arguments.get("analysis_type", "gaps"),
-                    arguments.get("context")
+                    arguments.get("analysis_type", "gaps"), arguments.get("context")
                 )
             elif name == "get_metrics_dashboard":
                 return await self._get_metrics_dashboard()
@@ -652,36 +821,31 @@ class MCPStandardsServer:
             raise MCPError(
                 code=ErrorCode.TOOL_EXECUTION_FAILED,
                 message=f"Tool execution failed: {str(e)}",
-                details={"tool": name, "error_type": type(e).__name__}
+                details={"tool": name, "error_type": type(e).__name__},
             )
 
     async def _get_applicable_standards(
-        self,
-        context: dict[str, Any],
-        include_resolution_details: bool = False
+        self, context: dict[str, Any], include_resolution_details: bool = False
     ) -> dict[str, Any]:
         """Get applicable standards based on project context."""
         result = self.rule_engine.evaluate(context)
 
         response = {
             "standards": result["resolved_standards"],
-            "evaluation_path": result.get("evaluation_path", [])
+            "evaluation_path": result.get("evaluation_path", []),
         }
 
         if include_resolution_details:
             response["resolution_details"] = {
                 "matched_rules": result.get("matched_rules", []),
                 "conflicts_resolved": result.get("conflicts_resolved", 0),
-                "final_priority_order": result.get("priority_order", [])
+                "final_priority_order": result.get("priority_order", []),
             }
 
         return response
 
     async def _validate_against_standard(
-        self,
-        code: str,
-        standard: str,
-        language: str | None = None
+        self, code: str, standard: str, language: str | None = None
     ) -> dict[str, Any]:
         """Validate code against a specific standard."""
         # This is a placeholder - actual implementation would analyze code
@@ -690,16 +854,18 @@ class MCPStandardsServer:
         # Simple validation checks
         if standard == "react-18-patterns" and language == "javascript":
             if "class " in code and "extends React.Component" in code:
-                violations.append({
-                    "line": 1,
-                    "message": "Prefer functional components over class components",
-                    "severity": "warning"
-                })
+                violations.append(
+                    {
+                        "line": 1,
+                        "message": "Prefer functional components over class components",
+                        "severity": "warning",
+                    }
+                )
 
         return {
             "standard": standard,
             "passed": len(violations) == 0,
-            "violations": violations
+            "violations": violations,
         }
 
     async def _search_standards(
@@ -707,37 +873,32 @@ class MCPStandardsServer:
         query: str,
         limit: int = 10,
         min_relevance: float = 0.0,
-        filters: dict[str, Any] | None = None
+        filters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Search standards using semantic search."""
         if self.search is None:
             # Fallback to simple keyword search
             return {"results": [], "warning": "Semantic search is disabled"}
 
-        results = self.search.search(
-            query,
-            top_k=limit,
-            filters=filters
-        )
+        results = self.search.search(query, top_k=limit, filters=filters)
 
         # Filter by minimum relevance and convert to dict format
         filtered_results = []
         for result in results:
             if result.score >= min_relevance:
-                filtered_results.append({
-                    "standard": result.id,
-                    "relevance_score": result.score,
-                    "content": result.content,
-                    "metadata": result.metadata,
-                    "highlights": result.highlights
-                })
+                filtered_results.append(
+                    {
+                        "standard": result.id,
+                        "relevance_score": result.score,
+                        "content": result.content,
+                        "metadata": result.metadata,
+                        "highlights": result.highlights,
+                    }
+                )
 
         return {"results": filtered_results}
 
-    async def _get_standard_details(
-        self,
-        standard_id: str
-    ) -> dict[str, Any]:
+    async def _get_standard_details(self, standard_id: str) -> dict[str, Any]:
         """Get detailed information about a specific standard."""
         # Load standard from cache or repository
         standard_path = self.synchronizer.cache_dir / f"{standard_id}.json"
@@ -753,13 +914,11 @@ class MCPStandardsServer:
             raise MCPError(
                 code=ErrorCode.STANDARDS_NOT_FOUND,
                 message=f"Standard '{standard_id}' not found",
-                details={"standard_id": standard_id}
+                details={"standard_id": standard_id},
             )
 
     async def _list_available_standards(
-        self,
-        category: str | None = None,
-        limit: int = 100
+        self, category: str | None = None, limit: int = 100
     ) -> dict[str, Any]:
         """List all available standards."""
         standards = []
@@ -770,7 +929,7 @@ class MCPStandardsServer:
             raise MCPError(
                 code=ErrorCode.RESOURCE_NOT_FOUND,
                 message="Standards cache directory not found",
-                suggestion="Run sync_standards to populate the cache"
+                suggestion="Run sync_standards to populate the cache",
             )
 
         for file_path in cache_dir.glob("*.json"):
@@ -779,12 +938,14 @@ class MCPStandardsServer:
                     standard = json.load(f)
 
                 if category is None or standard.get("category") == category:
-                    standards.append({
-                        "id": standard.get("id", file_path.stem),
-                        "name": standard.get("name", "Unknown"),
-                        "category": standard.get("category"),
-                        "tags": standard.get("tags", [])
-                    })
+                    standards.append(
+                        {
+                            "id": standard.get("id", file_path.stem),
+                            "name": standard.get("name", "Unknown"),
+                            "category": standard.get("category"),
+                            "tags": standard.get("tags", []),
+                        }
+                    )
             except json.JSONDecodeError as e:
                 logger.warning(f"Invalid JSON in {file_path}: {e}")
                 continue
@@ -798,9 +959,7 @@ class MCPStandardsServer:
         return {"standards": standards[:limit]}
 
     async def _suggest_improvements(
-        self,
-        code: str,
-        context: dict[str, Any]
+        self, code: str, context: dict[str, Any]
     ) -> dict[str, Any]:
         """Suggest improvements based on applicable standards."""
         # Get applicable standards
@@ -814,30 +973,33 @@ class MCPStandardsServer:
             # This is a placeholder - actual implementation would analyze code
             if "javascript" in context.get("language", "").lower():
                 if "var " in code:
-                    suggestions.append({
-                        "description": "Use const/let instead of var",
-                        "priority": "high",
-                        "standard_reference": standard_id
-                    })
+                    suggestions.append(
+                        {
+                            "description": "Use const/let instead of var",
+                            "priority": "high",
+                            "standard_reference": standard_id,
+                        }
+                    )
                 if "function" in code and "async" not in code:
-                    suggestions.append({
-                        "description": "Consider using async/await for asynchronous operations",
-                        "priority": "medium",
-                        "standard_reference": standard_id
-                    })
+                    suggestions.append(
+                        {
+                            "description": "Consider using async/await for asynchronous operations",
+                            "priority": "medium",
+                            "standard_reference": standard_id,
+                        }
+                    )
                 if ".then(" in code:
-                    suggestions.append({
-                        "description": "Consider using async/await instead of promise chains",
-                        "priority": "medium",
-                        "standard_reference": standard_id
-                    })
+                    suggestions.append(
+                        {
+                            "description": "Consider using async/await instead of promise chains",
+                            "priority": "medium",
+                            "standard_reference": standard_id,
+                        }
+                    )
 
         return {"suggestions": suggestions}
 
-    async def _sync_standards(
-        self,
-        force: bool = False
-    ) -> dict[str, Any]:
+    async def _sync_standards(self, force: bool = False) -> dict[str, Any]:
         """Synchronize standards from repository."""
         try:
             result = await self.synchronizer.sync(force=force)
@@ -845,13 +1007,13 @@ class MCPStandardsServer:
                 "status": result.status.value,
                 "synced_files": [f.path for f in result.synced_files],
                 "failed_files": result.failed_files,
-                "message": result.message
+                "message": result.message,
             }
         except Exception as e:
             raise MCPError(
                 code=ErrorCode.STANDARDS_SYNC_FAILED,
                 message=f"Standards synchronization failed: {str(e)}",
-                details={"force": force}
+                details={"force": force},
             )
 
     async def _get_optimized_standard(
@@ -860,7 +1022,7 @@ class MCPStandardsServer:
         format_type: str = "condensed",
         token_budget: int | None = None,
         required_sections: list[str] | None = None,
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Get a token-optimized version of a standard."""
         # Load standard
@@ -883,7 +1045,7 @@ class MCPStandardsServer:
             format_type=format_enum,
             budget=budget,
             required_sections=required_sections,
-            context=context
+            context=context,
         )
 
         return {
@@ -895,14 +1057,14 @@ class MCPStandardsServer:
             "compression_ratio": result.compression_ratio,
             "sections_included": result.sections_included,
             "sections_excluded": result.sections_excluded,
-            "warnings": result.warnings
+            "warnings": result.warnings,
         }
 
     async def _auto_optimize_standards(
         self,
         standard_ids: list[str],
         total_token_budget: int,
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Automatically optimize multiple standards within a token budget."""
         # Estimate token usage for each standard
@@ -917,19 +1079,18 @@ class MCPStandardsServer:
 
         # Estimate token distribution
         estimates = self.token_optimizer.estimate_tokens(
-            standards,
-            format_type=StandardFormat.CONDENSED
+            standards, format_type=StandardFormat.CONDENSED
         )
 
         # Allocate budget proportionally
-        total_original = estimates['total_original']
+        total_original = estimates["total_original"]
         results = []
 
         for i, standard in enumerate(standards):
-            std_estimate = estimates['standards'][i]
+            std_estimate = estimates["standards"][i]
 
             # Calculate proportional budget
-            proportion = std_estimate['original_tokens'] / total_original
+            proportion = std_estimate["original_tokens"] / total_original
             allocated_budget = int(total_token_budget * proportion)
 
             # Create budget with some buffer
@@ -942,34 +1103,32 @@ class MCPStandardsServer:
 
             # Optimize
             content, result = self.token_optimizer.optimize_standard(
-                standard,
-                format_type=selected_format,
-                budget=budget,
-                context=context
+                standard, format_type=selected_format, budget=budget, context=context
             )
 
-            results.append({
-                "standard_id": standard['id'],
-                "content": content,
-                "format": result.format_used.value,
-                "tokens_used": result.compressed_tokens,
-                "allocated_budget": allocated_budget
-            })
+            results.append(
+                {
+                    "standard_id": standard["id"],
+                    "content": content,
+                    "format": result.format_used.value,
+                    "tokens_used": result.compressed_tokens,
+                    "allocated_budget": allocated_budget,
+                }
+            )
 
-        total_used = sum(r['tokens_used'] for r in results)
+        total_used = sum(r["tokens_used"] for r in results)
 
         return {
             "results": results,
             "total_tokens_used": total_used,
             "total_budget": total_token_budget,
-            "budget_utilization": total_used / total_token_budget if total_token_budget > 0 else 0
+            "budget_utilization": (
+                total_used / total_token_budget if total_token_budget > 0 else 0
+            ),
         }
 
     async def _progressive_load_standard(
-        self,
-        standard_id: str,
-        initial_sections: list[str],
-        max_depth: int = 3
+        self, standard_id: str, initial_sections: list[str], max_depth: int = 3
     ) -> dict[str, Any]:
         """Get a progressive loading plan for a standard."""
         # Load standard
@@ -977,9 +1136,7 @@ class MCPStandardsServer:
 
         # Generate loading plan
         loading_plan = self.token_optimizer.progressive_load(
-            standard,
-            initial_sections=initial_sections,
-            max_depth=max_depth
+            standard, initial_sections=initial_sections, max_depth=max_depth
         )
 
         # Format plan for response
@@ -991,7 +1148,7 @@ class MCPStandardsServer:
                     {"id": section_id, "estimated_tokens": tokens}
                     for section_id, tokens in batch
                 ],
-                "batch_total_tokens": sum(tokens for _, tokens in batch)
+                "batch_total_tokens": sum(tokens for _, tokens in batch),
             }
             formatted_plan.append(formatted_batch)
 
@@ -1002,13 +1159,11 @@ class MCPStandardsServer:
             "total_sections": sum(len(batch) for batch in loading_plan),
             "estimated_total_tokens": sum(
                 batch["batch_total_tokens"] for batch in formatted_plan
-            )
+            ),
         }
 
     async def _estimate_token_usage(
-        self,
-        standard_ids: list[str],
-        format_types: list[str] | None = None
+        self, standard_ids: list[str], format_types: list[str] | None = None
     ) -> dict[str, Any]:
         """Estimate token usage for standards in different formats."""
         if not format_types:
@@ -1036,8 +1191,7 @@ class MCPStandardsServer:
         results = {}
         for format_enum in formats:
             estimates = self.token_optimizer.estimate_tokens(
-                standards,
-                format_type=format_enum
+                standards, format_type=format_enum
             )
             results[format_enum.value] = estimates
 
@@ -1046,8 +1200,8 @@ class MCPStandardsServer:
             "recommendations": {
                 "tight_budget": "Use 'summary' or 'reference' format",
                 "normal_budget": "Use 'condensed' format",
-                "large_budget": "Use 'full' format"
-            }
+                "large_budget": "Use 'full' format",
+            },
         }
 
     async def _get_sync_status(self) -> dict[str, Any]:
@@ -1067,7 +1221,7 @@ class MCPStandardsServer:
             "total_standards": status["total_files"],
             "outdated_standards": len(updates.get("outdated_files", [])),
             "cache_size_mb": status["total_size_mb"],
-            "rate_limit": status["rate_limit"]
+            "rate_limit": status["rate_limit"],
         }
 
     async def _generate_standard(
@@ -1075,41 +1229,35 @@ class MCPStandardsServer:
         template_name: str,
         context: dict[str, Any],
         title: str,
-        domain: str | None = None
+        domain: str | None = None,
     ) -> dict[str, Any]:
         """Generate a new standard based on template and context."""
         try:
             result = self.generator.generate_standard(
-                template_name=template_name,
-                context=context,
-                title=title,
-                domain=domain
+                template_name=template_name, context=context, title=title, domain=domain
             )
             return {
                 "standard": result.standard,
                 "metadata": result.metadata,
                 "warnings": result.warnings,
-                "quality_score": result.quality_score
+                "quality_score": result.quality_score,
             }
         except Exception as e:
-            return {
-                "error": str(e),
-                "template_name": template_name
-            }
+            return {"error": str(e), "template_name": template_name}
 
     async def _validate_standard(
-        self,
-        standard_content: str,
-        format: str = "yaml"
+        self, standard_content: str, format: str = "yaml"
     ) -> dict[str, Any]:
         """Validate a standard document for completeness and quality."""
         try:
             from .generators.validator import StandardValidator
+
             validator = StandardValidator()
 
             # Parse content based on format
             if format.lower() == "yaml":
                 import yaml
+
                 content = yaml.safe_load(standard_content)
             else:
                 content = json.loads(standard_content)
@@ -1122,18 +1270,12 @@ class MCPStandardsServer:
                 "warnings": validation_result.warnings,
                 "quality_metrics": validation_result.quality_metrics,
                 "completeness_score": validation_result.completeness_score,
-                "suggestions": validation_result.suggestions
+                "suggestions": validation_result.suggestions,
             }
         except Exception as e:
-            return {
-                "valid": False,
-                "error": str(e)
-            }
+            return {"valid": False, "error": str(e)}
 
-    async def _list_templates(
-        self,
-        domain: str | None = None
-    ) -> dict[str, Any]:
+    async def _list_templates(self, domain: str | None = None) -> dict[str, Any]:
         """List available standard templates."""
         try:
             templates = self.generator.list_templates(domain=domain)
@@ -1144,22 +1286,19 @@ class MCPStandardsServer:
                         "domain": template.domain,
                         "description": template.description,
                         "variables": template.variables,
-                        "features": template.features
+                        "features": template.features,
                     }
                     for template in templates
                 ]
             }
         except Exception as e:
-            return {
-                "error": str(e),
-                "templates": []
-            }
+            return {"error": str(e), "templates": []}
 
     async def _get_cross_references(
         self,
         standard_id: str | None = None,
         concept: str | None = None,
-        max_depth: int = 2
+        max_depth: int = 2,
     ) -> dict[str, Any]:
         """Get cross-references for a standard or concept."""
         try:
@@ -1174,20 +1313,12 @@ class MCPStandardsServer:
             else:
                 return {"error": "Either standard_id or concept must be provided"}
 
-            return {
-                "references": refs,
-                "depth": max_depth,
-                "total_found": len(refs)
-            }
+            return {"references": refs, "depth": max_depth, "total_found": len(refs)}
         except Exception as e:
-            return {
-                "error": str(e),
-                "references": []
-            }
+            return {"error": str(e), "references": []}
 
     async def _generate_cross_references(
-        self,
-        force_refresh: bool = False
+        self, force_refresh: bool = False
     ) -> dict[str, Any]:
         """Generate cross-references between standards."""
         try:
@@ -1199,56 +1330,46 @@ class MCPStandardsServer:
                 "processed_standards": result.processed_count,
                 "new_references": result.new_references_count,
                 "updated_references": result.updated_references_count,
-                "processing_time": result.processing_time
+                "processing_time": result.processing_time,
             }
         except Exception as e:
-            return {
-                "status": "failed",
-                "error": str(e)
-            }
+            return {"status": "failed", "error": str(e)}
 
     async def _get_standards_analytics(
         self,
         metric_type: str = "usage",
         time_range: str = "30d",
-        standard_ids: list[str] | None = None
+        standard_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """Get analytics and usage statistics for standards."""
         try:
             if metric_type == "usage":
                 result = self.analytics.get_usage_metrics(
-                    time_range=time_range,
-                    standard_ids=standard_ids
+                    time_range=time_range, standard_ids=standard_ids
                 )
             elif metric_type == "popularity":
                 result = self.analytics.get_popularity_metrics(
-                    time_range=time_range,
-                    standard_ids=standard_ids
+                    time_range=time_range, standard_ids=standard_ids
                 )
             elif metric_type == "gaps":
-                result = self.analytics.analyze_coverage_gaps(
-                    standard_ids=standard_ids
-                )
+                result = self.analytics.analyze_coverage_gaps(standard_ids=standard_ids)
             else:
                 return {"error": f"Unknown metric type: {metric_type}"}
 
             return {
                 "metric_type": metric_type,
                 "time_range": time_range,
-                "data": result
+                "data": result,
             }
         except Exception as e:
-            return {
-                "error": str(e),
-                "metric_type": metric_type
-            }
+            return {"error": str(e), "metric_type": metric_type}
 
     async def _track_standards_usage(
         self,
         standard_id: str,
         usage_type: str,
         section_id: str | None = None,
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Track usage of specific standards or sections."""
         try:
@@ -1256,24 +1377,19 @@ class MCPStandardsServer:
                 standard_id=standard_id,
                 usage_type=usage_type,
                 section_id=section_id,
-                context=context or {}
+                context=context or {},
             )
             return {
                 "status": "tracked",
                 "standard_id": standard_id,
                 "usage_type": usage_type,
-                "section_id": section_id
+                "section_id": section_id,
             }
         except Exception as e:
-            return {
-                "status": "failed",
-                "error": str(e)
-            }
+            return {"status": "failed", "error": str(e)}
 
     async def _get_recommendations(
-        self,
-        analysis_type: str = "gaps",
-        context: dict[str, Any] | None = None
+        self, analysis_type: str = "gaps", context: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Get recommendations for standards improvement or gaps."""
         try:
@@ -1295,13 +1411,10 @@ class MCPStandardsServer:
             return {
                 "analysis_type": analysis_type,
                 "recommendations": recommendations,
-                "generated_at": self.analytics.get_current_timestamp()
+                "generated_at": self.analytics.get_current_timestamp(),
             }
         except Exception as e:
-            return {
-                "error": str(e),
-                "analysis_type": analysis_type
-            }
+            return {"error": str(e), "analysis_type": analysis_type}
 
     async def _get_metrics_dashboard(self) -> dict[str, Any]:
         """Get performance metrics dashboard."""
@@ -1327,14 +1440,12 @@ class MCPStandardsServer:
         """Get analytics data."""
         return await self.analytics.get_analytics()
 
-    async def _get_compliance_mapping(self, standard_id: str, framework: str = "nist") -> dict[str, Any]:
+    async def _get_compliance_mapping(
+        self, standard_id: str, framework: str = "nist"
+    ) -> dict[str, Any]:
         """Get compliance mapping for a standard."""
         # This is a placeholder implementation
-        return {
-            "standard_id": standard_id,
-            "framework": framework,
-            "mappings": []
-        }
+        return {"standard_id": standard_id, "framework": framework, "mappings": []}
 
     @property
     def rate_limiter(self):
@@ -1348,7 +1459,8 @@ class MCPStandardsServer:
         # Clean up old entries
         if user_key in self._rate_limit_store:
             self._rate_limit_store[user_key] = [
-                timestamp for timestamp in self._rate_limit_store[user_key]
+                timestamp
+                for timestamp in self._rate_limit_store[user_key]
                 if now - timestamp < self.rate_limit_window
             ]
         else:
@@ -1389,7 +1501,7 @@ async def main():
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Load configuration

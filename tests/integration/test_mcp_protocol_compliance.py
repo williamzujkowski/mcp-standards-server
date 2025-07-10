@@ -37,18 +37,18 @@ class TestMCPProtocolCompliance:
         assert isinstance(mcp_server.server, Server)
 
         # Test server configuration
-        assert hasattr(mcp_server, 'config')
-        assert hasattr(mcp_server, 'auth_manager')
-        assert hasattr(mcp_server, 'input_validator')
-        assert hasattr(mcp_server, 'privacy_filter')
+        assert hasattr(mcp_server, "config")
+        assert hasattr(mcp_server, "auth_manager")
+        assert hasattr(mcp_server, "input_validator")
+        assert hasattr(mcp_server, "privacy_filter")
 
         # Test metrics initialization
-        assert hasattr(mcp_server, 'metrics')
+        assert hasattr(mcp_server, "metrics")
         assert mcp_server._active_connections == 0
 
         # Test rate limiting configuration
-        assert hasattr(mcp_server, 'rate_limit_window')
-        assert hasattr(mcp_server, 'rate_limit_max_requests')
+        assert hasattr(mcp_server, "rate_limit_window")
+        assert hasattr(mcp_server, "rate_limit_max_requests")
         assert isinstance(mcp_server.rate_limit_window, int)
         assert isinstance(mcp_server.rate_limit_max_requests, int)
 
@@ -65,7 +65,7 @@ class TestMCPProtocolCompliance:
         error = MCPError(
             code=ErrorCode.VALIDATION_INVALID_PARAMETERS,
             message="Invalid parameters",
-            details={"field": "query"}
+            details={"field": "query"},
         )
 
         assert error.code == ErrorCode.VALIDATION_INVALID_PARAMETERS
@@ -75,35 +75,36 @@ class TestMCPProtocolCompliance:
     def test_mcp_server_tools_compliance(self, mcp_server):
         """Test MCP server tools compliance."""
         # Test that server has required tool methods
-        assert hasattr(mcp_server, '_execute_tool')
+        assert hasattr(mcp_server, "_execute_tool")
 
         # Test that server has the expected tools registered
         # Note: This would require checking the actual MCP server's tool registry
         # For now, we'll verify the server has the necessary infrastructure
-        assert hasattr(mcp_server, 'rule_engine')
-        assert hasattr(mcp_server, 'synchronizer')
-        assert hasattr(mcp_server, 'cross_referencer')
-        assert hasattr(mcp_server, 'analytics')
+        assert hasattr(mcp_server, "rule_engine")
+        assert hasattr(mcp_server, "synchronizer")
+        assert hasattr(mcp_server, "cross_referencer")
+        assert hasattr(mcp_server, "analytics")
 
     @pytest.mark.asyncio
     async def test_tool_execution_compliance(self, mcp_server):
         """Test tool execution compliance."""
         # Mock the rule engine for testing
-        mcp_server.rule_engine.select_standards = Mock(return_value={
-            "standards": [
-                {
-                    "id": "test-standard",
-                    "title": "Test Standard",
-                    "description": "Test description",
-                    "category": "testing"
-                }
-            ]
-        })
+        mcp_server.rule_engine.select_standards = Mock(
+            return_value={
+                "standards": [
+                    {
+                        "id": "test-standard",
+                        "title": "Test Standard",
+                        "description": "Test description",
+                        "category": "testing",
+                    }
+                ]
+            }
+        )
 
         # Test tool execution
         result = await mcp_server._execute_tool(
-            "get_applicable_standards",
-            {"context": {"project_type": "web"}}
+            "get_applicable_standards", {"context": {"project_type": "web"}}
         )
 
         # Verify result structure
@@ -121,20 +122,20 @@ class TestMCPProtocolCompliance:
     def test_authentication_compliance(self, mcp_server):
         """Test authentication compliance."""
         # Test that authentication manager is properly configured
-        assert hasattr(mcp_server, 'auth_manager')
-        assert hasattr(mcp_server.auth_manager, 'is_enabled')
-        assert hasattr(mcp_server.auth_manager, 'extract_auth_from_headers')
+        assert hasattr(mcp_server, "auth_manager")
+        assert hasattr(mcp_server.auth_manager, "is_enabled")
+        assert hasattr(mcp_server.auth_manager, "extract_auth_from_headers")
 
         # Test rate limiting infrastructure
-        assert hasattr(mcp_server, '_check_rate_limit')
-        assert hasattr(mcp_server, '_rate_limit_store')
+        assert hasattr(mcp_server, "_check_rate_limit")
+        assert hasattr(mcp_server, "_rate_limit_store")
         assert isinstance(mcp_server._rate_limit_store, dict)
 
     def test_privacy_filtering_compliance(self, mcp_server):
         """Test privacy filtering compliance."""
         # Test privacy filter is properly configured
-        assert hasattr(mcp_server, 'privacy_filter')
-        assert hasattr(mcp_server.privacy_filter, 'config')
+        assert hasattr(mcp_server, "privacy_filter")
+        assert hasattr(mcp_server.privacy_filter, "config")
 
         # Test that privacy filter has required methods
         # Note: This would require checking the actual privacy filter implementation
@@ -144,22 +145,22 @@ class TestMCPProtocolCompliance:
     def test_input_validation_compliance(self, mcp_server):
         """Test input validation compliance."""
         # Test input validator is properly configured
-        assert hasattr(mcp_server, 'input_validator')
+        assert hasattr(mcp_server, "input_validator")
         assert mcp_server.input_validator is not None
 
         # Test that input validator has required methods
         # Note: This would require checking the actual input validator implementation
         # For now, we'll verify the server has the necessary infrastructure
-        assert hasattr(mcp_server, 'input_validator')
+        assert hasattr(mcp_server, "input_validator")
 
     def test_metrics_compliance(self, mcp_server):
         """Test metrics compliance."""
         # Test metrics collector is properly configured
-        assert hasattr(mcp_server, 'metrics')
+        assert hasattr(mcp_server, "metrics")
         assert mcp_server.metrics is not None
 
         # Test connection tracking
-        assert hasattr(mcp_server, '_active_connections')
+        assert hasattr(mcp_server, "_active_connections")
         assert isinstance(mcp_server._active_connections, int)
         assert mcp_server._active_connections == 0
 
@@ -167,7 +168,7 @@ class TestMCPProtocolCompliance:
     async def test_error_handling_compliance(self, mcp_server):
         """Test error handling compliance."""
         # Test that server handles invalid tool names gracefully
-        with patch.object(mcp_server, '_execute_tool') as mock_execute:
+        with patch.object(mcp_server, "_execute_tool") as mock_execute:
             mock_execute.side_effect = Exception("Tool not found")
 
             # This should be handled gracefully by the server
@@ -180,8 +181,8 @@ class TestMCPProtocolCompliance:
     def test_rate_limiting_compliance(self, mcp_server):
         """Test rate limiting compliance."""
         # Test rate limiting configuration
-        assert hasattr(mcp_server, 'rate_limit_window')
-        assert hasattr(mcp_server, 'rate_limit_max_requests')
+        assert hasattr(mcp_server, "rate_limit_window")
+        assert hasattr(mcp_server, "rate_limit_max_requests")
         assert mcp_server.rate_limit_window > 0
         assert mcp_server.rate_limit_max_requests > 0
 
@@ -206,7 +207,7 @@ class TestMCPProtocolCompliance:
             "rate_limit_window": 30,
             "rate_limit_max_requests": 50,
             "auth": {},
-            "privacy": {}
+            "privacy": {},
         }
 
         custom_server = MCPStandardsServer(custom_config)
@@ -218,14 +219,14 @@ class TestMCPProtocolCompliance:
         """Test component initialization compliance."""
         # Test that all required components are initialized
         required_components = [
-            'rule_engine',
-            'synchronizer',
-            'cross_referencer',
-            'analytics',
-            'auth_manager',
-            'input_validator',
-            'privacy_filter',
-            'metrics'
+            "rule_engine",
+            "synchronizer",
+            "cross_referencer",
+            "analytics",
+            "auth_manager",
+            "input_validator",
+            "privacy_filter",
+            "metrics",
         ]
 
         for component in required_components:
@@ -243,7 +244,9 @@ def test_mcp_protocol_compliance_suite():
 
     total_tests = 0
     for test_class in test_classes:
-        class_tests = [method for method in dir(test_class) if method.startswith('test_')]
+        class_tests = [
+            method for method in dir(test_class) if method.startswith("test_")
+        ]
         total_tests += len(class_tests)
 
     print(f"✓ MCP Protocol Compliance Test Suite: {total_tests} tests")

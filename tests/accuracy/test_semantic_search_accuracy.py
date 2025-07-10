@@ -20,6 +20,7 @@ from tests.mocks.semantic_search_mocks import TestDataGenerator, patch_ml_depend
 @dataclass
 class RelevanceTestCase:
     """Test case for relevance evaluation."""
+
     query: str
     relevant_docs: list[str]  # Document IDs that should be retrieved
     irrelevant_docs: list[str]  # Document IDs that should NOT be retrieved
@@ -29,6 +30,7 @@ class RelevanceTestCase:
 @dataclass
 class SemanticTestCase:
     """Test case for semantic understanding."""
+
     query: str
     semantic_equivalents: list[str]  # Queries that should return similar results
     semantic_opposites: list[str]  # Queries that should return different results
@@ -39,7 +41,9 @@ class RelevanceMetrics:
     """Calculate relevance metrics for search results."""
 
     @staticmethod
-    def precision_at_k(results: list[SearchResult], relevant_ids: list[str], k: int) -> float:
+    def precision_at_k(
+        results: list[SearchResult], relevant_ids: list[str], k: int
+    ) -> float:
         """Calculate precision at k."""
         if not results or k == 0:
             return 0.0
@@ -50,7 +54,9 @@ class RelevanceMetrics:
         return relevant_in_top_k / k
 
     @staticmethod
-    def recall_at_k(results: list[SearchResult], relevant_ids: list[str], k: int) -> float:
+    def recall_at_k(
+        results: list[SearchResult], relevant_ids: list[str], k: int
+    ) -> float:
         """Calculate recall at k."""
         if not relevant_ids:
             return 0.0
@@ -72,7 +78,9 @@ class RelevanceMetrics:
         return 2 * (precision * recall) / (precision + recall)
 
     @staticmethod
-    def ndcg_at_k(results: list[SearchResult], relevant_ids: list[str], k: int) -> float:
+    def ndcg_at_k(
+        results: list[SearchResult], relevant_ids: list[str], k: int
+    ) -> float:
         """Calculate Normalized Discounted Cumulative Gain at k."""
         if not results or k == 0:
             return 0.0
@@ -93,7 +101,9 @@ class RelevanceMetrics:
         return dcg / idcg
 
     @staticmethod
-    def mean_reciprocal_rank(results: list[SearchResult], relevant_ids: list[str]) -> float:
+    def mean_reciprocal_rank(
+        results: list[SearchResult], relevant_ids: list[str]
+    ) -> float:
         """Calculate Mean Reciprocal Rank."""
         for i, result in enumerate(results):
             if result.id in relevant_ids:
@@ -112,56 +122,99 @@ class TestSemanticSearchRelevance:
         # Create curated test corpus
         test_corpus = [
             # Security documents
-            ("sec-api-001", """
+            (
+                "sec-api-001",
+                """
             API Security Best Practices
 
             Implement OAuth 2.0 or JWT for API authentication. Use HTTPS for all
             communications. Validate all input parameters. Implement rate limiting
             to prevent abuse. Use parameterized queries to prevent SQL injection.
-            """, {"category": "security", "subcategory": "api", "tags": ["oauth", "jwt", "https"]}),
-
-            ("sec-web-001", """
+            """,
+                {
+                    "category": "security",
+                    "subcategory": "api",
+                    "tags": ["oauth", "jwt", "https"],
+                },
+            ),
+            (
+                "sec-web-001",
+                """
             Web Application Security Guidelines
 
             Protect against XSS attacks by escaping user input. Implement CSRF tokens
             for state-changing operations. Use Content Security Policy headers.
             Enable HSTS for HTTPS enforcement. Regular security audits are essential.
-            """, {"category": "security", "subcategory": "web", "tags": ["xss", "csrf", "csp"]}),
-
+            """,
+                {
+                    "category": "security",
+                    "subcategory": "web",
+                    "tags": ["xss", "csrf", "csp"],
+                },
+            ),
             # Testing documents
-            ("test-react-001", """
+            (
+                "test-react-001",
+                """
             React Component Testing Standards
 
             Use Jest and React Testing Library for unit tests. Test component behavior
             rather than implementation details. Achieve minimum 80% code coverage.
             Mock external dependencies appropriately. Write integration tests for
             component interactions.
-            """, {"category": "testing", "subcategory": "frontend", "tags": ["jest", "react", "coverage"]}),
-
-            ("test-api-001", """
+            """,
+                {
+                    "category": "testing",
+                    "subcategory": "frontend",
+                    "tags": ["jest", "react", "coverage"],
+                },
+            ),
+            (
+                "test-api-001",
+                """
             API Testing Best Practices
 
             Test all API endpoints with various input scenarios. Include negative test
             cases and error handling. Validate response schemas. Test rate limiting
             and authentication. Use contract testing for microservices.
-            """, {"category": "testing", "subcategory": "api", "tags": ["endpoints", "contract", "validation"]}),
-
+            """,
+                {
+                    "category": "testing",
+                    "subcategory": "api",
+                    "tags": ["endpoints", "contract", "validation"],
+                },
+            ),
             # Performance documents
-            ("perf-db-001", """
+            (
+                "perf-db-001",
+                """
             Database Performance Optimization
 
             Use appropriate indexes for frequent queries. Implement query result caching.
             Optimize database schema design. Monitor slow queries. Use connection pooling
             for better resource utilization.
-            """, {"category": "performance", "subcategory": "database", "tags": ["indexing", "caching", "optimization"]}),
-
-            ("perf-web-001", """
+            """,
+                {
+                    "category": "performance",
+                    "subcategory": "database",
+                    "tags": ["indexing", "caching", "optimization"],
+                },
+            ),
+            (
+                "perf-web-001",
+                """
             Web Performance Best Practices
 
             Minimize JavaScript bundle sizes. Implement code splitting and lazy loading.
             Optimize images and use WebP format. Enable HTTP/2 and compression.
             Use CDN for static assets. Monitor Core Web Vitals.
-            """, {"category": "performance", "subcategory": "web", "tags": ["optimization", "cdn", "bundling"]}),
+            """,
+                {
+                    "category": "performance",
+                    "subcategory": "web",
+                    "tags": ["optimization", "cdn", "bundling"],
+                },
+            ),
         ]
 
         # Index corpus
@@ -179,19 +232,19 @@ class TestSemanticSearchRelevance:
                 query="API security authentication",
                 relevant_docs=["sec-api-001", "test-api-001"],
                 irrelevant_docs=["perf-db-001"],
-                description="Should find API security documents"
+                description="Should find API security documents",
             ),
             RelevanceTestCase(
                 query="React testing Jest",
                 relevant_docs=["test-react-001"],
                 irrelevant_docs=["sec-web-001", "perf-db-001"],
-                description="Should find React testing documents"
+                description="Should find React testing documents",
             ),
             RelevanceTestCase(
                 query="database performance optimization indexing",
                 relevant_docs=["perf-db-001"],
                 irrelevant_docs=["test-react-001"],
-                description="Should find database performance documents"
+                description="Should find database performance documents",
             ),
         ]
 
@@ -200,24 +253,31 @@ class TestSemanticSearchRelevance:
             result_ids = [r.id for r in results]
 
             # Calculate metrics
-            precision = RelevanceMetrics.precision_at_k(results, test_case.relevant_docs, 5)
+            precision = RelevanceMetrics.precision_at_k(
+                results, test_case.relevant_docs, 5
+            )
             recall = RelevanceMetrics.recall_at_k(results, test_case.relevant_docs, 5)
             ndcg = RelevanceMetrics.ndcg_at_k(results, test_case.relevant_docs, 5)
 
             print(f"\n{test_case.description}")
             print(f"Query: {test_case.query}")
             print(f"Results: {result_ids[:5]}")
-            print(f"Precision@5: {precision:.2f}, Recall@5: {recall:.2f}, NDCG@5: {ndcg:.2f}")
+            print(
+                f"Precision@5: {precision:.2f}, Recall@5: {recall:.2f}, NDCG@5: {ndcg:.2f}"
+            )
 
             # Assertions
-            assert any(doc_id in result_ids[:5] for doc_id in test_case.relevant_docs), \
-                f"None of {test_case.relevant_docs} found in top 5 results"
+            assert any(
+                doc_id in result_ids[:5] for doc_id in test_case.relevant_docs
+            ), f"None of {test_case.relevant_docs} found in top 5 results"
 
             # Irrelevant docs should not be in top results
             for irrelevant_id in test_case.irrelevant_docs:
                 if irrelevant_id in result_ids:
                     rank = result_ids.index(irrelevant_id)
-                    assert rank > 3, f"Irrelevant doc {irrelevant_id} ranked too high at position {rank}"
+                    assert (
+                        rank > 3
+                    ), f"Irrelevant doc {irrelevant_id} ranked too high at position {rank}"
 
     def test_relevance_with_synonyms(self, search_engine_with_corpus):
         """Test relevance with synonym expansion."""
@@ -243,18 +303,18 @@ class TestSemanticSearchRelevance:
             {
                 "query": "security best practices",
                 "relevant": ["sec-api-001", "sec-web-001"],
-                "highly_relevant": ["sec-api-001"]  # More comprehensive security doc
+                "highly_relevant": ["sec-api-001"],  # More comprehensive security doc
             },
             {
                 "query": "testing standards coverage",
                 "relevant": ["test-react-001", "test-api-001"],
-                "highly_relevant": ["test-react-001"]  # Mentions coverage explicitly
+                "highly_relevant": ["test-react-001"],  # Mentions coverage explicitly
             },
             {
                 "query": "performance optimization caching",
                 "relevant": ["perf-db-001", "perf-web-001"],
-                "highly_relevant": ["perf-db-001"]  # Mentions caching explicitly
-            }
+                "highly_relevant": ["perf-db-001"],  # Mentions caching explicitly
+            },
         ]
 
         aggregate_metrics = defaultdict(list)
@@ -267,13 +327,19 @@ class TestSemanticSearchRelevance:
 
             # Calculate various metrics
             metrics = {
-                "precision@1": RelevanceMetrics.precision_at_k(results, relevant_docs, 1),
-                "precision@3": RelevanceMetrics.precision_at_k(results, relevant_docs, 3),
-                "precision@5": RelevanceMetrics.precision_at_k(results, relevant_docs, 5),
+                "precision@1": RelevanceMetrics.precision_at_k(
+                    results, relevant_docs, 1
+                ),
+                "precision@3": RelevanceMetrics.precision_at_k(
+                    results, relevant_docs, 3
+                ),
+                "precision@5": RelevanceMetrics.precision_at_k(
+                    results, relevant_docs, 5
+                ),
                 "recall@5": RelevanceMetrics.recall_at_k(results, relevant_docs, 5),
                 "f1@5": RelevanceMetrics.f1_at_k(results, relevant_docs, 5),
                 "ndcg@5": RelevanceMetrics.ndcg_at_k(results, relevant_docs, 5),
-                "mrr": RelevanceMetrics.mean_reciprocal_rank(results, relevant_docs)
+                "mrr": RelevanceMetrics.mean_reciprocal_rank(results, relevant_docs),
             }
 
             # Store for aggregation
@@ -285,8 +351,7 @@ class TestSemanticSearchRelevance:
 
         # Calculate aggregate metrics
         avg_metrics = {
-            metric: np.mean(values)
-            for metric, values in aggregate_metrics.items()
+            metric: np.mean(values) for metric, values in aggregate_metrics.items()
         }
 
         print(f"\nAggregate metrics across {len(relevance_data)} queries:")
@@ -323,28 +388,28 @@ class TestSemanticUnderstanding:
                 semantic_equivalents=[
                     "user login implementation",
                     "authentication system setup",
-                    "implement auth for users"
+                    "implement auth for users",
                 ],
                 semantic_opposites=[
                     "remove authentication",
                     "disable user login",
-                    "public access without auth"
+                    "public access without auth",
                 ],
-                description="Authentication implementation queries"
+                description="Authentication implementation queries",
             ),
             SemanticTestCase(
                 query="optimize database performance",
                 semantic_equivalents=[
                     "improve database speed",
                     "database optimization techniques",
-                    "make database faster"
+                    "make database faster",
                 ],
                 semantic_opposites=[
                     "slow down database",
                     "database performance issues",
-                    "degrade database speed"
+                    "degrade database speed",
                 ],
-                description="Database optimization queries"
+                description="Database optimization queries",
             ),
         ]
 
@@ -361,7 +426,11 @@ class TestSemanticUnderstanding:
                 equiv_ids = {r.id for r in equiv_results[:5]}
 
                 # Calculate overlap
-                overlap = len(baseline_ids & equiv_ids) / len(baseline_ids) if baseline_ids else 0
+                overlap = (
+                    len(baseline_ids & equiv_ids) / len(baseline_ids)
+                    if baseline_ids
+                    else 0
+                )
 
                 print(f"Query: '{equivalent}' - Overlap: {overlap:.2f}")
                 assert overlap >= 0.4, "Low overlap for semantically equivalent query"
@@ -372,7 +441,11 @@ class TestSemanticUnderstanding:
                 opp_ids = {r.id for r in opp_results[:5]}
 
                 # Calculate overlap (should be low)
-                overlap = len(baseline_ids & opp_ids) / len(baseline_ids) if baseline_ids else 0
+                overlap = (
+                    len(baseline_ids & opp_ids) / len(baseline_ids)
+                    if baseline_ids
+                    else 0
+                )
 
                 print(f"Opposite: '{opposite}' - Overlap: {overlap:.2f}")
                 assert overlap <= 0.3, "High overlap for semantically opposite query"
@@ -381,12 +454,21 @@ class TestSemanticUnderstanding:
         """Test understanding of context and domain-specific terms."""
         # Index documents with specific contexts
         context_docs = [
-            ("ctx-001", "React hooks like useState and useEffect for state management",
-             {"context": "react", "topic": "hooks"}),
-            ("ctx-002", "Git hooks for pre-commit and post-commit automation",
-             {"context": "git", "topic": "hooks"}),
-            ("ctx-003", "Database triggers and stored procedures for data integrity",
-             {"context": "database", "topic": "automation"}),
+            (
+                "ctx-001",
+                "React hooks like useState and useEffect for state management",
+                {"context": "react", "topic": "hooks"},
+            ),
+            (
+                "ctx-002",
+                "Git hooks for pre-commit and post-commit automation",
+                {"context": "git", "topic": "hooks"},
+            ),
+            (
+                "ctx-003",
+                "Database triggers and stored procedures for data integrity",
+                {"context": "database", "topic": "automation"},
+            ),
         ]
 
         for doc_id, content, metadata in context_docs:
@@ -395,7 +477,7 @@ class TestSemanticUnderstanding:
         # Test context-aware searches
         context_queries = [
             ("React hooks", "ctx-001"),  # Should find React hooks, not Git hooks
-            ("Git hooks", "ctx-002"),    # Should find Git hooks, not React hooks
+            ("Git hooks", "ctx-002"),  # Should find Git hooks, not React hooks
             ("database automation", "ctx-003"),  # Should find database triggers
         ]
 
@@ -405,21 +487,34 @@ class TestSemanticUnderstanding:
             if results:
                 top_result = results[0].id
                 print(f"\nQuery: '{query}' - Top result: {top_result}")
-                assert top_result == expected_top, \
-                    f"Expected {expected_top} as top result for '{query}'"
+                assert (
+                    top_result == expected_top
+                ), f"Expected {expected_top} as top result for '{query}'"
 
     def test_query_intent_understanding(self, search_engine):
         """Test understanding of different query intents."""
         # Index documents for different intents
         intent_docs = [
-            ("how-001", "How to implement REST API authentication step by step guide",
-             {"intent": "tutorial", "topic": "api-auth"}),
-            ("what-001", "What is OAuth 2.0 and why use it for API authentication",
-             {"intent": "explanation", "topic": "api-auth"}),
-            ("best-001", "Best practices for secure API authentication methods",
-             {"intent": "best-practices", "topic": "api-auth"}),
-            ("debug-001", "Debugging common API authentication errors and issues",
-             {"intent": "troubleshooting", "topic": "api-auth"}),
+            (
+                "how-001",
+                "How to implement REST API authentication step by step guide",
+                {"intent": "tutorial", "topic": "api-auth"},
+            ),
+            (
+                "what-001",
+                "What is OAuth 2.0 and why use it for API authentication",
+                {"intent": "explanation", "topic": "api-auth"},
+            ),
+            (
+                "best-001",
+                "Best practices for secure API authentication methods",
+                {"intent": "best-practices", "topic": "api-auth"},
+            ),
+            (
+                "debug-001",
+                "Debugging common API authentication errors and issues",
+                {"intent": "troubleshooting", "topic": "api-auth"},
+            ),
         ]
 
         for doc_id, content, metadata in intent_docs:
@@ -442,8 +537,9 @@ class TestSemanticUnderstanding:
 
                 # The expected document should be in top 2
                 top_2_ids = [r.id for r in results[:2]]
-                assert expected_top in top_2_ids, \
-                    f"Expected {expected_top} in top 2 for intent query '{query}'"
+                assert (
+                    expected_top in top_2_ids
+                ), f"Expected {expected_top} in top 2 for intent query '{query}'"
 
 
 class TestQueryOperatorAccuracy:
@@ -457,26 +553,48 @@ class TestQueryOperatorAccuracy:
         # Create corpus with clear distinctions
         tagged_docs = [
             # JavaScript docs
-            ("js-001", "JavaScript async/await patterns for modern web development",
-             {"language": "javascript", "topic": "async", "level": "intermediate"}),
-            ("js-002", "JavaScript testing with Jest and React Testing Library",
-             {"language": "javascript", "topic": "testing", "level": "beginner"}),
-            ("js-003", "Advanced JavaScript performance optimization techniques",
-             {"language": "javascript", "topic": "performance", "level": "advanced"}),
-
+            (
+                "js-001",
+                "JavaScript async/await patterns for modern web development",
+                {"language": "javascript", "topic": "async", "level": "intermediate"},
+            ),
+            (
+                "js-002",
+                "JavaScript testing with Jest and React Testing Library",
+                {"language": "javascript", "topic": "testing", "level": "beginner"},
+            ),
+            (
+                "js-003",
+                "Advanced JavaScript performance optimization techniques",
+                {"language": "javascript", "topic": "performance", "level": "advanced"},
+            ),
             # Python docs
-            ("py-001", "Python async programming with asyncio and aiohttp",
-             {"language": "python", "topic": "async", "level": "intermediate"}),
-            ("py-002", "Python testing with pytest and test-driven development",
-             {"language": "python", "topic": "testing", "level": "beginner"}),
-            ("py-003", "Python performance profiling and optimization strategies",
-             {"language": "python", "topic": "performance", "level": "advanced"}),
-
+            (
+                "py-001",
+                "Python async programming with asyncio and aiohttp",
+                {"language": "python", "topic": "async", "level": "intermediate"},
+            ),
+            (
+                "py-002",
+                "Python testing with pytest and test-driven development",
+                {"language": "python", "topic": "testing", "level": "beginner"},
+            ),
+            (
+                "py-003",
+                "Python performance profiling and optimization strategies",
+                {"language": "python", "topic": "performance", "level": "advanced"},
+            ),
             # Java docs
-            ("java-001", "Java CompletableFuture for asynchronous programming",
-             {"language": "java", "topic": "async", "level": "intermediate"}),
-            ("java-002", "Java unit testing with JUnit 5 and Mockito",
-             {"language": "java", "topic": "testing", "level": "beginner"}),
+            (
+                "java-001",
+                "Java CompletableFuture for asynchronous programming",
+                {"language": "java", "topic": "async", "level": "intermediate"},
+            ),
+            (
+                "java-002",
+                "Java unit testing with JUnit 5 and Mockito",
+                {"language": "java", "topic": "testing", "level": "beginner"},
+            ),
         ]
 
         for doc_id, content, metadata in tagged_docs:
@@ -491,18 +609,18 @@ class TestQueryOperatorAccuracy:
             {
                 "query": "javascript AND testing",
                 "expected_ids": ["js-002"],
-                "excluded_ids": ["py-002", "java-002"]  # Other language testing docs
+                "excluded_ids": ["py-002", "java-002"],  # Other language testing docs
             },
             {
                 "query": "async AND python",
                 "expected_ids": ["py-001"],
-                "excluded_ids": ["js-001", "java-001"]  # Other language async docs
+                "excluded_ids": ["js-001", "java-001"],  # Other language async docs
             },
             {
                 "query": "performance AND optimization",
                 "expected_ids": ["js-003", "py-003"],  # Both mention optimization
-                "excluded_ids": ["js-002", "py-002"]  # Testing docs
-            }
+                "excluded_ids": ["js-002", "py-002"],  # Testing docs
+            },
         ]
 
         for test in test_cases:
@@ -514,14 +632,16 @@ class TestQueryOperatorAccuracy:
 
             # Check expected documents are found
             for expected_id in test["expected_ids"]:
-                assert expected_id in result_ids, \
-                    f"Expected {expected_id} not found for query '{test['query']}'"
+                assert (
+                    expected_id in result_ids
+                ), f"Expected {expected_id} not found for query '{test['query']}'"
 
             # Check excluded documents are not in top results
             top_3_ids = result_ids[:3]
             for excluded_id in test["excluded_ids"]:
-                assert excluded_id not in top_3_ids, \
-                    f"Excluded {excluded_id} found in top 3 for query '{test['query']}'"
+                assert (
+                    excluded_id not in top_3_ids
+                ), f"Excluded {excluded_id} found in top 3 for query '{test['query']}'"
 
     def test_not_operator_accuracy(self, search_engine_with_tagged_corpus):
         """Test NOT operator accuracy."""
@@ -529,13 +649,13 @@ class TestQueryOperatorAccuracy:
             {
                 "query": "testing NOT javascript",
                 "expected_present": ["py-002", "java-002"],
-                "expected_absent": ["js-002"]
+                "expected_absent": ["js-002"],
             },
             {
                 "query": "async NOT java",
                 "expected_present": ["js-001", "py-001"],
-                "expected_absent": ["java-001"]
-            }
+                "expected_absent": ["java-001"],
+            },
         ]
 
         for test in test_cases:
@@ -547,13 +667,15 @@ class TestQueryOperatorAccuracy:
 
             # Check excluded documents are not present
             for excluded_id in test["expected_absent"]:
-                assert excluded_id not in result_ids, \
-                    f"Document {excluded_id} should be excluded by NOT operator"
+                assert (
+                    excluded_id not in result_ids
+                ), f"Document {excluded_id} should be excluded by NOT operator"
 
             # Check expected documents are present
             for expected_id in test["expected_present"]:
-                assert expected_id in result_ids, \
-                    f"Document {expected_id} should be present"
+                assert (
+                    expected_id in result_ids
+                ), f"Document {expected_id} should be present"
 
     def test_filter_accuracy(self, search_engine_with_tagged_corpus):
         """Test metadata filter accuracy."""
@@ -562,27 +684,25 @@ class TestQueryOperatorAccuracy:
                 "query": "testing",
                 "filters": {"language": "python"},
                 "expected_ids": ["py-002"],
-                "excluded_ids": ["js-002", "java-002"]
+                "excluded_ids": ["js-002", "java-002"],
             },
             {
                 "query": "programming",
                 "filters": {"level": "advanced"},
                 "expected_ids": ["js-003", "py-003"],
-                "excluded_ids": ["js-002", "py-002"]  # Beginner level
+                "excluded_ids": ["js-002", "py-002"],  # Beginner level
             },
             {
                 "query": "development",
                 "filters": {"language": ["javascript", "python"], "topic": "async"},
                 "expected_ids": ["js-001", "py-001"],
-                "excluded_ids": ["java-001", "js-002", "py-002"]
-            }
+                "excluded_ids": ["java-001", "js-002", "py-002"],
+            },
         ]
 
         for test in test_cases:
             results = search_engine_with_tagged_corpus.search(
-                test["query"],
-                filters=test["filters"],
-                top_k=10
+                test["query"], filters=test["filters"], top_k=10
             )
             result_ids = [r.id for r in results]
 
@@ -595,16 +715,19 @@ class TestQueryOperatorAccuracy:
                     doc_value = result.metadata.get(filter_key)
 
                     if isinstance(filter_value, list):
-                        assert doc_value in filter_value, \
-                            f"Document {result.id} doesn't match filter {filter_key}"
+                        assert (
+                            doc_value in filter_value
+                        ), f"Document {result.id} doesn't match filter {filter_key}"
                     else:
-                        assert doc_value == filter_value, \
-                            f"Document {result.id} doesn't match filter {filter_key}"
+                        assert (
+                            doc_value == filter_value
+                        ), f"Document {result.id} doesn't match filter {filter_key}"
 
             # Check expected documents are present
             for expected_id in test["expected_ids"]:
-                assert expected_id in result_ids, \
-                    f"Expected {expected_id} not found with filters"
+                assert (
+                    expected_id in result_ids
+                ), f"Expected {expected_id} not found with filters"
 
 
 class TestSearchAccuracyEdgeCases:
@@ -621,14 +744,26 @@ class TestSearchAccuracyEdgeCases:
         """Test handling of ambiguous queries."""
         # Index documents with ambiguous terms
         ambiguous_docs = [
-            ("bank-001", "River bank erosion prevention techniques for environmental protection",
-             {"domain": "environment", "topic": "erosion"}),
-            ("bank-002", "Bank account security best practices for online banking",
-             {"domain": "finance", "topic": "security"}),
-            ("spring-001", "Spring framework dependency injection patterns in Java",
-             {"domain": "programming", "topic": "framework"}),
-            ("spring-002", "Spring season gardening tips and plant care guide",
-             {"domain": "gardening", "topic": "seasons"}),
+            (
+                "bank-001",
+                "River bank erosion prevention techniques for environmental protection",
+                {"domain": "environment", "topic": "erosion"},
+            ),
+            (
+                "bank-002",
+                "Bank account security best practices for online banking",
+                {"domain": "finance", "topic": "security"},
+            ),
+            (
+                "spring-001",
+                "Spring framework dependency injection patterns in Java",
+                {"domain": "programming", "topic": "framework"},
+            ),
+            (
+                "spring-002",
+                "Spring season gardening tips and plant care guide",
+                {"domain": "gardening", "topic": "seasons"},
+            ),
         ]
 
         for doc_id, content, metadata in ambiguous_docs:
@@ -637,8 +772,8 @@ class TestSearchAccuracyEdgeCases:
         # Test disambiguation through context
         disambiguation_tests = [
             ("bank security", "bank-002"),  # Financial context
-            ("river bank", "bank-001"),     # Environmental context
-            ("Spring Java", "spring-001"),   # Programming context
+            ("river bank", "bank-001"),  # Environmental context
+            ("Spring Java", "spring-001"),  # Programming context
             ("spring planting", "spring-002"),  # Gardening context
         ]
 
@@ -646,21 +781,34 @@ class TestSearchAccuracyEdgeCases:
             results = search_engine.search(query, top_k=2)
 
             if results:
-                assert results[0].id == expected_top, \
-                    f"Failed to disambiguate '{query}' - expected {expected_top}"
+                assert (
+                    results[0].id == expected_top
+                ), f"Failed to disambiguate '{query}' - expected {expected_top}"
 
     def test_acronym_handling(self, search_engine):
         """Test handling of acronyms and abbreviations."""
         # Index documents with acronyms
         acronym_docs = [
-            ("api-001", "API (Application Programming Interface) design guidelines",
-             {"topic": "api"}),
-            ("rest-001", "REST (Representational State Transfer) API best practices",
-             {"topic": "rest"}),
-            ("crud-001", "CRUD operations (Create, Read, Update, Delete) implementation",
-             {"topic": "crud"}),
-            ("ci-001", "CI/CD (Continuous Integration/Continuous Deployment) pipeline setup",
-             {"topic": "cicd"}),
+            (
+                "api-001",
+                "API (Application Programming Interface) design guidelines",
+                {"topic": "api"},
+            ),
+            (
+                "rest-001",
+                "REST (Representational State Transfer) API best practices",
+                {"topic": "rest"},
+            ),
+            (
+                "crud-001",
+                "CRUD operations (Create, Read, Update, Delete) implementation",
+                {"topic": "crud"},
+            ),
+            (
+                "ci-001",
+                "CI/CD (Continuous Integration/Continuous Deployment) pipeline setup",
+                {"topic": "cicd"},
+            ),
         ]
 
         for doc_id, content, metadata in acronym_docs:
@@ -679,19 +827,29 @@ class TestSearchAccuracyEdgeCases:
             results = search_engine.search(query, top_k=3)
             result_ids = [r.id for r in results]
 
-            assert expected_doc in result_ids[:2], \
-                f"Failed to find {expected_doc} for acronym query '{query}'"
+            assert (
+                expected_doc in result_ids[:2]
+            ), f"Failed to find {expected_doc} for acronym query '{query}'"
 
     def test_multilingual_terms(self, search_engine):
         """Test handling of multilingual technical terms."""
         # Index documents with multilingual terms
         multilingual_docs = [
-            ("color-001", "CSS color and colour styling properties guide",
-             {"variant": "both"}),
-            ("optimize-001", "Optimize and optimise database performance",
-             {"variant": "both"}),
-            ("center-001", "Center and centre alignment in web design",
-             {"variant": "both"}),
+            (
+                "color-001",
+                "CSS color and colour styling properties guide",
+                {"variant": "both"},
+            ),
+            (
+                "optimize-001",
+                "Optimize and optimise database performance",
+                {"variant": "both"},
+            ),
+            (
+                "center-001",
+                "Center and centre alignment in web design",
+                {"variant": "both"},
+            ),
         ]
 
         for doc_id, content, metadata in multilingual_docs:
@@ -709,8 +867,9 @@ class TestSearchAccuracyEdgeCases:
             results = search_engine.search(query, top_k=3)
             result_ids = [r.id for r in results]
 
-            assert expected_doc in result_ids[:2], \
-                f"Failed to find {expected_doc} for variant query '{query}'"
+            assert (
+                expected_doc in result_ids[:2]
+            ), f"Failed to find {expected_doc} for variant query '{query}'"
 
 
 def test_accuracy_benchmarks():
@@ -725,22 +884,58 @@ def test_accuracy_benchmarks():
         # Create evaluation dataset
         eval_docs = [
             # Create diverse test corpus
-            ("eval-001", "Python web development with Django and Flask frameworks",
-             {"language": "python", "category": "web", "level": "intermediate"}),
-            ("eval-002", "JavaScript modern frontend development with React and Vue",
-             {"language": "javascript", "category": "frontend", "level": "intermediate"}),
-            ("eval-003", "Database design patterns and SQL optimization techniques",
-             {"language": "sql", "category": "database", "level": "advanced"}),
-            ("eval-004", "RESTful API design best practices and standards",
-             {"language": "agnostic", "category": "api", "level": "intermediate"}),
-            ("eval-005", "Microservices architecture patterns and deployment",
-             {"language": "agnostic", "category": "architecture", "level": "advanced"}),
-            ("eval-006", "Security best practices for web applications",
-             {"language": "agnostic", "category": "security", "level": "intermediate"}),
-            ("eval-007", "Test-driven development and unit testing strategies",
-             {"language": "agnostic", "category": "testing", "level": "beginner"}),
-            ("eval-008", "DevOps practices and CI/CD pipeline configuration",
-             {"language": "agnostic", "category": "devops", "level": "intermediate"}),
+            (
+                "eval-001",
+                "Python web development with Django and Flask frameworks",
+                {"language": "python", "category": "web", "level": "intermediate"},
+            ),
+            (
+                "eval-002",
+                "JavaScript modern frontend development with React and Vue",
+                {
+                    "language": "javascript",
+                    "category": "frontend",
+                    "level": "intermediate",
+                },
+            ),
+            (
+                "eval-003",
+                "Database design patterns and SQL optimization techniques",
+                {"language": "sql", "category": "database", "level": "advanced"},
+            ),
+            (
+                "eval-004",
+                "RESTful API design best practices and standards",
+                {"language": "agnostic", "category": "api", "level": "intermediate"},
+            ),
+            (
+                "eval-005",
+                "Microservices architecture patterns and deployment",
+                {
+                    "language": "agnostic",
+                    "category": "architecture",
+                    "level": "advanced",
+                },
+            ),
+            (
+                "eval-006",
+                "Security best practices for web applications",
+                {
+                    "language": "agnostic",
+                    "category": "security",
+                    "level": "intermediate",
+                },
+            ),
+            (
+                "eval-007",
+                "Test-driven development and unit testing strategies",
+                {"language": "agnostic", "category": "testing", "level": "beginner"},
+            ),
+            (
+                "eval-008",
+                "DevOps practices and CI/CD pipeline configuration",
+                {"language": "agnostic", "category": "devops", "level": "intermediate"},
+            ),
         ]
 
         # Index evaluation documents
@@ -752,35 +947,35 @@ def test_accuracy_benchmarks():
             {
                 "query": "Python web development",
                 "relevant": ["eval-001"],
-                "somewhat_relevant": ["eval-002", "eval-006"]
+                "somewhat_relevant": ["eval-002", "eval-006"],
             },
             {
                 "query": "frontend frameworks JavaScript",
                 "relevant": ["eval-002"],
-                "somewhat_relevant": ["eval-001"]
+                "somewhat_relevant": ["eval-001"],
             },
             {
                 "query": "API design security",
                 "relevant": ["eval-004", "eval-006"],
-                "somewhat_relevant": ["eval-005"]
+                "somewhat_relevant": ["eval-005"],
             },
             {
                 "query": "testing strategies TDD",
                 "relevant": ["eval-007"],
-                "somewhat_relevant": ["eval-008"]
+                "somewhat_relevant": ["eval-008"],
             },
             {
                 "query": "database optimization SQL",
                 "relevant": ["eval-003"],
-                "somewhat_relevant": ["eval-005"]
-            }
+                "somewhat_relevant": ["eval-005"],
+            },
         ]
 
         # Run evaluation
         results = {
             "timestamp": datetime.now().isoformat(),
             "queries": len(eval_queries),
-            "metrics": defaultdict(list)
+            "metrics": defaultdict(list),
         }
 
         for eval_case in eval_queries:
@@ -792,12 +987,18 @@ def test_accuracy_benchmarks():
 
             # Calculate metrics
             metrics = {
-                "precision@1": RelevanceMetrics.precision_at_k(search_results, relevant, 1),
-                "precision@3": RelevanceMetrics.precision_at_k(search_results, relevant, 3),
-                "precision@5": RelevanceMetrics.precision_at_k(search_results, relevant, 5),
+                "precision@1": RelevanceMetrics.precision_at_k(
+                    search_results, relevant, 1
+                ),
+                "precision@3": RelevanceMetrics.precision_at_k(
+                    search_results, relevant, 3
+                ),
+                "precision@5": RelevanceMetrics.precision_at_k(
+                    search_results, relevant, 5
+                ),
                 "recall@5": RelevanceMetrics.recall_at_k(search_results, relevant, 5),
                 "ndcg@5": RelevanceMetrics.ndcg_at_k(search_results, relevant, 5),
-                "mrr": RelevanceMetrics.mean_reciprocal_rank(search_results, relevant)
+                "mrr": RelevanceMetrics.mean_reciprocal_rank(search_results, relevant),
             }
 
             # Store metrics
@@ -806,13 +1007,12 @@ def test_accuracy_benchmarks():
 
         # Calculate averages
         results["average_metrics"] = {
-            metric: np.mean(values)
-            for metric, values in results["metrics"].items()
+            metric: np.mean(values) for metric, values in results["metrics"].items()
         }
 
         # Save results
         output_path = Path("accuracy_benchmark.json")
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(results, f, indent=2)
 
         print(f"\nAccuracy benchmark results saved to {output_path}")

@@ -21,34 +21,28 @@ class TestCombinedServer:
     def config(self):
         """Create test configuration."""
         return {
-            "mcp": {
-                "host": "localhost",
-                "port": 3000,
-                "auth": {"enabled": False}
-            },
-            "http": {
-                "host": "localhost",
-                "port": 8080
-            },
-            "logging": {
-                "level": "INFO",
-                "format": "json"
-            }
+            "mcp": {"host": "localhost", "port": 3000, "auth": {"enabled": False}},
+            "http": {"host": "localhost", "port": 8080},
+            "logging": {"level": "INFO", "format": "json"},
         }
 
     @pytest.fixture
     def server(self, config):
         """Create combined server instance."""
-        with patch('src.main.AsyncMCPServer'), \
-             patch('src.main.HTTPServer'), \
-             patch('src.main.initialize_performance_monitor'):
+        with (
+            patch("src.main.AsyncMCPServer"),
+            patch("src.main.HTTPServer"),
+            patch("src.main.initialize_performance_monitor"),
+        ):
             return CombinedServer(config)
 
     def test_server_initialization(self, config):
         """Test server initialization."""
-        with patch('src.main.AsyncMCPServer'), \
-             patch('src.main.HTTPServer'), \
-             patch('src.main.initialize_performance_monitor'):
+        with (
+            patch("src.main.AsyncMCPServer"),
+            patch("src.main.HTTPServer"),
+            patch("src.main.initialize_performance_monitor"),
+        ):
 
             server = CombinedServer(config)
 
@@ -64,7 +58,7 @@ class TestCombinedServer:
         mock_runner = AsyncMock()
         mock_http_server.start = AsyncMock(return_value=mock_runner)
 
-        with patch('src.main.HTTPServer', return_value=mock_http_server):
+        with patch("src.main.HTTPServer", return_value=mock_http_server):
             await server.start_http_server()
 
             assert server.http_server == mock_http_server
@@ -76,7 +70,7 @@ class TestCombinedServer:
         mock_mcp_server = Mock()
         mock_mcp_server.start = AsyncMock()
 
-        with patch('src.main.AsyncMCPServer', return_value=mock_mcp_server):
+        with patch("src.main.AsyncMCPServer", return_value=mock_mcp_server):
             await server.start_mcp_server()
 
             assert server.mcp_server == mock_mcp_server
@@ -84,8 +78,10 @@ class TestCombinedServer:
 
     async def test_start_both_servers(self, server):
         """Test starting both servers."""
-        with patch.object(server, 'start_http_server') as mock_start_http, \
-             patch.object(server, 'start_mcp_server') as mock_start_mcp:
+        with (
+            patch.object(server, "start_http_server") as mock_start_http,
+            patch.object(server, "start_mcp_server") as mock_start_mcp,
+        ):
 
             mock_start_http.return_value = AsyncMock()
             mock_start_mcp.return_value = AsyncMock()
@@ -99,8 +95,10 @@ class TestCombinedServer:
     async def test_start_http_only(self, server):
         """Test starting only HTTP server."""
         with patch.dict(os.environ, {"HTTP_ONLY": "true"}):
-            with patch.object(server, 'start_http_server') as mock_start_http, \
-                 patch.object(server, 'start_mcp_server') as mock_start_mcp:
+            with (
+                patch.object(server, "start_http_server") as mock_start_http,
+                patch.object(server, "start_mcp_server") as mock_start_mcp,
+            ):
 
                 mock_start_http.return_value = AsyncMock()
 
@@ -119,7 +117,7 @@ class TestCombinedServer:
         server.mcp_server = AsyncMock()
         server.mcp_server.stop = AsyncMock()
 
-        with patch('src.main.shutdown_performance_monitor') as mock_shutdown_perf:
+        with patch("src.main.shutdown_performance_monitor") as mock_shutdown_perf:
             mock_shutdown_perf.return_value = AsyncMock()
 
             await server.shutdown()
@@ -133,7 +131,7 @@ class TestCombinedServer:
         """Test signal handler."""
         server.running = True
 
-        with patch.object(server, 'shutdown') as mock_shutdown:
+        with patch.object(server, "shutdown") as mock_shutdown:
             mock_shutdown.return_value = AsyncMock()
 
             await server.signal_handler()
@@ -159,7 +157,7 @@ class TestSignalHandling:
 
     def test_signal_handler_setup(self, server):
         """Test signal handler setup."""
-        with patch('signal.signal') as mock_signal:
+        with patch("signal.signal") as mock_signal:
             server.setup_signal_handlers()
 
             # Check SIGINT and SIGTERM are handled
@@ -173,7 +171,7 @@ class TestSignalHandling:
         server.running = True
 
         # Get the signal handler
-        with patch('signal.signal') as mock_signal:
+        with patch("signal.signal") as mock_signal:
             server.setup_signal_handlers()
             handler = mock_signal.call_args_list[0][0][1]
 

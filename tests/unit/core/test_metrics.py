@@ -95,7 +95,7 @@ class TestMetricsCollector:
 
         prometheus_output = collector.export_to_prometheus()
 
-        assert "http_requests_total{method=\"GET\"}" in prometheus_output
+        assert 'http_requests_total{method="GET"}' in prometheus_output
         assert "memory_usage" in prometheus_output
         assert "1024.5" in prometheus_output
 
@@ -104,6 +104,7 @@ class TestMetricsCollector:
         # Add old metric
         old_point = collector._histograms["test_metric"]
         from src.core.metrics import MetricPoint
+
         old_point.append(MetricPoint(time.time() - 120, 100, {}))  # 2 minutes ago
 
         # Add recent metric
@@ -160,14 +161,13 @@ class TestMCPMetrics:
     def test_record_tool_call_failure(self, mcp_metrics):
         """Test recording failed tool call."""
         mcp_metrics.record_tool_call(
-            "validate_code",
-            0.456,
-            success=False,
-            error_type="validation_error"
+            "validate_code", 0.456, success=False, error_type="validation_error"
         )
 
         # Check error counter
-        error_key = "mcp_tool_call_errors_total:error_type=validation_error,tool=validate_code"
+        error_key = (
+            "mcp_tool_call_errors_total:error_type=validation_error,tool=validate_code"
+        )
         assert mcp_metrics.collector._counters[error_key] == 1.0
 
     def test_record_auth_attempts(self, mcp_metrics):
@@ -177,9 +177,21 @@ class TestMCPMetrics:
         mcp_metrics.record_auth_attempt("api_key", success=True)
 
         # Check counters
-        assert mcp_metrics.collector._counters["mcp_auth_attempts_total:success=true,type=jwt"] == 1.0
-        assert mcp_metrics.collector._counters["mcp_auth_attempts_total:success=false,type=jwt"] == 1.0
-        assert mcp_metrics.collector._counters["mcp_auth_failures_total:type=jwt"] == 1.0
+        assert (
+            mcp_metrics.collector._counters[
+                "mcp_auth_attempts_total:success=true,type=jwt"
+            ]
+            == 1.0
+        )
+        assert (
+            mcp_metrics.collector._counters[
+                "mcp_auth_attempts_total:success=false,type=jwt"
+            ]
+            == 1.0
+        )
+        assert (
+            mcp_metrics.collector._counters["mcp_auth_failures_total:type=jwt"] == 1.0
+        )
 
     def test_record_cache_access(self, mcp_metrics):
         """Test recording cache hits and misses."""
@@ -187,8 +199,14 @@ class TestMCPMetrics:
         mcp_metrics.record_cache_access("get_standards", hit=True)
         mcp_metrics.record_cache_access("get_standards", hit=False)
 
-        assert mcp_metrics.collector._counters["mcp_cache_hits_total:tool=get_standards"] == 2.0
-        assert mcp_metrics.collector._counters["mcp_cache_misses_total:tool=get_standards"] == 1.0
+        assert (
+            mcp_metrics.collector._counters["mcp_cache_hits_total:tool=get_standards"]
+            == 2.0
+        )
+        assert (
+            mcp_metrics.collector._counters["mcp_cache_misses_total:tool=get_standards"]
+            == 1.0
+        )
 
     def test_update_active_connections(self, mcp_metrics):
         """Test updating active connections gauge."""
@@ -202,8 +220,22 @@ class TestMCPMetrics:
         mcp_metrics.record_request_size(1024, "upload_file")
         mcp_metrics.record_response_size(2048, "get_standards")
 
-        assert len(mcp_metrics.collector._histograms["mcp_request_size_bytes:tool=upload_file"]) == 1
-        assert len(mcp_metrics.collector._histograms["mcp_response_size_bytes:tool=get_standards"]) == 1
+        assert (
+            len(
+                mcp_metrics.collector._histograms[
+                    "mcp_request_size_bytes:tool=upload_file"
+                ]
+            )
+            == 1
+        )
+        assert (
+            len(
+                mcp_metrics.collector._histograms[
+                    "mcp_response_size_bytes:tool=get_standards"
+                ]
+            )
+            == 1
+        )
 
     def test_dashboard_metrics(self, mcp_metrics):
         """Test dashboard metrics aggregation."""

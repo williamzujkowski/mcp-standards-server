@@ -7,7 +7,7 @@ from typing import Any
 class OptimizedMockRedis:
     """Lightweight Redis mock optimized for test performance."""
 
-    __slots__ = ('_data', '_expires', '_lock')
+    __slots__ = ("_data", "_expires", "_lock")
 
     def __init__(self):
         self._data: dict[str, Any] = {}
@@ -70,7 +70,7 @@ class OptimizedMockRedis:
 class OptimizedRedisCache:
     """Optimized Redis cache wrapper for tests."""
 
-    __slots__ = ('_redis', 'connected')
+    __slots__ = ("_redis", "connected")
 
     def __init__(self, redis_instance=None):
         self._redis = redis_instance or OptimizedMockRedis()
@@ -93,8 +93,8 @@ class OptimizedRedisCache:
         """Delete by pattern - simplified for tests."""
         # Simple pattern matching for tests
         deleted = 0
-        if '*' in pattern:
-            prefix = pattern.split('*')[0]
+        if "*" in pattern:
+            prefix = pattern.split("*")[0]
             keys_to_delete = [k for k in self._redis._data if k.startswith(prefix)]
             if keys_to_delete:
                 deleted = await self._redis.delete(*keys_to_delete)

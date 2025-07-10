@@ -21,24 +21,24 @@ class AnalyzerMCPTools:
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the file to analyze"
+                            "description": "Path to the file to analyze",
                         },
                         "language": {
                             "type": "string",
                             "description": "Programming language (optional, auto-detected if not provided)",
-                            "enum": AnalyzerPlugin.list_languages()
+                            "enum": AnalyzerPlugin.list_languages(),
                         },
                         "checks": {
                             "type": "array",
                             "description": "Specific checks to run (default: all)",
                             "items": {
                                 "type": "string",
-                                "enum": ["security", "performance", "best_practices"]
-                            }
-                        }
+                                "enum": ["security", "performance", "best_practices"],
+                            },
+                        },
                     },
-                    "required": ["file_path"]
-                }
+                    "required": ["file_path"],
+                },
             ),
             MCPTool(
                 name="analyze_directory",
@@ -48,36 +48,31 @@ class AnalyzerMCPTools:
                     "properties": {
                         "directory_path": {
                             "type": "string",
-                            "description": "Path to the directory to analyze"
+                            "description": "Path to the directory to analyze",
                         },
                         "language": {
                             "type": "string",
                             "description": "Filter by programming language (optional)",
-                            "enum": AnalyzerPlugin.list_languages()
+                            "enum": AnalyzerPlugin.list_languages(),
                         },
                         "recursive": {
                             "type": "boolean",
-                            "description": "Analyze subdirectories recursively (default: true)"
-                        }
+                            "description": "Analyze subdirectories recursively (default: true)",
+                        },
                     },
-                    "required": ["directory_path"]
-                }
+                    "required": ["directory_path"],
+                },
             ),
             MCPTool(
                 name="list_analyzers",
                 description="List available language analyzers",
-                input_schema={
-                    "type": "object",
-                    "properties": {}
-                }
-            )
+                input_schema={"type": "object", "properties": {}},
+            ),
         ]
 
     @staticmethod
     async def analyze_code(
-        file_path: str,
-        language: str | None = None,
-        checks: list[str] | None = None
+        file_path: str, language: str | None = None, checks: list[str] | None = None
     ) -> ToolResult:
         """Analyze a single code file."""
         try:
@@ -85,7 +80,7 @@ class AnalyzerMCPTools:
             if not path.exists():
                 return ToolResult(
                     content=[{"type": "text", "text": f"File not found: {file_path}"}],
-                    is_error=True
+                    is_error=True,
                 )
 
             # Auto-detect language if not provided
@@ -99,16 +94,26 @@ class AnalyzerMCPTools:
 
             if not language:
                 return ToolResult(
-                    content=[{"type": "text", "text": f"Could not detect language for {file_path}"}],
-                    is_error=True
+                    content=[
+                        {
+                            "type": "text",
+                            "text": f"Could not detect language for {file_path}",
+                        }
+                    ],
+                    is_error=True,
                 )
 
             # Get analyzer
             analyzer = AnalyzerPlugin.get_analyzer(language)
             if not analyzer:
                 return ToolResult(
-                    content=[{"type": "text", "text": f"No analyzer available for {language}"}],
-                    is_error=True
+                    content=[
+                        {
+                            "type": "text",
+                            "text": f"No analyzer available for {language}",
+                        }
+                    ],
+                    is_error=True,
                 )
 
             # Run analysis
@@ -122,36 +127,40 @@ class AnalyzerMCPTools:
                         filtered_issues.append(issue)
                     elif "performance" in checks and issue.type.value == "performance":
                         filtered_issues.append(issue)
-                    elif "best_practices" in checks and issue.type.value in ["best_practice", "code_quality"]:
+                    elif "best_practices" in checks and issue.type.value in [
+                        "best_practice",
+                        "code_quality",
+                    ]:
                         filtered_issues.append(issue)
                 result.issues = filtered_issues
 
             # Format output
             output = _format_analysis_result(result)
 
-            return ToolResult(
-                content=[{"type": "text", "text": output}]
-            )
+            return ToolResult(content=[{"type": "text", "text": output}])
 
         except Exception as e:
             return ToolResult(
                 content=[{"type": "text", "text": f"Analysis failed: {str(e)}"}],
-                is_error=True
+                is_error=True,
             )
 
     @staticmethod
     async def analyze_directory(
-        directory_path: str,
-        language: str | None = None,
-        recursive: bool = True
+        directory_path: str, language: str | None = None, recursive: bool = True
     ) -> ToolResult:
         """Analyze all code files in a directory."""
         try:
             path = Path(directory_path)
             if not path.exists() or not path.is_dir():
                 return ToolResult(
-                    content=[{"type": "text", "text": f"Directory not found: {directory_path}"}],
-                    is_error=True
+                    content=[
+                        {
+                            "type": "text",
+                            "text": f"Directory not found: {directory_path}",
+                        }
+                    ],
+                    is_error=True,
                 )
 
             all_results = []
@@ -172,14 +181,14 @@ class AnalyzerMCPTools:
             # Format summary
             output = _format_directory_analysis(all_results)
 
-            return ToolResult(
-                content=[{"type": "text", "text": output}]
-            )
+            return ToolResult(content=[{"type": "text", "text": output}])
 
         except Exception as e:
             return ToolResult(
-                content=[{"type": "text", "text": f"Directory analysis failed: {str(e)}"}],
-                is_error=True
+                content=[
+                    {"type": "text", "text": f"Directory analysis failed: {str(e)}"}
+                ],
+                is_error=True,
             )
 
     @staticmethod
@@ -192,9 +201,7 @@ class AnalyzerMCPTools:
             analyzer = AnalyzerPlugin.get_analyzer(lang)
             output += f"- **{lang}**: {', '.join(analyzer.file_extensions)}\n"
 
-        return ToolResult(
-            content=[{"type": "text", "text": output}]
-        )
+        return ToolResult(content=[{"type": "text", "text": output}])
 
 
 def _format_analysis_result(result: AnalyzerResult) -> str:
@@ -239,10 +246,10 @@ def _format_analysis_result(result: AnalyzerResult) -> str:
                     if issue.recommendation:
                         output += f"- Recommendation: {issue.recommendation}\n"
 
-                    if hasattr(issue, 'cwe_id') and issue.cwe_id:
+                    if hasattr(issue, "cwe_id") and issue.cwe_id:
                         output += f"- CWE: {issue.cwe_id}\n"
 
-                    if hasattr(issue, 'owasp_category') and issue.owasp_category:
+                    if hasattr(issue, "owasp_category") and issue.owasp_category:
                         output += f"- OWASP: {issue.owasp_category}\n"
 
                     output += "\n"

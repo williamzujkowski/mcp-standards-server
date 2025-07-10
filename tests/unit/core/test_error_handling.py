@@ -92,7 +92,7 @@ class TestSecureErrorHandler:
         security_errors = [
             ValueError("Potential injection detected"),
             RuntimeError("Malicious content blocked"),
-            Exception("Dangerous operation prevented")
+            Exception("Dangerous operation prevented"),
         ]
 
         for error in security_errors:
@@ -121,11 +121,11 @@ class TestSecureErrorHandler:
     def test_security_violation_handling(self, prod_handler):
         """Test handling of security violations."""
         violation_types = [
-            'injection',
-            'size_limit',
-            'malicious_content',
-            'rate_limit',
-            'blocked_operation'
+            "injection",
+            "size_limit",
+            "malicious_content",
+            "rate_limit",
+            "blocked_operation",
         ]
 
         for violation_type in violation_types:
@@ -136,6 +136,7 @@ class TestSecureErrorHandler:
 
     def test_pydantic_validation_error_handling(self, prod_handler):
         """Test handling of Pydantic validation errors."""
+
         # Mock Pydantic validation error
         class MockValidationError(Exception):
             def errors(self):
@@ -143,13 +144,13 @@ class TestSecureErrorHandler:
                     {
                         "loc": ["field1"],
                         "msg": "Field required",
-                        "type": "value_error.missing"
+                        "type": "value_error.missing",
                     },
                     {
                         "loc": ["field2", "nested"],
                         "msg": "Invalid type",
-                        "type": "type_error.int"
-                    }
+                        "type": "type_error.int",
+                    },
                 ]
 
         error = MockValidationError("Validation failed")
@@ -161,7 +162,7 @@ class TestSecureErrorHandler:
 
     def test_logging_behavior(self):
         """Test that errors are logged when enabled."""
-        with patch('src.core.errors.logger') as mock_logger:
+        with patch("src.core.errors.logger") as mock_logger:
             handler = SecureErrorHandler(mask_errors=True, log_errors=True)
             error = ValueError("Test error")
 
@@ -184,11 +185,16 @@ class TestSecurityError:
 
         assert error.code == ErrorCode.SECURITY_INVALID_INPUT
         assert error.error_detail.message == "Input validation failed"
-        assert error.error_detail.suggestion == "Ensure your input follows security guidelines"
+        assert (
+            error.error_detail.suggestion
+            == "Ensure your input follows security guidelines"
+        )
 
     def test_security_error_with_custom_code(self):
         """Test security error with custom code."""
-        error = SecurityError("Injection detected", ErrorCode.SECURITY_INJECTION_DETECTED)
+        error = SecurityError(
+            "Injection detected", ErrorCode.SECURITY_INJECTION_DETECTED
+        )
 
         assert error.code == ErrorCode.SECURITY_INJECTION_DETECTED
         assert error.error_detail.message == "Injection detected"
@@ -216,16 +222,17 @@ class TestGlobalErrorHandler:
     def test_environment_variable_configuration(self):
         """Test configuration from environment variables."""
         # Test with MCP_MASK_ERRORS=false
-        with patch.dict(os.environ, {'MCP_MASK_ERRORS': 'false'}):
+        with patch.dict(os.environ, {"MCP_MASK_ERRORS": "false"}):
             # Reset global handler
             import src.core.errors
+
             src.core.errors._secure_error_handler = None
 
             handler = get_secure_error_handler()
             assert handler.mask_errors is False
 
         # Test with MCP_MASK_ERRORS=true (default)
-        with patch.dict(os.environ, {'MCP_MASK_ERRORS': 'true'}):
+        with patch.dict(os.environ, {"MCP_MASK_ERRORS": "true"}):
             # Reset global handler
             src.core.errors._secure_error_handler = None
 
@@ -244,7 +251,7 @@ class TestErrorCodeExtensions:
             ErrorCode.SECURITY_REQUEST_TOO_LARGE,
             ErrorCode.SECURITY_MALICIOUS_CONTENT,
             ErrorCode.SECURITY_RATE_LIMIT_EXCEEDED,
-            ErrorCode.SECURITY_BLOCKED_OPERATION
+            ErrorCode.SECURITY_BLOCKED_OPERATION,
         ]
 
         for code in security_codes:
@@ -280,7 +287,7 @@ class TestIntegrationWithExistingErrors:
                 "message": "Test validation error",
                 "details": None,
                 "field": "test_field",
-                "suggestion": "Check the parameter requirements in the tool schema"
+                "suggestion": "Check the parameter requirements in the tool schema",
             }
         }
 

@@ -58,7 +58,9 @@ class VectorIndexConfig:
     # Warming settings
     warming_batch_size: int = 100
     warming_concurrency: int = 10
-    warming_strategies: list[str] = field(default_factory=lambda: ["frequency", "recency", "clustering"])
+    warming_strategies: list[str] = field(
+        default_factory=lambda: ["frequency", "recency", "clustering"]
+    )
     auto_warming_interval: int = 3600  # seconds
 
     # Performance settings
@@ -103,20 +105,23 @@ class VectorIndexMetrics:
 
         avg_build_time = np.mean(self.build_times) if self.build_times else 0
         avg_search_time = np.mean(self.search_times) if self.search_times else 0
-        avg_compression_ratio = np.mean(self.compression_ratios) if self.compression_ratios else 0
+        avg_compression_ratio = (
+            np.mean(self.compression_ratios) if self.compression_ratios else 0
+        )
 
         return {
-            'cache_hit_rate': hit_rate,
-            'cache_operations': total_cache_ops,
-            'average_build_time_ms': avg_build_time * 1000,
-            'average_search_time_ms': avg_search_time * 1000,
-            'average_compression_ratio': avg_compression_ratio,
-            'warming_success_rate': (
+            "cache_hit_rate": hit_rate,
+            "cache_operations": total_cache_ops,
+            "average_build_time_ms": avg_build_time * 1000,
+            "average_search_time_ms": avg_search_time * 1000,
+            "average_compression_ratio": avg_compression_ratio,
+            "warming_success_rate": (
                 self.warming_successes / self.warming_operations
-                if self.warming_operations > 0 else 0
+                if self.warming_operations > 0
+                else 0
             ),
-            'total_indices': len(self.index_sizes),
-            'total_vectors': sum(self.index_sizes.values())
+            "total_indices": len(self.index_sizes),
+            "total_vectors": sum(self.index_sizes.values()),
         }
 
 
@@ -128,7 +133,9 @@ class VectorIndexBuilder:
         self.pca_model = None
         self.executor = ThreadPoolExecutor(max_workers=config.max_workers)
 
-    def build_index(self, vectors: np.ndarray, index_type: str | None = None) -> faiss.Index:
+    def build_index(
+        self, vectors: np.ndarray, index_type: str | None = None
+    ) -> faiss.Index:
         """Build a FAISS index from vectors."""
         start_time = time.time()
 
@@ -159,13 +166,15 @@ class VectorIndexBuilder:
             # For large datasets, add vectors in batches
             batch_size = 10000
             for i in range(0, len(vectors), batch_size):
-                batch = vectors[i:i + batch_size]
+                batch = vectors[i : i + batch_size]
                 index.add(batch.astype(np.float32))
         else:
             index.add(vectors.astype(np.float32))
 
         build_time = time.time() - start_time
-        logger.info(f"Built {index_type} index with {len(vectors)} vectors in {build_time:.3f}s")
+        logger.info(
+            f"Built {index_type} index with {len(vectors)} vectors in {build_time:.3f}s"
+        )
 
         return index
 
@@ -180,12 +189,12 @@ class VectorIndexBuilder:
     def optimize_index(self, index: faiss.Index, vectors: np.ndarray) -> faiss.Index:
         """Optimize an existing index."""
         # For IVF indices, we can optimize the nprobe parameter
-        if hasattr(index, 'nprobe'):
+        if hasattr(index, "nprobe"):
             # Use a reasonable default based on nlist
             index.nprobe = min(32, max(1, self.config.nlist // 10))
 
         # For HNSW indices, we can optimize efSearch
-        if hasattr(index, 'hnsw'):
+        if hasattr(index, "hnsw"):
             index.hnsw.efSearch = self.config.ef_search
 
         return index
@@ -224,9 +233,9 @@ class WarmingStrategy:
     def __init__(self, config: VectorIndexConfig):
         self.config = config
 
-    async def get_warming_candidates(self,
-                                   cache: 'VectorIndexCache',
-                                   limit: int = 100) -> list[str]:
+    async def get_warming_candidates(
+        self, cache: "VectorIndexCache", limit: int = 100
+    ) -> list[str]:
         """Get candidate index IDs for warming."""
         raise NotImplementedError
 
@@ -234,15 +243,13 @@ class WarmingStrategy:
 class FrequencyWarmingStrategy(WarmingStrategy):
     """Warms indices based on access frequency."""
 
-    async def get_warming_candidates(self,
-                                   cache: 'VectorIndexCache',
-                                   limit: int = 100) -> list[str]:
+    async def get_warming_candidates(
+        self, cache: "VectorIndexCache", limit: int = 100
+    ) -> list[str]:
         """Get most frequently accessed indices."""
         # Sort by access frequency
         sorted_indices = sorted(
-            cache.access_stats.items(),
-            key=lambda x: x[1]['count'],
-            reverse=True
+            cache.access_stats.items(), key=lambda x: x[1]["count"], reverse=True
         )
 
         return [idx_id for idx_id, _ in sorted_indices[:limit]]
@@ -251,15 +258,13 @@ class FrequencyWarmingStrategy(WarmingStrategy):
 class RecencyWarmingStrategy(WarmingStrategy):
     """Warms indices based on recent access."""
 
-    async def get_warming_candidates(self,
-                                   cache: 'VectorIndexCache',
-                                   limit: int = 100) -> list[str]:
+    async def get_warming_candidates(
+        self, cache: "VectorIndexCache", limit: int = 100
+    ) -> list[str]:
         """Get most recently accessed indices."""
         # Sort by last access time
         sorted_indices = sorted(
-            cache.access_stats.items(),
-            key=lambda x: x[1]['last_access'],
-            reverse=True
+            cache.access_stats.items(), key=lambda x: x[1]["last_access"], reverse=True
         )
 
         return [idx_id for idx_id, _ in sorted_indices[:limit]]
@@ -268,9 +273,9 @@ class RecencyWarmingStrategy(WarmingStrategy):
 class ClusteringWarmingStrategy(WarmingStrategy):
     """Warms indices based on clustering analysis."""
 
-    async def get_warming_candidates(self,
-                                   cache: 'VectorIndexCache',
-                                   limit: int = 100) -> list[str]:
+    async def get_warming_candidates(
+        self, cache: "VectorIndexCache", limit: int = 100
+    ) -> list[str]:
         """Get indices based on clustering analysis."""
         # This would implement clustering-based warming
         # For now, return a simple implementation
@@ -280,9 +285,9 @@ class ClusteringWarmingStrategy(WarmingStrategy):
 class VectorIndexCache:
     """Multi-tier vector index cache with warming strategies."""
 
-    def __init__(self,
-                 config: VectorIndexConfig,
-                 redis_cache: RedisCache | None = None):
+    def __init__(
+        self, config: VectorIndexConfig, redis_cache: RedisCache | None = None
+    ):
         self.config = config
         self.redis_cache = redis_cache
         self.builder = VectorIndexBuilder(config)
@@ -290,8 +295,7 @@ class VectorIndexCache:
 
         # Memory cache
         self.memory_cache = TTLCache(
-            maxsize=config.memory_cache_size,
-            ttl=config.memory_cache_ttl
+            maxsize=config.memory_cache_size, ttl=config.memory_cache_ttl
         )
 
         # Disk cache
@@ -300,18 +304,20 @@ class VectorIndexCache:
             self.disk_cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Access tracking
-        self.access_stats = defaultdict(lambda: {
-            'count': 0,
-            'last_access': datetime.now(),
-            'build_time': 0.0,
-            'size': 0
-        })
+        self.access_stats = defaultdict(
+            lambda: {
+                "count": 0,
+                "last_access": datetime.now(),
+                "build_time": 0.0,
+                "size": 0,
+            }
+        )
 
         # Warming strategies
         self.warming_strategies = {
-            'frequency': FrequencyWarmingStrategy(config),
-            'recency': RecencyWarmingStrategy(config),
-            'clustering': ClusteringWarmingStrategy(config)
+            "frequency": FrequencyWarmingStrategy(config),
+            "recency": RecencyWarmingStrategy(config),
+            "clustering": ClusteringWarmingStrategy(config),
         }
 
         # Warming task
@@ -344,8 +350,8 @@ class VectorIndexCache:
         time.time()
 
         # Update access stats
-        self.access_stats[index_id]['count'] += 1
-        self.access_stats[index_id]['last_access'] = datetime.now()
+        self.access_stats[index_id]["count"] += 1
+        self.access_stats[index_id]["last_access"] = datetime.now()
 
         # Try memory cache first
         if index_id in self.memory_cache:
@@ -369,7 +375,7 @@ class VectorIndexCache:
             disk_path = self.disk_cache_dir / f"{index_id}.faiss"
             if disk_path.exists():
                 try:
-                    with open(disk_path, 'rb') as f:
+                    with open(disk_path, "rb") as f:
                         compressed_data = f.read()
 
                     index = self.builder.decompress_index(compressed_data)
@@ -380,7 +386,7 @@ class VectorIndexCache:
                         await self.redis_cache.async_set(
                             f"vector_index:{index_id}",
                             compressed_data,
-                            ttl=self.config.redis_cache_ttl
+                            ttl=self.config.redis_cache_ttl,
                         )
 
                     self.metrics.cache_hits += 1
@@ -406,14 +412,14 @@ class VectorIndexCache:
             await self.redis_cache.async_set(
                 f"vector_index:{index_id}",
                 compressed_data,
-                ttl=self.config.redis_cache_ttl
+                ttl=self.config.redis_cache_ttl,
             )
 
         # Store in disk cache
         if self.disk_cache_dir:
             disk_path = self.disk_cache_dir / f"{index_id}.faiss"
             try:
-                with open(disk_path, 'wb') as f:
+                with open(disk_path, "wb") as f:
                     f.write(compressed_data)
             except Exception as e:
                 logger.error(f"Failed to save index to disk {index_id}: {e}")
@@ -425,20 +431,21 @@ class VectorIndexCache:
         # Calculate compression ratio
         original_size = index.d * index.ntotal * 4  # Assuming float32
         compressed_size = len(compressed_data)
-        compression_ratio = original_size / compressed_size if compressed_size > 0 else 1.0
+        compression_ratio = (
+            original_size / compressed_size if compressed_size > 0 else 1.0
+        )
         self.metrics.compression_ratios.append(compression_ratio)
 
         # Update access stats
-        self.access_stats[index_id]['build_time'] = time.time() - start_time
-        self.access_stats[index_id]['size'] = compressed_size
+        self.access_stats[index_id]["build_time"] = time.time() - start_time
+        self.access_stats[index_id]["size"] = compressed_size
 
         # Register for cleanup
         self.weak_refs.add(index)
 
-    async def build_and_cache_index(self,
-                                  index_id: str,
-                                  vectors: np.ndarray,
-                                  index_type: str | None = None) -> faiss.Index:
+    async def build_and_cache_index(
+        self, index_id: str, vectors: np.ndarray, index_type: str | None = None
+    ) -> faiss.Index:
         """Build and cache a new index."""
         start_time = time.time()
 
@@ -456,13 +463,14 @@ class VectorIndexCache:
         self.metrics.index_dimensions[index_id] = vectors.shape[1]
         self.metrics.index_types[index_id] = index_type or self.config.index_type
 
-        logger.info(f"Built and cached index {index_id} in {time.time() - start_time:.3f}s")
+        logger.info(
+            f"Built and cached index {index_id} in {time.time() - start_time:.3f}s"
+        )
         return index
 
-    async def search_index(self,
-                         index_id: str,
-                         query_vectors: np.ndarray,
-                         k: int = 10) -> tuple[np.ndarray, np.ndarray]:
+    async def search_index(
+        self, index_id: str, query_vectors: np.ndarray, k: int = 10
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Search in a cached index."""
         start_time = time.time()
 
@@ -535,8 +543,7 @@ class VectorIndexCache:
                 try:
                     strategy = self.warming_strategies[strategy_name]
                     candidates = await strategy.get_warming_candidates(
-                        self,
-                        limit=self.config.warming_batch_size
+                        self, limit=self.config.warming_batch_size
                     )
 
                     await self._warm_candidates(candidates)
@@ -549,9 +556,14 @@ class VectorIndexCache:
         candidates = []
 
         # Collect candidates from queue
-        while not self.warming_queue.empty() and len(candidates) < self.config.warming_batch_size:
+        while (
+            not self.warming_queue.empty()
+            and len(candidates) < self.config.warming_batch_size
+        ):
             try:
-                candidate = await asyncio.wait_for(self.warming_queue.get(), timeout=0.1)
+                candidate = await asyncio.wait_for(
+                    self.warming_queue.get(), timeout=0.1
+                )
                 candidates.append(candidate)
             except asyncio.TimeoutError:
                 break
@@ -572,7 +584,7 @@ class VectorIndexCache:
             # Process in batches to avoid overwhelming the system
             batch_size = self.config.warming_concurrency
             for i in range(0, len(tasks), batch_size):
-                batch = tasks[i:i + batch_size]
+                batch = tasks[i : i + batch_size]
                 await asyncio.gather(*batch, return_exceptions=True)
 
     async def _warm_single_index(self, index_id: str):
@@ -597,12 +609,12 @@ class VectorIndexCache:
     def get_metrics(self) -> dict[str, Any]:
         """Get comprehensive cache metrics."""
         return {
-            'cache_metrics': self.metrics.get_summary(),
-            'memory_cache_size': len(self.memory_cache),
-            'memory_cache_maxsize': self.memory_cache.maxsize,
-            'access_stats_count': len(self.access_stats),
-            'warming_queue_size': self.warming_queue.qsize(),
-            'weak_refs_count': len(self.weak_refs)
+            "cache_metrics": self.metrics.get_summary(),
+            "memory_cache_size": len(self.memory_cache),
+            "memory_cache_maxsize": self.memory_cache.maxsize,
+            "access_stats_count": len(self.access_stats),
+            "warming_queue_size": self.warming_queue.qsize(),
+            "weak_refs_count": len(self.weak_refs),
         }
 
     def get_access_stats(self) -> dict[str, Any]:
@@ -641,13 +653,10 @@ class VectorIndexCache:
 async def create_vector_index_cache(
     config: VectorIndexConfig | None = None,
     redis_cache: RedisCache | None = None,
-    auto_start: bool = True
+    auto_start: bool = True,
 ) -> VectorIndexCache:
     """Create and optionally start a vector index cache."""
-    cache = VectorIndexCache(
-        config or VectorIndexConfig(),
-        redis_cache
-    )
+    cache = VectorIndexCache(config or VectorIndexConfig(), redis_cache)
 
     if auto_start:
         await cache.start()

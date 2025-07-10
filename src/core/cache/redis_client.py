@@ -127,33 +127,32 @@ class RedisCache:
         self._sync_pool: redis.ConnectionPool | None = None
         self._async_pool: aioredis.ConnectionPool | None = None
         self._l1_cache = TTLCache(
-            maxsize=self.config.l1_max_size,
-            ttl=self.config.l1_ttl
+            maxsize=self.config.l1_max_size, ttl=self.config.l1_ttl
         )
         self._circuit_breaker = CircuitBreaker(
             threshold=self.config.circuit_breaker_threshold,
-            timeout=self.config.circuit_breaker_timeout
+            timeout=self.config.circuit_breaker_timeout,
         )
         self._metrics = {
-            'l1_hits': 0,
-            'l1_misses': 0,
-            'l2_hits': 0,
-            'l2_misses': 0,
-            'errors': 0,
-            'slow_queries': 0,
-            'connection_errors': 0,
-            'pool_exhausted': 0,
-            'pipeline_operations': 0
+            "l1_hits": 0,
+            "l1_misses": 0,
+            "l2_hits": 0,
+            "l2_misses": 0,
+            "errors": 0,
+            "slow_queries": 0,
+            "connection_errors": 0,
+            "pool_exhausted": 0,
+            "pipeline_operations": 0,
         }
 
         # Health monitoring
         self._health_check_task = None
         self._connection_health = {
-            'is_healthy': True,
-            'last_check': None,
-            'consecutive_failures': 0,
-            'total_checks': 0,
-            'failed_checks': 0
+            "is_healthy": True,
+            "last_check": None,
+            "consecutive_failures": 0,
+            "total_checks": 0,
+            "failed_checks": 0,
         }
 
         # Pipeline support
@@ -162,22 +161,27 @@ class RedisCache:
 
         # Connection pool monitoring
         self._pool_stats = {
-            'active_connections': 0,
-            'idle_connections': 0,
-            'total_connections': 0,
-            'pool_exhaustion_count': 0
+            "active_connections": 0,
+            "idle_connections": 0,
+            "total_connections": 0,
+            "pool_exhaustion_count": 0,
         }
 
     def _get_json_encoder(self):
         """Get JSON encoder that handles common Python types."""
+
         class ExtendedJSONEncoder(json.JSONEncoder):
             def default(self, obj):
                 if isinstance(obj, set | frozenset):
                     return {"__type__": "set", "values": list(obj)}
                 elif isinstance(obj, bytes):
-                    return {"__type__": "bytes", "data": base64.b64encode(obj).decode('ascii')}
+                    return {
+                        "__type__": "bytes",
+                        "data": base64.b64encode(obj).decode("ascii"),
+                    }
                 # Don't try to serialize arbitrary objects for security reasons
                 return super().default(obj)
+
         return ExtendedJSONEncoder
 
     def _json_object_hook(self, obj):
@@ -187,7 +191,7 @@ class RedisCache:
             if type_name == "set":
                 return set(obj["values"])
             elif type_name == "bytes":
-                return base64.b64decode(obj["data"].encode('ascii'))
+                return base64.b64decode(obj["data"].encode("ascii"))
         return obj
 
     @property
@@ -245,14 +249,14 @@ class RedisCache:
         try:
             # Try msgpack first (faster and safer)
             data = msgpack.packb(value, use_bin_type=True)
-            serializer = 'm'  # msgpack
+            serializer = "m"  # msgpack
         except (TypeError, msgpack.exceptions.PackException):
             # Fall back to JSON for all types
             try:
                 # Convert to JSON-serializable format
                 json_data = json.dumps(value, cls=self._get_json_encoder())
-                data = json_data.encode('utf-8')
-                serializer = 'j'  # json
+                data = json_data.encode("utf-8")
+                serializer = "j"  # json
             except (TypeError, ValueError) as e:
                 # For types that can't be serialized, raise an error
                 raise TypeError(
@@ -262,12 +266,16 @@ class RedisCache:
                 )
 
         # Compress if needed
-        if self.config.enable_compression and len(data) > self.config.compression_threshold:
+        if (
+            self.config.enable_compression
+            and len(data) > self.config.compression_threshold
+        ):
             import zlib
+
             data = zlib.compress(data)
-            return b'Z' + serializer.encode() + data
+            return b"Z" + serializer.encode() + data
         else:
-            return b'U' + serializer.encode() + data
+            return b"U" + serializer.encode() + data
 
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value from storage with security checks."""
@@ -279,17 +287,20 @@ class RedisCache:
         payload = data[2:]
 
         # Decompress if needed
-        if compression == b'Z':
+        if compression == b"Z":
             import zlib
+
             payload = zlib.decompress(payload)
 
         # Deserialize based on serializer type
-        if serializer == 'm':
+        if serializer == "m":
             return msgpack.unpackb(payload, raw=False)
-        elif serializer == 'j':
+        elif serializer == "j":
             # JSON deserialization with object hook
-            return json.loads(payload.decode('utf-8'), object_hook=self._json_object_hook)
-        elif serializer == 'p':
+            return json.loads(
+                payload.decode("utf-8"), object_hook=self._json_object_hook
+            )
+        elif serializer == "p":
             # Pickle is no longer supported for security reasons
             logger.error(
                 "Attempted to deserialize pickled data. This is no longer supported for security reasons. "
@@ -308,6 +319,7 @@ class RedisCache:
 
     def _with_retry(self, func: Callable) -> Callable:
         """Decorator for retry logic."""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             last_error = None
@@ -325,19 +337,22 @@ class RedisCache:
                 except RedisError as e:
                     last_error = e
                     self._circuit_breaker.record_failure()
-                    self._metrics['errors'] += 1
+                    self._metrics["errors"] += 1
 
                     if attempt < self.config.max_retries - 1:
                         time.sleep(delay)
                         delay *= self.config.retry_backoff
 
-            logger.error(f"Redis operation failed after {self.config.max_retries} retries: {last_error}")
+            logger.error(
+                f"Redis operation failed after {self.config.max_retries} retries: {last_error}"
+            )
             raise last_error
 
         return wrapper
 
     def _with_metrics(self, operation: str) -> Callable:
         """Decorator for metrics collection."""
+
         def decorator(func: Callable) -> Callable:
             @wraps(func)
             def wrapper(self, *args, **kwargs):
@@ -348,7 +363,7 @@ class RedisCache:
                 finally:
                     duration = time.time() - start_time
                     if duration > self.config.slow_query_threshold:
-                        self._metrics['slow_queries'] += 1
+                        self._metrics["slow_queries"] += 1
                         logger.warning(f"Slow {operation} operation: {duration:.3f}s")
 
             @wraps(func)
@@ -360,18 +375,18 @@ class RedisCache:
                 finally:
                     duration = time.time() - start_time
                     if duration > self.config.slow_query_threshold:
-                        self._metrics['slow_queries'] += 1
+                        self._metrics["slow_queries"] += 1
                         logger.warning(f"Slow {operation} operation: {duration:.3f}s")
 
             return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
+
         return decorator
 
     def _start_health_monitoring(self):
         """Start health monitoring task."""
         if self._health_check_task is None:
             self._health_check_task = threading.Thread(
-                target=self._health_monitor_worker,
-                daemon=True
+                target=self._health_monitor_worker, daemon=True
             )
             self._health_check_task.start()
 
@@ -395,20 +410,20 @@ class RedisCache:
                 r.ping()
 
             # Update health status
-            self._connection_health['is_healthy'] = True
-            self._connection_health['consecutive_failures'] = 0
-            self._connection_health['last_check'] = datetime.now().isoformat()
-            self._connection_health['total_checks'] += 1
+            self._connection_health["is_healthy"] = True
+            self._connection_health["consecutive_failures"] = 0
+            self._connection_health["last_check"] = datetime.now().isoformat()
+            self._connection_health["total_checks"] += 1
 
             # Update pool stats
             self._update_pool_stats()
 
         except Exception as e:
-            self._connection_health['is_healthy'] = False
-            self._connection_health['consecutive_failures'] += 1
-            self._connection_health['failed_checks'] += 1
-            self._connection_health['total_checks'] += 1
-            self._metrics['connection_errors'] += 1
+            self._connection_health["is_healthy"] = False
+            self._connection_health["consecutive_failures"] += 1
+            self._connection_health["failed_checks"] += 1
+            self._connection_health["total_checks"] += 1
+            self._metrics["connection_errors"] += 1
 
             logger.warning(f"Health check failed: {e}")
 
@@ -417,10 +432,14 @@ class RedisCache:
         try:
             if self._sync_pool:
                 # Get pool info (this is a simplified version)
-                self._pool_stats.update({
-                    'active_connections': getattr(self._sync_pool, '_available_connections', 0),
-                    'total_connections': self._sync_pool.max_connections
-                })
+                self._pool_stats.update(
+                    {
+                        "active_connections": getattr(
+                            self._sync_pool, "_available_connections", 0
+                        ),
+                        "total_connections": self._sync_pool.max_connections,
+                    }
+                )
         except Exception as e:
             logger.debug(f"Could not update pool stats: {e}")
 
@@ -430,8 +449,8 @@ class RedisCache:
             # Execute operations individually
             results = []
             for op in operations:
-                method = getattr(self, op['method'])
-                result = method(*op.get('args', []), **op.get('kwargs', {}))
+                method = getattr(self, op["method"])
+                result = method(*op.get("args", []), **op.get("kwargs", {}))
                 results.append(result)
             return results
 
@@ -440,16 +459,16 @@ class RedisCache:
                 pipe = r.pipeline()
 
                 for op in operations:
-                    method_name = op['method']
-                    args = op.get('args', [])
-                    kwargs = op.get('kwargs', {})
+                    method_name = op["method"]
+                    args = op.get("args", [])
+                    kwargs = op.get("kwargs", {})
 
                     # Map our method names to Redis methods
-                    if method_name == 'set':
+                    if method_name == "set":
                         pipe.set(args[0], self._serialize(args[1]), **kwargs)
-                    elif method_name == 'get':
+                    elif method_name == "get":
                         pipe.get(args[0])
-                    elif method_name == 'delete':
+                    elif method_name == "delete":
                         pipe.delete(args[0])
                     else:
                         logger.warning(f"Unknown pipeline method: {method_name}")
@@ -458,27 +477,31 @@ class RedisCache:
 
                 # Deserialize results where needed
                 processed_results = []
-                for _i, (result, op) in enumerate(zip(results, operations, strict=False)):
-                    if op['method'] == 'get' and result:
+                for _i, (result, op) in enumerate(
+                    zip(results, operations, strict=False)
+                ):
+                    if op["method"] == "get" and result:
                         processed_results.append(self._deserialize(result))
                     else:
                         processed_results.append(result)
 
-                self._metrics['pipeline_operations'] += 1
+                self._metrics["pipeline_operations"] += 1
                 return processed_results
 
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
             raise
 
-    async def execute_pipeline_async(self, operations: list[dict[str, Any]]) -> list[Any]:
+    async def execute_pipeline_async(
+        self, operations: list[dict[str, Any]]
+    ) -> list[Any]:
         """Execute multiple operations in an async pipeline."""
         if not self.config.enable_pipeline:
             # Execute operations individually
             results = []
             for op in operations:
                 method = getattr(self, f"async_{op['method']}")
-                result = await method(*op.get('args', []), **op.get('kwargs', {}))
+                result = await method(*op.get("args", []), **op.get("kwargs", {}))
                 results.append(result)
             return results
 
@@ -487,16 +510,16 @@ class RedisCache:
                 pipe = r.pipeline()
 
                 for op in operations:
-                    method_name = op['method']
-                    args = op.get('args', [])
-                    kwargs = op.get('kwargs', {})
+                    method_name = op["method"]
+                    args = op.get("args", [])
+                    kwargs = op.get("kwargs", {})
 
                     # Map our method names to Redis methods
-                    if method_name == 'set':
+                    if method_name == "set":
                         await pipe.set(args[0], self._serialize(args[1]), **kwargs)
-                    elif method_name == 'get':
+                    elif method_name == "get":
                         await pipe.get(args[0])
-                    elif method_name == 'delete':
+                    elif method_name == "delete":
                         await pipe.delete(args[0])
                     else:
                         logger.warning(f"Unknown pipeline method: {method_name}")
@@ -505,13 +528,15 @@ class RedisCache:
 
                 # Deserialize results where needed
                 processed_results = []
-                for _i, (result, op) in enumerate(zip(results, operations, strict=False)):
-                    if op['method'] == 'get' and result:
+                for _i, (result, op) in enumerate(
+                    zip(results, operations, strict=False)
+                ):
+                    if op["method"] == "get" and result:
                         processed_results.append(self._deserialize(result))
                     else:
                         processed_results.append(result)
 
-                self._metrics['pipeline_operations'] += 1
+                self._metrics["pipeline_operations"] += 1
                 return processed_results
 
         except Exception as e:
@@ -527,13 +552,14 @@ class RedisCache:
 
         # Check L1 cache first
         if full_key in self._l1_cache:
-            self._metrics['l1_hits'] += 1
+            self._metrics["l1_hits"] += 1
             return self._l1_cache[full_key]
 
-        self._metrics['l1_misses'] += 1
+        self._metrics["l1_misses"] += 1
 
         # Check L2 cache
         try:
+
             @self._with_retry
             def _get():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
@@ -541,12 +567,12 @@ class RedisCache:
 
             data = _get()
             if data:
-                self._metrics['l2_hits'] += 1
+                self._metrics["l2_hits"] += 1
                 value = self._deserialize(data)
                 self._l1_cache[full_key] = value
                 return value
             else:
-                self._metrics['l2_misses'] += 1
+                self._metrics["l2_misses"] += 1
                 return None
 
         except RedisError:
@@ -555,7 +581,7 @@ class RedisCache:
         finally:
             duration = time.time() - start_time
             if duration > self.config.slow_query_threshold:
-                self._metrics['slow_queries'] += 1
+                self._metrics["slow_queries"] += 1
                 logger.warning(f"Slow get operation: {duration:.3f}s")
 
     def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
@@ -569,6 +595,7 @@ class RedisCache:
 
         # Set in L2 cache
         try:
+
             @self._with_retry
             def _set():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
@@ -582,7 +609,7 @@ class RedisCache:
         finally:
             duration = time.time() - start_time
             if duration > self.config.slow_query_threshold:
-                self._metrics['slow_queries'] += 1
+                self._metrics["slow_queries"] += 1
                 logger.warning(f"Slow set operation: {duration:.3f}s")
 
     def delete(self, key: str) -> bool:
@@ -594,6 +621,7 @@ class RedisCache:
 
         # Delete from L2 cache
         try:
+
             @self._with_retry
             def _delete():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
@@ -615,14 +643,15 @@ class RedisCache:
             full_key = self._build_key(key)
             if full_key in self._l1_cache:
                 result[key] = self._l1_cache[full_key]
-                self._metrics['l1_hits'] += 1
+                self._metrics["l1_hits"] += 1
             else:
                 l2_keys.append(key)
-                self._metrics['l1_misses'] += 1
+                self._metrics["l1_misses"] += 1
 
         # Check L2 cache for remaining keys
         if l2_keys:
             try:
+
                 @self._with_retry
                 def _mget():
                     with redis.Redis(connection_pool=self.sync_pool) as r:
@@ -632,12 +661,12 @@ class RedisCache:
                 values = _mget()
                 for key, value in zip(l2_keys, values, strict=False):
                     if value:
-                        self._metrics['l2_hits'] += 1
+                        self._metrics["l2_hits"] += 1
                         deserialized = self._deserialize(value)
                         result[key] = deserialized
                         self._l1_cache[self._build_key(key)] = deserialized
                     else:
-                        self._metrics['l2_misses'] += 1
+                        self._metrics["l2_misses"] += 1
 
             except RedisError:
                 logger.warning("Redis mget failed, partial results from L1 only")
@@ -654,6 +683,7 @@ class RedisCache:
 
         # Set in L2 cache
         try:
+
             @self._with_retry
             def _mset():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
@@ -682,6 +712,7 @@ class RedisCache:
 
         # Delete from L2 cache
         try:
+
             @self._with_retry
             def _delete_pattern():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
@@ -706,10 +737,10 @@ class RedisCache:
 
         # Check L1 cache first
         if full_key in self._l1_cache:
-            self._metrics['l1_hits'] += 1
+            self._metrics["l1_hits"] += 1
             return self._l1_cache[full_key]
 
-        self._metrics['l1_misses'] += 1
+        self._metrics["l1_misses"] += 1
 
         # Check L2 cache
         try:
@@ -722,23 +753,23 @@ class RedisCache:
             self._circuit_breaker.record_success()
 
             if data:
-                self._metrics['l2_hits'] += 1
+                self._metrics["l2_hits"] += 1
                 value = self._deserialize(data)
                 self._l1_cache[full_key] = value
                 return value
             else:
-                self._metrics['l2_misses'] += 1
+                self._metrics["l2_misses"] += 1
                 return None
 
         except RedisError:
             self._circuit_breaker.record_failure()
-            self._metrics['errors'] += 1
+            self._metrics["errors"] += 1
             logger.warning(f"Redis async_get failed for key: {key}, using L1 only")
             return None
         finally:
             duration = time.time() - start_time
             if duration > self.config.slow_query_threshold:
-                self._metrics['slow_queries'] += 1
+                self._metrics["slow_queries"] += 1
                 logger.warning(f"Slow async_get operation: {duration:.3f}s")
 
     async def async_set(self, key: str, value: Any, ttl: int | None = None) -> bool:
@@ -763,13 +794,15 @@ class RedisCache:
 
         except RedisError:
             self._circuit_breaker.record_failure()
-            self._metrics['errors'] += 1
-            logger.warning(f"Redis async_set failed for key: {key}, value cached in L1 only")
+            self._metrics["errors"] += 1
+            logger.warning(
+                f"Redis async_set failed for key: {key}, value cached in L1 only"
+            )
             return False
         finally:
             duration = time.time() - start_time
             if duration > self.config.slow_query_threshold:
-                self._metrics['slow_queries'] += 1
+                self._metrics["slow_queries"] += 1
                 logger.warning(f"Slow async_set operation: {duration:.3f}s")
 
     async def async_delete(self, key: str) -> bool:
@@ -792,7 +825,7 @@ class RedisCache:
 
         except RedisError:
             self._circuit_breaker.record_failure()
-            self._metrics['errors'] += 1
+            self._metrics["errors"] += 1
             logger.warning(f"Redis async_delete failed for key: {key}")
             return False
 
@@ -827,8 +860,10 @@ class RedisCache:
 
         except RedisError:
             self._circuit_breaker.record_failure()
-            self._metrics['errors'] += 1
-            logger.warning(f"Redis async_delete_pattern failed for pattern: {pattern}, using L1 only")
+            self._metrics["errors"] += 1
+            logger.warning(
+                f"Redis async_delete_pattern failed for pattern: {pattern}, using L1 only"
+            )
             return l1_cleared
 
     # Health and monitoring
@@ -836,14 +871,14 @@ class RedisCache:
     def health_check(self) -> dict[str, Any]:
         """Perform health check."""
         health = {
-            'status': 'healthy',
-            'l1_cache_size': len(self._l1_cache),
-            'circuit_breaker_state': self._circuit_breaker.state,
-            'metrics': self._metrics.copy(),
-            'redis_connected': False,
-            'latency_ms': None,
-            'connection_health': self._connection_health.copy(),
-            'pool_stats': self._pool_stats.copy()
+            "status": "healthy",
+            "l1_cache_size": len(self._l1_cache),
+            "circuit_breaker_state": self._circuit_breaker.state,
+            "metrics": self._metrics.copy(),
+            "redis_connected": False,
+            "latency_ms": None,
+            "connection_health": self._connection_health.copy(),
+            "pool_stats": self._pool_stats.copy(),
         }
 
         # Check Redis connection
@@ -851,31 +886,33 @@ class RedisCache:
             start_time = time.time()
             with redis.Redis(connection_pool=self.sync_pool) as r:
                 r.ping()
-            health['redis_connected'] = True
-            health['latency_ms'] = (time.time() - start_time) * 1000
+            health["redis_connected"] = True
+            health["latency_ms"] = (time.time() - start_time) * 1000
 
         except RedisError:
-            health['status'] = 'degraded' if self._circuit_breaker.state != 'open' else 'unhealthy'
+            health["status"] = (
+                "degraded" if self._circuit_breaker.state != "open" else "unhealthy"
+            )
 
         # Overall health assessment
-        if not self._connection_health['is_healthy']:
-            health['status'] = 'unhealthy'
-        elif self._connection_health['consecutive_failures'] > 0:
-            health['status'] = 'degraded'
+        if not self._connection_health["is_healthy"]:
+            health["status"] = "unhealthy"
+        elif self._connection_health["consecutive_failures"] > 0:
+            health["status"] = "degraded"
 
         return health
 
     async def async_health_check(self) -> dict[str, Any]:
         """Perform async health check."""
         health = {
-            'status': 'healthy',
-            'l1_cache_size': len(self._l1_cache),
-            'circuit_breaker_state': self._circuit_breaker.state,
-            'metrics': self._metrics.copy(),
-            'redis_connected': False,
-            'latency_ms': None,
-            'connection_health': self._connection_health.copy(),
-            'pool_stats': self._pool_stats.copy()
+            "status": "healthy",
+            "l1_cache_size": len(self._l1_cache),
+            "circuit_breaker_state": self._circuit_breaker.state,
+            "metrics": self._metrics.copy(),
+            "redis_connected": False,
+            "latency_ms": None,
+            "connection_health": self._connection_health.copy(),
+            "pool_stats": self._pool_stats.copy(),
         }
 
         # Check Redis connection
@@ -883,38 +920,42 @@ class RedisCache:
             start_time = time.time()
             async with aioredis.Redis(connection_pool=self.async_pool) as r:
                 await r.ping()
-            health['redis_connected'] = True
-            health['latency_ms'] = (time.time() - start_time) * 1000
+            health["redis_connected"] = True
+            health["latency_ms"] = (time.time() - start_time) * 1000
 
         except RedisError:
-            health['status'] = 'degraded' if self._circuit_breaker.state != 'open' else 'unhealthy'
+            health["status"] = (
+                "degraded" if self._circuit_breaker.state != "open" else "unhealthy"
+            )
 
         # Overall health assessment
-        if not self._connection_health['is_healthy']:
-            health['status'] = 'unhealthy'
-        elif self._connection_health['consecutive_failures'] > 0:
-            health['status'] = 'degraded'
+        if not self._connection_health["is_healthy"]:
+            health["status"] = "unhealthy"
+        elif self._connection_health["consecutive_failures"] > 0:
+            health["status"] = "degraded"
 
         return health
 
     def get_metrics(self) -> dict[str, Any]:
         """Get cache metrics."""
-        total_l1 = self._metrics['l1_hits'] + self._metrics['l1_misses']
-        total_l2 = self._metrics['l2_hits'] + self._metrics['l2_misses']
-        total_health_checks = self._connection_health['total_checks']
+        total_l1 = self._metrics["l1_hits"] + self._metrics["l1_misses"]
+        total_l2 = self._metrics["l2_hits"] + self._metrics["l2_misses"]
+        total_health_checks = self._connection_health["total_checks"]
 
         return {
             **self._metrics,
-            'l1_hit_rate': self._metrics['l1_hits'] / total_l1 if total_l1 > 0 else 0,
-            'l2_hit_rate': self._metrics['l2_hits'] / total_l2 if total_l2 > 0 else 0,
-            'l1_cache_size': len(self._l1_cache),
-            'circuit_breaker_state': self._circuit_breaker.state,
-            'connection_health': self._connection_health.copy(),
-            'pool_stats': self._pool_stats.copy(),
-            'health_check_success_rate': (
-                (total_health_checks - self._connection_health['failed_checks']) / total_health_checks
-                if total_health_checks > 0 else 1.0
-            )
+            "l1_hit_rate": self._metrics["l1_hits"] / total_l1 if total_l1 > 0 else 0,
+            "l2_hit_rate": self._metrics["l2_hits"] / total_l2 if total_l2 > 0 else 0,
+            "l1_cache_size": len(self._l1_cache),
+            "circuit_breaker_state": self._circuit_breaker.state,
+            "connection_health": self._connection_health.copy(),
+            "pool_stats": self._pool_stats.copy(),
+            "health_check_success_rate": (
+                (total_health_checks - self._connection_health["failed_checks"])
+                / total_health_checks
+                if total_health_checks > 0
+                else 1.0
+            ),
         }
 
     def clear_l1_cache(self):
@@ -939,6 +980,7 @@ class RedisCache:
     def _match_pattern(key: str, pattern: str) -> bool:
         """Check if key matches pattern (simple glob matching)."""
         import fnmatch
+
         return fnmatch.fnmatch(key, pattern)
 
     @staticmethod

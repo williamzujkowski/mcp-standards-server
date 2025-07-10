@@ -21,6 +21,7 @@ class TestCacheKeyGeneration:
 
     def test_simple_function_key(self):
         """Test key generation for simple function."""
+
         def simple_func(a: int, b: str) -> str:
             return f"{a}:{b}"
 
@@ -32,6 +33,7 @@ class TestCacheKeyGeneration:
 
     def test_method_key_without_self(self):
         """Test key generation for method excluding self."""
+
         class TestClass:
             def method(self, value: str) -> str:
                 return value
@@ -45,6 +47,7 @@ class TestCacheKeyGeneration:
 
     def test_method_key_with_self(self):
         """Test key generation for method including self."""
+
         class TestClass:
             def __init__(self, id: int):
                 self.id = id
@@ -61,21 +64,16 @@ class TestCacheKeyGeneration:
 
         # Key should be influenced by self
         assert key != generate_cache_key(
-            TestClass(456).method,
-            (TestClass(456), "data"),
-            {},
-            config
+            TestClass(456).method, (TestClass(456), "data"), {}, config
         )
 
     def test_excluded_args(self):
         """Test excluding specific arguments from key."""
+
         def func(query: str, limit: int, offset: int) -> list[str]:
             return []
 
-        config = CacheKeyConfig(
-            prefix="search",
-            exclude_args={"limit", "offset"}
-        )
+        config = CacheKeyConfig(prefix="search", exclude_args={"limit", "offset"})
 
         # Keys with different limit/offset should be same
         key1 = generate_cache_key(func, ("test",), {"limit": 10, "offset": 0}, config)
@@ -88,13 +86,11 @@ class TestCacheKeyGeneration:
 
     def test_custom_key_function(self):
         """Test custom key generation function."""
+
         def custom_key_func(func, args, kwargs):
             return f"custom:{func.__name__}:{args[0] if args else 'none'}"
 
-        config = CacheKeyConfig(
-            prefix="test",
-            custom_key_func=custom_key_func
-        )
+        config = CacheKeyConfig(prefix="test", custom_key_func=custom_key_func)
 
         def test_func(value: str) -> str:
             return value
@@ -116,6 +112,7 @@ class TestCacheResultDecorator:
         # Create proper async coroutines for async methods
         async def async_get(key):
             return None
+
         async def async_set(key, value, ttl=None):
             return True
 
@@ -125,6 +122,7 @@ class TestCacheResultDecorator:
 
     def test_sync_function_cache_miss(self, mock_cache):
         """Test sync function with cache miss."""
+
         @cache_result("test", ttl=60, cache=mock_cache)
         def expensive_func(value: str) -> str:
             return f"computed:{value}"
@@ -195,17 +193,21 @@ class TestCacheResultDecorator:
     @pytest.mark.asyncio
     async def test_async_function_cache_hit(self, mock_cache):
         """Test async function with cache hit."""
+
         # Override the async_get to return cached value
         async def async_get_cached(key):
             return "async_cached:world"
+
         mock_cache.async_get = async_get_cached
 
         # Track if async_set was called
         set_called = False
+
         async def async_set_track(key, value, ttl=None):
             nonlocal set_called
             set_called = True
             return True
+
         mock_cache.async_set = async_set_track
 
         @cache_result("test", cache=mock_cache)
@@ -220,10 +222,9 @@ class TestCacheResultDecorator:
 
     def test_condition_function(self, mock_cache):
         """Test conditional caching."""
+
         @cache_result(
-            "test",
-            cache=mock_cache,
-            condition=lambda value, use_cache=True: use_cache
+            "test", cache=mock_cache, condition=lambda value, use_cache=True: use_cache
         )
         def conditional_func(value: str, use_cache: bool = True) -> str:
             return f"result:{value}"
@@ -247,7 +248,7 @@ class TestCacheResultDecorator:
             "test",
             cache=mock_cache,
             on_cached=lambda k, v: cached_calls.append((k, v)),
-            on_computed=lambda k, v: computed_calls.append((k, v))
+            on_computed=lambda k, v: computed_calls.append((k, v)),
         )
         def func_with_callbacks(value: str) -> str:
             return f"result:{value}"
@@ -265,19 +266,14 @@ class TestCacheResultDecorator:
 
     def test_cache_key_with_complex_args(self, mock_cache):
         """Test caching with complex arguments."""
+
         @cache_result("complex", cache=mock_cache)
         def complex_func(
-            data: dict[str, Any],
-            items: list[str],
-            flag: bool = True
+            data: dict[str, Any], items: list[str], flag: bool = True
         ) -> dict[str, Any]:
             return {"processed": data, "items": items, "flag": flag}
 
-        complex_func(
-            {"key": "value"},
-            ["item1", "item2"],
-            flag=False
-        )
+        complex_func({"key": "value"}, ["item1", "item2"], flag=False)
 
         # Verify cache was used
         assert mock_cache.get.called
@@ -310,6 +306,7 @@ class TestInvalidateCacheDecorator:
         # Create proper async coroutines for async methods
         async def async_delete(key):
             return True
+
         async def async_delete_pattern(pattern):
             return 5
 
@@ -319,6 +316,7 @@ class TestInvalidateCacheDecorator:
 
     def test_invalidate_specific_keys(self, mock_cache):
         """Test invalidating specific cache keys."""
+
         @invalidate_cache(keys=["key1", "key2"], cache=mock_cache)
         def update_func():
             return "updated"
@@ -333,6 +331,7 @@ class TestInvalidateCacheDecorator:
 
     def test_invalidate_by_pattern(self, mock_cache):
         """Test invalidating by pattern."""
+
         @invalidate_cache(pattern="user:*", cache=mock_cache)
         def delete_all_users():
             return "deleted"
@@ -344,6 +343,7 @@ class TestInvalidateCacheDecorator:
 
     def test_invalidate_by_prefix(self, mock_cache):
         """Test invalidating by prefix."""
+
         @invalidate_cache(prefix="search", cache=mock_cache)
         def clear_search_cache():
             return "cleared"
@@ -355,6 +355,7 @@ class TestInvalidateCacheDecorator:
 
     def test_pattern_substitution(self, mock_cache):
         """Test pattern substitution with function arguments."""
+
         @invalidate_cache(pattern="user:{user_id}:*", cache=mock_cache)
         def update_user(user_id: str, data: dict):
             return f"updated user {user_id}"
@@ -367,6 +368,7 @@ class TestInvalidateCacheDecorator:
     @pytest.mark.asyncio
     async def test_async_invalidation(self, mock_cache):
         """Test async function invalidation."""
+
         @invalidate_cache(prefix="async", cache=mock_cache)
         async def async_update():
             return "async updated"
@@ -398,10 +400,13 @@ class TestCacheManager:
         # Setup async methods
         async def async_get(key):
             return f"value_{key}"
+
         async def async_set(key, value, ttl=None):
             return True
+
         async def async_mget(keys):
             return {k: f"value_{k}" for k in keys}
+
         async def async_mset(mapping, ttl=None):
             return True
 
@@ -441,10 +446,7 @@ class TestCacheManager:
             cm.batch_sets["key2"] = "value2"
 
         # Check batch was executed on exit
-        mock_cache.mset.assert_called_once_with({
-            "key1": "value1",
-            "key2": "value2"
-        })
+        mock_cache.mset.assert_called_once_with({"key1": "value1", "key2": "value2"})
 
 
 class TestUtilityFunctions:

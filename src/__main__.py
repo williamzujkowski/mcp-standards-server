@@ -1,12 +1,12 @@
 """Main entry point for running as module."""
+
 import asyncio
 import logging
 import sys
 
 # Configure logging before importing the server
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 try:
@@ -15,6 +15,7 @@ except ImportError:
     # Fallback for direct execution
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from mcp_server import main
 

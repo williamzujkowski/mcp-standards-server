@@ -36,68 +36,54 @@ class TestEnhancedPathTraversalProtection:
             ("docs/standards/test.md", True),
             ("docs/standards/subfolder/file.yaml", True),
             ("standards/react-patterns.json", True),
-
             # Directory traversal attempts
             ("../../../etc/passwd", False),
             ("docs/../../../etc/passwd", False),
             ("docs/standards/../../../../../../etc/passwd", False),
             ("./../secret", False),
             ("./../../secret", False),
-
             # Windows-style traversal
             ("..\\..\\..\\windows\\system32", False),
             ("docs\\..\\..\\..\\windows", False),
-
             # Absolute paths
             ("/etc/passwd", False),
             ("/home/user/secret", False),
             ("C:\\Windows\\System32\\config", False),
             ("\\\\server\\share\\file", False),
-
             # Control characters
             ("file\x00name.md", False),
             ("file\nname.md", False),
             ("file\rname.md", False),
             ("file\tname.md", False),
-
             # Home directory expansion
             ("~/secret", False),
             ("~user/secret", False),
-
             # Environment variables
             ("$HOME/secret", False),
             ("${HOME}/secret", False),
             ("%USERPROFILE%\\secret", False),
-
             # Hidden files and directories
             (".ssh/id_rsa", False),
             (".git/config", False),
             (".svn/entries", False),
             (".env", False),
             ("path/.hidden/file", False),
-
             # Special directory references
             (".", False),
             ("..", False),
             ("./", False),
             ("../", False),
-
             # Empty or invalid
             ("", False),
-
             # Mixed traversal attempts
             ("docs/./../../etc/passwd", False),
             ("docs/standards/../../.././../../etc/passwd", False),
-
             # URL-encoded traversal
             ("docs%2F..%2F..%2Fetc%2Fpasswd", True),  # This is treated as a filename
-
             # Unicode traversal attempts
             ("docs/\u002e\u002e/secret", False),  # Unicode for ..
-
             # Null byte injection
             ("safe.md\x00.exe", False),
-
             # Whitespace tricks
             (".. /etc/passwd", False),
             (" ../etc/passwd", False),
@@ -106,7 +92,9 @@ class TestEnhancedPathTraversalProtection:
 
         for path, expected_safe in test_cases:
             result = secure_sync._is_safe_path(path)
-            assert result == expected_safe, f"Path {repr(path)} expected safe={expected_safe}, got {result}"
+            assert (
+                result == expected_safe
+            ), f"Path {repr(path)} expected safe={expected_safe}, got {result}"
 
     def test_validate_and_resolve_path(self, secure_sync):
         """Test path validation and resolution."""
@@ -139,7 +127,6 @@ class TestEnhancedPathTraversalProtection:
             ("https://github.com/owner/repo/file.md", True),
             ("https://raw.githubusercontent.com/owner/repo/main/file.md", True),
             ("https://api.github.com/repos/owner/repo/contents", True),
-
             # Unsafe schemes
             ("http://github.com/file.md", False),
             ("ftp://github.com/file.md", False),
@@ -147,13 +134,11 @@ class TestEnhancedPathTraversalProtection:
             ("javascript:alert(1)", False),
             ("data:text/plain,malicious", False),
             ("vbscript:msgbox", False),
-
             # Invalid URLs
             ("", False),
             ("not-a-url", False),
             ("https://", False),
             ("https://[invalid", False),
-
             # Untrusted domains
             ("https://evil.com/file.md", False),
             ("https://github.com.evil.com/file.md", False),
@@ -162,7 +147,9 @@ class TestEnhancedPathTraversalProtection:
 
         for url, expected_safe in url_tests:
             result = secure_sync._is_safe_url(url)
-            assert result == expected_safe, f"URL {url} expected safe={expected_safe}, got {result}"
+            assert (
+                result == expected_safe
+            ), f"URL {url} expected safe={expected_safe}, got {result}"
 
     @pytest.mark.asyncio
     async def test_sync_file_enhanced_security(self, secure_sync):
@@ -170,61 +157,67 @@ class TestEnhancedPathTraversalProtection:
         # Test with various malicious file paths
         malicious_files = [
             {
-                'path': '../../../etc/passwd',
-                'sha': 'abc123',
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/passwd'
+                "path": "../../../etc/passwd",
+                "sha": "abc123",
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/passwd",
             },
             {
-                'path': 'docs/standards/../../../../../../tmp/evil',
-                'sha': 'def456',
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/evil'
+                "path": "docs/standards/../../../../../../tmp/evil",
+                "sha": "def456",
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/evil",
             },
             {
-                'path': '/absolute/path/file.md',
-                'sha': 'ghi789',
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/file.md'
+                "path": "/absolute/path/file.md",
+                "sha": "ghi789",
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/file.md",
             },
             {
-                'path': 'docs/standards/test.md',  # Valid path
-                'sha': 'jkl012',
-                'download_url': 'file:///etc/passwd'  # But unsafe URL
+                "path": "docs/standards/test.md",  # Valid path
+                "sha": "jkl012",
+                "download_url": "file:///etc/passwd",  # But unsafe URL
             },
         ]
 
-        with patch.object(secure_sync, '_download_file', return_value=b'content'):
+        with patch.object(secure_sync, "_download_file", return_value=b"content"):
             import aiohttp
+
             async with aiohttp.ClientSession() as session:
                 for file_info in malicious_files:
                     result = await secure_sync._sync_file(session, file_info)
-                    assert result is False, f"Malicious file {file_info['path']} should have been rejected"
+                    assert (
+                        result is False
+                    ), f"Malicious file {file_info['path']} should have been rejected"
 
     @pytest.mark.asyncio
     async def test_atomic_file_write(self, secure_sync):
         """Test atomic file write operation."""
         # Prepare a valid file
         file_info = {
-            'path': 'docs/standards/test.md',
-            'sha': 'abc123',
-            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md',
-            'size': 100
+            "path": "docs/standards/test.md",
+            "sha": "abc123",
+            "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
+            "size": 100,
         }
 
-        content = b'# Test content for atomic write'
+        content = b"# Test content for atomic write"
 
         write_count = 0
         original_open = open
 
         def counting_open(path, mode, *args, **kwargs):
             nonlocal write_count
-            if 'w' in mode and str(path).endswith('.tmp'):
+            if "w" in mode and str(path).endswith(".tmp"):
                 write_count += 1
             return original_open(path, mode, *args, **kwargs)
 
-        with patch.object(secure_sync, '_download_file', return_value=content):
-            with patch('builtins.open', side_effect=counting_open):
+        with patch.object(secure_sync, "_download_file", return_value=content):
+            with patch("builtins.open", side_effect=counting_open):
                 import aiohttp
+
                 async with aiohttp.ClientSession() as session:
-                    result = await secure_sync._sync_file(session, file_info, force=True)
+                    result = await secure_sync._sync_file(
+                        session, file_info, force=True
+                    )
 
         assert result is True
         assert write_count == 1, "Should write to temporary file exactly once"
@@ -239,91 +232,95 @@ class TestEnhancedPathTraversalProtection:
         test_files = [
             # Safe files
             {
-                'path': 'docs/standards/react.md',
-                'name': 'react.md',
-                'size': 1000,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/react.md',
-                'expected': True
+                "path": "docs/standards/react.md",
+                "name": "react.md",
+                "size": 1000,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/react.md",
+                "expected": True,
             },
             # Path traversal in path
             {
-                'path': 'docs/../../../etc/passwd',
-                'name': 'passwd',
-                'size': 1000,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/passwd',
-                'expected': False
+                "path": "docs/../../../etc/passwd",
+                "name": "passwd",
+                "size": 1000,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/passwd",
+                "expected": False,
             },
             # Control characters in name
             {
-                'path': 'docs/standards/file.md',
-                'name': 'file\x00.md',
-                'size': 1000,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/file.md',
-                'expected': False
+                "path": "docs/standards/file.md",
+                "name": "file\x00.md",
+                "size": 1000,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/file.md",
+                "expected": False,
             },
             # Unsafe URL
             {
-                'path': 'docs/standards/safe.md',
-                'name': 'safe.md',
-                'size': 1000,
-                'download_url': 'file:///etc/passwd',
-                'expected': False
+                "path": "docs/standards/safe.md",
+                "name": "safe.md",
+                "size": 1000,
+                "download_url": "file:///etc/passwd",
+                "expected": False,
             },
             # Hidden file
             {
-                'path': '.ssh/id_rsa',
-                'name': 'id_rsa',
-                'size': 1000,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/id_rsa',
-                'expected': False
+                "path": ".ssh/id_rsa",
+                "name": "id_rsa",
+                "size": 1000,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/id_rsa",
+                "expected": False,
             },
         ]
 
         for test_file in test_files:
-            file_info = {k: v for k, v in test_file.items() if k != 'expected'}
+            file_info = {k: v for k, v in test_file.items() if k != "expected"}
             result = secure_sync._filter_files([file_info])
 
-            if test_file['expected']:
-                assert len(result) == 1, f"Safe file {test_file['name']} should pass filter"
+            if test_file["expected"]:
+                assert (
+                    len(result) == 1
+                ), f"Safe file {test_file['name']} should pass filter"
             else:
-                assert len(result) == 0, f"Unsafe file {test_file['name']} should be filtered"
+                assert (
+                    len(result) == 0
+                ), f"Unsafe file {test_file['name']} should be filtered"
 
     def test_secure_cache_operations(self, secure_sync):
         """Test secure cache clearing and retrieval."""
         # Create some test metadata with various paths
         secure_sync.file_metadata = {
-            'safe.md': FileMetadata(
-                path='safe.md',
-                sha='abc',
+            "safe.md": FileMetadata(
+                path="safe.md",
+                sha="abc",
                 size=100,
-                last_modified='',
-                local_path=secure_sync.cache_dir / 'safe.md'
+                last_modified="",
+                local_path=secure_sync.cache_dir / "safe.md",
             ),
-            'subdir/file.md': FileMetadata(
-                path='subdir/file.md',
-                sha='def',
+            "subdir/file.md": FileMetadata(
+                path="subdir/file.md",
+                sha="def",
                 size=200,
-                last_modified='',
-                local_path=secure_sync.cache_dir / 'subdir' / 'file.md'
+                last_modified="",
+                local_path=secure_sync.cache_dir / "subdir" / "file.md",
             ),
         }
 
         # Create the actual files
         for meta in secure_sync.file_metadata.values():
             meta.local_path.parent.mkdir(parents=True, exist_ok=True)
-            meta.local_path.write_text('test content')
+            meta.local_path.write_text("test content")
 
         # Test get_cached_standards - should only return valid paths
         cached = secure_sync.get_cached_standards()
         assert len(cached) == 2
 
         # Add a malicious entry that points outside cache
-        secure_sync.file_metadata['evil'] = FileMetadata(
-            path='evil',
-            sha='evil',
+        secure_sync.file_metadata["evil"] = FileMetadata(
+            path="evil",
+            sha="evil",
             size=666,
-            last_modified='',
-            local_path=Path('/tmp/evil')
+            last_modified="",
+            local_path=Path("/tmp/evil"),
         )
 
         # Should still only return 2 valid paths
@@ -331,7 +328,7 @@ class TestEnhancedPathTraversalProtection:
         assert len(cached) == 2
 
         # Test clear_cache - should only delete files within cache
-        with patch('pathlib.Path.unlink') as mock_unlink:
+        with patch("pathlib.Path.unlink") as mock_unlink:
             secure_sync.clear_cache()
 
             # Should have tried to delete only the safe files
@@ -342,13 +339,13 @@ class TestEnhancedPathTraversalProtection:
         """Test secure directory creation."""
         # Test that directory creation validates paths
         file_info = {
-            'path': 'docs/standards/nested/deep/file.md',
-            'sha': 'abc123',
-            'download_url': 'https://raw.githubusercontent.com/test/repo/main/file.md',
-            'size': 100
+            "path": "docs/standards/nested/deep/file.md",
+            "sha": "abc123",
+            "download_url": "https://raw.githubusercontent.com/test/repo/main/file.md",
+            "size": 100,
         }
 
-        content = b'# Test content'
+        content = b"# Test content"
 
         created_dirs = []
         original_mkdir = Path.mkdir
@@ -357,34 +354,41 @@ class TestEnhancedPathTraversalProtection:
             created_dirs.append(str(self))
             return original_mkdir(self, *args, **kwargs)
 
-        with patch.object(secure_sync, '_download_file', return_value=content):
-            with patch.object(Path, 'mkdir', tracking_mkdir):
+        with patch.object(secure_sync, "_download_file", return_value=content):
+            with patch.object(Path, "mkdir", tracking_mkdir):
                 import aiohttp
+
                 async with aiohttp.ClientSession() as session:
-                    result = await secure_sync._sync_file(session, file_info, force=True)
+                    result = await secure_sync._sync_file(
+                        session, file_info, force=True
+                    )
 
         assert result is True
 
         # Verify all created directories are within cache
         cache_dir_str = str(secure_sync.cache_dir.resolve())
         for created_dir in created_dirs:
-            assert cache_dir_str in created_dir, f"Directory {created_dir} created outside cache"
+            assert (
+                cache_dir_str in created_dir
+            ), f"Directory {created_dir} created outside cache"
 
     def test_windows_reserved_names(self, secure_sync):
         """Test handling of Windows reserved filenames."""
         reserved_files = [
-            {'path': 'docs/standards/con.md', 'name': 'con.md', 'size': 100},
-            {'path': 'docs/standards/prn.txt', 'name': 'prn.txt', 'size': 100},
-            {'path': 'docs/standards/aux.yaml', 'name': 'aux.yaml', 'size': 100},
-            {'path': 'docs/standards/nul.json', 'name': 'nul.json', 'size': 100},
-            {'path': 'docs/standards/com1.md', 'name': 'com1.md', 'size': 100},
-            {'path': 'docs/standards/lpt1.md', 'name': 'lpt1.md', 'size': 100},
+            {"path": "docs/standards/con.md", "name": "con.md", "size": 100},
+            {"path": "docs/standards/prn.txt", "name": "prn.txt", "size": 100},
+            {"path": "docs/standards/aux.yaml", "name": "aux.yaml", "size": 100},
+            {"path": "docs/standards/nul.json", "name": "nul.json", "size": 100},
+            {"path": "docs/standards/com1.md", "name": "com1.md", "size": 100},
+            {"path": "docs/standards/lpt1.md", "name": "lpt1.md", "size": 100},
         ]
 
         # These should be filtered out
         for file_info in reserved_files:
             result = secure_sync._filter_files([file_info])
-            assert len(result) == 0, f"Windows reserved name {file_info['name']} should be filtered"
+            assert (
+                len(result) == 0
+            ), f"Windows reserved name {file_info['name']} should be filtered"
 
     def test_symlink_handling(self, secure_sync):
         """Test handling of symbolic links."""
@@ -403,8 +407,7 @@ class TestEnhancedPathTraversalProtection:
 
                 # Test path validation on symlink
                 result = secure_sync._validate_and_resolve_path(
-                    secure_sync.cache_dir,
-                    "sneaky_link/secret.txt"
+                    secure_sync.cache_dir, "sneaky_link/secret.txt"
                 )
 
                 # Should detect that resolved path is outside cache
@@ -447,9 +450,9 @@ class TestEdgeCasesAndErrorHandling:
     async def test_race_condition_protection(self, edge_sync):
         """Test protection against TOCTOU race conditions."""
         file_info = {
-            'path': 'docs/standards/test.md',
-            'sha': 'abc123',
-            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md'
+            "path": "docs/standards/test.md",
+            "sha": "abc123",
+            "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
         }
 
         # Simulate file being replaced with symlink during operation
@@ -459,14 +462,15 @@ class TestEdgeCasesAndErrorHandling:
         def flaky_exists(self):
             nonlocal call_count
             call_count += 1
-            if call_count > 2 and self.name.endswith('.tmp'):
+            if call_count > 2 and self.name.endswith(".tmp"):
                 # Simulate file disappearing
                 return False
             return original_exists(self)
 
-        with patch.object(edge_sync, '_download_file', return_value=b'content'):
-            with patch.object(Path, 'exists', flaky_exists):
+        with patch.object(edge_sync, "_download_file", return_value=b"content"):
+            with patch.object(Path, "exists", flaky_exists):
                 import aiohttp
+
                 async with aiohttp.ClientSession() as session:
                     # Should handle the race condition gracefully
                     result = await edge_sync._sync_file(session, file_info)
@@ -476,15 +480,15 @@ class TestEdgeCasesAndErrorHandling:
     def test_long_path_handling(self, edge_sync):
         """Test handling of extremely long paths."""
         # Create a path that might exceed system limits
-        long_component = 'a' * 255  # Max filename length on most systems
-        long_path = '/'.join([long_component] * 10)  # Very deep nesting
+        long_component = "a" * 255  # Max filename length on most systems
+        long_path = "/".join([long_component] * 10)  # Very deep nesting
 
         result = edge_sync._is_safe_path(long_path)
         # Should handle gracefully without crashing
         assert isinstance(result, bool)
 
         # Path with total length exceeding typical limits
-        very_long_path = 'docs/' + 'x' * 4096
+        very_long_path = "docs/" + "x" * 4096
         result = edge_sync._is_safe_path(very_long_path)
         assert isinstance(result, bool)
 
@@ -516,11 +520,13 @@ class TestEdgeCasesAndErrorHandling:
         for path in special_char_paths:
             result = edge_sync._is_safe_path(path)
             # Only paths starting with $ should be rejected (environment variable expansion)
-            if path.startswith('$') or '/$ ' in path or '\\$' in path:
-                assert result is False, f"Path with environment variable should be rejected: {path}"
+            if path.startswith("$") or "/$ " in path or "\\$" in path:
+                assert (
+                    result is False
+                ), f"Path with environment variable should be rejected: {path}"
             else:
                 # Others should be handled consistently
                 assert isinstance(result, bool), f"Path {path} handling failed"
                 # Most special characters in filenames are allowed
-                if not any(char in path for char in ['\x00', '\n', '\r', '\t']):
+                if not any(char in path for char in ["\x00", "\n", "\r", "\t"]):
                     assert result is True, f"Path {path} should be allowed"

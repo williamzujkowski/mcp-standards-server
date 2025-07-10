@@ -72,7 +72,9 @@ class RuleCondition:
                 if isinstance(self.value, str):
                     compare_value = self.value.lower()
                 elif isinstance(self.value, list):
-                    compare_value = [v.lower() if isinstance(v, str) else v for v in self.value]
+                    compare_value = [
+                        v.lower() if isinstance(v, str) else v for v in self.value
+                    ]
                 else:
                     compare_value = self.value
             else:
@@ -97,21 +99,30 @@ class RuleCondition:
                 return field_value not in compare_value
             elif self.operator == RuleOperator.MATCHES_REGEX:
                 import re
-                pattern = re.compile(compare_value, re.IGNORECASE if not self.case_sensitive else 0)
+
+                pattern = re.compile(
+                    compare_value, re.IGNORECASE if not self.case_sensitive else 0
+                )
                 return bool(pattern.match(str(field_value)))
-            elif self.operator in (RuleOperator.GREATER_THAN, RuleOperator.LESS_THAN,
-                                   RuleOperator.GREATER_EQUAL, RuleOperator.LESS_EQUAL):
+            elif self.operator in (
+                RuleOperator.GREATER_THAN,
+                RuleOperator.LESS_THAN,
+                RuleOperator.GREATER_EQUAL,
+                RuleOperator.LESS_EQUAL,
+            ):
                 return self._compare_numeric(field_value, compare_value)
 
             return False
 
         except Exception as e:
-            logger.warning(f"Error evaluating condition {self.field} {self.operator}: {e}")
+            logger.warning(
+                f"Error evaluating condition {self.field} {self.operator}: {e}"
+            )
             return False
 
     def _get_nested_value(self, context: dict[str, Any], field_path: str) -> Any:
         """Get value from nested dictionary using dot notation."""
-        parts = field_path.split('.')
+        parts = field_path.split(".")
         value = context
 
         for part in parts:
@@ -147,7 +158,7 @@ class RuleGroup:
     """Groups multiple conditions with a logic operator."""
 
     logic: ConditionLogic
-    conditions: list[Union[RuleCondition, 'RuleGroup']] = field(default_factory=list)
+    conditions: list[Union[RuleCondition, "RuleGroup"]] = field(default_factory=list)
 
     def evaluate(self, context: dict[str, Any]) -> bool:
         """Evaluate this rule group against the given context."""
@@ -213,10 +224,10 @@ class RuleEngine:
             raise FileNotFoundError(f"Rules file not found: {rules_path}")
 
         # Load file based on extension
-        if rules_path.suffix.lower() == '.json':
+        if rules_path.suffix.lower() == ".json":
             with open(rules_path) as f:
                 data = json.load(f)
-        elif rules_path.suffix.lower() in ('.yaml', '.yml'):
+        elif rules_path.suffix.lower() in (".yaml", ".yml"):
             with open(rules_path) as f:
                 data = yaml.safe_load(f)
         else:
@@ -224,7 +235,7 @@ class RuleEngine:
 
         # Parse rules
         self.rules = []
-        for rule_data in data.get('rules', []):
+        for rule_data in data.get("rules", []):
             rule = self._parse_rule(rule_data)
             self.add_rule(rule)
 
@@ -235,9 +246,12 @@ class RuleEngine:
         self.rules.append(rule)
         self._rule_index[rule.id] = rule
 
-    def evaluate(self, context: dict[str, Any],
-                 max_priority: int | None = None,
-                 tags: list[str] | None = None) -> dict[str, Any]:
+    def evaluate(
+        self,
+        context: dict[str, Any],
+        max_priority: int | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Evaluate all rules against the given context.
 
@@ -268,21 +282,28 @@ class RuleEngine:
             matches, standards = rule.evaluate(context)
 
             if matches:
-                matched_rules.append({
-                    'rule_id': rule.id,
-                    'rule_name': rule.name,
-                    'priority': rule.priority,
-                    'standards': standards
-                })
+                matched_rules.append(
+                    {
+                        "rule_id": rule.id,
+                        "rule_name": rule.name,
+                        "priority": rule.priority,
+                        "standards": standards,
+                    }
+                )
 
                 # Check for conflicts
                 for standard in standards:
                     if standard in all_standards:
-                        conflicts.append({
-                            'standard': standard,
-                            'rules': [r['rule_id'] for r in matched_rules
-                                     if standard in r['standards']]
-                        })
+                        conflicts.append(
+                            {
+                                "standard": standard,
+                                "rules": [
+                                    r["rule_id"]
+                                    for r in matched_rules
+                                    if standard in r["standards"]
+                                ],
+                            }
+                        )
 
                 all_standards.update(standards)
 
@@ -290,29 +311,33 @@ class RuleEngine:
         resolved_standards = self._resolve_conflicts(matched_rules, conflicts)
 
         return {
-            'context': context,
-            'matched_rules': matched_rules,
-            'all_standards': list(all_standards),
-            'resolved_standards': resolved_standards,
-            'conflicts': conflicts,
-            'statistics': {
-                'total_rules_evaluated': len(sorted_rules),
-                'rules_matched': len(matched_rules),
-                'unique_standards': len(resolved_standards),
-                'conflicts_found': len(conflicts)
-            }
+            "context": context,
+            "matched_rules": matched_rules,
+            "all_standards": list(all_standards),
+            "resolved_standards": resolved_standards,
+            "conflicts": conflicts,
+            "statistics": {
+                "total_rules_evaluated": len(sorted_rules),
+                "rules_matched": len(matched_rules),
+                "unique_standards": len(resolved_standards),
+                "conflicts_found": len(conflicts),
+            },
         }
 
-    def _resolve_conflicts(self, matched_rules: list[dict],
-                          conflicts: list[dict]) -> list[str]:
+    def _resolve_conflicts(
+        self, matched_rules: list[dict], conflicts: list[dict]
+    ) -> list[str]:
         """Resolve conflicts based on rule priority."""
         # Create priority map for standards
         standard_priority = {}
 
         for rule in matched_rules:
-            for standard in rule['standards']:
-                if standard not in standard_priority or rule['priority'] < standard_priority[standard]:
-                    standard_priority[standard] = rule['priority']
+            for standard in rule["standards"]:
+                if (
+                    standard not in standard_priority
+                    or rule["priority"] < standard_priority[standard]
+                ):
+                    standard_priority[standard] = rule["priority"]
 
         # Return unique standards
         return list(standard_priority.keys())
@@ -320,38 +345,40 @@ class RuleEngine:
     def _parse_rule(self, rule_data: dict) -> StandardRule:
         """Parse rule data into StandardRule object."""
         # Parse conditions
-        conditions = self._parse_conditions(rule_data['conditions'])
+        conditions = self._parse_conditions(rule_data["conditions"])
 
         return StandardRule(
-            id=rule_data['id'],
-            name=rule_data['name'],
-            description=rule_data.get('description', ''),
-            priority=rule_data.get('priority', 100),
+            id=rule_data["id"],
+            name=rule_data["name"],
+            description=rule_data.get("description", ""),
+            priority=rule_data.get("priority", 100),
             conditions=conditions,
-            standards=rule_data['standards'],
-            tags=rule_data.get('tags', []),
-            metadata=rule_data.get('metadata', {})
+            standards=rule_data["standards"],
+            tags=rule_data.get("tags", []),
+            metadata=rule_data.get("metadata", {}),
         )
 
-    def _parse_conditions(self, conditions_data: dict | list) -> RuleCondition | RuleGroup:
+    def _parse_conditions(
+        self, conditions_data: dict | list
+    ) -> RuleCondition | RuleGroup:
         """Parse conditions data into condition objects."""
         if isinstance(conditions_data, dict):
             # Check if it's a group
-            if 'logic' in conditions_data:
-                logic = ConditionLogic(conditions_data['logic'])
+            if "logic" in conditions_data:
+                logic = ConditionLogic(conditions_data["logic"])
                 conditions = []
 
-                for cond_data in conditions_data.get('conditions', []):
+                for cond_data in conditions_data.get("conditions", []):
                     conditions.append(self._parse_conditions(cond_data))
 
                 return RuleGroup(logic=logic, conditions=conditions)
             else:
                 # Single condition
                 return RuleCondition(
-                    field=conditions_data['field'],
-                    operator=RuleOperator(conditions_data['operator']),
-                    value=conditions_data.get('value'),
-                    case_sensitive=conditions_data.get('case_sensitive', True)
+                    field=conditions_data["field"],
+                    operator=RuleOperator(conditions_data["operator"]),
+                    value=conditions_data.get("value"),
+                    case_sensitive=conditions_data.get("case_sensitive", True),
                 )
         elif isinstance(conditions_data, list):
             # List implies AND logic
@@ -367,11 +394,7 @@ class RuleEngine:
         Returns:
             Dictionary representing the decision tree structure
         """
-        tree = {
-            'type': 'root',
-            'total_rules': len(self.rules),
-            'branches': []
-        }
+        tree = {"type": "root", "total_rules": len(self.rules), "branches": []}
 
         # Group rules by common patterns
         grouped = {}
@@ -387,23 +410,24 @@ class RuleEngine:
         # Build tree branches
         for fields, rules in grouped.items():
             branch = {
-                'decision_fields': list(fields),
-                'rules': [
+                "decision_fields": list(fields),
+                "rules": [
                     {
-                        'id': rule.id,
-                        'name': rule.name,
-                        'priority': rule.priority,
-                        'standards': rule.standards
+                        "id": rule.id,
+                        "name": rule.name,
+                        "priority": rule.priority,
+                        "standards": rule.standards,
                     }
                     for rule in sorted(rules, key=lambda r: r.priority)
-                ]
+                ],
             }
-            tree['branches'].append(branch)
+            tree["branches"].append(branch)
 
         return tree
 
-    def _extract_key_fields(self, conditions: RuleCondition | RuleGroup,
-                           fields: set[str] | None = None) -> set[str]:
+    def _extract_key_fields(
+        self, conditions: RuleCondition | RuleGroup, fields: set[str] | None = None
+    ) -> set[str]:
         """Extract key fields from conditions recursively."""
         if fields is None:
             fields = set()
@@ -416,17 +440,15 @@ class RuleEngine:
 
         return fields
 
-    def export_rules(self, output_path: Path, format: str = 'json') -> None:
+    def export_rules(self, output_path: Path, format: str = "json") -> None:
         """Export rules to a file."""
-        rules_data = {
-            'rules': [self._rule_to_dict(rule) for rule in self.rules]
-        }
+        rules_data = {"rules": [self._rule_to_dict(rule) for rule in self.rules]}
 
-        if format == 'json':
-            with open(output_path, 'w') as f:
+        if format == "json":
+            with open(output_path, "w") as f:
                 json.dump(rules_data, f, indent=2)
-        elif format in ('yaml', 'yml'):
-            with open(output_path, 'w') as f:
+        elif format in ("yaml", "yml"):
+            with open(output_path, "w") as f:
                 yaml.dump(rules_data, f, default_flow_style=False)
         else:
             raise ValueError(f"Unsupported format: {format}")
@@ -434,29 +456,31 @@ class RuleEngine:
     def _rule_to_dict(self, rule: StandardRule) -> dict:
         """Convert rule to dictionary format."""
         return {
-            'id': rule.id,
-            'name': rule.name,
-            'description': rule.description,
-            'priority': rule.priority,
-            'conditions': self._conditions_to_dict(rule.conditions),
-            'standards': rule.standards,
-            'tags': rule.tags,
-            'metadata': rule.metadata
+            "id": rule.id,
+            "name": rule.name,
+            "description": rule.description,
+            "priority": rule.priority,
+            "conditions": self._conditions_to_dict(rule.conditions),
+            "standards": rule.standards,
+            "tags": rule.tags,
+            "metadata": rule.metadata,
         }
 
     def _conditions_to_dict(self, conditions: RuleCondition | RuleGroup) -> dict:
         """Convert conditions to dictionary format."""
         if isinstance(conditions, RuleCondition):
             return {
-                'field': conditions.field,
-                'operator': conditions.operator.value,
-                'value': conditions.value,
-                'case_sensitive': conditions.case_sensitive
+                "field": conditions.field,
+                "operator": conditions.operator.value,
+                "value": conditions.value,
+                "case_sensitive": conditions.case_sensitive,
             }
         elif isinstance(conditions, RuleGroup):
             return {
-                'logic': conditions.logic.value,
-                'conditions': [self._conditions_to_dict(cond) for cond in conditions.conditions]
+                "logic": conditions.logic.value,
+                "conditions": [
+                    self._conditions_to_dict(cond) for cond in conditions.conditions
+                ],
             }
 
         return {}

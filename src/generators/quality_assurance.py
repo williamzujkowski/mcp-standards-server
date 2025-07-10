@@ -23,10 +23,12 @@ class QualityAssuranceSystem:
             "clarity",
             "compliance_coverage",
             "implementation_guidance",
-            "maintainability"
+            "maintainability",
         ]
 
-    def assess_standard(self, content: str, metadata: StandardMetadata) -> dict[str, Any]:
+    def assess_standard(
+        self, content: str, metadata: StandardMetadata
+    ) -> dict[str, Any]:
         """
         Assess the quality of a standard document.
 
@@ -41,7 +43,7 @@ class QualityAssuranceSystem:
             "overall_score": 0,
             "scores": {},
             "recommendations": [],
-            "assessment_date": datetime.now().isoformat()
+            "assessment_date": datetime.now().isoformat(),
         }
 
         # Run all quality checks
@@ -59,7 +61,7 @@ class QualityAssuranceSystem:
             "clarity": clarity_score,
             "compliance_coverage": compliance_score,
             "implementation_guidance": implementation_score,
-            "maintainability": maintainability_score
+            "maintainability": maintainability_score,
         }
 
         # Calculate overall score (weighted average)
@@ -69,7 +71,7 @@ class QualityAssuranceSystem:
             "clarity": 0.20,
             "compliance_coverage": 0.15,
             "implementation_guidance": 0.15,
-            "maintainability": 0.10
+            "maintainability": 0.10,
         }
 
         overall_score = sum(
@@ -90,8 +92,12 @@ class QualityAssuranceSystem:
 
         # Required sections check
         required_sections = [
-            "Purpose", "Scope", "Implementation", "Compliance",
-            "References", "Appendix"
+            "Purpose",
+            "Scope",
+            "Implementation",
+            "Compliance",
+            "References",
+            "Appendix",
         ]
 
         sections_present = 0
@@ -109,8 +115,11 @@ class QualityAssuranceSystem:
 
         # Metadata completeness
         metadata_fields = [
-            metadata.description, metadata.author, metadata.tags,
-            metadata.nist_controls, metadata.compliance_frameworks
+            metadata.description,
+            metadata.author,
+            metadata.tags,
+            metadata.nist_controls,
+            metadata.compliance_frameworks,
         ]
 
         filled_fields = sum(1 for field in metadata_fields if field)
@@ -132,17 +141,19 @@ class QualityAssuranceSystem:
         max_score = 100
 
         # Heading consistency
-        headings = re.findall(r'^(#+)\s+(.+)$', content, re.MULTILINE)
+        headings = re.findall(r"^(#+)\s+(.+)$", content, re.MULTILINE)
         if headings:
             # Check heading level consistency
             level_changes = []
             for i in range(1, len(headings)):
-                prev_level = len(headings[i-1][0])
+                prev_level = len(headings[i - 1][0])
                 curr_level = len(headings[i][0])
                 level_changes.append(abs(curr_level - prev_level))
 
             if level_changes:
-                consistency_ratio = sum(1 for change in level_changes if change <= 1) / len(level_changes)
+                consistency_ratio = sum(
+                    1 for change in level_changes if change <= 1
+                ) / len(level_changes)
                 score += consistency_ratio * 25
 
         # Terminology consistency
@@ -156,13 +167,13 @@ class QualityAssuranceSystem:
             score += (consistent_terms / len(most_common)) * 25
 
         # Formatting consistency
-        code_blocks = re.findall(r'```(\w+)?', content)
+        code_blocks = re.findall(r"```(\w+)?", content)
         if code_blocks:
             language_consistency = len(set(code_blocks)) / len(code_blocks)
             score += (1 - language_consistency) * 25
 
         # Reference consistency
-        references = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
+        references = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", content)
         if references:
             # Check for consistent reference formatting
             score += 25
@@ -175,8 +186,10 @@ class QualityAssuranceSystem:
         max_score = 100
 
         # Sentence length analysis
-        sentences = re.split(r'[.!?]+', content)
-        sentence_lengths = [len(sentence.split()) for sentence in sentences if sentence.strip()]
+        sentences = re.split(r"[.!?]+", content)
+        sentence_lengths = [
+            len(sentence.split()) for sentence in sentences if sentence.strip()
+        ]
 
         if sentence_lengths:
             avg_length = sum(sentence_lengths) / len(sentence_lengths)
@@ -189,7 +202,7 @@ class QualityAssuranceSystem:
                 score += 10
 
         # Paragraph structure
-        paragraphs = content.split('\n\n')
+        paragraphs = content.split("\n\n")
         paragraph_lengths = [len(p.split()) for p in paragraphs if p.strip()]
 
         if paragraph_lengths:
@@ -203,8 +216,8 @@ class QualityAssuranceSystem:
                 score += 10
 
         # Use of active voice (simple heuristic)
-        passive_indicators = ['is', 'are', 'was', 'were', 'been', 'being']
-        active_indicators = ['implement', 'configure', 'deploy', 'execute']
+        passive_indicators = ["is", "are", "was", "were", "been", "being"]
+        active_indicators = ["implement", "configure", "deploy", "execute"]
 
         passive_count = sum(content.lower().count(word) for word in passive_indicators)
         active_count = sum(content.lower().count(word) for word in active_indicators)
@@ -215,33 +228,49 @@ class QualityAssuranceSystem:
             score += 15
 
         # Clarity keywords
-        clarity_keywords = ['however', 'therefore', 'furthermore', 'specifically', 'for example']
-        clarity_count = sum(content.lower().count(keyword) for keyword in clarity_keywords)
+        clarity_keywords = [
+            "however",
+            "therefore",
+            "furthermore",
+            "specifically",
+            "for example",
+        ]
+        clarity_count = sum(
+            content.lower().count(keyword) for keyword in clarity_keywords
+        )
 
         if clarity_count > 0:
             score += 25
 
         return min(score, max_score)
 
-    def _assess_compliance_coverage(self, content: str, metadata: StandardMetadata) -> float:
+    def _assess_compliance_coverage(
+        self, content: str, metadata: StandardMetadata
+    ) -> float:
         """Assess compliance framework coverage."""
         score = 0
         max_score = 100
 
         # NIST controls coverage
         if metadata.nist_controls:
-            controls_mentioned = sum(1 for control in metadata.nist_controls if control in content)
+            controls_mentioned = sum(
+                1 for control in metadata.nist_controls if control in content
+            )
             coverage_ratio = controls_mentioned / len(metadata.nist_controls)
             score += coverage_ratio * 40
 
         # Compliance frameworks coverage
         if metadata.compliance_frameworks:
-            frameworks_mentioned = sum(1 for framework in metadata.compliance_frameworks if framework in content)
+            frameworks_mentioned = sum(
+                1
+                for framework in metadata.compliance_frameworks
+                if framework in content
+            )
             coverage_ratio = frameworks_mentioned / len(metadata.compliance_frameworks)
             score += coverage_ratio * 30
 
         # Risk assessment
-        risk_keywords = ['risk', 'threat', 'vulnerability', 'mitigation', 'assessment']
+        risk_keywords = ["risk", "threat", "vulnerability", "mitigation", "assessment"]
         risk_mentions = sum(content.lower().count(keyword) for keyword in risk_keywords)
 
         if risk_mentions > 5:
@@ -251,24 +280,28 @@ class QualityAssuranceSystem:
 
         return min(score, max_score)
 
-    def _assess_implementation_guidance(self, content: str, metadata: StandardMetadata) -> float:
+    def _assess_implementation_guidance(
+        self, content: str, metadata: StandardMetadata
+    ) -> float:
         """Assess implementation guidance quality."""
         score = 0
         max_score = 100
 
         # Code examples
-        code_blocks = re.findall(r'```[^`]+```', content, re.DOTALL)
+        code_blocks = re.findall(r"```[^`]+```", content, re.DOTALL)
         if code_blocks:
             score += min(len(code_blocks) * 10, 30)
 
         # Step-by-step instructions
-        numbered_lists = re.findall(r'^\d+\.', content, re.MULTILINE)
+        numbered_lists = re.findall(r"^\d+\.", content, re.MULTILINE)
         if numbered_lists:
             score += min(len(numbered_lists) * 2, 20)
 
         # Configuration examples
-        config_keywords = ['configuration', 'config', 'setup', 'install', 'deploy']
-        config_mentions = sum(content.lower().count(keyword) for keyword in config_keywords)
+        config_keywords = ["configuration", "config", "setup", "install", "deploy"]
+        config_mentions = sum(
+            content.lower().count(keyword) for keyword in config_keywords
+        )
 
         if config_mentions > 3:
             score += 20
@@ -277,8 +310,10 @@ class QualityAssuranceSystem:
 
         # Tools and technologies
         if metadata.type == "technical":
-            tech_keywords = ['tool', 'framework', 'library', 'platform', 'technology']
-            tech_mentions = sum(content.lower().count(keyword) for keyword in tech_keywords)
+            tech_keywords = ["tool", "framework", "library", "platform", "technology"]
+            tech_mentions = sum(
+                content.lower().count(keyword) for keyword in tech_keywords
+            )
 
             if tech_mentions > 5:
                 score += 30
@@ -287,7 +322,9 @@ class QualityAssuranceSystem:
 
         return min(score, max_score)
 
-    def _assess_maintainability(self, content: str, metadata: StandardMetadata) -> float:
+    def _assess_maintainability(
+        self, content: str, metadata: StandardMetadata
+    ) -> float:
         """Assess document maintainability."""
         score = 0
         max_score = 100
@@ -301,7 +338,7 @@ class QualityAssuranceSystem:
             score += 20
 
         # Update history
-        if 'changelog' in content.lower() or 'history' in content.lower():
+        if "changelog" in content.lower() or "history" in content.lower():
             score += 20
 
         # Dependencies documentation
@@ -309,7 +346,7 @@ class QualityAssuranceSystem:
             score += 15
 
         # Review process
-        if metadata.review_status != 'draft':
+        if metadata.review_status != "draft":
             score += 20
 
         return min(score, max_score)
@@ -320,15 +357,15 @@ class QualityAssuranceSystem:
         terms = []
 
         # Find capitalized words (likely technical terms)
-        capitalized = re.findall(r'\b[A-Z][a-z]+\b', content)
+        capitalized = re.findall(r"\b[A-Z][a-z]+\b", content)
         terms.extend(capitalized)
 
         # Find acronyms
-        acronyms = re.findall(r'\b[A-Z]{2,}\b', content)
+        acronyms = re.findall(r"\b[A-Z]{2,}\b", content)
         terms.extend(acronyms)
 
         # Find code-like terms
-        code_terms = re.findall(r'`([^`]+)`', content)
+        code_terms = re.findall(r"`([^`]+)`", content)
         terms.extend(code_terms)
 
         return terms
@@ -348,51 +385,63 @@ class QualityAssuranceSystem:
         recommendations = []
 
         if metric == "completeness":
-            recommendations.extend([
-                "Add missing required sections (Purpose, Scope, Implementation, Compliance)",
-                "Include more detailed content and examples",
-                "Add code examples and configuration samples",
-                "Include diagrams or visual aids"
-            ])
+            recommendations.extend(
+                [
+                    "Add missing required sections (Purpose, Scope, Implementation, Compliance)",
+                    "Include more detailed content and examples",
+                    "Add code examples and configuration samples",
+                    "Include diagrams or visual aids",
+                ]
+            )
 
         elif metric == "consistency":
-            recommendations.extend([
-                "Ensure consistent heading hierarchy",
-                "Use consistent terminology throughout",
-                "Standardize code block formatting",
-                "Maintain consistent reference format"
-            ])
+            recommendations.extend(
+                [
+                    "Ensure consistent heading hierarchy",
+                    "Use consistent terminology throughout",
+                    "Standardize code block formatting",
+                    "Maintain consistent reference format",
+                ]
+            )
 
         elif metric == "clarity":
-            recommendations.extend([
-                "Simplify complex sentences",
-                "Use active voice where possible",
-                "Add transition words and phrases",
-                "Break up long paragraphs"
-            ])
+            recommendations.extend(
+                [
+                    "Simplify complex sentences",
+                    "Use active voice where possible",
+                    "Add transition words and phrases",
+                    "Break up long paragraphs",
+                ]
+            )
 
         elif metric == "compliance_coverage":
-            recommendations.extend([
-                "Reference all NIST controls mentioned in metadata",
-                "Include compliance framework mappings",
-                "Add risk assessment content",
-                "Include threat modeling information"
-            ])
+            recommendations.extend(
+                [
+                    "Reference all NIST controls mentioned in metadata",
+                    "Include compliance framework mappings",
+                    "Add risk assessment content",
+                    "Include threat modeling information",
+                ]
+            )
 
         elif metric == "implementation_guidance":
-            recommendations.extend([
-                "Add step-by-step implementation instructions",
-                "Include more code examples",
-                "Add configuration templates",
-                "Reference specific tools and technologies"
-            ])
+            recommendations.extend(
+                [
+                    "Add step-by-step implementation instructions",
+                    "Include more code examples",
+                    "Add configuration templates",
+                    "Reference specific tools and technologies",
+                ]
+            )
 
         elif metric == "maintainability":
-            recommendations.extend([
-                "Add version history and changelog",
-                "Include author and reviewer information",
-                "Document dependencies and prerequisites",
-                "Establish review and update processes"
-            ])
+            recommendations.extend(
+                [
+                    "Add version history and changelog",
+                    "Include author and reviewer information",
+                    "Document dependencies and prerequisites",
+                    "Establish review and update processes",
+                ]
+            )
 
         return recommendations

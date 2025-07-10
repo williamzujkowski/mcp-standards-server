@@ -37,9 +37,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Download required NLTK data
 try:
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
-    nltk.download('wordnet', quiet=True)
+    nltk.download("punkt", quiet=True)
+    nltk.download("stopwords", quiet=True)
+    nltk.download("wordnet", quiet=True)
 except Exception:
     pass
 
@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SearchResult:
     """Represents a search result with metadata."""
+
     id: str
     content: str
     score: float
@@ -60,6 +61,7 @@ class SearchResult:
 @dataclass
 class SearchQuery:
     """Represents a parsed search query."""
+
     original: str
     preprocessed: str
     tokens: list[str]
@@ -72,6 +74,7 @@ class SearchQuery:
 @dataclass
 class SearchAnalytics:
     """Tracks search analytics and metrics."""
+
     query_count: int = 0
     total_latency: float = 0.0
     cache_hits: int = 0
@@ -87,25 +90,25 @@ class QueryPreprocessor:
 
     def __init__(self):
         self.stemmer = PorterStemmer()
-        self.stopwords = set(nltk.corpus.stopwords.words('english'))
+        self.stopwords = set(nltk.corpus.stopwords.words("english"))
 
         # Domain-specific synonyms for standards/MCP context
         self.synonyms = {
-            'api': ['interface', 'endpoint', 'service'],
-            'test': ['testing', 'validation', 'verification', 'check'],
-            'security': ['secure', 'safety', 'protection', 'auth', 'authentication'],
-            'standard': ['convention', 'guideline', 'best practice', 'rule'],
-            'web': ['website', 'webapp', 'frontend', 'browser'],
-            'react': ['reactjs', 'react.js'],
-            'vue': ['vuejs', 'vue.js'],
-            'angular': ['angularjs', 'angular.js'],
-            'mcp': ['model context protocol', 'context protocol'],
-            'llm': ['language model', 'ai model', 'gpt', 'claude'],
-            'performance': ['speed', 'optimization', 'efficiency', 'fast'],
-            'accessibility': ['a11y', 'wcag', 'aria'],
-            'database': ['db', 'data store', 'storage'],
-            'deploy': ['deployment', 'release', 'publish'],
-            'config': ['configuration', 'settings', 'setup'],
+            "api": ["interface", "endpoint", "service"],
+            "test": ["testing", "validation", "verification", "check"],
+            "security": ["secure", "safety", "protection", "auth", "authentication"],
+            "standard": ["convention", "guideline", "best practice", "rule"],
+            "web": ["website", "webapp", "frontend", "browser"],
+            "react": ["reactjs", "react.js"],
+            "vue": ["vuejs", "vue.js"],
+            "angular": ["angularjs", "angular.js"],
+            "mcp": ["model context protocol", "context protocol"],
+            "llm": ["language model", "ai model", "gpt", "claude"],
+            "performance": ["speed", "optimization", "efficiency", "fast"],
+            "accessibility": ["a11y", "wcag", "aria"],
+            "database": ["db", "data store", "storage"],
+            "deploy": ["deployment", "release", "publish"],
+            "config": ["configuration", "settings", "setup"],
         }
 
         # Build reverse synonym mapping
@@ -139,41 +142,37 @@ class QueryPreprocessor:
             tokens=tokens,
             stems=stems,
             expanded_terms=expanded_terms,
-            boolean_operators=boolean_ops
+            boolean_operators=boolean_ops,
         )
 
         return search_query
 
     def _extract_boolean_operators(self, query: str) -> dict[str, list[str]]:
         """Extract AND, OR, NOT operators from query."""
-        operators = {
-            'AND': [],
-            'OR': [],
-            'NOT': []
-        }
+        operators = {"AND": [], "OR": [], "NOT": []}
 
         # Match patterns like "term1 AND term2"
-        and_pattern = r'(\w+)\s+AND\s+(\w+)'
-        or_pattern = r'(\w+)\s+OR\s+(\w+)'
-        not_pattern = r'NOT\s+(\w+)'
+        and_pattern = r"(\w+)\s+AND\s+(\w+)"
+        or_pattern = r"(\w+)\s+OR\s+(\w+)"
+        not_pattern = r"NOT\s+(\w+)"
 
         for match in re.finditer(and_pattern, query):
-            operators['AND'].append((match.group(1).lower(), match.group(2).lower()))
+            operators["AND"].append((match.group(1).lower(), match.group(2).lower()))
 
         for match in re.finditer(or_pattern, query):
-            operators['OR'].append((match.group(1).lower(), match.group(2).lower()))
+            operators["OR"].append((match.group(1).lower(), match.group(2).lower()))
 
         for match in re.finditer(not_pattern, query):
-            operators['NOT'].append(match.group(1).lower())
+            operators["NOT"].append(match.group(1).lower())
 
         return operators
 
     def _remove_boolean_operators(self, query: str) -> str:
         """Remove boolean operators from query."""
         # Remove boolean operators but keep the terms
-        query = re.sub(r'\s+AND\s+', ' ', query)
-        query = re.sub(r'\s+OR\s+', ' ', query)
-        query = re.sub(r'\s+NOT\s+', ' ', query)
+        query = re.sub(r"\s+AND\s+", " ", query)
+        query = re.sub(r"\s+OR\s+", " ", query)
+        query = re.sub(r"\s+NOT\s+", " ", query)
         return query
 
     def _expand_with_synonyms(self, tokens: list[str]) -> list[str]:
@@ -198,9 +197,11 @@ class QueryPreprocessor:
 class EmbeddingCache:
     """Manages embedding generation with caching."""
 
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', cache_dir: Path | None = None):
+    def __init__(
+        self, model_name: str = "all-MiniLM-L6-v2", cache_dir: Path | None = None
+    ):
         self.model = SentenceTransformer(model_name)
-        self.cache_dir = cache_dir or Path.home() / '.mcp_search_cache'
+        self.cache_dir = cache_dir or Path.home() / ".mcp_search_cache"
         self.cache_dir.mkdir(exist_ok=True)
 
         # In-memory cache with TTL
@@ -210,7 +211,9 @@ class EmbeddingCache:
         # Redis cache for distributed systems (optional)
         self.redis_client = None
         try:
-            self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
+            self.redis_client = redis.Redis(
+                host="localhost", port=6379, decode_responses=False
+            )
             self.redis_client.ping()
         except Exception:
             logger.info("Redis not available, using file-based cache only")
@@ -218,21 +221,24 @@ class EmbeddingCache:
     def _serialize_embedding(self, embedding: np.ndarray) -> bytes:
         """Serialize numpy array to bytes safely."""
         # Convert to base64-encoded string for safe storage
-        return base64.b64encode(embedding.tobytes()).decode('ascii') + f'|{embedding.dtype}|{"x".join(map(str, embedding.shape))}'
+        return (
+            base64.b64encode(embedding.tobytes()).decode("ascii")
+            + f'|{embedding.dtype}|{"x".join(map(str, embedding.shape))}'
+        )
 
     def _deserialize_embedding(self, data: str | bytes) -> np.ndarray:
         """Deserialize bytes to numpy array safely."""
         if isinstance(data, bytes):
-            data = data.decode('ascii')
+            data = data.decode("ascii")
 
         # Parse the serialized format
-        parts = data.split('|')
+        parts = data.split("|")
         if len(parts) != 3:
             raise ValueError("Invalid embedding format")
 
         array_bytes = base64.b64decode(parts[0])
         dtype = np.dtype(parts[1])
-        shape = tuple(map(int, parts[2].split('x')))
+        shape = tuple(map(int, parts[2].split("x")))
 
         # Reconstruct the array
         return np.frombuffer(array_bytes, dtype=dtype).reshape(shape)
@@ -275,7 +281,9 @@ class EmbeddingCache:
 
         return embedding
 
-    def get_embeddings_batch(self, texts: list[str], use_cache: bool = True) -> np.ndarray:
+    def get_embeddings_batch(
+        self, texts: list[str], use_cache: bool = True
+    ) -> np.ndarray:
         """Get embeddings for multiple texts with batching."""
         if not use_cache:
             return self.model.encode(texts, convert_to_numpy=True)
@@ -301,7 +309,9 @@ class EmbeddingCache:
             new_embeddings = self.model.encode(uncached_texts, convert_to_numpy=True)
 
             # Cache and assign results
-            for idx, text, emb in zip(uncached_indices, uncached_texts, new_embeddings, strict=False):
+            for idx, text, emb in zip(
+                uncached_indices, uncached_texts, new_embeddings, strict=False
+            ):
                 cache_key = hashlib.sha256(text.encode()).hexdigest()
                 self._cache_embedding(cache_key, emb)
                 embeddings[idx] = emb
@@ -346,7 +356,7 @@ class EmbeddingCache:
                 self.redis_client.setex(
                     f"emb:{cache_key}",
                     int(self.cache_ttl.total_seconds()),
-                    self._serialize_embedding(embedding)
+                    self._serialize_embedding(embedding),
                 )
             except Exception:
                 pass
@@ -389,17 +399,16 @@ class FuzzyMatcher:
         """Add terms to the known terms set."""
         self.known_terms.update(terms)
 
-    def find_matches(self, query: str, candidates: list[str] = None) -> list[tuple[str, int]]:
+    def find_matches(
+        self, query: str, candidates: list[str] = None
+    ) -> list[tuple[str, int]]:
         """Find fuzzy matches for a query."""
         if candidates is None:
             candidates = list(self.known_terms)
 
         # Use token set ratio for better matching of partial terms
         matches = process.extract(
-            query,
-            candidates,
-            scorer=fuzz.token_set_ratio,
-            limit=5
+            query, candidates, scorer=fuzz.token_set_ratio, limit=5
         )
 
         # Filter by threshold
@@ -420,17 +429,19 @@ class FuzzyMatcher:
             else:
                 corrected_tokens.append(token)
 
-        corrected_query = ' '.join(corrected_tokens)
+        corrected_query = " ".join(corrected_tokens)
         return corrected_query, corrections
 
 
 class SemanticSearch:
     """Main semantic search engine with all enhanced features."""
 
-    def __init__(self,
-                 embedding_model: str = 'all-MiniLM-L6-v2',
-                 enable_analytics: bool = True,
-                 cache_dir: Path | None = None):
+    def __init__(
+        self,
+        embedding_model: str = "all-MiniLM-L6-v2",
+        enable_analytics: bool = True,
+        cache_dir: Path | None = None,
+    ):
         self.preprocessor = QueryPreprocessor()
         self.embedding_cache = EmbeddingCache(embedding_model, cache_dir)
         self.fuzzy_matcher = FuzzyMatcher()
@@ -448,7 +459,9 @@ class SemanticSearch:
         # Thread pool for parallel processing
         self.executor = ThreadPoolExecutor(max_workers=4)
 
-    def index_document(self, doc_id: str, content: str, metadata: dict[str, Any] = None):
+    def index_document(
+        self, doc_id: str, content: str, metadata: dict[str, Any] = None
+    ):
         """Index a document for searching."""
         # Store document
         self.documents[doc_id] = content
@@ -470,7 +483,9 @@ class SemanticSearch:
         metadatas = [doc[2] if len(doc) > 2 else {} for doc in documents]
 
         # Store documents
-        for doc_id, content, metadata in zip(doc_ids, contents, metadatas, strict=False):
+        for doc_id, content, metadata in zip(
+            doc_ids, contents, metadatas, strict=False
+        ):
             self.documents[doc_id] = content
             self.document_metadata[doc_id] = metadata
 
@@ -488,13 +503,15 @@ class SemanticSearch:
             all_tokens.extend(tokens)
         self.fuzzy_matcher.add_known_terms(list(set(all_tokens)))
 
-    def search(self,
-               query: str,
-               top_k: int = 10,
-               filters: dict[str, Any] | None = None,
-               rerank: bool = True,
-               use_fuzzy: bool = True,
-               use_cache: bool = True) -> list[SearchResult]:
+    def search(
+        self,
+        query: str,
+        top_k: int = 10,
+        filters: dict[str, Any] | None = None,
+        rerank: bool = True,
+        use_fuzzy: bool = True,
+        use_cache: bool = True,
+    ) -> list[SearchResult]:
         """Perform semantic search with all enhancements."""
         start_time = time.time()
 
@@ -526,22 +543,22 @@ class SemanticSearch:
 
             # Generate query embedding - use original query for primary embedding
             # Only include top relevant synonyms to avoid dilution
-            primary_query = ' '.join(search_query.tokens)
+            primary_query = " ".join(search_query.tokens)
             query_embedding = self.embedding_cache.get_embedding(primary_query)
 
             # Generate secondary embedding with limited expansion (top 3 synonyms only)
-            limited_expansion = search_query.expanded_terms[:3] if search_query.expanded_terms else []
+            limited_expansion = (
+                search_query.expanded_terms[:3] if search_query.expanded_terms else []
+            )
             if limited_expansion:
-                expanded_query = ' '.join(search_query.tokens + limited_expansion)
+                expanded_query = " ".join(search_query.tokens + limited_expansion)
                 expanded_embedding = self.embedding_cache.get_embedding(expanded_query)
                 # Blend embeddings with more weight on original
                 query_embedding = 0.8 * query_embedding + 0.2 * expanded_embedding
 
             # Calculate similarities with hybrid approach
             similarities = self._calculate_similarities(
-                query_embedding,
-                search_query,
-                filters
+                query_embedding, search_query, filters
             )
 
             # Get top results - get more than needed to account for filtering
@@ -558,8 +575,14 @@ class SemanticSearch:
                 score = float(similarities[idx])
 
                 # Only apply score drop detection for focused queries (not general searches)
-                if prev_score is not None and len(results) >= 3 and len(search_query.tokens) >= 4:
-                    score_drop = (prev_score - score) / prev_score if prev_score > 0 else 1.0
+                if (
+                    prev_score is not None
+                    and len(results) >= 3
+                    and len(search_query.tokens) >= 4
+                ):
+                    score_drop = (
+                        (prev_score - score) / prev_score if prev_score > 0 else 1.0
+                    )
                     # If score drops by more than 50%, consider stopping
                     if score_drop > 0.5 and score < 0.3:
                         break
@@ -569,7 +592,7 @@ class SemanticSearch:
                         id=doc_id,
                         content=self.documents[doc_id],
                         score=score,
-                        metadata=self.document_metadata.get(doc_id, {})
+                        metadata=self.document_metadata.get(doc_id, {}),
                     )
                     results.append(result)
                     prev_score = score
@@ -585,8 +608,7 @@ class SemanticSearch:
             # Generate highlights
             for result in results:
                 result.highlights = self._generate_highlights(
-                    result.content,
-                    search_query.tokens
+                    result.content, search_query.tokens
                 )
 
             # Cache results
@@ -600,9 +622,10 @@ class SemanticSearch:
                 self.analytics.total_latency += elapsed
                 self.analytics.popular_queries[query] += 1
                 self.analytics.average_results_per_query = (
-                    (self.analytics.average_results_per_query * (self.analytics.query_count - 1) + len(results))
-                    / self.analytics.query_count
-                )
+                    self.analytics.average_results_per_query
+                    * (self.analytics.query_count - 1)
+                    + len(results)
+                ) / self.analytics.query_count
 
             return results
 
@@ -612,14 +635,18 @@ class SemanticSearch:
                 self.analytics.failed_queries.append((query, str(e)))
             return []
 
-    def _calculate_similarities(self,
-                              query_embedding: np.ndarray,
-                              search_query: SearchQuery,
-                              filters: dict[str, Any] | None) -> np.ndarray:
+    def _calculate_similarities(
+        self,
+        query_embedding: np.ndarray,
+        search_query: SearchQuery,
+        filters: dict[str, Any] | None,
+    ) -> np.ndarray:
         """Calculate similarities with boolean operators and filters."""
         # Get all document embeddings as matrix
         doc_ids = list(self.documents.keys())
-        doc_embeddings = np.vstack([self.document_embeddings[doc_id] for doc_id in doc_ids])
+        doc_embeddings = np.vstack(
+            [self.document_embeddings[doc_id] for doc_id in doc_ids]
+        )
 
         # Calculate semantic similarities
         semantic_similarities = cosine_similarity([query_embedding], doc_embeddings)[0]
@@ -665,7 +692,7 @@ class SemanticSearch:
                 # Check if all tokens appear within a window
                 words = content_lower.split()
                 for window_start in range(len(words) - len(search_query.tokens) + 1):
-                    window = words[window_start:window_start + 20]  # 20-word window
+                    window = words[window_start : window_start + 20]  # 20-word window
                     if all(token in window for token in search_query.tokens):
                         matches += 0.5  # Proximity bonus
                         break
@@ -674,13 +701,23 @@ class SemanticSearch:
             if search_query.tokens:
                 keyword_scores[i] = min(matches / len(search_query.tokens), 1.0)
 
-
         # Identify critical terms (usually nouns or key concepts)
         # For compound queries like "security best practices", "security" is critical
         critical_terms = []
         if len(search_query.tokens) >= 2:
             # Consider first term as critical if it's not a common word
-            common_words = {'best', 'good', 'new', 'top', 'all', 'how', 'what', 'when', 'where', 'why'}
+            common_words = {
+                "best",
+                "good",
+                "new",
+                "top",
+                "all",
+                "how",
+                "what",
+                "when",
+                "where",
+                "why",
+            }
             for token in search_query.tokens:
                 if token not in common_words and len(token) > 3:
                     critical_terms.append(token)
@@ -716,35 +753,43 @@ class SemanticSearch:
         for i in range(len(doc_ids)):
             # Apply critical term penalty only for certain types of queries
             # For single-word queries or very short queries, don't apply critical term filtering
-            apply_critical_filter = len(search_query.tokens) >= 3 and len(critical_terms) > 0
+            apply_critical_filter = (
+                len(search_query.tokens) >= 3 and len(critical_terms) > 0
+            )
 
             # Moderate penalty if missing critical terms (not too harsh)
             critical_multiplier = 1.0
             if apply_critical_filter and not has_critical_term[i]:
-                critical_multiplier = 0.5  # Reduced from 0.3 to 0.5 for better semantic matching
+                critical_multiplier = (
+                    0.5  # Reduced from 0.3 to 0.5 for better semantic matching
+                )
 
             if keyword_scores[i] == 0:
                 # No keyword matches - moderate penalty for better semantic matching
-                combined_similarities[i] = semantic_similarities[i] * 0.3 * critical_multiplier
+                combined_similarities[i] = (
+                    semantic_similarities[i] * 0.3 * critical_multiplier
+                )
             elif keyword_scores[i] < min_keyword_threshold:
                 # Poor keyword matches - mild penalty
-                combined_similarities[i] = semantic_similarities[i] * 0.5 * critical_multiplier
+                combined_similarities[i] = (
+                    semantic_similarities[i] * 0.5 * critical_multiplier
+                )
             else:
                 # Good keyword matches - balanced weighting
                 # Balance semantic and keyword signals
                 keyword_weight = 0.5 if keyword_scores[i] > 0.5 else 0.4
                 semantic_weight = 1.0 - keyword_weight
-                combined_similarities[i] = ((semantic_weight * semantic_similarities[i] +
-                                           keyword_weight * keyword_scores[i]) * critical_multiplier)
+                combined_similarities[i] = (
+                    semantic_weight * semantic_similarities[i]
+                    + keyword_weight * keyword_scores[i]
+                ) * critical_multiplier
 
         similarities = combined_similarities
 
         # Apply boolean operators
         if search_query.boolean_operators:
             similarities = self._apply_boolean_operators(
-                similarities,
-                doc_ids,
-                search_query.boolean_operators
+                similarities, doc_ids, search_query.boolean_operators
             )
 
         # Apply filters
@@ -753,10 +798,9 @@ class SemanticSearch:
 
         return similarities
 
-    def _apply_boolean_operators(self,
-                                similarities: np.ndarray,
-                                doc_ids: list[str],
-                                operators: dict[str, list]) -> np.ndarray:
+    def _apply_boolean_operators(
+        self, similarities: np.ndarray, doc_ids: list[str], operators: dict[str, list]
+    ) -> np.ndarray:
         """Apply AND, OR, NOT boolean operators."""
         modified_similarities = similarities.copy()
 
@@ -765,14 +809,14 @@ class SemanticSearch:
             tokens = set(word_tokenize(content))
 
             # Apply NOT operators - exclude documents containing the term
-            for not_term in operators.get('NOT', []):
+            for not_term in operators.get("NOT", []):
                 # For NOT, only check whole word matches to avoid false positives
                 # (e.g., "java" should not match "javascript")
                 if not_term in tokens:
                     modified_similarities[i] = 0
 
             # Apply AND operators - both terms must be present
-            for term1, term2 in operators.get('AND', []):
+            for term1, term2 in operators.get("AND", []):
                 # Check if both terms exist as whole words or substrings
                 term1_present = term1 in tokens or term1 in content
                 term2_present = term2 in tokens or term2 in content
@@ -781,7 +825,7 @@ class SemanticSearch:
                     modified_similarities[i] = 0  # Exclude documents without both terms
 
             # Apply OR operators - at least one term must be present
-            for term1, term2 in operators.get('OR', []):
+            for term1, term2 in operators.get("OR", []):
                 term1_present = term1 in tokens or term1 in content
                 term2_present = term2 in tokens or term2 in content
 
@@ -795,10 +839,9 @@ class SemanticSearch:
 
         return modified_similarities
 
-    def _apply_filters(self,
-                      similarities: np.ndarray,
-                      doc_ids: list[str],
-                      filters: dict[str, Any]) -> np.ndarray:
+    def _apply_filters(
+        self, similarities: np.ndarray, doc_ids: list[str], filters: dict[str, Any]
+    ) -> np.ndarray:
         """Apply metadata filters."""
         modified_similarities = similarities.copy()
 
@@ -820,9 +863,9 @@ class SemanticSearch:
 
         return modified_similarities
 
-    def _rerank_results(self,
-                       results: list[SearchResult],
-                       search_query: SearchQuery) -> list[SearchResult]:
+    def _rerank_results(
+        self, results: list[SearchResult], search_query: SearchQuery
+    ) -> list[SearchResult]:
         """Re-rank results based on additional factors."""
         # Calculate additional scoring factors
         for result in results:
@@ -830,24 +873,23 @@ class SemanticSearch:
             initial_score = result.score  # Preserve initial score
 
             # Exact match boost - check if exact query appears
-            exact_match_score = 1.0 if search_query.original.lower() in content_lower else 0.0
+            exact_match_score = (
+                1.0 if search_query.original.lower() in content_lower else 0.0
+            )
 
             # Term frequency boost with position weighting
             term_freq_score = self._calculate_term_frequency_score(
-                result.content,
-                search_query.tokens
+                result.content, search_query.tokens
             )
 
             # Phrase proximity score - bonus for terms appearing close together
             proximity_score = self._calculate_proximity_score(
-                content_lower,
-                search_query.tokens
+                content_lower, search_query.tokens
             )
 
             # Title/beginning boost - check if terms appear early in document
             position_score = self._calculate_position_score(
-                content_lower,
-                search_query.tokens
+                content_lower, search_query.tokens
             )
 
             # Recency boost (if timestamp in metadata)
@@ -855,19 +897,18 @@ class SemanticSearch:
 
             # Metadata match boost
             metadata_score = self._calculate_metadata_score(
-                result.metadata,
-                search_query.tokens
+                result.metadata, search_query.tokens
             )
 
             # Combine scores with better weighting
             new_score = (
-                initial_score * 0.4 +      # Semantic similarity (reduced from 0.7)
-                exact_match_score * 0.2 + # Exact match bonus
-                term_freq_score * 0.15 +  # Term frequency
-                proximity_score * 0.1 +   # Term proximity
-                position_score * 0.05 +   # Position importance
-                metadata_score * 0.05 +   # Metadata relevance
-                recency_score * 0.05      # Recency
+                initial_score * 0.4  # Semantic similarity (reduced from 0.7)
+                + exact_match_score * 0.2  # Exact match bonus
+                + term_freq_score * 0.15  # Term frequency
+                + proximity_score * 0.1  # Term proximity
+                + position_score * 0.05  # Position importance
+                + metadata_score * 0.05  # Metadata relevance
+                + recency_score * 0.05  # Recency
             )
 
             # Cap the new score - allow reasonable boost for documents with good matches
@@ -883,7 +924,6 @@ class SemanticSearch:
                 f"Proximity: {proximity_score:.3f}, "
                 f"Position: {position_score:.3f}"
             )
-
 
         # Re-sort by new scores
         return sorted(results, key=lambda x: x.score, reverse=True)
@@ -919,11 +959,11 @@ class SemanticSearch:
 
     def _calculate_recency_score(self, metadata: dict[str, Any]) -> float:
         """Calculate recency score based on timestamp."""
-        if 'timestamp' not in metadata:
+        if "timestamp" not in metadata:
             return 0.5  # Neutral score if no timestamp
 
         try:
-            timestamp = datetime.fromisoformat(metadata['timestamp'])
+            timestamp = datetime.fromisoformat(metadata["timestamp"])
             days_old = (datetime.now() - timestamp).days
 
             # Exponential decay - newer documents get higher scores
@@ -959,7 +999,7 @@ class SemanticSearch:
                 term2_positions = term_positions[term_list[j]]
 
                 # Find minimum distance between any occurrence of term1 and term2
-                min_dist = float('inf')
+                min_dist = float("inf")
                 for pos1 in term1_positions:
                     for pos2 in term2_positions:
                         min_dist = min(min_dist, abs(pos1 - pos2))
@@ -1007,7 +1047,9 @@ class SemanticSearch:
         else:
             return 0.4
 
-    def _calculate_metadata_score(self, metadata: dict[str, Any], terms: list[str]) -> float:
+    def _calculate_metadata_score(
+        self, metadata: dict[str, Any], terms: list[str]
+    ) -> float:
         """Calculate score based on term matches in metadata."""
         if not metadata:
             return 0.0
@@ -1016,7 +1058,7 @@ class SemanticSearch:
         total_fields = 0
 
         # Check each metadata field for term matches
-        important_fields = ['title', 'category', 'tags', 'description', 'summary']
+        important_fields = ["title", "category", "tags", "description", "summary"]
 
         for field_name, value in metadata.items():
             if isinstance(value, str):
@@ -1050,7 +1092,7 @@ class SemanticSearch:
     def _generate_highlights(self, content: str, terms: list[str]) -> list[str]:
         """Generate highlighted snippets."""
         highlights = []
-        sentences = content.split('.')
+        sentences = content.split(".")
 
         for sentence in sentences:
             sentence_lower = sentence.lower()
@@ -1069,7 +1111,9 @@ class SemanticSearch:
 
         return highlights
 
-    def _get_result_cache_key(self, query: str, top_k: int, filters: dict | None) -> str:
+    def _get_result_cache_key(
+        self, query: str, top_k: int, filters: dict | None
+    ) -> str:
         """Generate cache key for results."""
         filter_str = json.dumps(filters, sort_keys=True) if filters else ""
         return hashlib.sha256(f"{query}:{top_k}:{filter_str}".encode()).hexdigest()
@@ -1086,7 +1130,8 @@ class SemanticSearch:
         )
 
         cache_hit_rate = (
-            self.analytics.cache_hits / (self.analytics.cache_hits + self.analytics.cache_misses)
+            self.analytics.cache_hits
+            / (self.analytics.cache_hits + self.analytics.cache_misses)
             if (self.analytics.cache_hits + self.analytics.cache_misses) > 0
             else 0
         )
@@ -1131,19 +1176,16 @@ class AsyncSemanticSearch:
     async def search_async(self, query: str, **kwargs) -> list[SearchResult]:
         """Perform search asynchronously."""
         future = self.loop.run_in_executor(
-            None,
-            self.search_engine.search,
-            query,
-            *kwargs
+            None, self.search_engine.search, query, *kwargs
         )
         return await future
 
-    async def index_documents_batch_async(self, documents: list[tuple[str, str, dict[str, Any]]]):
+    async def index_documents_batch_async(
+        self, documents: list[tuple[str, str, dict[str, Any]]]
+    ):
         """Index documents asynchronously."""
         future = self.loop.run_in_executor(
-            None,
-            self.search_engine.index_documents_batch,
-            documents
+            None, self.search_engine.index_documents_batch, documents
         )
         await future
 
@@ -1156,16 +1198,16 @@ class AsyncSemanticSearch:
 
 # Convenience function for creating search engine
 def create_search_engine(
-    embedding_model: str = 'all-MiniLM-L6-v2',
+    embedding_model: str = "all-MiniLM-L6-v2",
     enable_analytics: bool = True,
     cache_dir: Path | None = None,
-    async_mode: bool = False
+    async_mode: bool = False,
 ) -> SemanticSearch | AsyncSemanticSearch:
     """Create a semantic search engine instance."""
     search_engine = SemanticSearch(
         embedding_model=embedding_model,
         enable_analytics=enable_analytics,
-        cache_dir=cache_dir
+        cache_dir=cache_dir,
     )
 
     if async_mode:

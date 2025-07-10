@@ -53,9 +53,14 @@ class TestQueryPreprocessorComprehensive:
     def preprocessor(self):
         """Create preprocessor with mocked NLTK."""
         # Patch the specific functions that the module uses
-        with patch('src.core.standards.semantic_search.PorterStemmer', MockPorterStemmer):
-            with patch('src.core.standards.semantic_search.word_tokenize', MockNLTKComponents.word_tokenize):
-                with patch('nltk.corpus.stopwords.words', MockStopwords.words):
+        with patch(
+            "src.core.standards.semantic_search.PorterStemmer", MockPorterStemmer
+        ):
+            with patch(
+                "src.core.standards.semantic_search.word_tokenize",
+                MockNLTKComponents.word_tokenize,
+            ):
+                with patch("nltk.corpus.stopwords.words", MockStopwords.words):
                     return QueryPreprocessor()
 
     def test_preprocessing_pipeline(self, preprocessor):
@@ -68,7 +73,7 @@ class TestQueryPreprocessorComprehensive:
         assert result.preprocessed == query.lower()
         assert len(result.tokens) > 0
         assert len(result.stems) == len(result.tokens)
-        assert 'test' in result.stems  # 'testing' stemmed to 'test'
+        assert "test" in result.stems  # 'testing' stemmed to 'test'
 
     def test_stopword_removal(self, preprocessor):
         """Test stopword removal."""
@@ -76,14 +81,14 @@ class TestQueryPreprocessorComprehensive:
         result = preprocessor.preprocess(query)
 
         # Stopwords should be removed
-        assert 'the' not in result.tokens
-        assert 'of' not in result.tokens
-        assert 'with' not in result.tokens
+        assert "the" not in result.tokens
+        assert "of" not in result.tokens
+        assert "with" not in result.tokens
 
         # Content words should remain
-        assert 'testing' in result.tokens
-        assert 'react' in result.tokens
-        assert 'jest' in result.tokens
+        assert "testing" in result.tokens
+        assert "react" in result.tokens
+        assert "jest" in result.tokens
 
     def test_synonym_expansion(self, preprocessor):
         """Test synonym expansion with domain-specific terms."""
@@ -91,7 +96,7 @@ class TestQueryPreprocessorComprehensive:
             ("web security", ["website", "webapp", "frontend", "secure", "auth"]),
             ("api testing", ["interface", "endpoint", "service", "test", "validation"]),
             ("react performance", ["reactjs", "react.js", "speed", "optimization"]),
-            ("mcp llm", ["model context protocol", "language model", "ai model"])
+            ("mcp llm", ["model context protocol", "language model", "ai model"]),
         ]
 
         for query, expected_expansions in test_cases:
@@ -99,31 +104,33 @@ class TestQueryPreprocessorComprehensive:
             expanded_set = set(result.expanded_terms)
 
             # Check that at least some expected expansions are present
-            found_expansions = [exp for exp in expected_expansions if exp in expanded_set]
+            found_expansions = [
+                exp for exp in expected_expansions if exp in expanded_set
+            ]
             assert len(found_expansions) > 0, f"No expansions found for '{query}'"
 
     def test_boolean_operators_extraction(self, preprocessor):
         """Test extraction of boolean operators."""
         # AND operator
         result = preprocessor.preprocess("security AND authentication")
-        assert len(result.boolean_operators['AND']) > 0
-        assert ('security', 'authentication') in result.boolean_operators['AND']
+        assert len(result.boolean_operators["AND"]) > 0
+        assert ("security", "authentication") in result.boolean_operators["AND"]
 
         # OR operator
         result = preprocessor.preprocess("react OR angular")
-        assert len(result.boolean_operators['OR']) > 0
-        assert ('react', 'angular') in result.boolean_operators['OR']
+        assert len(result.boolean_operators["OR"]) > 0
+        assert ("react", "angular") in result.boolean_operators["OR"]
 
         # NOT operator
         result = preprocessor.preprocess("testing NOT integration")
-        assert len(result.boolean_operators['NOT']) > 0
-        assert 'integration' in result.boolean_operators['NOT']
+        assert len(result.boolean_operators["NOT"]) > 0
+        assert "integration" in result.boolean_operators["NOT"]
 
         # Multiple operators
         result = preprocessor.preprocess("python AND testing NOT unit OR integration")
-        assert len(result.boolean_operators['AND']) > 0
-        assert len(result.boolean_operators['NOT']) > 0
-        assert len(result.boolean_operators['OR']) > 0
+        assert len(result.boolean_operators["AND"]) > 0
+        assert len(result.boolean_operators["NOT"]) > 0
+        assert len(result.boolean_operators["OR"]) > 0
 
     def test_complex_query_handling(self, preprocessor):
         """Test handling of complex queries."""
@@ -141,7 +148,10 @@ class TestQueryPreprocessorComprehensive:
         test_cases = [
             ("react@18.0", ["react"]),  # Only 'react' is alphanumeric
             ("test#123", ["test", "123"]),  # Both 'test' and '123' are alphanumeric
-            ("api/v2/users", []),  # 'api/v2/users' is treated as one token, not alphanumeric
+            (
+                "api/v2/users",
+                [],
+            ),  # 'api/v2/users' is treated as one token, not alphanumeric
             ("node.js", []),  # 'node.js' is treated as one token, not alphanumeric
             ("c++", []),  # 'c++' is not alphanumeric
             ("@decorators", ["decorators"]),  # Only 'decorators' is alphanumeric
@@ -151,10 +161,14 @@ class TestQueryPreprocessorComprehensive:
             result = preprocessor.preprocess(query)
             # For queries that should have tokens, check they exist
             if expected_tokens:
-                assert len(result.tokens) > 0, f"Query '{query}' should extract tokens: {expected_tokens}"
+                assert (
+                    len(result.tokens) > 0
+                ), f"Query '{query}' should extract tokens: {expected_tokens}"
                 # Check that expected tokens are present
                 for token in expected_tokens:
-                    assert token in result.tokens, f"Expected token '{token}' not found in {result.tokens}"
+                    assert (
+                        token in result.tokens
+                    ), f"Expected token '{token}' not found in {result.tokens}"
             else:
                 # For queries with no expected tokens, that's valid behavior
                 # (the real NLTK tokenizer produces non-alphanumeric tokens for these)
@@ -184,8 +198,10 @@ class TestEmbeddingCacheComprehensive:
     @pytest.fixture
     def cache(self, temp_cache_dir):
         """Create cache instance with mocked dependencies."""
-        with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
-            with patch('redis.Redis', MockRedisClient):
+        with patch(
+            "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+        ):
+            with patch("redis.Redis", MockRedisClient):
                 return EmbeddingCache(cache_dir=temp_cache_dir)
 
     def test_embedding_generation_deterministic(self, cache):
@@ -250,12 +266,12 @@ class TestEmbeddingCacheComprehensive:
         cached_time, cached_embedding = cache.memory_cache[cache_key]
         cache.memory_cache[cache_key] = (
             cached_time - timedelta(seconds=2),  # Expired
-            cached_embedding
+            cached_embedding,
         )
 
         # Should regenerate due to expiration
         # The mock model already returns consistent embeddings, so we just verify it's called again
-        _original_call_count = getattr(cache.model.encode, 'call_count', 0)
+        _original_call_count = getattr(cache.model.encode, "call_count", 0)
 
         # Force cache miss by clearing all caches
         cache.memory_cache.clear()
@@ -291,7 +307,9 @@ class TestEmbeddingCacheComprehensive:
         assert batch_embeddings.shape == (100, cache.model.embedding_dim)
 
         # Allow batch to be up to 2x slower than individual in mock scenario
-        assert batch_time < individual_time * 2, f"Batch time {batch_time} should be reasonable compared to individual time {individual_time}"
+        assert (
+            batch_time < individual_time * 2
+        ), f"Batch time {batch_time} should be reasonable compared to individual time {individual_time}"
 
         # Results should be identical
         np.testing.assert_array_almost_equal(batch_embeddings, individual_embeddings)
@@ -305,7 +323,7 @@ class TestEmbeddingCacheComprehensive:
             cache.get_embedding(text)
 
         # Process all in batch
-        with patch.object(cache.model, 'encode') as mock_encode:
+        with patch.object(cache.model, "encode") as mock_encode:
             # Mock should return consistent embeddings
             # Use the actual embedding dimension from the mock model
             embedding_dim = 384  # Standard dimension for all-MiniLM-L6-v2
@@ -368,7 +386,9 @@ class TestEmbeddingCacheComprehensive:
             try:
                 keys = [f"emb:{hashlib.sha256(t.encode()).hexdigest()}" for t in texts]
                 # MockRedisClient doesn't have exists method, check each key
-                redis_count = sum(1 for k in keys if cache.redis_client.get(k) is not None)
+                redis_count = sum(
+                    1 for k in keys if cache.redis_client.get(k) is not None
+                )
                 assert redis_count > 0
             except Exception:
                 # Redis might not be available
@@ -388,7 +408,9 @@ class TestEmbeddingCacheComprehensive:
         if cache.redis_client:
             try:
                 keys = [f"emb:{hashlib.sha256(t.encode()).hexdigest()}" for t in texts]
-                redis_count = sum(1 for k in keys if cache.redis_client.get(k) is not None)
+                redis_count = sum(
+                    1 for k in keys if cache.redis_client.get(k) is not None
+                )
                 assert redis_count == 0
             except Exception:
                 pass
@@ -402,11 +424,11 @@ class TestEmbeddingCacheComprehensive:
         # Test with different array shapes and types
         test_arrays = [
             np.zeros((384,)),  # All zeros
-            np.ones((384,)),   # All ones
+            np.ones((384,)),  # All ones
             np.full((384,), np.inf),  # Infinity values
             np.full((384,), -np.inf),  # Negative infinity
             np.random.rand(384) * 1e-10,  # Very small values
-            np.random.rand(384) * 1e10,   # Very large values
+            np.random.rand(384) * 1e10,  # Very large values
         ]
 
         for _i, test_array in enumerate(test_arrays):
@@ -423,7 +445,7 @@ class TestEmbeddingCacheComprehensive:
 
     def test_model_loading_failure_handling(self):
         """Test handling of model loading failures."""
-        with patch('sentence_transformers.SentenceTransformer') as mock_st:
+        with patch("sentence_transformers.SentenceTransformer") as mock_st:
             # Create a function that raises when called
             def raise_error(*args, **kwargs):
                 raise Exception("Model download failed")
@@ -437,11 +459,15 @@ class TestEmbeddingCacheComprehensive:
 
     def test_redis_connection_failure_graceful_degradation(self, temp_cache_dir):
         """Test graceful degradation when Redis is unavailable."""
-        with patch('redis.Redis') as mock_redis:
+        with patch("redis.Redis") as mock_redis:
             # Simulate connection failure
-            mock_redis.return_value.ping.side_effect = ConnectionError("Connection refused")
+            mock_redis.return_value.ping.side_effect = ConnectionError(
+                "Connection refused"
+            )
 
-            with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
+            with patch(
+                "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+            ):
                 cache = EmbeddingCache(cache_dir=temp_cache_dir)
 
                 # Should work without Redis
@@ -459,31 +485,41 @@ class TestFuzzyMatcherComprehensive:
     @pytest.fixture
     def matcher(self):
         """Create fuzzy matcher with mocked fuzzywuzzy."""
-        with patch('fuzzywuzzy.fuzz', MockFuzz):
-            with patch('fuzzywuzzy.process', MockProcess):
+        with patch("fuzzywuzzy.fuzz", MockFuzz):
+            with patch("fuzzywuzzy.process", MockProcess):
                 matcher = FuzzyMatcher(threshold=80)
-                matcher.add_known_terms([
-                    'react', 'angular', 'vue', 'testing', 'security',
-                    'javascript', 'typescript', 'python', 'api', 'rest'
-                ])
+                matcher.add_known_terms(
+                    [
+                        "react",
+                        "angular",
+                        "vue",
+                        "testing",
+                        "security",
+                        "javascript",
+                        "typescript",
+                        "python",
+                        "api",
+                        "rest",
+                    ]
+                )
                 return matcher
 
     def test_exact_matching(self, matcher):
         """Test exact word matching."""
-        matches = matcher.find_matches('react')
+        matches = matcher.find_matches("react")
         assert len(matches) > 0
-        assert matches[0][0] == 'react'
+        assert matches[0][0] == "react"
         assert matches[0][1] == 100
 
     def test_typo_correction_levels(self, matcher):
         """Test different levels of typo correction."""
         test_cases = [
-            ('reakt', 'react'),      # Single character substitution
-            ('reat', 'react'),       # Missing character
-            ('reaact', 'react'),     # Extra character
-            ('raect', 'react'),      # Transposition
-            ('javscript', 'javascript'),  # Missing character in longer word
-            ('secuirty', 'security'),     # Transposition in longer word
+            ("reakt", "react"),  # Single character substitution
+            ("reat", "react"),  # Missing character
+            ("reaact", "react"),  # Extra character
+            ("raect", "react"),  # Transposition
+            ("javscript", "javascript"),  # Missing character in longer word
+            ("secuirty", "security"),  # Transposition in longer word
         ]
 
         for typo, expected in test_cases:
@@ -496,7 +532,7 @@ class TestFuzzyMatcherComprehensive:
     def test_threshold_filtering(self, matcher):
         """Test threshold-based filtering of matches."""
         # Very different word
-        matches = matcher.find_matches('golang')
+        matches = matcher.find_matches("golang")
 
         # Should have no matches above threshold with the known terms
         assert all(score < 100 for _, score in matches)
@@ -507,41 +543,41 @@ class TestFuzzyMatcherComprehensive:
         corrected, corrections = matcher.correct_query(query)
 
         # Should correct all typos
-        assert 'react' in corrected
-        assert 'javascript' in corrected
-        assert 'security' in corrected
+        assert "react" in corrected
+        assert "javascript" in corrected
+        assert "security" in corrected
         assert len(corrections) >= 3
 
     def test_partial_word_matching(self, matcher):
         """Test matching of partial words."""
         # Add compound terms
-        matcher.add_known_terms(['reactjs', 'angular-cli', 'vue-router'])
+        matcher.add_known_terms(["reactjs", "angular-cli", "vue-router"])
 
         # Should find related terms
-        matches = matcher.find_matches('react')
+        matches = matcher.find_matches("react")
         match_words = [m[0] for m in matches]
-        assert 'react' in match_words
-        assert 'reactjs' in match_words
+        assert "react" in match_words
+        assert "reactjs" in match_words
 
     def test_case_insensitive_matching(self, matcher):
         """Test case-insensitive matching."""
-        test_cases = ['REACT', 'React', 'ReAcT', 'react']
+        test_cases = ["REACT", "React", "ReAcT", "react"]
 
         for query in test_cases:
             matches = matcher.find_matches(query)
             assert len(matches) > 0
             # Should find 'react' regardless of case
-            assert any(m[0] == 'react' for m in matches)
+            assert any(m[0] == "react" for m in matches)
 
     def test_empty_query_handling(self, matcher):
         """Test handling of empty queries."""
-        matches = matcher.find_matches('')
+        matches = matcher.find_matches("")
         # Should return empty or low-scoring matches
         assert all(score < 50 for _, score in matches) or len(matches) == 0
 
     def test_special_characters_in_query(self, matcher):
         """Test handling of special characters."""
-        queries = ['react!', '@angular', 'vue#3', 'test*ing']
+        queries = ["react!", "@angular", "vue#3", "test*ing"]
 
         for query in queries:
             matches = matcher.find_matches(query)
@@ -550,8 +586,8 @@ class TestFuzzyMatcherComprehensive:
 
     def test_performance_with_large_vocabulary(self):
         """Test performance with large vocabulary."""
-        with patch('fuzzywuzzy.fuzz', MockFuzz):
-            with patch('fuzzywuzzy.process', MockProcess):
+        with patch("fuzzywuzzy.fuzz", MockFuzz):
+            with patch("fuzzywuzzy.process", MockProcess):
                 matcher = FuzzyMatcher()
 
                 # Add large vocabulary
@@ -581,22 +617,34 @@ class TestSemanticSearchComprehensive:
     @pytest.fixture
     def search_engine(self, temp_dir):
         """Create search engine with all dependencies mocked."""
-        with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
-            with patch('redis.Redis', MockRedisClient):
-                with patch('nltk.stem.PorterStemmer', MockPorterStemmer):
-                    with patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize):
-                        with patch('nltk.corpus.stopwords', MockStopwords):
-                            with patch('fuzzywuzzy.fuzz', MockFuzz):
-                                with patch('fuzzywuzzy.process', MockProcess):
-                                    with patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity):
-                                        with patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors):
+        with patch(
+            "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+        ):
+            with patch("redis.Redis", MockRedisClient):
+                with patch("nltk.stem.PorterStemmer", MockPorterStemmer):
+                    with patch(
+                        "nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize
+                    ):
+                        with patch("nltk.corpus.stopwords", MockStopwords):
+                            with patch("fuzzywuzzy.fuzz", MockFuzz):
+                                with patch("fuzzywuzzy.process", MockProcess):
+                                    with patch(
+                                        "sklearn.metrics.pairwise.cosine_similarity",
+                                        MockCosineSimilarity.cosine_similarity,
+                                    ):
+                                        with patch(
+                                            "sklearn.neighbors.NearestNeighbors",
+                                            MockNearestNeighbors,
+                                        ):
                                             engine = SemanticSearch(
                                                 cache_dir=temp_dir,
-                                                enable_analytics=True
+                                                enable_analytics=True,
                                             )
 
                                             # Index test documents
-                                            documents = TestDataGenerator.generate_standards_corpus(50)
+                                            documents = TestDataGenerator.generate_standards_corpus(
+                                                50
+                                            )
                                             engine.index_documents_batch(documents)
 
                                             yield engine
@@ -619,36 +667,34 @@ class TestSemanticSearchComprehensive:
         and_results = search_engine.search("security AND python", top_k=10)
         for result in and_results:
             content_lower = result.content.lower()
-            assert 'security' in content_lower and 'python' in content_lower
+            assert "security" in content_lower and "python" in content_lower
 
         # OR operator
         or_results = search_engine.search("react OR angular", top_k=10)
         for result in or_results:
             content_lower = result.content.lower()
-            assert 'react' in content_lower or 'angular' in content_lower
+            assert "react" in content_lower or "angular" in content_lower
 
         # NOT operator
         not_results = search_engine.search("testing NOT angular", top_k=10)
         for result in not_results:
-            assert 'angular' not in result.content.lower()
+            assert "angular" not in result.content.lower()
 
     def test_metadata_filtering(self, search_engine):
         """Test metadata-based filtering."""
         # Single value filter
         results = search_engine.search(
-            "standards",
-            filters={"category": "security"},
-            top_k=10
+            "standards", filters={"category": "security"}, top_k=10
         )
         assert all(r.metadata.get("category") == "security" for r in results)
 
         # List filter
         results = search_engine.search(
-            "programming",
-            filters={"language": ["python", "javascript"]},
-            top_k=10
+            "programming", filters={"language": ["python", "javascript"]}, top_k=10
         )
-        assert all(r.metadata.get("language") in ["python", "javascript"] for r in results)
+        assert all(
+            r.metadata.get("language") in ["python", "javascript"] for r in results
+        )
 
     def test_fuzzy_search_typo_tolerance(self, search_engine):
         """Test fuzzy search with typos."""
@@ -659,7 +705,7 @@ class TestSemanticSearchComprehensive:
         assert len(results) > 0
         # Should find React and security related documents
         relevant_found = any(
-            'react' in r.content.lower() or 'security' in r.content.lower()
+            "react" in r.content.lower() or "security" in r.content.lower()
             for r in results
         )
         assert relevant_found
@@ -670,10 +716,9 @@ class TestSemanticSearchComprehensive:
         results = search_engine.search("web api", top_k=10)
 
         # Should find documents with related terms
-        expanded_terms = ['website', 'webapp', 'interface', 'endpoint']
+        expanded_terms = ["website", "webapp", "interface", "endpoint"]
         expanded_found = any(
-            any(term in r.content.lower() for term in expanded_terms)
-            for r in results
+            any(term in r.content.lower() for term in expanded_terms) for r in results
         )
         assert expanded_found
 
@@ -681,15 +726,9 @@ class TestSemanticSearchComprehensive:
         """Test result reranking."""
         # Search with and without reranking
         results_no_rerank = search_engine.search(
-            "python testing",
-            top_k=10,
-            rerank=False
+            "python testing", top_k=10, rerank=False
         )
-        results_rerank = search_engine.search(
-            "python testing",
-            top_k=10,
-            rerank=True
-        )
+        results_rerank = search_engine.search("python testing", top_k=10, rerank=True)
 
         # Reranked results should have explanations
         assert all(r.explanation is None for r in results_no_rerank)
@@ -709,13 +748,12 @@ class TestSemanticSearchComprehensive:
             assert len(result.highlights) > 0
 
             # Highlights should contain query terms
-            highlight_text = ' '.join(result.highlights).lower()
+            highlight_text = " ".join(result.highlights).lower()
             query_terms = query.lower().split()
 
             # At least one query term should be highlighted
             highlighted_terms = sum(
-                1 for term in query_terms
-                if f"**{term}**" in highlight_text
+                1 for term in query_terms if f"**{term}**" in highlight_text
             )
             assert highlighted_terms > 0
 
@@ -750,14 +788,14 @@ class TestSemanticSearchComprehensive:
             "react security",
             "python testing",  # Duplicate
             "api design",
-            "INVALID QUERY THAT SHOULD FAIL" * 50  # Very long query
+            "INVALID QUERY THAT SHOULD FAIL" * 50,  # Very long query
         ]
 
         for query in queries[:-1]:
             search_engine.search(query)
 
         # Trigger a search error
-        with patch.object(search_engine.embedding_cache, 'get_embedding') as mock:
+        with patch.object(search_engine.embedding_cache, "get_embedding") as mock:
             mock.side_effect = Exception("Embedding error")
             search_engine.search(queries[-1])
 
@@ -778,7 +816,7 @@ class TestSemanticSearchComprehensive:
             "javascript testing",
             "react performance",
             "api design",
-            "database optimization"
+            "database optimization",
         ]
 
         results = {}
@@ -857,15 +895,25 @@ class TestSemanticSearchComprehensive:
 
     def test_search_with_empty_index(self):
         """Test search behavior with empty index."""
-        with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
-            with patch('redis.Redis', MockRedisClient):
-                with patch('nltk.stem.PorterStemmer', MockPorterStemmer):
-                    with patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize):
-                        with patch('nltk.corpus.stopwords', MockStopwords):
-                            with patch('fuzzywuzzy.fuzz', MockFuzz):
-                                with patch('fuzzywuzzy.process', MockProcess):
-                                    with patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity):
-                                        with patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors):
+        with patch(
+            "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+        ):
+            with patch("redis.Redis", MockRedisClient):
+                with patch("nltk.stem.PorterStemmer", MockPorterStemmer):
+                    with patch(
+                        "nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize
+                    ):
+                        with patch("nltk.corpus.stopwords", MockStopwords):
+                            with patch("fuzzywuzzy.fuzz", MockFuzz):
+                                with patch("fuzzywuzzy.process", MockProcess):
+                                    with patch(
+                                        "sklearn.metrics.pairwise.cosine_similarity",
+                                        MockCosineSimilarity.cosine_similarity,
+                                    ):
+                                        with patch(
+                                            "sklearn.neighbors.NearestNeighbors",
+                                            MockNearestNeighbors,
+                                        ):
                                             empty_engine = SemanticSearch()
 
                                             results = empty_engine.search("test query")
@@ -901,20 +949,34 @@ class TestAsyncSemanticSearchComprehensive:
     @pytest.fixture
     async def async_search_engine(self):
         """Create async search engine."""
-        with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
-            with patch('redis.Redis', MockRedisClient):
-                with patch('nltk.stem.PorterStemmer', MockPorterStemmer):
-                    with patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize):
-                        with patch('nltk.corpus.stopwords', MockStopwords):
-                            with patch('fuzzywuzzy.fuzz', MockFuzz):
-                                with patch('fuzzywuzzy.process', MockProcess):
-                                    with patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity):
-                                        with patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors):
+        with patch(
+            "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+        ):
+            with patch("redis.Redis", MockRedisClient):
+                with patch("nltk.stem.PorterStemmer", MockPorterStemmer):
+                    with patch(
+                        "nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize
+                    ):
+                        with patch("nltk.corpus.stopwords", MockStopwords):
+                            with patch("fuzzywuzzy.fuzz", MockFuzz):
+                                with patch("fuzzywuzzy.process", MockProcess):
+                                    with patch(
+                                        "sklearn.metrics.pairwise.cosine_similarity",
+                                        MockCosineSimilarity.cosine_similarity,
+                                    ):
+                                        with patch(
+                                            "sklearn.neighbors.NearestNeighbors",
+                                            MockNearestNeighbors,
+                                        ):
                                             # Create sync engine first
-                                            sync_engine = create_search_engine(async_mode=False)
+                                            sync_engine = create_search_engine(
+                                                async_mode=False
+                                            )
 
                                             # Index test documents synchronously
-                                            documents = TestDataGenerator.generate_standards_corpus(20)
+                                            documents = TestDataGenerator.generate_standards_corpus(
+                                                20
+                                            )
                                             sync_engine.index_documents_batch(documents)
 
                                             # Now wrap in async interface
@@ -939,14 +1001,11 @@ class TestAsyncSemanticSearchComprehensive:
             "javascript testing",
             "react components",
             "api design",
-            "database optimization"
+            "database optimization",
         ]
 
         # Launch concurrent searches
-        tasks = [
-            async_search_engine.search_async(query, top_k=5)
-            for query in queries
-        ]
+        tasks = [async_search_engine.search_async(query, top_k=5) for query in queries]
 
         results = await asyncio.gather(*tasks)
 
@@ -961,7 +1020,7 @@ class TestAsyncSemanticSearchComprehensive:
         new_docs = [
             ("async-1", "Async Python programming with asyncio", {"type": "async"}),
             ("async-2", "JavaScript promises and async/await", {"type": "async"}),
-            ("async-3", "Concurrent programming patterns", {"type": "async"})
+            ("async-3", "Concurrent programming patterns", {"type": "async"}),
         ]
 
         await async_search_engine.index_documents_batch_async(new_docs)
@@ -970,17 +1029,14 @@ class TestAsyncSemanticSearchComprehensive:
         results = await async_search_engine.search_async("async programming", top_k=5)
 
         # Should find the new documents
-        async_docs_found = sum(
-            1 for r in results
-            if r.id.startswith("async-")
-        )
+        async_docs_found = sum(1 for r in results if r.id.startswith("async-"))
         assert async_docs_found > 0
 
     @pytest.mark.asyncio
     async def test_async_exception_handling(self, async_search_engine):
         """Test exception handling in async operations."""
         # Simulate search engine error
-        with patch.object(async_search_engine.search_engine, 'search') as mock:
+        with patch.object(async_search_engine.search_engine, "search") as mock:
             mock.side_effect = Exception("Search engine error")
 
             with pytest.raises(Exception) as exc_info:
@@ -1018,8 +1074,8 @@ class TestSearchIntegrationComprehensive:
                     "category": "security",
                     "tags": ["api", "authentication", "validation"],
                     "version": "2.0",
-                    "last_updated": datetime.now().isoformat()
-                }
+                    "last_updated": datetime.now().isoformat(),
+                },
             },
             {
                 "id": "TEST-001",
@@ -1040,9 +1096,9 @@ class TestSearchIntegrationComprehensive:
                     "category": "testing",
                     "tags": ["react", "jest", "testing-library"],
                     "version": "1.5",
-                    "last_updated": (datetime.now() - timedelta(days=30)).isoformat()
-                }
-            }
+                    "last_updated": (datetime.now() - timedelta(days=30)).isoformat(),
+                },
+            },
         ]
 
         # Index documents
@@ -1073,15 +1129,25 @@ class TestSearchIntegrationComprehensive:
 
     def test_performance_benchmarks(self):
         """Test performance benchmarks with realistic data."""
-        with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
-            with patch('redis.Redis', MockRedisClient):
-                with patch('nltk.stem.PorterStemmer', MockPorterStemmer):
-                    with patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize):
-                        with patch('nltk.corpus.stopwords', MockStopwords):
-                            with patch('fuzzywuzzy.fuzz', MockFuzz):
-                                with patch('fuzzywuzzy.process', MockProcess):
-                                    with patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity):
-                                        with patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors):
+        with patch(
+            "sentence_transformers.SentenceTransformer", MockSentenceTransformer
+        ):
+            with patch("redis.Redis", MockRedisClient):
+                with patch("nltk.stem.PorterStemmer", MockPorterStemmer):
+                    with patch(
+                        "nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize
+                    ):
+                        with patch("nltk.corpus.stopwords", MockStopwords):
+                            with patch("fuzzywuzzy.fuzz", MockFuzz):
+                                with patch("fuzzywuzzy.process", MockProcess):
+                                    with patch(
+                                        "sklearn.metrics.pairwise.cosine_similarity",
+                                        MockCosineSimilarity.cosine_similarity,
+                                    ):
+                                        with patch(
+                                            "sklearn.neighbors.NearestNeighbors",
+                                            MockNearestNeighbors,
+                                        ):
                                             engine = create_search_engine()
 
         # Generate large corpus
@@ -1101,12 +1167,12 @@ class TestSearchIntegrationComprehensive:
 
         for query_spec in queries[:5]:  # Test first 5 queries
             start = time.time()
-            results = engine.search(query_spec['query'], top_k=10)
+            results = engine.search(query_spec["query"], top_k=10)
             search_time = time.time() - start
             search_times.append(search_time)
 
             # Verify expected results
-            assert len(results) >= query_spec.get('min_results', 0)
+            assert len(results) >= query_spec.get("min_results", 0)
 
         avg_search_time = sum(search_times) / len(search_times)
         print(f"Average search time: {avg_search_time*1000:.2f}ms")
@@ -1117,21 +1183,29 @@ class TestSearchIntegrationComprehensive:
 
 def test_factory_function_comprehensive():
     """Test search engine factory with various configurations."""
-    with patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer):
-        with patch('redis.Redis', MockRedisClient):
-            with patch('nltk.stem.PorterStemmer', MockPorterStemmer):
-                with patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize):
-                    with patch('nltk.corpus.stopwords', MockStopwords):
-                        with patch('fuzzywuzzy.fuzz', MockFuzz):
-                            with patch('fuzzywuzzy.process', MockProcess):
-                                with patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity):
-                                    with patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors):
+    with patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer):
+        with patch("redis.Redis", MockRedisClient):
+            with patch("nltk.stem.PorterStemmer", MockPorterStemmer):
+                with patch(
+                    "nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize
+                ):
+                    with patch("nltk.corpus.stopwords", MockStopwords):
+                        with patch("fuzzywuzzy.fuzz", MockFuzz):
+                            with patch("fuzzywuzzy.process", MockProcess):
+                                with patch(
+                                    "sklearn.metrics.pairwise.cosine_similarity",
+                                    MockCosineSimilarity.cosine_similarity,
+                                ):
+                                    with patch(
+                                        "sklearn.neighbors.NearestNeighbors",
+                                        MockNearestNeighbors,
+                                    ):
                                         # Test sync engine creation
                                         sync_engine = create_search_engine(
-                                            embedding_model='all-MiniLM-L6-v2',
+                                            embedding_model="all-MiniLM-L6-v2",
                                             enable_analytics=True,
                                             cache_dir=None,
-                                            async_mode=False
+                                            async_mode=False,
                                         )
                                         assert isinstance(sync_engine, SemanticSearch)
                                         assert sync_engine.analytics is not None
@@ -1139,18 +1213,27 @@ def test_factory_function_comprehensive():
 
                                         # Test async engine creation
                                         async_engine = create_search_engine(
-                                            embedding_model='all-mpnet-base-v2',
+                                            embedding_model="all-mpnet-base-v2",
                                             enable_analytics=False,
                                             cache_dir=Path("/tmp/test_cache"),
-                                            async_mode=True
+                                            async_mode=True,
                                         )
-                                        assert isinstance(async_engine, AsyncSemanticSearch)
-                                        assert async_engine.search_engine.analytics is None
+                                        assert isinstance(
+                                            async_engine, AsyncSemanticSearch
+                                        )
+                                        assert (
+                                            async_engine.search_engine.analytics is None
+                                        )
                                         async_engine.close()
 
                                         # Test with custom cache directory
                                         temp_dir = tempfile.mkdtemp()
-                                        custom_engine = create_search_engine(cache_dir=Path(temp_dir))
-                                        assert custom_engine.embedding_cache.cache_dir == Path(temp_dir)
+                                        custom_engine = create_search_engine(
+                                            cache_dir=Path(temp_dir)
+                                        )
+                                        assert (
+                                            custom_engine.embedding_cache.cache_dir
+                                            == Path(temp_dir)
+                                        )
                                         custom_engine.close()
                                         shutil.rmtree(temp_dir)

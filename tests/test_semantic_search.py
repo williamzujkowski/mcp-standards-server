@@ -65,10 +65,10 @@ class TestQueryPreprocessor:
         query = "react AND testing NOT angular OR vue"
         result = self.preprocessor.preprocess(query)
 
-        assert len(result.boolean_operators['AND']) > 0
-        assert len(result.boolean_operators['NOT']) > 0
-        assert len(result.boolean_operators['OR']) > 0
-        assert "angular" in result.boolean_operators['NOT']
+        assert len(result.boolean_operators["AND"]) > 0
+        assert len(result.boolean_operators["NOT"]) > 0
+        assert len(result.boolean_operators["OR"]) > 0
+        assert "angular" in result.boolean_operators["NOT"]
 
     def test_stopword_removal(self):
         """Test stopword removal."""
@@ -121,11 +121,7 @@ class TestEmbeddingCache:
 
     def test_batch_embedding(self):
         """Test batch embedding generation."""
-        texts = [
-            "Document 1",
-            "Document 2",
-            "Document 3"
-        ]
+        texts = ["Document 1", "Document 2", "Document 3"]
 
         embeddings = self.cache.get_embeddings_batch(texts)
 
@@ -166,22 +162,22 @@ class TestFuzzyMatcher:
     def setup_method(self):
         """Set up test instance."""
         self.matcher = FuzzyMatcher(threshold=80)
-        self.matcher.add_known_terms(['react', 'angular', 'vue', 'testing', 'security'])
+        self.matcher.add_known_terms(["react", "angular", "vue", "testing", "security"])
 
     def test_exact_match(self):
         """Test exact matching."""
-        matches = self.matcher.find_matches('react')
+        matches = self.matcher.find_matches("react")
 
         assert len(matches) > 0
-        assert matches[0][0] == 'react'
+        assert matches[0][0] == "react"
         assert matches[0][1] == 100
 
     def test_fuzzy_match(self):
         """Test fuzzy matching with typos."""
-        matches = self.matcher.find_matches('reakt')  # Typo in 'react'
+        matches = self.matcher.find_matches("reakt")  # Typo in 'react'
 
         assert len(matches) > 0
-        assert matches[0][0] == 'react'
+        assert matches[0][0] == "react"
         assert matches[0][1] >= 80
 
     def test_query_correction(self):
@@ -196,7 +192,7 @@ class TestFuzzyMatcher:
     def test_threshold_filtering(self):
         """Test threshold-based filtering."""
         # Very different word shouldn't match
-        matches = self.matcher.find_matches('python')
+        matches = self.matcher.find_matches("python")
 
         # Should have no high-scoring matches with the known terms
         high_scores = [m for m in matches if m[1] >= 80]
@@ -210,17 +206,36 @@ class TestSemanticSearch:
         """Set up test instance."""
         self.temp_dir = tempfile.mkdtemp()
         self.search = SemanticSearch(
-            cache_dir=Path(self.temp_dir),
-            enable_analytics=True
+            cache_dir=Path(self.temp_dir), enable_analytics=True
         )
 
         # Index test documents
         self.test_docs = [
-            ("doc1", "React component testing best practices", {"type": "testing", "framework": "react"}),
-            ("doc2", "Angular security standards and guidelines", {"type": "security", "framework": "angular"}),
-            ("doc3", "Vue.js performance optimization techniques", {"type": "performance", "framework": "vue"}),
-            ("doc4", "API design patterns for REST services", {"type": "api", "framework": "generic"}),
-            ("doc5", "Web accessibility WCAG compliance", {"type": "accessibility", "framework": "generic"}),
+            (
+                "doc1",
+                "React component testing best practices",
+                {"type": "testing", "framework": "react"},
+            ),
+            (
+                "doc2",
+                "Angular security standards and guidelines",
+                {"type": "security", "framework": "angular"},
+            ),
+            (
+                "doc3",
+                "Vue.js performance optimization techniques",
+                {"type": "performance", "framework": "vue"},
+            ),
+            (
+                "doc4",
+                "API design patterns for REST services",
+                {"type": "api", "framework": "generic"},
+            ),
+            (
+                "doc5",
+                "Web accessibility WCAG compliance",
+                {"type": "accessibility", "framework": "generic"},
+            ),
         ]
 
         self.search.index_documents_batch(self.test_docs)
@@ -302,7 +317,7 @@ class TestSemanticSearch:
         assert len(results[0].highlights) > 0
 
         # Highlights should contain search terms
-        highlight_text = ' '.join(results[0].highlights).lower()
+        highlight_text = " ".join(results[0].highlights).lower()
         assert "react" in highlight_text or "component" in highlight_text
 
     def test_result_caching(self):
@@ -434,7 +449,9 @@ class TestSearchIntegration:
 
         # Index standards documents
         standards_docs = [
-            ("std-001", """
+            (
+                "std-001",
+                """
             # React Component Standards
 
             ## Best Practices
@@ -446,9 +463,12 @@ class TestSearchIntegration:
             - Unit tests for all components
             - Integration tests for complex flows
             - Snapshot tests for UI consistency
-            """, {"category": "frontend", "framework": "react", "version": "18"}),
-
-            ("std-002", """
+            """,
+                {"category": "frontend", "framework": "react", "version": "18"},
+            ),
+            (
+                "std-002",
+                """
             # API Security Standards
 
             ## Authentication
@@ -459,9 +479,12 @@ class TestSearchIntegration:
             ## HTTPS Requirements
             - TLS 1.3 minimum
             - Strong cipher suites only
-            """, {"category": "security", "type": "api", "version": "2.0"}),
-
-            ("std-003", """
+            """,
+                {"category": "security", "type": "api", "version": "2.0"},
+            ),
+            (
+                "std-003",
+                """
             # Python Testing Standards
 
             ## Framework
@@ -472,7 +495,9 @@ class TestSearchIntegration:
             ## Best Practices
             - Test-driven development
             - Continuous integration
-            """, {"category": "testing", "language": "python", "version": "3.0"}),
+            """,
+                {"category": "testing", "language": "python", "version": "3.0"},
+            ),
         ]
 
         search.index_documents_batch(standards_docs)
@@ -493,7 +518,10 @@ class TestSearchIntegration:
         results = search.search("security AND api NOT react")
         assert len(results) > 0
         assert all("react" not in r.content.lower() for r in results)
-        assert any("security" in r.content.lower() and "api" in r.content.lower() for r in results)
+        assert any(
+            "security" in r.content.lower() and "api" in r.content.lower()
+            for r in results
+        )
 
         # 4. Filtered search
         results = search.search("standards", filters={"category": "frontend"})
@@ -521,8 +549,10 @@ class TestSearchIntegration:
             """
             metadata = {
                 "index": i,
-                "language": ['Python', 'JavaScript', 'Java', 'Go', 'Rust'][i % 5],
-                "topic": ['testing', 'security', 'performance', 'design', 'deployment'][i % 5]
+                "language": ["Python", "JavaScript", "Java", "Go", "Rust"][i % 5],
+                "topic": ["testing", "security", "performance", "design", "deployment"][
+                    i % 5
+                ],
             }
             docs.append((doc_id, content, metadata))
 
@@ -538,7 +568,7 @@ class TestSearchIntegration:
             "JavaScript security",
             "performance optimization",
             "React components",
-            "deployment strategies"
+            "deployment strategies",
         ]
 
         search_times = []
@@ -574,9 +604,9 @@ def test_create_search_engine():
     # Create with custom settings
     temp_dir = tempfile.mkdtemp()
     custom_engine = create_search_engine(
-        embedding_model='all-MiniLM-L6-v2',
+        embedding_model="all-MiniLM-L6-v2",
         enable_analytics=False,
-        cache_dir=Path(temp_dir)
+        cache_dir=Path(temp_dir),
     )
     assert custom_engine.analytics is None
     custom_engine.close()

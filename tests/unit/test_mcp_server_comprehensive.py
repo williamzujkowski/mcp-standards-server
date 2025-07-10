@@ -97,16 +97,13 @@ class TestMCPServerInitialization:
             "auth": {
                 "enabled": True,
                 "secret_key": "test_secret",
-                "token_expiry_hours": 12
+                "token_expiry_hours": 12,
             },
-            "privacy": {
-                "detect_pii": True,
-                "redact_pii": False
-            },
+            "privacy": {"detect_pii": True, "redact_pii": False},
             "rate_limit_window": 30,
             "rate_limit_max_requests": 50,
             "token_model": "gpt-3.5-turbo",
-            "default_token_budget": 4000
+            "default_token_budget": 4000,
         }
 
         server = MCPStandardsServer(config)
@@ -124,13 +121,15 @@ class TestMCPServerInitialization:
         mock_semantic_search.SemanticSearch = Mock()
 
         # Patch the module in sys.modules
-        with patch.dict('sys.modules', {'src.core.standards.semantic_search': mock_semantic_search}):
+        with patch.dict(
+            "sys.modules", {"src.core.standards.semantic_search": mock_semantic_search}
+        ):
             server = MCPStandardsServer(config)
 
             # The search should be initialized
             assert server.search is not None
 
-    @patch.dict('os.environ', {'MCP_DISABLE_SEARCH': 'true'})
+    @patch.dict("os.environ", {"MCP_DISABLE_SEARCH": "true"})
     def test_search_initialization_disabled(self):
         """Test search initialization when disabled."""
         server = MCPStandardsServer()
@@ -159,7 +158,11 @@ class TestMCPServerAuthentication:
         auth_manager = Mock(spec=AuthManager)
         auth_manager.is_enabled.return_value = True
         auth_manager.extract_auth_from_headers.return_value = ("bearer", "test_token")
-        auth_manager.verify_token.return_value = (True, {"sub": "test_user", "scope": "mcp:tools"}, None)
+        auth_manager.verify_token.return_value = (
+            True,
+            {"sub": "test_user", "scope": "mcp:tools"},
+            None,
+        )
         auth_manager.check_permission.return_value = True
         return auth_manager
 
@@ -173,46 +176,47 @@ class TestMCPServerAuthentication:
     @pytest.mark.asyncio
     async def test_successful_authentication(self, server_with_auth):
         """Test successful authentication flow."""
-        with patch.object(server_with_auth, '_execute_tool') as mock_execute:
+        with patch.object(server_with_auth, "_execute_tool") as mock_execute:
             mock_execute.return_value = {"result": "success"}
 
             # Test the internal tool execution directly
             result = await server_with_auth._execute_tool(
-                "get_applicable_standards",
-                {"context": {"project_type": "web"}}
+                "get_applicable_standards", {"context": {"project_type": "web"}}
             )
 
             assert result["result"] == "success"
             mock_execute.assert_called_once_with(
-                "get_applicable_standards",
-                {"context": {"project_type": "web"}}
+                "get_applicable_standards", {"context": {"project_type": "web"}}
             )
 
     @pytest.mark.asyncio
     async def test_authentication_flow_with_call_tool(self, server_with_auth):
         """Test authentication flow through call_tool."""
-        with patch.object(server_with_auth, '_execute_tool') as mock_execute:
+        with patch.object(server_with_auth, "_execute_tool") as mock_execute:
             mock_execute.return_value = {"result": "success"}
 
             # Test the internal tool execution directly since call_tool is a decorator
             result = await server_with_auth._execute_tool(
-                "get_applicable_standards",
-                {"context": {"project_type": "web"}}
+                "get_applicable_standards", {"context": {"project_type": "web"}}
             )
 
             assert result["result"] == "success"
             mock_execute.assert_called_once_with(
-                "get_applicable_standards",
-                {"context": {"project_type": "web"}}
+                "get_applicable_standards", {"context": {"project_type": "web"}}
             )
 
     @pytest.mark.asyncio
     async def test_missing_authentication(self, server_with_auth):
         """Test request without authentication when auth is required."""
-        server_with_auth.auth_manager.extract_auth_from_headers.return_value = (None, None)
+        server_with_auth.auth_manager.extract_auth_from_headers.return_value = (
+            None,
+            None,
+        )
 
         # Test authentication requirements directly
-        auth_type, credential = server_with_auth.auth_manager.extract_auth_from_headers({})
+        auth_type, credential = server_with_auth.auth_manager.extract_auth_from_headers(
+            {}
+        )
         assert auth_type is None
         assert credential is None
 
@@ -226,13 +230,12 @@ class TestMCPServerAuthentication:
         server.auth_manager = Mock()
         server.auth_manager.is_enabled.return_value = False
 
-        with patch.object(server, '_execute_tool') as mock_execute:
+        with patch.object(server, "_execute_tool") as mock_execute:
             mock_execute.return_value = {"result": "success"}
 
             # Test the internal tool execution directly
             result = await server._execute_tool(
-                "get_applicable_standards",
-                {"context": {"project_type": "web"}}
+                "get_applicable_standards", {"context": {"project_type": "web"}}
             )
 
             assert result["result"] == "success"
@@ -244,10 +247,7 @@ class TestMCPServerRateLimiting:
     @pytest.fixture
     def server_with_rate_limit(self):
         """Create server with restrictive rate limits."""
-        config = {
-            "rate_limit_window": 60,
-            "rate_limit_max_requests": 2
-        }
+        config = {"rate_limit_window": 60, "rate_limit_max_requests": 2}
         server = MCPStandardsServer(config)
         server.auth_manager = Mock()
         server.auth_manager.is_enabled.return_value = False
@@ -279,7 +279,9 @@ class TestMCPServerRateLimiting:
         result = server_with_rate_limit._check_rate_limit(user_key)
 
         assert result is True
-        assert len(server_with_rate_limit._rate_limit_store[user_key]) == 1  # Only current request
+        assert (
+            len(server_with_rate_limit._rate_limit_store[user_key]) == 1
+        )  # Only current request
 
     def test_rate_limit_per_user(self, server_with_rate_limit):
         """Test that rate limits are enforced per user."""
@@ -329,7 +331,7 @@ class TestMCPServerToolExecution:
             "evaluation_path": ["rule1", "rule2"],
             "matched_rules": ["rule1"],
             "conflicts_resolved": 0,
-            "priority_order": ["react-patterns", "web-security"]
+            "priority_order": ["react-patterns", "web-security"],
         }
 
         result = await server._get_applicable_standards(context, True)
@@ -356,11 +358,25 @@ class TestMCPServerToolExecution:
     async def test_search_standards_with_search_enabled(self, server):
         """Test search_standards with semantic search enabled."""
         server.search.search.return_value = [
-            Mock(id="standard1", score=0.9, content="content1", metadata={}, highlights=[]),
-            Mock(id="standard2", score=0.7, content="content2", metadata={}, highlights=[])
+            Mock(
+                id="standard1",
+                score=0.9,
+                content="content1",
+                metadata={},
+                highlights=[],
+            ),
+            Mock(
+                id="standard2",
+                score=0.7,
+                content="content2",
+                metadata={},
+                highlights=[],
+            ),
         ]
 
-        result = await server._search_standards("test query", limit=10, min_relevance=0.5)
+        result = await server._search_standards(
+            "test query", limit=10, min_relevance=0.5
+        )
 
         assert len(result["results"]) == 2
         assert result["results"][0]["standard"] == "standard1"
@@ -386,13 +402,17 @@ class TestMCPServerToolExecution:
         # Mock cache file exists
         server.synchronizer.cache_dir = Path("/test/cache")
         server.synchronizer.cache_dir / f"{standard_id}.json"
-        with patch.object(Path, 'exists', return_value=True), \
-             patch('builtins.open', mock_open(read_data=json.dumps(standard_data))):
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch("builtins.open", mock_open(read_data=json.dumps(standard_data))),
+        ):
 
             result = await server._get_standard_details(standard_id)
 
             assert result == standard_data
-            server.metrics.record_cache_access.assert_called_with("get_standard_details", True)
+            server.metrics.record_cache_access.assert_called_with(
+                "get_standard_details", True
+            )
 
     @pytest.mark.asyncio
     async def test_get_standard_details_cache_miss(self, server):
@@ -401,14 +421,16 @@ class TestMCPServerToolExecution:
 
         # Mock cache file doesn't exist
         server.synchronizer.cache_dir = Path("/test/cache")
-        with patch.object(Path, 'exists', return_value=False):
+        with patch.object(Path, "exists", return_value=False):
 
             with pytest.raises(MCPError) as exc_info:
                 await server._get_standard_details(standard_id)
 
             assert exc_info.value.code == ErrorCode.STANDARDS_NOT_FOUND
             assert standard_id in str(exc_info.value)
-            server.metrics.record_cache_access.assert_called_with("get_standard_details", False)
+            server.metrics.record_cache_access.assert_called_with(
+                "get_standard_details", False
+            )
 
     @pytest.mark.asyncio
     async def test_list_available_standards(self, server):
@@ -416,23 +438,20 @@ class TestMCPServerToolExecution:
         # Mock cache directory and files
         cache_dir = Mock()
         cache_dir.exists.return_value = True
-        cache_dir.glob.return_value = [
-            Mock(stem="standard1"),
-            Mock(stem="standard2")
-        ]
+        cache_dir.glob.return_value = [Mock(stem="standard1"), Mock(stem="standard2")]
         server.synchronizer.cache_dir = cache_dir
 
         standard1_data = {"id": "standard1", "name": "Standard 1", "category": "web"}
         standard2_data = {"id": "standard2", "name": "Standard 2", "category": "api"}
 
-        def mock_open_func(file_path, mode='r'):
+        def mock_open_func(file_path, mode="r"):
             if "standard1" in str(file_path):
                 return mock_open(read_data=json.dumps(standard1_data))()
             elif "standard2" in str(file_path):
                 return mock_open(read_data=json.dumps(standard2_data))()
             return mock_open(read_data="{}")()
 
-        with patch('builtins.open', side_effect=mock_open_func):
+        with patch("builtins.open", side_effect=mock_open_func):
             result = await server._list_available_standards()
 
             assert len(result["standards"]) == 2
@@ -448,7 +467,7 @@ class TestMCPServerToolExecution:
         # Mock get_applicable_standards
         server.rule_engine.evaluate.return_value = {
             "resolved_standards": ["javascript-best-practices"],
-            "evaluation_path": []
+            "evaluation_path": [],
         }
 
         result = await server._suggest_improvements(code, context)
@@ -492,7 +511,7 @@ class TestMCPServerToolExecution:
         standard_data = {"id": standard_id, "content": "test content"}
 
         # Mock get_standard_details
-        with patch.object(server, '_get_standard_details', return_value=standard_data):
+        with patch.object(server, "_get_standard_details", return_value=standard_data):
             mock_result = Mock()
             mock_result.format_used = StandardFormat.CONDENSED
             mock_result.original_tokens = 1000
@@ -502,7 +521,10 @@ class TestMCPServerToolExecution:
             mock_result.sections_excluded = ["examples"]
             mock_result.warnings = []
 
-            server.token_optimizer.optimize_standard.return_value = ("optimized content", mock_result)
+            server.token_optimizer.optimize_standard.return_value = (
+                "optimized content",
+                mock_result,
+            )
 
             result = await server._get_optimized_standard(standard_id, "condensed", 500)
 
@@ -517,7 +539,7 @@ class TestMCPServerToolExecution:
         """Test get_metrics_dashboard tool."""
         expected_metrics = {
             "summary": {"total_calls": 100, "error_rate": 5.0},
-            "auth_stats": {"total_attempts": 50, "success_rate": 95.0}
+            "auth_stats": {"total_attempts": 50, "success_rate": 95.0},
         }
 
         server.metrics.get_dashboard_metrics.return_value = expected_metrics
@@ -551,40 +573,42 @@ class TestMCPServerErrorHandling:
     async def test_validation_error_handling(self, server):
         """Test input validation error handling."""
         # Simulate validation error
-        server.input_validator.validate_tool_input.side_effect = ValidationError("Invalid input", "test_field")
+        server.input_validator.validate_tool_input.side_effect = ValidationError(
+            "Invalid input", "test_field"
+        )
 
         # Test that validation error is raised when calling the validator
         with pytest.raises(ValidationError):
-            server.input_validator.validate_tool_input("get_applicable_standards", {"invalid": "data"})
+            server.input_validator.validate_tool_input(
+                "get_applicable_standards", {"invalid": "data"}
+            )
 
     @pytest.mark.asyncio
     async def test_tool_execution_error(self, server):
         """Test tool execution error handling."""
-        with patch.object(server, '_execute_tool') as mock_execute:
+        with patch.object(server, "_execute_tool") as mock_execute:
             mock_execute.side_effect = RuntimeError("Tool execution failed")
 
             # Test that _execute_tool raises the error
             with pytest.raises(RuntimeError):
                 await server._execute_tool(
-                    "get_applicable_standards",
-                    {"context": {"project_type": "web"}}
+                    "get_applicable_standards", {"context": {"project_type": "web"}}
                 )
 
     @pytest.mark.asyncio
     async def test_mcp_error_handling(self, server):
         """Test handling of structured MCP errors."""
-        with patch.object(server, '_execute_tool') as mock_execute:
+        with patch.object(server, "_execute_tool") as mock_execute:
             mock_execute.side_effect = MCPError(
                 code=ErrorCode.STANDARDS_NOT_FOUND,
                 message="Standard not found",
-                details={"standard_id": "test"}
+                details={"standard_id": "test"},
             )
 
             # Test that _execute_tool raises the MCPError
             with pytest.raises(MCPError) as exc_info:
                 await server._execute_tool(
-                    "get_standard_details",
-                    {"standard_id": "test"}
+                    "get_standard_details", {"standard_id": "test"}
                 )
 
             assert exc_info.value.error_detail.code == ErrorCode.STANDARDS_NOT_FOUND
@@ -598,12 +622,7 @@ class TestMCPServerPrivacyFiltering:
     @pytest.fixture
     def server_with_privacy(self):
         """Create server with privacy filtering enabled."""
-        config = {
-            "privacy": {
-                "detect_pii": True,
-                "redact_pii": True
-            }
-        }
+        config = {"privacy": {"detect_pii": True, "redact_pii": True}}
         server = MCPStandardsServer(config)
         server.auth_manager = Mock()
         server.auth_manager.is_enabled.return_value = False
@@ -614,7 +633,7 @@ class TestMCPServerPrivacyFiltering:
         """Test privacy filtering when enabled."""
         test_response = {"email": "test@example.com", "other": "data"}
 
-        with patch.object(server_with_privacy, '_execute_tool') as mock_execute:
+        with patch.object(server_with_privacy, "_execute_tool") as mock_execute:
             mock_execute.return_value = test_response
 
             # Mock privacy filter
@@ -624,21 +643,25 @@ class TestMCPServerPrivacyFiltering:
             server_with_privacy.privacy_filter.get_privacy_report.return_value = {
                 "has_pii": True,
                 "pii_count": 1,
-                "pii_types_found": ["email"]
+                "pii_types_found": ["email"],
             }
             server_with_privacy.privacy_filter.filter_dict.return_value = (
                 {"email": "[REDACTED]", "other": "data"},
-                {"filtered_fields": ["email"]}
+                {"filtered_fields": ["email"]},
             )
 
             # Test privacy filtering directly
-            privacy_report = server_with_privacy.privacy_filter.get_privacy_report(test_response)
+            privacy_report = server_with_privacy.privacy_filter.get_privacy_report(
+                test_response
+            )
             assert privacy_report["has_pii"] is True
             assert privacy_report["pii_count"] == 1
             assert "email" in privacy_report["pii_types_found"]
 
             # Test filtering
-            filtered_result, _ = server_with_privacy.privacy_filter.filter_dict(test_response)
+            filtered_result, _ = server_with_privacy.privacy_filter.filter_dict(
+                test_response
+            )
             assert filtered_result["email"] == "[REDACTED]"
             assert filtered_result["other"] == "data"
 
@@ -650,7 +673,7 @@ class TestMCPServerPrivacyFiltering:
         server_with_privacy.privacy_filter.config.detect_pii = False
         test_response = {"email": "test@example.com", "other": "data"}
 
-        with patch.object(server_with_privacy, '_execute_tool') as mock_execute:
+        with patch.object(server_with_privacy, "_execute_tool") as mock_execute:
             mock_execute.return_value = test_response
 
             # Test privacy filtering disabled
@@ -658,8 +681,7 @@ class TestMCPServerPrivacyFiltering:
 
             # Test the _execute_tool directly
             result = await server_with_privacy._execute_tool(
-                "get_applicable_standards",
-                {"context": {"project_type": "web"}}
+                "get_applicable_standards", {"context": {"project_type": "web"}}
             )
 
             assert result["email"] == "test@example.com"
@@ -681,30 +703,52 @@ class TestMCPServerMetrics:
     @pytest.mark.asyncio
     async def test_metrics_collection_success(self, server_with_metrics):
         """Test metrics collection for successful tool calls."""
-        with patch.object(server_with_metrics, '_execute_tool') as mock_execute:
+        with patch.object(server_with_metrics, "_execute_tool") as mock_execute:
             mock_execute.return_value = {"result": "success"}
 
             # Test metrics collection directly
-            server_with_metrics.metrics.record_request_size(100, "get_applicable_standards")
-            server_with_metrics.metrics.record_tool_call("get_applicable_standards", 0.5, True)
-            server_with_metrics.metrics.record_response_size(200, "get_applicable_standards")
+            server_with_metrics.metrics.record_request_size(
+                100, "get_applicable_standards"
+            )
+            server_with_metrics.metrics.record_tool_call(
+                "get_applicable_standards", 0.5, True
+            )
+            server_with_metrics.metrics.record_response_size(
+                200, "get_applicable_standards"
+            )
 
             # Verify metrics were recorded
-            server_with_metrics.metrics.record_request_size.assert_called_with(100, "get_applicable_standards")
-            server_with_metrics.metrics.record_tool_call.assert_called_with("get_applicable_standards", 0.5, True)
-            server_with_metrics.metrics.record_response_size.assert_called_with(200, "get_applicable_standards")
+            server_with_metrics.metrics.record_request_size.assert_called_with(
+                100, "get_applicable_standards"
+            )
+            server_with_metrics.metrics.record_tool_call.assert_called_with(
+                "get_applicable_standards", 0.5, True
+            )
+            server_with_metrics.metrics.record_response_size.assert_called_with(
+                200, "get_applicable_standards"
+            )
 
     @pytest.mark.asyncio
     async def test_metrics_collection_failure(self, server_with_metrics):
         """Test metrics collection for failed tool calls."""
-        with patch.object(server_with_metrics, '_execute_tool') as mock_execute:
+        with patch.object(server_with_metrics, "_execute_tool") as mock_execute:
             mock_execute.side_effect = ValidationError("Invalid input", "test_field")
 
             # Test metrics collection directly for failure
-            server_with_metrics.metrics.record_tool_call("get_applicable_standards", 0.5, False, ErrorCode.VALIDATION_INVALID_PARAMETERS.value)
+            server_with_metrics.metrics.record_tool_call(
+                "get_applicable_standards",
+                0.5,
+                False,
+                ErrorCode.VALIDATION_INVALID_PARAMETERS.value,
+            )
 
             # Verify failure metrics were recorded
-            server_with_metrics.metrics.record_tool_call.assert_called_with("get_applicable_standards", 0.5, False, ErrorCode.VALIDATION_INVALID_PARAMETERS.value)
+            server_with_metrics.metrics.record_tool_call.assert_called_with(
+                "get_applicable_standards",
+                0.5,
+                False,
+                ErrorCode.VALIDATION_INVALID_PARAMETERS.value,
+            )
 
     @pytest.mark.asyncio
     async def test_connection_metrics(self, server_with_metrics):
@@ -728,7 +772,7 @@ class TestMCPServerIntegration:
             "auth": {"enabled": False},
             "privacy": {"detect_pii": False},
             "rate_limit_window": 60,
-            "rate_limit_max_requests": 100
+            "rate_limit_max_requests": 100,
         }
         server = MCPStandardsServer(config)
         server.metrics = Mock()
@@ -741,13 +785,12 @@ class TestMCPServerIntegration:
         configured_server.rule_engine = Mock()
         configured_server.rule_engine.evaluate.return_value = {
             "resolved_standards": ["test-standard"],
-            "evaluation_path": ["rule1"]
+            "evaluation_path": ["rule1"],
         }
 
         # Test the internal tool execution directly
         result = await configured_server._execute_tool(
-            "get_applicable_standards",
-            {"context": {"project_type": "web"}}
+            "get_applicable_standards", {"context": {"project_type": "web"}}
         )
 
         assert result["standards"] == ["test-standard"]
@@ -757,7 +800,7 @@ class TestMCPServerIntegration:
     async def test_server_lifecycle(self, configured_server):
         """Test server startup and shutdown lifecycle."""
         # Mock the stdio_server context manager
-        with patch('src.mcp_server.stdio_server') as mock_stdio:
+        with patch("src.mcp_server.stdio_server") as mock_stdio:
             mock_stdio.return_value.__aenter__.return_value = (Mock(), Mock())
             mock_stdio.return_value.__aexit__.return_value = None
 
@@ -799,14 +842,16 @@ class TestMCPServerIntegration:
             "track_standards_usage",
             "get_recommendations",
             "get_metrics_dashboard",
-            "list_available_standards"
+            "list_available_standards",
         ]
 
         # Test that all expected tools have corresponding methods
         for expected_tool in expected_tools:
             # Convert tool name to method name
             method_name = f"_{expected_tool}"
-            assert hasattr(configured_server, method_name), f"Method {method_name} not found in server"
+            assert hasattr(
+                configured_server, method_name
+            ), f"Method {method_name} not found in server"
 
             # Test that the method is callable
             method = getattr(configured_server, method_name)
@@ -819,15 +864,14 @@ class TestMCPServerIntegration:
         configured_server.rule_engine = Mock()
         configured_server.rule_engine.evaluate.return_value = {
             "resolved_standards": ["test-standard"],
-            "evaluation_path": ["rule1"]
+            "evaluation_path": ["rule1"],
         }
 
         # Execute multiple tools concurrently
         tasks = []
         for i in range(5):
             task = configured_server._execute_tool(
-                "get_applicable_standards",
-                {"context": {"project_type": f"web{i}"}}
+                "get_applicable_standards", {"context": {"project_type": f"web{i}"}}
             )
             tasks.append(task)
 
@@ -868,25 +912,27 @@ class TestMCPServerAdvancedToolExecution:
         std1_data = {"id": "std1", "content": "content1"}
         std2_data = {"id": "std2", "content": "content2"}
 
-        with patch.object(server, '_get_standard_details') as mock_get_details:
+        with patch.object(server, "_get_standard_details") as mock_get_details:
             mock_get_details.side_effect = [std1_data, std2_data]
 
             # Mock token optimizer
             server.token_optimizer.estimate_tokens.return_value = {
                 "total_original": 2000,
-                "standards": [
-                    {"original_tokens": 1000},
-                    {"original_tokens": 1000}
-                ]
+                "standards": [{"original_tokens": 1000}, {"original_tokens": 1000}],
             }
 
-            server.token_optimizer.auto_select_format.return_value = StandardFormat.CONDENSED
+            server.token_optimizer.auto_select_format.return_value = (
+                StandardFormat.CONDENSED
+            )
 
             mock_result = Mock()
             mock_result.format_used = StandardFormat.CONDENSED
             mock_result.compressed_tokens = 400
 
-            server.token_optimizer.optimize_standard.return_value = ("optimized", mock_result)
+            server.token_optimizer.optimize_standard.return_value = (
+                "optimized",
+                mock_result,
+            )
 
             result = await server._auto_optimize_standards(standard_ids, total_budget)
 
@@ -902,13 +948,15 @@ class TestMCPServerAdvancedToolExecution:
 
         standard_data = {"id": standard_id, "content": "test content"}
 
-        with patch.object(server, '_get_standard_details', return_value=standard_data):
+        with patch.object(server, "_get_standard_details", return_value=standard_data):
             server.token_optimizer.progressive_load.return_value = [
                 [("intro", 100), ("overview", 150)],
-                [("details", 300), ("examples", 200)]
+                [("details", 300), ("examples", 200)],
             ]
 
-            result = await server._progressive_load_standard(standard_id, initial_sections)
+            result = await server._progressive_load_standard(
+                standard_id, initial_sections
+            )
 
             assert result["standard_id"] == standard_id
             assert result["total_batches"] == 2
@@ -925,7 +973,7 @@ class TestMCPServerAdvancedToolExecution:
         std1_data = {"id": "std1", "content": "content1"}
         std2_data = {"id": "std2", "content": "content2"}
 
-        with patch.object(server, '_get_standard_details') as mock_get_details:
+        with patch.object(server, "_get_standard_details") as mock_get_details:
             mock_get_details.side_effect = [std1_data, std2_data]
 
             # Mock token estimates
@@ -934,8 +982,8 @@ class TestMCPServerAdvancedToolExecution:
                 "total_compressed": 1000,
                 "standards": [
                     {"original_tokens": 1000, "compressed_tokens": 500},
-                    {"original_tokens": 1000, "compressed_tokens": 500}
-                ]
+                    {"original_tokens": 1000, "compressed_tokens": 500},
+                ],
             }
 
             result = await server._estimate_token_usage(standard_ids, format_types)
@@ -952,7 +1000,7 @@ class TestMCPServerAdvancedToolExecution:
 
         mock_refs = [
             {"id": "ref1", "type": "related", "relevance": 0.9},
-            {"id": "ref2", "type": "dependency", "relevance": 0.8}
+            {"id": "ref2", "type": "dependency", "relevance": 0.8},
         ]
 
         server.cross_referencer.get_references_for_standard.return_value = mock_refs
@@ -986,7 +1034,7 @@ class TestMCPServerAdvancedToolExecution:
         mock_analytics_data = {
             "total_usage": 1000,
             "popular_standards": ["std1", "std2"],
-            "usage_trends": [10, 20, 30, 40, 50]
+            "usage_trends": [10, 20, 30, 40, 50],
         }
 
         server.analytics.get_usage_metrics.return_value = mock_analytics_data
@@ -1010,18 +1058,23 @@ class TestMCPServerAdvancedToolExecution:
         assert result["usage_type"] == usage_type
 
         server.analytics.track_usage.assert_called_once_with(
-            standard_id=standard_id,
-            usage_type=usage_type,
-            section_id=None,
-            context={}
+            standard_id=standard_id, usage_type=usage_type, section_id=None, context={}
         )
 
     @pytest.mark.asyncio
     async def test_get_recommendations(self, server):
         """Test get_recommendations tool."""
         mock_recommendations = [
-            {"type": "gap", "description": "Missing security standard", "priority": "high"},
-            {"type": "improvement", "description": "Update API docs", "priority": "medium"}
+            {
+                "type": "gap",
+                "description": "Missing security standard",
+                "priority": "high",
+            },
+            {
+                "type": "improvement",
+                "description": "Update API docs",
+                "priority": "medium",
+            },
         ]
 
         server.analytics.get_gap_recommendations.return_value = mock_recommendations

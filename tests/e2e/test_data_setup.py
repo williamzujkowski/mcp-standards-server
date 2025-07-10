@@ -27,10 +27,7 @@ def setup_test_data(data_dir: Path):
             "category": "frontend",
             "tags": ["react", "javascript", "frontend", "components"],
             "content": "React 18 best practices for component development...",
-            "metadata": {
-                "author": "Test Author",
-                "last_updated": "2024-01-01"
-            }
+            "metadata": {"author": "Test Author", "last_updated": "2024-01-01"},
         },
         "python-testing": {
             "id": "python-testing",
@@ -38,7 +35,7 @@ def setup_test_data(data_dir: Path):
             "version": "2.1.0",
             "category": "testing",
             "tags": ["python", "testing", "pytest", "quality"],
-            "content": "Python testing standards using pytest..."
+            "content": "Python testing standards using pytest...",
         },
         "javascript-es6-standards": {
             "id": "javascript-es6-standards",
@@ -46,8 +43,8 @@ def setup_test_data(data_dir: Path):
             "version": "1.2.0",
             "category": "frontend",
             "tags": ["javascript", "es6", "frontend", "web"],
-            "content": "Modern JavaScript standards for ES6 and beyond..."
-        }
+            "content": "Modern JavaScript standards for ES6 and beyond...",
+        },
     }
 
     # Write standards to cache
@@ -68,17 +65,13 @@ def setup_test_data(data_dir: Path):
                         {
                             "field": "project_type",
                             "operator": "equals",
-                            "value": "web_application"
+                            "value": "web_application",
                         },
-                        {
-                            "field": "framework",
-                            "operator": "equals",
-                            "value": "react"
-                        }
-                    ]
+                        {"field": "framework", "operator": "equals", "value": "react"},
+                    ],
                 },
                 "standards": ["react-18-patterns", "javascript-es6-standards"],
-                "tags": ["frontend", "react"]
+                "tags": ["frontend", "react"],
             },
             {
                 "id": "javascript-web-rule",
@@ -90,17 +83,17 @@ def setup_test_data(data_dir: Path):
                         {
                             "field": "project_type",
                             "operator": "equals",
-                            "value": "web_application"
+                            "value": "web_application",
                         },
                         {
                             "field": "language",
                             "operator": "equals",
-                            "value": "javascript"
-                        }
-                    ]
+                            "value": "javascript",
+                        },
+                    ],
                 },
                 "standards": ["javascript-es6-standards"],
-                "tags": ["frontend", "javascript"]
+                "tags": ["frontend", "javascript"],
             },
             {
                 "id": "general-javascript-rule",
@@ -112,22 +105,22 @@ def setup_test_data(data_dir: Path):
                         {
                             "field": "languages",
                             "operator": "contains",
-                            "value": "javascript"
+                            "value": "javascript",
                         },
                         {
                             "field": "language",
                             "operator": "equals",
-                            "value": "javascript"
+                            "value": "javascript",
                         },
                         {
                             "field": "project_type",
                             "operator": "in",
-                            "value": ["web", "frontend", "fullstack"]
-                        }
-                    ]
+                            "value": ["web", "frontend", "fullstack"],
+                        },
+                    ],
                 },
                 "standards": ["javascript-es6-standards", "react-18-patterns"],
-                "tags": ["javascript", "web", "frontend"]
+                "tags": ["javascript", "web", "frontend"],
             },
             {
                 "id": "python-api-rule",
@@ -136,20 +129,12 @@ def setup_test_data(data_dir: Path):
                 "conditions": {
                     "logic": "AND",
                     "conditions": [
-                        {
-                            "field": "project_type",
-                            "operator": "equals",
-                            "value": "api"
-                        },
-                        {
-                            "field": "language",
-                            "operator": "equals",
-                            "value": "python"
-                        }
-                    ]
+                        {"field": "project_type", "operator": "equals", "value": "api"},
+                        {"field": "language", "operator": "equals", "value": "python"},
+                    ],
                 },
                 "standards": ["python-testing"],
-                "tags": ["python", "api", "backend"]
+                "tags": ["python", "api", "backend"],
             },
             {
                 "id": "mobile-app-rule",
@@ -161,18 +146,18 @@ def setup_test_data(data_dir: Path):
                         {
                             "field": "project_type",
                             "operator": "equals",
-                            "value": "mobile_app"
+                            "value": "mobile_app",
                         },
                         {
                             "field": "framework",
                             "operator": "equals",
-                            "value": "react-native"
-                        }
-                    ]
+                            "value": "react-native",
+                        },
+                    ],
                 },
                 "standards": ["react-18-patterns", "javascript-es6-standards"],
-                "tags": ["mobile", "react-native", "javascript"]
-            }
+                "tags": ["mobile", "react-native", "javascript"],
+            },
         ]
     }
 
@@ -186,15 +171,10 @@ def setup_test_data(data_dir: Path):
             "owner": "test",
             "repo": "standards",
             "branch": "main",
-            "path": "standards/"
+            "path": "standards/",
         },
-        "paths": {
-            "standards": "standards/",
-            "metadata": "metadata/"
-        },
-        "sync": {
-            "enabled": False  # Disable actual GitHub sync in tests
-        }
+        "paths": {"standards": "standards/", "metadata": "metadata/"},
+        "sync": {"enabled": False},  # Disable actual GitHub sync in tests
     }
 
     sync_file = standards_dir / "sync_config.yaml"

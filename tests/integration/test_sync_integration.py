@@ -31,9 +31,9 @@ class MockGitHubAPI:
     def __init__(self):
         self.files = self._generate_mock_repository()
         self.rate_limit = {
-            'remaining': 5000,
-            'limit': 5000,
-            'reset': int((datetime.now() + timedelta(hours=1)).timestamp())
+            "remaining": 5000,
+            "limit": 5000,
+            "reset": int((datetime.now() + timedelta(hours=1)).timestamp()),
         }
         self.call_count = 0
         self.error_on_calls = set()  # Set of call numbers to error on
@@ -43,73 +43,69 @@ class MockGitHubAPI:
         """Generate mock repository structure."""
         return [
             {
-                'path': 'docs/standards/README.md',
-                'name': 'README.md',
-                'type': 'file',
-                'sha': 'readme123',
-                'size': 2048,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/README.md',
-                'content': b'# Standards Documentation\n\nWelcome to our standards.'
+                "path": "docs/standards/README.md",
+                "name": "README.md",
+                "type": "file",
+                "sha": "readme123",
+                "size": 2048,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/README.md",
+                "content": b"# Standards Documentation\n\nWelcome to our standards.",
             },
             {
-                'path': 'docs/standards/coding-standards.md',
-                'name': 'coding-standards.md',
-                'type': 'file',
-                'sha': 'coding456',
-                'size': 5120,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/coding-standards.md',
-                'content': b'# Coding Standards\n\n## Python\n- Use PEP 8\n- Write tests'
+                "path": "docs/standards/coding-standards.md",
+                "name": "coding-standards.md",
+                "type": "file",
+                "sha": "coding456",
+                "size": 5120,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/coding-standards.md",
+                "content": b"# Coding Standards\n\n## Python\n- Use PEP 8\n- Write tests",
             },
             {
-                'path': 'docs/standards/api-design.yaml',
-                'name': 'api-design.yaml',
-                'type': 'file',
-                'sha': 'api789',
-                'size': 3072,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/api-design.yaml',
-                'content': b'standards:\n  api:\n    - use_rest: true\n    - versioning: required'
+                "path": "docs/standards/api-design.yaml",
+                "name": "api-design.yaml",
+                "type": "file",
+                "sha": "api789",
+                "size": 3072,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/api-design.yaml",
+                "content": b"standards:\n  api:\n    - use_rest: true\n    - versioning: required",
             },
             {
-                'path': 'docs/standards/security/auth-standards.md',
-                'name': 'auth-standards.md',
-                'type': 'file',
-                'sha': 'auth012',
-                'size': 4096,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/security/auth-standards.md',
-                'content': b'# Authentication Standards\n\n- Use OAuth 2.0\n- Implement MFA'
+                "path": "docs/standards/security/auth-standards.md",
+                "name": "auth-standards.md",
+                "type": "file",
+                "sha": "auth012",
+                "size": 4096,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/security/auth-standards.md",
+                "content": b"# Authentication Standards\n\n- Use OAuth 2.0\n- Implement MFA",
             },
             {
-                'path': 'docs/standards/data/schema.json',
-                'name': 'schema.json',
-                'type': 'file',
-                'sha': 'schema345',
-                'size': 1024,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/data/schema.json',
-                'content': b'{"version": "1.0", "properties": {"id": {"type": "string"}}}'
+                "path": "docs/standards/data/schema.json",
+                "name": "schema.json",
+                "type": "file",
+                "sha": "schema345",
+                "size": 1024,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/data/schema.json",
+                "content": b'{"version": "1.0", "properties": {"id": {"type": "string"}}}',
+            },
+            {"path": "docs/standards/drafts", "name": "drafts", "type": "dir"},
+            {
+                "path": "docs/standards/drafts/draft-standard.md",
+                "name": "draft-standard.md",
+                "type": "file",
+                "sha": "draft678",
+                "size": 512,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/drafts/draft-standard.md",
+                "content": b"# Draft Standard\n\nWork in progress...",
             },
             {
-                'path': 'docs/standards/drafts',
-                'name': 'drafts',
-                'type': 'dir'
+                "path": "docs/standards/.hidden-config.yaml",
+                "name": ".hidden-config.yaml",
+                "type": "file",
+                "sha": "hidden901",
+                "size": 256,
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/.hidden-config.yaml",
+                "content": b"internal: true",
             },
-            {
-                'path': 'docs/standards/drafts/draft-standard.md',
-                'name': 'draft-standard.md',
-                'type': 'file',
-                'sha': 'draft678',
-                'size': 512,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/drafts/draft-standard.md',
-                'content': b'# Draft Standard\n\nWork in progress...'
-            },
-            {
-                'path': 'docs/standards/.hidden-config.yaml',
-                'name': '.hidden-config.yaml',
-                'type': 'file',
-                'sha': 'hidden901',
-                'size': 256,
-                'download_url': 'https://raw.githubusercontent.com/test/repo/main/docs/standards/.hidden-config.yaml',
-                'content': b'internal: true'
-            }
         ]
 
     async def list_contents(self, path):
@@ -123,12 +119,19 @@ class MockGitHubAPI:
             raise aiohttp.ClientError("Simulated network error")
 
         # Filter files by path
-        if path == 'docs/standards':
-            return [f for f in self.files if f['path'].startswith('docs/standards/') and
-                    f['path'].count('/') == 2]
+        if path == "docs/standards":
+            return [
+                f
+                for f in self.files
+                if f["path"].startswith("docs/standards/") and f["path"].count("/") == 2
+            ]
         else:
-            return [f for f in self.files if f['path'].startswith(path + '/') and
-                    f['path'].count('/') == path.count('/') + 1]
+            return [
+                f
+                for f in self.files
+                if f["path"].startswith(path + "/")
+                and f["path"].count("/") == path.count("/") + 1
+            ]
 
     async def get_content(self, url):
         """Mock downloading file content."""
@@ -142,17 +145,17 @@ class MockGitHubAPI:
 
         # Find file by download URL
         for file in self.files:
-            if file.get('download_url') == url:
-                return file['content']
+            if file.get("download_url") == url:
+                return file["content"]
 
         raise ValueError(f"File not found: {url}")
 
     def get_rate_limit_headers(self):
         """Get mock rate limit headers."""
         return {
-            'X-RateLimit-Remaining': str(self.rate_limit['remaining']),
-            'X-RateLimit-Limit': str(self.rate_limit['limit']),
-            'X-RateLimit-Reset': str(self.rate_limit['reset'])
+            "X-RateLimit-Remaining": str(self.rate_limit["remaining"]),
+            "X-RateLimit-Limit": str(self.rate_limit["limit"]),
+            "X-RateLimit-Reset": str(self.rate_limit["reset"]),
         }
 
 
@@ -174,26 +177,23 @@ def sync_config(temp_sync_dir):
     """Create sync configuration for tests."""
     config_path = temp_sync_dir / "sync_config.yaml"
     config = {
-        'repository': {
-            'owner': 'test-owner',
-            'repo': 'test-repo',
-            'branch': 'main',
-            'path': 'docs/standards'
+        "repository": {
+            "owner": "test-owner",
+            "repo": "test-repo",
+            "branch": "main",
+            "path": "docs/standards",
         },
-        'sync': {
-            'file_patterns': ['*.md', '*.yaml', '*.yml', '*.json'],
-            'exclude_patterns': ['*draft*', '.*'],
-            'max_file_size': 10240,  # 10KB
-            'retry_attempts': 3,
-            'retry_delay': 0.1
+        "sync": {
+            "file_patterns": ["*.md", "*.yaml", "*.yml", "*.json"],
+            "exclude_patterns": ["*draft*", ".*"],
+            "max_file_size": 10240,  # 10KB
+            "retry_attempts": 3,
+            "retry_delay": 0.1,
         },
-        'cache': {
-            'ttl_hours': 24,
-            'max_size_mb': 10
-        }
+        "cache": {"ttl_hours": 24, "max_size_mb": 10},
     }
 
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f)
 
     return config_path
@@ -206,17 +206,16 @@ class TestFullSyncWorkflow:
     async def test_initial_sync(self, sync_config, temp_sync_dir, mock_github_api):
         """Test initial sync with empty cache."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Mock API calls
         async def mock_get(url, **kwargs):
             mock_response = AsyncMock()
 
-            if 'api.github.com/repos' in url and '/contents/' in url:
+            if "api.github.com/repos" in url and "/contents/" in url:
                 # Repository listing
-                path = url.split('/contents/')[-1]
+                path = url.split("/contents/")[-1]
                 mock_response.status = 200
                 mock_response.json = AsyncMock(
                     return_value=await mock_github_api.list_contents(path)
@@ -232,7 +231,7 @@ class TestFullSyncWorkflow:
 
             return mock_response
 
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get
 
             result = await synchronizer.sync()
@@ -247,14 +246,14 @@ class TestFullSyncWorkflow:
 
         # Verify specific files were synced (excluding drafts and hidden)
         synced_paths = {f.path for f in result.synced_files}
-        assert 'docs/standards/README.md' in synced_paths
-        assert 'docs/standards/coding-standards.md' in synced_paths
-        assert 'docs/standards/api-design.yaml' in synced_paths
-        assert 'docs/standards/data/schema.json' in synced_paths
+        assert "docs/standards/README.md" in synced_paths
+        assert "docs/standards/coding-standards.md" in synced_paths
+        assert "docs/standards/api-design.yaml" in synced_paths
+        assert "docs/standards/data/schema.json" in synced_paths
 
         # Verify excluded files
-        assert 'docs/standards/drafts/draft-standard.md' not in synced_paths
-        assert 'docs/standards/.hidden-config.yaml' not in synced_paths
+        assert "docs/standards/drafts/draft-standard.md" not in synced_paths
+        assert "docs/standards/.hidden-config.yaml" not in synced_paths
 
         # Verify file contents
         readme_path = temp_sync_dir / "cache" / "README.md"
@@ -265,16 +264,15 @@ class TestFullSyncWorkflow:
     async def test_incremental_sync(self, sync_config, temp_sync_dir, mock_github_api):
         """Test incremental sync with existing cache."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # First sync
         async def mock_get(url, **kwargs):
             mock_response = AsyncMock()
 
-            if 'api.github.com/repos' in url and '/contents/' in url:
-                path = url.split('/contents/')[-1]
+            if "api.github.com/repos" in url and "/contents/" in url:
+                path = url.split("/contents/")[-1]
                 mock_response.status = 200
                 mock_response.json = AsyncMock(
                     return_value=await mock_github_api.list_contents(path)
@@ -289,7 +287,7 @@ class TestFullSyncWorkflow:
 
             return mock_response
 
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get
 
             # Initial sync
@@ -313,16 +311,15 @@ class TestFullSyncWorkflow:
     async def test_sync_with_updates(self, sync_config, temp_sync_dir, mock_github_api):
         """Test sync when files have been updated."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Mock initial state
         async def mock_get_v1(url, **kwargs):
             mock_response = AsyncMock()
 
-            if 'api.github.com/repos' in url and '/contents/' in url:
-                path = url.split('/contents/')[-1]
+            if "api.github.com/repos" in url and "/contents/" in url:
+                path = url.split("/contents/")[-1]
                 mock_response.status = 200
                 mock_response.json = AsyncMock(
                     return_value=await mock_github_api.list_contents(path)
@@ -338,22 +335,22 @@ class TestFullSyncWorkflow:
             return mock_response
 
         # Initial sync
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get_v1
             await synchronizer.sync()
 
         # Update mock files (simulate file changes)
         for file in mock_github_api.files:
-            if file['name'] == 'README.md':
-                file['sha'] = 'readme456_updated'
-                file['content'] = b'# Standards Documentation v2\n\nUpdated content.'
+            if file["name"] == "README.md":
+                file["sha"] = "readme456_updated"
+                file["content"] = b"# Standards Documentation v2\n\nUpdated content."
 
         # Mock updated state
         async def mock_get_v2(url, **kwargs):
             mock_response = AsyncMock()
 
-            if 'api.github.com/repos' in url and '/contents/' in url:
-                path = url.split('/contents/')[-1]
+            if "api.github.com/repos" in url and "/contents/" in url:
+                path = url.split("/contents/")[-1]
                 mock_response.status = 200
                 mock_response.json = AsyncMock(
                     return_value=await mock_github_api.list_contents(path)
@@ -369,7 +366,7 @@ class TestFullSyncWorkflow:
             return mock_response
 
         # Sync with updates
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get_v2
             await synchronizer.sync()
 
@@ -383,7 +380,8 @@ class TestCLIIntegration:
 
     def test_sync_standards_function(self, sync_config, temp_sync_dir, mock_github_api):
         """Test the sync_standards convenience function."""
-        with patch('aiohttp.ClientSession.get') as mock_get:
+        with patch("aiohttp.ClientSession.get") as mock_get:
+
             async def mock_response_handler(url, **kwargs):
                 mock_response = AsyncMock()
                 mock_response.status = 200
@@ -394,10 +392,7 @@ class TestCLIIntegration:
             mock_get.return_value.__aenter__.side_effect = mock_response_handler
 
             # Use the convenience function
-            result = sync_standards(
-                force=False,
-                config_path=sync_config
-            )
+            result = sync_standards(force=False, config_path=sync_config)
 
             assert isinstance(result, SyncResult)
 
@@ -405,20 +400,19 @@ class TestCLIIntegration:
         """Test the check_for_updates convenience function."""
         # Create synchronizer and add some test metadata
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Add test metadata
         from src.core.standards.sync import FileMetadata
 
-        synchronizer.file_metadata['old.md'] = FileMetadata(
-            path='old.md',
-            sha='abc',
+        synchronizer.file_metadata["old.md"] = FileMetadata(
+            path="old.md",
+            sha="abc",
             size=100,
-            last_modified='',
-            local_path=Path('old.md'),
-            sync_time=datetime.now() - timedelta(hours=48)
+            last_modified="",
+            local_path=Path("old.md"),
+            sync_time=datetime.now() - timedelta(hours=48),
         )
 
         synchronizer._save_metadata()
@@ -426,36 +420,37 @@ class TestCLIIntegration:
         # Test the convenience function
         updates = check_for_updates(config_path=sync_config)
 
-        assert 'outdated_files' in updates
-        assert 'current_files' in updates
-        assert len(updates['outdated_files']) > 0
+        assert "outdated_files" in updates
+        assert "current_files" in updates
+        assert len(updates["outdated_files"]) > 0
 
 
 class TestCrossPlatformCompatibility:
     """Test cross-platform file system operations."""
 
     @pytest.mark.asyncio
-    async def test_windows_path_handling(self, sync_config, temp_sync_dir, mock_github_api):
+    async def test_windows_path_handling(
+        self, sync_config, temp_sync_dir, mock_github_api
+    ):
         """Test proper path handling on Windows-style paths."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Mock Windows-style paths
         file_info = {
-            'path': 'docs\\standards\\windows-file.md',
-            'name': 'windows-file.md',
-            'sha': 'win123',
-            'download_url': 'https://example.com/windows-file.md',
-            'size': 100
+            "path": "docs\\standards\\windows-file.md",
+            "name": "windows-file.md",
+            "sha": "win123",
+            "download_url": "https://example.com/windows-file.md",
+            "size": 100,
         }
 
         # Normalize path
-        normalized_path = file_info['path'].replace('\\', '/')
-        file_info['path'] = normalized_path
+        normalized_path = file_info["path"].replace("\\", "/")
+        file_info["path"] = normalized_path
 
-        with patch.object(synchronizer, '_download_file', return_value=b'content'):
+        with patch.object(synchronizer, "_download_file", return_value=b"content"):
             async with aiohttp.ClientSession() as session:
                 result = await synchronizer._sync_file(session, file_info)
 
@@ -463,36 +458,38 @@ class TestCrossPlatformCompatibility:
 
         # Verify file was saved with proper path separators
         expected_path = synchronizer.cache_dir / "windows-file.md"
-        assert expected_path.exists() or (synchronizer.cache_dir / "standards" / "windows-file.md").exists()
+        assert (
+            expected_path.exists()
+            or (synchronizer.cache_dir / "standards" / "windows-file.md").exists()
+        )
 
     @pytest.mark.asyncio
     async def test_unicode_path_handling(self, sync_config, temp_sync_dir):
         """Test handling of Unicode characters in paths."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Test Unicode paths
         unicode_files = [
             {
-                'path': 'docs/standards/文档/中文.md',
-                'name': '中文.md',
-                'sha': 'cn123',
-                'download_url': 'https://example.com/中文.md',
-                'size': 100
+                "path": "docs/standards/文档/中文.md",
+                "name": "中文.md",
+                "sha": "cn123",
+                "download_url": "https://example.com/中文.md",
+                "size": 100,
             },
             {
-                'path': 'docs/standards/ドキュメント/日本語.md',
-                'name': '日本語.md',
-                'sha': 'jp123',
-                'download_url': 'https://example.com/日本語.md',
-                'size': 100
-            }
+                "path": "docs/standards/ドキュメント/日本語.md",
+                "name": "日本語.md",
+                "sha": "jp123",
+                "download_url": "https://example.com/日本語.md",
+                "size": 100,
+            },
         ]
 
         for file_info in unicode_files:
-            with patch.object(synchronizer, '_download_file', return_value=b'content'):
+            with patch.object(synchronizer, "_download_file", return_value=b"content"):
                 async with aiohttp.ClientSession() as session:
                     result = await synchronizer._sync_file(session, file_info)
 
@@ -503,11 +500,12 @@ class TestErrorRecovery:
     """Test error recovery and resilience."""
 
     @pytest.mark.asyncio
-    async def test_partial_failure_recovery(self, sync_config, temp_sync_dir, mock_github_api):
+    async def test_partial_failure_recovery(
+        self, sync_config, temp_sync_dir, mock_github_api
+    ):
         """Test recovery from partial sync failures."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Configure mock to fail on specific files
@@ -517,8 +515,8 @@ class TestErrorRecovery:
             mock_response = AsyncMock()
 
             try:
-                if 'api.github.com/repos' in url and '/contents/' in url:
-                    path = url.split('/contents/')[-1]
+                if "api.github.com/repos" in url and "/contents/" in url:
+                    path = url.split("/contents/")[-1]
                     mock_response.status = 200
                     mock_response.json = AsyncMock(
                         return_value=await mock_github_api.list_contents(path)
@@ -536,7 +534,7 @@ class TestErrorRecovery:
 
             return mock_response
 
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get
 
             result = await synchronizer.sync()
@@ -550,8 +548,7 @@ class TestErrorRecovery:
     async def test_retry_mechanism(self, sync_config, temp_sync_dir):
         """Test retry mechanism for transient failures."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         call_count = 0
@@ -568,21 +565,23 @@ class TestErrorRecovery:
                 mock_response.headers = {}
             else:
                 mock_response.status = 200
-                mock_response.read = AsyncMock(return_value=b'success after retry')
+                mock_response.read = AsyncMock(return_value=b"success after retry")
                 mock_response.headers = {
-                    'X-RateLimit-Remaining': '100',
-                    'X-RateLimit-Limit': '5000'
+                    "X-RateLimit-Remaining": "100",
+                    "X-RateLimit-Limit": "5000",
                 }
 
             return mock_response
 
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get_with_retry
 
             async with aiohttp.ClientSession() as session:
-                result = await synchronizer._download_file(session, "https://example.com/test.md")
+                result = await synchronizer._download_file(
+                    session, "https://example.com/test.md"
+                )
 
-        assert result == b'success after retry'
+        assert result == b"success after retry"
         assert call_count == 3  # Should have retried twice
 
 
@@ -593,8 +592,7 @@ class TestRateLimitHandling:
     async def test_rate_limit_waiting(self, sync_config, temp_sync_dir):
         """Test waiting when rate limited."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Configure rate limiter to trigger waiting
@@ -605,13 +603,13 @@ class TestRateLimitHandling:
 
         # Mock files to sync
         files = [
-            {'path': 'file1.md', 'sha': 'sha1', 'download_url': 'url1', 'size': 100},
-            {'path': 'file2.md', 'sha': 'sha2', 'download_url': 'url2', 'size': 100}
+            {"path": "file1.md", "sha": "sha1", "download_url": "url1", "size": 100},
+            {"path": "file2.md", "sha": "sha2", "download_url": "url2", "size": 100},
         ]
 
-        with patch.object(synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(synchronizer, '_filter_files', return_value=files):
-                with patch.object(synchronizer, '_sync_file', return_value=True):
+        with patch.object(synchronizer, "_list_repository_files", return_value=files):
+            with patch.object(synchronizer, "_filter_files", return_value=files):
+                with patch.object(synchronizer, "_sync_file", return_value=True):
                     result = await synchronizer.sync()
 
         elapsed = (datetime.now() - start_time).total_seconds()
@@ -624,8 +622,7 @@ class TestRateLimitHandling:
     async def test_rate_limit_header_updates(self, sync_config, temp_sync_dir):
         """Test proper updating of rate limit information from headers."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Track rate limit updates
@@ -639,28 +636,34 @@ class TestRateLimitHandling:
             remaining = 5000 - len(rate_limit_history) * 100
 
             mock_response.headers = {
-                'X-RateLimit-Remaining': str(remaining),
-                'X-RateLimit-Limit': '5000',
-                'X-RateLimit-Reset': str(int((datetime.now() + timedelta(hours=1)).timestamp()))
+                "X-RateLimit-Remaining": str(remaining),
+                "X-RateLimit-Limit": "5000",
+                "X-RateLimit-Reset": str(
+                    int((datetime.now() + timedelta(hours=1)).timestamp())
+                ),
             }
 
             rate_limit_history.append(remaining)
 
-            if '/contents/' in url:
+            if "/contents/" in url:
                 mock_response.json = AsyncMock(return_value=[])
             else:
-                mock_response.read = AsyncMock(return_value=b'content')
+                mock_response.read = AsyncMock(return_value=b"content")
 
             return mock_response
 
-        with patch('aiohttp.ClientSession.get') as mock_session_get:
+        with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.return_value.__aenter__.side_effect = mock_get_with_headers
 
             # Make several API calls
             async with aiohttp.ClientSession() as session:
                 await synchronizer._list_repository_files(session)
-                await synchronizer._download_file(session, "https://example.com/test1.md")
-                await synchronizer._download_file(session, "https://example.com/test2.md")
+                await synchronizer._download_file(
+                    session, "https://example.com/test1.md"
+                )
+                await synchronizer._download_file(
+                    session, "https://example.com/test2.md"
+                )
 
         # Verify rate limit was updated
         assert len(rate_limit_history) == 3
@@ -683,12 +686,12 @@ class TestMetadataManagement:
                 "sha": "abc123",
                 "size": 1000,
                 "last_modified": "2024-01-01T00:00:00Z",
-                "local_path": str(cache_dir / "file1.md")
+                "local_path": str(cache_dir / "file1.md"),
                 # Missing: version, content_hash, sync_time
             }
         }
 
-        with open(metadata_file, 'w') as f:
+        with open(metadata_file, "w") as f:
             json.dump(old_metadata, f)
 
         # Load with new synchronizer
@@ -703,23 +706,24 @@ class TestMetadataManagement:
     async def test_metadata_corruption_handling(self, sync_config, temp_sync_dir):
         """Test handling of corrupted metadata during sync."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Corrupt the metadata file
         synchronizer.metadata_file.parent.mkdir(exist_ok=True)
-        with open(synchronizer.metadata_file, 'w') as f:
+        with open(synchronizer.metadata_file, "w") as f:
             f.write("{corrupted json content")
 
         # Should recover and continue
         files = [
-            {'path': 'test.md', 'sha': 'sha1', 'download_url': 'url1', 'size': 100}
+            {"path": "test.md", "sha": "sha1", "download_url": "url1", "size": 100}
         ]
 
-        with patch.object(synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(synchronizer, '_filter_files', return_value=files):
-                with patch.object(synchronizer, '_download_file', return_value=b'content'):
+        with patch.object(synchronizer, "_list_repository_files", return_value=files):
+            with patch.object(synchronizer, "_filter_files", return_value=files):
+                with patch.object(
+                    synchronizer, "_download_file", return_value=b"content"
+                ):
                     result = await synchronizer.sync()
 
         assert result.status == SyncStatus.SUCCESS
@@ -733,19 +737,18 @@ class TestConcurrentOperations:
     async def test_parallel_downloads(self, sync_config, temp_sync_dir):
         """Test efficient parallel downloading of multiple files."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Create many files to download
         num_files = 20
         files = [
             {
-                'path': f'docs/standards/file{i}.md',
-                'name': f'file{i}.md',
-                'sha': f'sha{i}',
-                'download_url': f'https://example.com/file{i}.md',
-                'size': 1000
+                "path": f"docs/standards/file{i}.md",
+                "name": f"file{i}.md",
+                "sha": f"sha{i}",
+                "download_url": f"https://example.com/file{i}.md",
+                "size": 1000,
             }
             for i in range(num_files)
         ]
@@ -758,9 +761,11 @@ class TestConcurrentOperations:
             download_times.append(asyncio.get_event_loop().time() - start)
             return f"Content for {url}".encode()
 
-        with patch.object(synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(synchronizer, '_filter_files', return_value=files):
-                with patch.object(synchronizer, '_download_file', side_effect=mock_download):
+        with patch.object(synchronizer, "_list_repository_files", return_value=files):
+            with patch.object(synchronizer, "_filter_files", return_value=files):
+                with patch.object(
+                    synchronizer, "_download_file", side_effect=mock_download
+                ):
                     start_time = asyncio.get_event_loop().time()
                     result = await synchronizer.sync()
                     total_time = asyncio.get_event_loop().time() - start_time
@@ -777,8 +782,7 @@ class TestConcurrentOperations:
     async def test_concurrent_metadata_updates(self, sync_config, temp_sync_dir):
         """Test thread-safe metadata updates during concurrent operations."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Create concurrent update tasks
@@ -786,12 +790,12 @@ class TestConcurrentOperations:
             from src.core.standards.sync import FileMetadata
 
             metadata = FileMetadata(
-                path=f'file{file_id}.md',
-                sha=f'sha{file_id}',
+                path=f"file{file_id}.md",
+                sha=f"sha{file_id}",
                 size=file_id * 100,
-                last_modified='',
-                local_path=Path(f'file{file_id}.md'),
-                sync_time=datetime.now()
+                last_modified="",
+                local_path=Path(f"file{file_id}.md"),
+                sync_time=datetime.now(),
             )
 
             synchronizer.file_metadata[metadata.path] = metadata
@@ -809,8 +813,7 @@ class TestConcurrentOperations:
         synchronizer._save_metadata()
 
         new_sync = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         assert len(new_sync.file_metadata) == 50
@@ -822,47 +825,45 @@ class TestEnvironmentIntegration:
     @pytest.mark.asyncio
     async def test_github_token_usage(self, sync_config, temp_sync_dir):
         """Test proper usage of GitHub token from environment."""
-        os.environ['GITHUB_TOKEN'] = 'test-token-12345'
+        os.environ["GITHUB_TOKEN"] = "test-token-12345"
 
         try:
             synchronizer = StandardsSynchronizer(
-                config_path=sync_config,
-                cache_dir=temp_sync_dir / "cache"
+                config_path=sync_config, cache_dir=temp_sync_dir / "cache"
             )
 
             captured_headers = {}
 
             async def mock_get(url, **kwargs):
-                captured_headers.update(kwargs.get('headers', {}))
+                captured_headers.update(kwargs.get("headers", {}))
                 mock_response = AsyncMock()
                 mock_response.status = 200
                 mock_response.json = AsyncMock(return_value=[])
                 mock_response.headers = {}
                 return mock_response
 
-            with patch('aiohttp.ClientSession.get') as mock_session_get:
+            with patch("aiohttp.ClientSession.get") as mock_session_get:
                 mock_session_get.return_value.__aenter__.side_effect = mock_get
 
                 async with aiohttp.ClientSession() as session:
                     await synchronizer._list_repository_files(session)
 
             # Verify token was included
-            assert 'Authorization' in captured_headers
-            assert captured_headers['Authorization'] == 'token test-token-12345'
+            assert "Authorization" in captured_headers
+            assert captured_headers["Authorization"] == "token test-token-12345"
 
         finally:
-            del os.environ['GITHUB_TOKEN']
+            del os.environ["GITHUB_TOKEN"]
 
     def test_proxy_configuration(self, sync_config, temp_sync_dir):
         """Test proxy configuration support."""
         # Set proxy environment variables
-        os.environ['HTTP_PROXY'] = 'http://proxy.example.com:8080'
-        os.environ['HTTPS_PROXY'] = 'https://proxy.example.com:8080'
+        os.environ["HTTP_PROXY"] = "http://proxy.example.com:8080"
+        os.environ["HTTPS_PROXY"] = "https://proxy.example.com:8080"
 
         try:
             StandardsSynchronizer(
-                config_path=sync_config,
-                cache_dir=temp_sync_dir / "cache"
+                config_path=sync_config, cache_dir=temp_sync_dir / "cache"
             )
 
             # In a real implementation, verify proxy is used
@@ -870,8 +871,8 @@ class TestEnvironmentIntegration:
             assert True
 
         finally:
-            os.environ.pop('HTTP_PROXY', None)
-            os.environ.pop('HTTPS_PROXY', None)
+            os.environ.pop("HTTP_PROXY", None)
+            os.environ.pop("HTTPS_PROXY", None)
 
 
 @pytest.mark.benchmark
@@ -879,21 +880,22 @@ class TestPerformanceBenchmarks:
     """Performance benchmarks for sync operations."""
 
     @pytest.mark.asyncio
-    async def test_large_repository_sync(self, sync_config, temp_sync_dir, benchmark_data):
+    async def test_large_repository_sync(
+        self, sync_config, temp_sync_dir, benchmark_data
+    ):
         """Benchmark syncing a large repository."""
         synchronizer = StandardsSynchronizer(
-            config_path=sync_config,
-            cache_dir=temp_sync_dir / "cache"
+            config_path=sync_config, cache_dir=temp_sync_dir / "cache"
         )
 
         # Generate large file list
         large_file_list = [
             {
-                'path': f'docs/standards/category{i//100}/file{i}.md',
-                'name': f'file{i}.md',
-                'sha': f'sha{i}',
-                'size': 1000 + (i * 10),
-                'download_url': f'https://example.com/file{i}.md'
+                "path": f"docs/standards/category{i//100}/file{i}.md",
+                "name": f"file{i}.md",
+                "sha": f"sha{i}",
+                "size": 1000 + (i * 10),
+                "download_url": f"https://example.com/file{i}.md",
             }
             for i in range(1000)
         ]
@@ -903,13 +905,18 @@ class TestPerformanceBenchmarks:
             await asyncio.sleep(0.001)
             return b"mock content"
 
-        with patch.object(synchronizer, '_list_repository_files', return_value=large_file_list):
-            with patch.object(synchronizer, '_filter_files') as mock_filter:
+        with patch.object(
+            synchronizer, "_list_repository_files", return_value=large_file_list
+        ):
+            with patch.object(synchronizer, "_filter_files") as mock_filter:
                 # Return first 100 files to keep test reasonable
                 mock_filter.return_value = large_file_list[:100]
 
-                with patch.object(synchronizer, '_download_file', side_effect=mock_download):
+                with patch.object(
+                    synchronizer, "_download_file", side_effect=mock_download
+                ):
                     import time
+
                     start = time.time()
 
                     result = await synchronizer.sync()
@@ -929,12 +936,12 @@ class TestPerformanceBenchmarks:
         from src.core.standards.sync import FileMetadata
 
         for i in range(10000):
-            synchronizer.file_metadata[f'path/to/file{i}.md'] = FileMetadata(
-                path=f'path/to/file{i}.md',
-                sha=f'sha{i}',
+            synchronizer.file_metadata[f"path/to/file{i}.md"] = FileMetadata(
+                path=f"path/to/file{i}.md",
+                sha=f"sha{i}",
                 size=1000,
-                last_modified='',
-                local_path=Path(f'file{i}.md')
+                last_modified="",
+                local_path=Path(f"file{i}.md"),
             )
 
         # Benchmark lookups
@@ -942,7 +949,7 @@ class TestPerformanceBenchmarks:
 
         start = time.time()
         for i in range(1000):
-            _ = synchronizer.file_metadata.get(f'path/to/file{i * 10}.md')
+            _ = synchronizer.file_metadata.get(f"path/to/file{i * 10}.md")
         lookup_time = time.time() - start
 
         # Should be very fast (< 10ms for 1000 lookups)

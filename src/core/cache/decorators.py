@@ -33,10 +33,7 @@ class CacheKeyConfig:
 
 
 def generate_cache_key(
-    func: Callable,
-    args: tuple,
-    kwargs: dict,
-    config: CacheKeyConfig
+    func: Callable, args: tuple, kwargs: dict, config: CacheKeyConfig
 ) -> str:
     """Generate cache key from function and arguments."""
     if config.custom_key_func:
@@ -49,7 +46,7 @@ def generate_cache_key(
 
     # Handle bound methods vs unbound methods/functions
     # If we have a bound method and args[0] looks like 'self', try without it
-    if hasattr(func, '__self__') and args and hasattr(args[0], func.__name__):
+    if hasattr(func, "__self__") and args and hasattr(args[0], func.__name__):
         # This is likely a bound method being called with self explicitly passed
         # Try binding without the first argument (self)
         try:
@@ -64,9 +61,9 @@ def generate_cache_key(
     bound_args.apply_defaults()
 
     # For bound methods, add the 'self' object to arguments if include_self is True
-    if hasattr(func, '__self__') and config.include_self:
+    if hasattr(func, "__self__") and config.include_self:
         # Add the bound self as a special argument
-        bound_args.arguments['self'] = func.__self__
+        bound_args.arguments["self"] = func.__self__
 
     # Build key from arguments
     arg_parts = []
@@ -77,15 +74,21 @@ def generate_cache_key(
             continue
 
         # Skip self/cls if not included
-        if param_name in ('self', 'cls') and not config.include_self:
+        if param_name in ("self", "cls") and not config.include_self:
             continue
 
         # Skip args/kwargs based on config
         if param_name in sig.parameters:
             param = sig.parameters[param_name]
-            if param.kind == inspect.Parameter.VAR_POSITIONAL and not config.include_args:
+            if (
+                param.kind == inspect.Parameter.VAR_POSITIONAL
+                and not config.include_args
+            ):
                 continue
-            if param.kind == inspect.Parameter.VAR_KEYWORD and not config.include_kwargs:
+            if (
+                param.kind == inspect.Parameter.VAR_KEYWORD
+                and not config.include_kwargs
+            ):
                 continue
 
         # Convert value to string representation
@@ -123,7 +126,7 @@ def cache_result(
     custom_key_func: Callable | None = None,
     condition: Callable | None = None,
     on_cached: Callable | None = None,
-    on_computed: Callable | None = None
+    on_computed: Callable | None = None,
 ) -> Callable:
     """
     Decorator to cache function/method results.
@@ -166,7 +169,7 @@ def cache_result(
             include_kwargs=include_kwargs,
             include_self=include_self,
             exclude_args=set(exclude_args or []),
-            custom_key_func=custom_key_func
+            custom_key_func=custom_key_func,
         )
 
         @functools.wraps(func)
@@ -254,7 +257,9 @@ def cache_result(
         # Add cache control methods
         wrapper = async_wrapper if is_async else sync_wrapper
         wrapper.cache_key_config = key_config
-        wrapper.invalidate = functools.partial(invalidate_for_function, func, key_config)
+        wrapper.invalidate = functools.partial(
+            invalidate_for_function, func, key_config
+        )
 
         return wrapper
 
@@ -265,7 +270,7 @@ def invalidate_cache(
     pattern: str | None = None,
     prefix: str | None = None,
     cache: RedisCache | None = None,
-    keys: list[str] | None = None
+    keys: list[str] | None = None,
 ) -> Callable:
     """
     Decorator to invalidate cache entries after function execution.
@@ -313,7 +318,9 @@ def invalidate_cache(
                     for param_name, param_value in bound_args.arguments.items():
                         placeholder = f"{{{param_name}}}"
                         if placeholder in actual_pattern:
-                            actual_pattern = actual_pattern.replace(placeholder, str(param_value))
+                            actual_pattern = actual_pattern.replace(
+                                placeholder, str(param_value)
+                            )
 
                     await cache_instance.async_delete_pattern(actual_pattern)
                 elif prefix:
@@ -348,7 +355,9 @@ def invalidate_cache(
                     for param_name, param_value in bound_args.arguments.items():
                         placeholder = f"{{{param_name}}}"
                         if placeholder in actual_pattern:
-                            actual_pattern = actual_pattern.replace(placeholder, str(param_value))
+                            actual_pattern = actual_pattern.replace(
+                                placeholder, str(param_value)
+                            )
 
                     cache_instance.delete_pattern(actual_pattern)
                 elif prefix:
@@ -378,10 +387,7 @@ def cache_key(*args, **kwargs) -> str:
 
 
 def invalidate_for_function(
-    func: Callable,
-    key_config: CacheKeyConfig,
-    *args,
-    **kwargs
+    func: Callable, key_config: CacheKeyConfig, *args, **kwargs
 ):
     """Invalidate cache for specific function call."""
     cache_instance = get_cache()

@@ -32,7 +32,10 @@ except (TypeError, ImportError) as e:
             @staticmethod
             async def from_url(*args, **kwargs):
                 return None
-        aioredis = type('aioredis', (), {'Redis': MockRedis, 'from_url': MockRedis.from_url})()
+
+        aioredis = type(
+            "aioredis", (), {"Redis": MockRedis, "from_url": MockRedis.from_url}
+        )()
     else:
         raise
 
@@ -100,18 +103,28 @@ class QueryMetrics:
         total_cache_ops = self.cache_hits + self.cache_misses
         cache_hit_rate = self.cache_hits / total_cache_ops if total_cache_ops > 0 else 0
 
-        avg_query_time = sum(self.query_times) / len(self.query_times) if self.query_times else 0
-        avg_cache_time = sum(self.cache_times) / len(self.cache_times) if self.cache_times else 0
+        avg_query_time = (
+            sum(self.query_times) / len(self.query_times) if self.query_times else 0
+        )
+        avg_cache_time = (
+            sum(self.cache_times) / len(self.cache_times) if self.cache_times else 0
+        )
 
         return {
-            'total_queries': self.total_queries,
-            'cache_hit_rate': cache_hit_rate,
-            'slow_query_rate': self.slow_queries / self.total_queries if self.total_queries > 0 else 0,
-            'error_rate': self.failed_queries / self.total_queries if self.total_queries > 0 else 0,
-            'average_query_time': avg_query_time,
-            'average_cache_time': avg_cache_time,
-            'query_types': dict(self.query_types),
-            'slow_query_types': dict(self.slow_query_types)
+            "total_queries": self.total_queries,
+            "cache_hit_rate": cache_hit_rate,
+            "slow_query_rate": (
+                self.slow_queries / self.total_queries if self.total_queries > 0 else 0
+            ),
+            "error_rate": (
+                self.failed_queries / self.total_queries
+                if self.total_queries > 0
+                else 0
+            ),
+            "average_query_time": avg_query_time,
+            "average_cache_time": avg_cache_time,
+            "query_types": dict(self.query_types),
+            "slow_query_types": dict(self.slow_query_types),
         }
 
 
@@ -128,17 +141,14 @@ class QueryCache:
         self.local_cache_lock = threading.Lock()
 
         # Cache statistics
-        self.cache_stats = {
-            'hits': 0,
-            'misses': 0,
-            'sets': 0,
-            'invalidations': 0
-        }
+        self.cache_stats = {"hits": 0, "misses": 0, "sets": 0, "invalidations": 0}
 
-    def _generate_cache_key(self, query: str, params: dict[str, Any] | None = None) -> str:
+    def _generate_cache_key(
+        self, query: str, params: dict[str, Any] | None = None
+    ) -> str:
         """Generate cache key for query and parameters."""
         # Normalize query (remove extra whitespace, lowercase)
-        normalized_query = ' '.join(query.split()).lower()
+        normalized_query = " ".join(query.split()).lower()
 
         # Include parameters in key
         params_str = json.dumps(params or {}, sort_keys=True)
@@ -149,7 +159,9 @@ class QueryCache:
 
         return f"{self.config.cache_key_prefix}:{key_hash}"
 
-    async def get_cached_result(self, query: str, params: dict[str, Any] | None = None) -> Any | None:
+    async def get_cached_result(
+        self, query: str, params: dict[str, Any] | None = None
+    ) -> Any | None:
         """Get cached query result."""
         if not self.config.enable_query_cache:
             return None
@@ -161,7 +173,7 @@ class QueryCache:
             if cache_key in self.local_cache:
                 cache_time = self.local_cache_times.get(cache_key, 0)
                 if time.time() - cache_time < 60:  # 1 minute local cache
-                    self.cache_stats['hits'] += 1
+                    self.cache_stats["hits"] += 1
                     return self.local_cache[cache_key]
                 else:
                     # Local cache expired
@@ -178,19 +190,21 @@ class QueryCache:
                         self.local_cache[cache_key] = cached_result
                         self.local_cache_times[cache_key] = time.time()
 
-                self.cache_stats['hits'] += 1
+                self.cache_stats["hits"] += 1
                 return cached_result
         except Exception as e:
             logger.error(f"Error getting cached result: {e}")
 
-        self.cache_stats['misses'] += 1
+        self.cache_stats["misses"] += 1
         return None
 
-    async def cache_result(self,
-                          query: str,
-                          params: dict[str, Any] | None = None,
-                          result: Any = None,
-                          ttl: int | None = None):
+    async def cache_result(
+        self,
+        query: str,
+        params: dict[str, Any] | None = None,
+        result: Any = None,
+        ttl: int | None = None,
+    ):
         """Cache query result."""
         if not self.config.enable_query_cache or result is None:
             return
@@ -208,7 +222,7 @@ class QueryCache:
                     self.local_cache[cache_key] = result
                     self.local_cache_times[cache_key] = time.time()
 
-            self.cache_stats['sets'] += 1
+            self.cache_stats["sets"] += 1
         except Exception as e:
             logger.error(f"Error caching result: {e}")
 
@@ -216,7 +230,9 @@ class QueryCache:
         """Invalidate cache entries matching pattern."""
         try:
             # Invalidate Redis cache
-            await self.redis_cache.delete_pattern(f"{self.config.cache_key_prefix}:{pattern}")
+            await self.redis_cache.delete_pattern(
+                f"{self.config.cache_key_prefix}:{pattern}"
+            )
 
             # Clear local cache
             with self.local_cache_lock:
@@ -225,19 +241,19 @@ class QueryCache:
                     self.local_cache.pop(key, None)
                     self.local_cache_times.pop(key, None)
 
-            self.cache_stats['invalidations'] += 1
+            self.cache_stats["invalidations"] += 1
         except Exception as e:
             logger.error(f"Error invalidating cache: {e}")
 
     def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
-        total_ops = self.cache_stats['hits'] + self.cache_stats['misses']
-        hit_rate = self.cache_stats['hits'] / total_ops if total_ops > 0 else 0
+        total_ops = self.cache_stats["hits"] + self.cache_stats["misses"]
+        hit_rate = self.cache_stats["hits"] / total_ops if total_ops > 0 else 0
 
         return {
             **self.cache_stats,
-            'hit_rate': hit_rate,
-            'local_cache_size': len(self.local_cache)
+            "hit_rate": hit_rate,
+            "local_cache_size": len(self.local_cache),
         }
 
 
@@ -266,7 +282,9 @@ class QueryBatcher:
             except asyncio.CancelledError:
                 pass
 
-    async def queue_query(self, query: str, params: dict[str, Any] | None = None) -> Any:
+    async def queue_query(
+        self, query: str, params: dict[str, Any] | None = None
+    ) -> Any:
         """Queue a query for batch processing."""
         if not self.config.enable_query_batching:
             return None
@@ -275,11 +293,9 @@ class QueryBatcher:
         result_future = asyncio.Future()
 
         # Add to batch queue
-        await self.batch_queue.put({
-            'query': query,
-            'params': params,
-            'future': result_future
-        })
+        await self.batch_queue.put(
+            {"query": query, "params": params, "future": result_future}
+        )
 
         # Wait for result
         return await result_future
@@ -294,8 +310,7 @@ class QueryBatcher:
                 try:
                     # Wait for first item
                     item = await asyncio.wait_for(
-                        self.batch_queue.get(),
-                        timeout=self.config.batch_timeout
+                        self.batch_queue.get(), timeout=self.config.batch_timeout
                     )
                     batch.append(item)
 
@@ -304,7 +319,7 @@ class QueryBatcher:
                         try:
                             item = await asyncio.wait_for(
                                 self.batch_queue.get(),
-                                timeout=0.001  # Very short timeout
+                                timeout=0.001,  # Very short timeout
                             )
                             batch.append(item)
                         except asyncio.TimeoutError:
@@ -328,7 +343,7 @@ class QueryBatcher:
         # Group similar queries
         query_groups = defaultdict(list)
         for item in batch:
-            query_groups[item['query']].append(item)
+            query_groups[item["query"]].append(item)
 
         # Process each group
         for query, items in query_groups.items():
@@ -338,13 +353,13 @@ class QueryBatcher:
                 for item in items:
                     # This would be replaced with actual database execution
                     result = {"mock": "result", "query": query}
-                    item['future'].set_result(result)
+                    item["future"].set_result(result)
 
             except Exception as e:
                 # Set exception for all items in group
                 for item in items:
-                    if not item['future'].done():
-                        item['future'].set_exception(e)
+                    if not item["future"].done():
+                        item["future"].set_exception(e)
 
 
 class DatabaseOptimizer:
@@ -356,8 +371,7 @@ class DatabaseOptimizer:
 
         # Initialize Redis cache
         cache_config = CacheConfig(
-            max_connections=self.config.pool_size,
-            enable_compression=True
+            max_connections=self.config.pool_size, enable_compression=True
         )
         self.redis_cache = RedisCache(cache_config)
 
@@ -396,7 +410,7 @@ class DatabaseOptimizer:
 
         # Close connection pools
         for pool in self.connection_pools.values():
-            if hasattr(pool, 'close'):
+            if hasattr(pool, "close"):
                 await pool.close()
 
         logger.info("Database optimizer closed")
@@ -406,41 +420,54 @@ class DatabaseOptimizer:
         query_lower = query.lower().strip()
 
         # Determine query type
-        if query_lower.startswith('select'):
-            query_type = 'SELECT'
-        elif query_lower.startswith('insert'):
-            query_type = 'INSERT'
-        elif query_lower.startswith('update'):
-            query_type = 'UPDATE'
-        elif query_lower.startswith('delete'):
-            query_type = 'DELETE'
+        if query_lower.startswith("select"):
+            query_type = "SELECT"
+        elif query_lower.startswith("insert"):
+            query_type = "INSERT"
+        elif query_lower.startswith("update"):
+            query_type = "UPDATE"
+        elif query_lower.startswith("delete"):
+            query_type = "DELETE"
         else:
-            query_type = 'OTHER'
+            query_type = "OTHER"
 
         # Check for complex operations
-        is_complex = any(keyword in query_lower for keyword in [
-            'join', 'subquery', 'union', 'group by', 'order by', 'having'
-        ])
+        is_complex = any(
+            keyword in query_lower
+            for keyword in [
+                "join",
+                "subquery",
+                "union",
+                "group by",
+                "order by",
+                "having",
+            ]
+        )
 
         # Determine if query should be cached
         should_cache = (
-            self.config.cache_read_queries and query_type == 'SELECT' or
-            self.config.cache_write_queries and query_type in ['INSERT', 'UPDATE', 'DELETE'] or
-            self.config.cache_complex_queries and is_complex
+            self.config.cache_read_queries
+            and query_type == "SELECT"
+            or self.config.cache_write_queries
+            and query_type in ["INSERT", "UPDATE", "DELETE"]
+            or self.config.cache_complex_queries
+            and is_complex
         )
 
         return {
-            'type': query_type,
-            'is_complex': is_complex,
-            'should_cache': should_cache,
-            'length': len(query)
+            "type": query_type,
+            "is_complex": is_complex,
+            "should_cache": should_cache,
+            "length": len(query),
         }
 
-    async def execute_query(self,
-                           query: str,
-                           params: dict[str, Any] | None = None,
-                           cache_ttl: int | None = None,
-                           use_cache: bool = True) -> Any:
+    async def execute_query(
+        self,
+        query: str,
+        params: dict[str, Any] | None = None,
+        cache_ttl: int | None = None,
+        use_cache: bool = True,
+    ) -> Any:
         """Execute a query with caching and optimization."""
         start_time = time.time()
 
@@ -449,7 +476,9 @@ class DatabaseOptimizer:
 
         # Update metrics
         self.metrics.total_queries += 1
-        self.metrics.query_types[analysis['type']] = self.metrics.query_types.get(analysis['type'], 0) + 1
+        self.metrics.query_types[analysis["type"]] = (
+            self.metrics.query_types.get(analysis["type"], 0) + 1
+        )
 
         # Record query pattern
         query_pattern = self._extract_query_pattern(query)
@@ -458,9 +487,11 @@ class DatabaseOptimizer:
         try:
             # Check cache first
             cached_result = None
-            if use_cache and analysis['should_cache']:
-                with time_operation('db_cache_lookup_duration_seconds'):
-                    cached_result = await self.query_cache.get_cached_result(query, params)
+            if use_cache and analysis["should_cache"]:
+                with time_operation("db_cache_lookup_duration_seconds"):
+                    cached_result = await self.query_cache.get_cached_result(
+                        query, params
+                    )
 
                 if cached_result is not None:
                     self.metrics.cache_hits += 1
@@ -470,8 +501,12 @@ class DatabaseOptimizer:
                     self.metrics.cache_times.append(cache_time)
 
                     # Record metrics
-                    record_metric('app_db_query_duration_seconds', cache_time, {'query_type': analysis['type'], 'source': 'cache'})
-                    record_metric('app_cache_hits', 1, {'cache_type': 'query'})
+                    record_metric(
+                        "app_db_query_duration_seconds",
+                        cache_time,
+                        {"query_type": analysis["type"], "source": "cache"},
+                    )
+                    record_metric("app_cache_hits", 1, {"cache_type": "query"})
 
                     return cached_result
 
@@ -479,7 +514,7 @@ class DatabaseOptimizer:
             result = await self._execute_query_direct(query, params, analysis)
 
             # Cache result if appropriate
-            if use_cache and analysis['should_cache'] and result is not None:
+            if use_cache and analysis["should_cache"] and result is not None:
                 await self.query_cache.cache_result(query, params, result, cache_ttl)
 
             # Record metrics
@@ -489,24 +524,32 @@ class DatabaseOptimizer:
             # Check for slow queries
             if execution_time > self.config.slow_query_threshold:
                 self.metrics.slow_queries += 1
-                self.metrics.slow_query_types[analysis['type']] = self.metrics.slow_query_types.get(analysis['type'], 0) + 1
+                self.metrics.slow_query_types[analysis["type"]] = (
+                    self.metrics.slow_query_types.get(analysis["type"], 0) + 1
+                )
 
                 slow_query_info = {
-                    'query': query,
-                    'params': params,
-                    'execution_time': execution_time,
-                    'timestamp': time.time(),
-                    'analysis': analysis
+                    "query": query,
+                    "params": params,
+                    "execution_time": execution_time,
+                    "timestamp": time.time(),
+                    "analysis": analysis,
                 }
                 self.slow_queries.append(slow_query_info)
 
                 if self.config.log_slow_queries:
-                    logger.warning(f"Slow query detected: {execution_time:.3f}s - {query[:100]}...")
+                    logger.warning(
+                        f"Slow query detected: {execution_time:.3f}s - {query[:100]}..."
+                    )
 
             # Record metrics
-            record_metric('app_db_query_duration_seconds', execution_time, {'query_type': analysis['type'], 'source': 'database'})
-            if use_cache and analysis['should_cache']:
-                record_metric('app_cache_misses', 1, {'cache_type': 'query'})
+            record_metric(
+                "app_db_query_duration_seconds",
+                execution_time,
+                {"query_type": analysis["type"], "source": "database"},
+            )
+            if use_cache and analysis["should_cache"]:
+                record_metric("app_cache_misses", 1, {"cache_type": "query"})
 
             return result
 
@@ -514,15 +557,17 @@ class DatabaseOptimizer:
             self.metrics.failed_queries += 1
 
             # Record error metrics
-            record_metric('app_error_count', 1, {'error_type': 'database_query'})
+            record_metric("app_error_count", 1, {"error_type": "database_query"})
 
             logger.error(f"Database query failed: {e}")
             raise
 
-    async def _execute_query_direct(self,
-                                   query: str,
-                                   params: dict[str, Any] | None = None,
-                                   analysis: dict[str, Any] | None = None) -> Any:
+    async def _execute_query_direct(
+        self,
+        query: str,
+        params: dict[str, Any] | None = None,
+        analysis: dict[str, Any] | None = None,
+    ) -> Any:
         """Execute query directly against database."""
         # This is a mock implementation
         # In a real implementation, you would:
@@ -536,11 +581,11 @@ class DatabaseOptimizer:
 
         # Return mock result
         return {
-            'query': query,
-            'params': params,
-            'rows_affected': 1,
-            'execution_time': 0.001,
-            'mock_data': ['row1', 'row2', 'row3']
+            "query": query,
+            "params": params,
+            "rows_affected": 1,
+            "execution_time": 0.001,
+            "mock_data": ["row1", "row2", "row3"],
         }
 
     def _extract_query_pattern(self, query: str) -> str:
@@ -552,14 +597,16 @@ class DatabaseOptimizer:
         pattern = re.sub(r"'[^']*'", "'?'", query)
 
         # Remove numeric literals
-        pattern = re.sub(r'\b\d+\b', '?', pattern)
+        pattern = re.sub(r"\b\d+\b", "?", pattern)
 
         # Normalize whitespace
-        pattern = ' '.join(pattern.split())
+        pattern = " ".join(pattern.split())
 
         return pattern.lower()
 
-    async def execute_batch(self, queries: list[tuple[str, dict[str, Any] | None]]) -> list[Any]:
+    async def execute_batch(
+        self, queries: list[tuple[str, dict[str, Any] | None]]
+    ) -> list[Any]:
         """Execute multiple queries in batch."""
         if not queries:
             return []
@@ -622,11 +669,11 @@ class DatabaseOptimizer:
     def get_performance_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics."""
         return {
-            'metrics': self.metrics.get_summary(),
-            'cache_stats': self.query_cache.get_cache_stats(),
-            'query_patterns': dict(self.query_patterns),
-            'slow_queries': list(self.slow_queries),
-            'prepared_statements_count': len(self.prepared_statements)
+            "metrics": self.metrics.get_summary(),
+            "cache_stats": self.query_cache.get_cache_stats(),
+            "query_patterns": dict(self.query_patterns),
+            "slow_queries": list(self.slow_queries),
+            "prepared_statements_count": len(self.prepared_statements),
         }
 
     def get_slow_queries(self, limit: int = 10) -> list[dict[str, Any]]:
@@ -640,62 +687,66 @@ class DatabaseOptimizer:
         # Check for frequently executed queries
         for pattern, count in self.query_patterns.items():
             if count > 100:  # Frequently executed
-                recommendations.append({
-                    'type': 'frequent_query',
-                    'pattern': pattern,
-                    'count': count,
-                    'recommendation': 'Consider creating an index or optimizing this query'
-                })
+                recommendations.append(
+                    {
+                        "type": "frequent_query",
+                        "pattern": pattern,
+                        "count": count,
+                        "recommendation": "Consider creating an index or optimizing this query",
+                    }
+                )
 
         # Check for slow query patterns
         slow_patterns = {}
         for slow_query in self.slow_queries:
-            pattern = self._extract_query_pattern(slow_query['query'])
+            pattern = self._extract_query_pattern(slow_query["query"])
             slow_patterns[pattern] = slow_patterns.get(pattern, 0) + 1
 
         for pattern, count in slow_patterns.items():
             if count > 5:  # Repeatedly slow
-                recommendations.append({
-                    'type': 'slow_query_pattern',
-                    'pattern': pattern,
-                    'count': count,
-                    'recommendation': 'This query pattern is consistently slow - consider optimization'
-                })
+                recommendations.append(
+                    {
+                        "type": "slow_query_pattern",
+                        "pattern": pattern,
+                        "count": count,
+                        "recommendation": "This query pattern is consistently slow - consider optimization",
+                    }
+                )
 
         return recommendations
 
     async def health_check(self) -> dict[str, Any]:
         """Perform health check on database connections."""
         health = {
-            'status': 'healthy',
-            'cache_status': 'healthy',
-            'connection_pools': {},
-            'metrics': self.metrics.get_summary()
+            "status": "healthy",
+            "cache_status": "healthy",
+            "connection_pools": {},
+            "metrics": self.metrics.get_summary(),
         }
 
         # Check Redis cache
         try:
             redis_health = await self.redis_cache.async_health_check()
-            health['cache_status'] = redis_health['status']
+            health["cache_status"] = redis_health["status"]
         except Exception as e:
-            health['cache_status'] = 'unhealthy'
-            health['cache_error'] = str(e)
+            health["cache_status"] = "unhealthy"
+            health["cache_error"] = str(e)
 
         # Check connection pools
         for pool_name, _pool in self.connection_pools.items():
             try:
                 # Mock health check
-                health['connection_pools'][pool_name] = {
-                    'status': 'healthy',
-                    'active_connections': 0,
-                    'idle_connections': 0
+                health["connection_pools"][pool_name] = {
+                    "status": "healthy",
+                    "active_connections": 0,
+                    "idle_connections": 0,
                 }
             except Exception as e:
-                health['connection_pools'][pool_name] = {
-                    'status': 'unhealthy',
-                    'error': str(e)
+                health["connection_pools"][pool_name] = {
+                    "status": "unhealthy",
+                    "error": str(e),
                 }
-                health['status'] = 'degraded'
+                health["status"] = "degraded"
 
         return health
 
@@ -712,7 +763,9 @@ def get_database_optimizer() -> DatabaseOptimizer:
     return _global_optimizer
 
 
-async def initialize_database_optimizer(config: QueryCacheConfig | None = None) -> DatabaseOptimizer:
+async def initialize_database_optimizer(
+    config: QueryCacheConfig | None = None,
+) -> DatabaseOptimizer:
     """Initialize and start global database optimizer."""
     global _global_optimizer
     _global_optimizer = DatabaseOptimizer(config)
@@ -729,7 +782,9 @@ async def shutdown_database_optimizer():
 
 
 # Convenience functions
-async def execute_query(query: str, params: dict[str, Any] | None = None, **kwargs) -> Any:
+async def execute_query(
+    query: str, params: dict[str, Any] | None = None, **kwargs
+) -> Any:
     """Execute query using global optimizer."""
     optimizer = get_database_optimizer()
     return await optimizer.execute_query(query, params, **kwargs)

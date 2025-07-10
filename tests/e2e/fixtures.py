@@ -21,7 +21,7 @@ SAMPLE_CONTEXTS = {
         "language": "javascript",
         "requirements": ["accessibility", "performance", "seo"],
         "team_size": "medium",
-        "deployment": "cloud"
+        "deployment": "cloud",
     },
     "python_api": {
         "project_type": "api",
@@ -29,21 +29,21 @@ SAMPLE_CONTEXTS = {
         "language": "python",
         "requirements": ["security", "scalability"],
         "database": "postgresql",
-        "deployment": "kubernetes"
+        "deployment": "kubernetes",
     },
     "mobile_app": {
         "project_type": "mobile_app",
         "framework": "react-native",
         "platform": ["ios", "android"],
         "requirements": ["offline-support", "push-notifications"],
-        "backend": "firebase"
+        "backend": "firebase",
     },
     "microservice": {
         "project_type": "microservice",
         "language": "go",
         "requirements": ["high-performance", "observability"],
         "messaging": "kafka",
-        "deployment": "kubernetes"
+        "deployment": "kubernetes",
     },
     "data_pipeline": {
         "project_type": "data_pipeline",
@@ -51,21 +51,21 @@ SAMPLE_CONTEXTS = {
         "language": "python",
         "requirements": ["fault-tolerance", "scalability"],
         "storage": "s3",
-        "orchestration": "airflow"
+        "orchestration": "airflow",
     },
     "ml_project": {
         "project_type": "machine_learning",
         "framework": "tensorflow",
         "language": "python",
         "requirements": ["reproducibility", "model-versioning"],
-        "deployment": "mlflow"
+        "deployment": "mlflow",
     },
     "mcp_server": {
         "project_type": "mcp_server",
         "language": "typescript",
         "requirements": ["type-safety", "error-handling"],
-        "tools": ["file-access", "web-search", "code-analysis"]
-    }
+        "tools": ["file-access", "web-search", "code-analysis"],
+    },
 }
 
 
@@ -80,7 +80,7 @@ MOCK_STANDARDS = {
         "metadata": {
             "last_updated": "2025-01-01",
             "author": "Standards Team",
-            "complexity": "intermediate"
+            "complexity": "intermediate",
         },
         "content": """
 # React 18 Best Practices
@@ -115,7 +115,7 @@ const MyComponent = ({ title, children }) => {
 - Always include proper ARIA labels
 - Ensure keyboard navigation works
 - Test with screen readers
-"""
+""",
     },
     "python-testing": {
         "id": "python-testing",
@@ -126,7 +126,7 @@ const MyComponent = ({ title, children }) => {
         "metadata": {
             "last_updated": "2025-01-15",
             "author": "QA Team",
-            "complexity": "beginner"
+            "complexity": "beginner",
         },
         "content": """
 # Python Testing Standards
@@ -164,7 +164,7 @@ def test_double(input, expected):
 - Write descriptive test names
 - Use fixtures for setup/teardown
 - Aim for 80%+ code coverage
-"""
+""",
     },
     "api-security": {
         "id": "api-security",
@@ -175,7 +175,7 @@ def test_double(input, expected):
         "metadata": {
             "last_updated": "2025-01-20",
             "author": "Security Team",
-            "complexity": "advanced"
+            "complexity": "advanced",
         },
         "content": """
 # API Security Standards
@@ -194,8 +194,8 @@ def test_double(input, expected):
 - Always use HTTPS
 - Encrypt sensitive data at rest
 - Implement rate limiting
-"""
-    }
+""",
+    },
 }
 
 
@@ -211,17 +211,13 @@ MOCK_RULES = [
                 {
                     "field": "project_type",
                     "operator": "equals",
-                    "value": "web_application"
+                    "value": "web_application",
                 },
-                {
-                    "field": "framework",
-                    "operator": "equals",
-                    "value": "react"
-                }
-            ]
+                {"field": "framework", "operator": "equals", "value": "react"},
+            ],
         },
         "standards": ["react-18-patterns", "frontend-accessibility"],
-        "tags": ["frontend", "react"]
+        "tags": ["frontend", "react"],
     },
     {
         "id": "python-api-rule",
@@ -230,21 +226,13 @@ MOCK_RULES = [
         "conditions": {
             "logic": "AND",
             "conditions": [
-                {
-                    "field": "project_type",
-                    "operator": "equals",
-                    "value": "api"
-                },
-                {
-                    "field": "language",
-                    "operator": "equals",
-                    "value": "python"
-                }
-            ]
+                {"field": "project_type", "operator": "equals", "value": "api"},
+                {"field": "language", "operator": "equals", "value": "python"},
+            ],
         },
         "standards": ["python-testing", "api-security"],
-        "tags": ["backend", "python", "api"]
-    }
+        "tags": ["backend", "python", "api"],
+    },
 ]
 
 
@@ -265,12 +253,14 @@ class MockStandardsRepository:
         results = []
         for std in self.standards.values():
             if category is None or std.get("category") == category:
-                results.append({
-                    "id": std["id"],
-                    "name": std["name"],
-                    "category": std["category"],
-                    "tags": std["tags"]
-                })
+                results.append(
+                    {
+                        "id": std["id"],
+                        "name": std["name"],
+                        "category": std["category"],
+                        "tags": std["tags"],
+                    }
+                )
         return results
 
     def search_standards(self, query: str) -> list[dict[str, Any]]:
@@ -280,9 +270,11 @@ class MockStandardsRepository:
 
         for std in self.standards.values():
             # Search in name, tags, and content
-            if (query_lower in std["name"].lower() or
-                any(query_lower in tag for tag in std["tags"]) or
-                query_lower in std["content"].lower()):
+            if (
+                query_lower in std["name"].lower()
+                or any(query_lower in tag for tag in std["tags"])
+                or query_lower in std["content"].lower()
+            ):
                 results.append(std)
 
         return results
@@ -325,7 +317,7 @@ class TestDataGenerator:
                             console.error('Error:', error);
                         }
                     }
-                """
+                """,
             },
             "python": {
                 "basic": """
@@ -348,8 +340,8 @@ class TestDataGenerator:
                         async with aiohttp.ClientSession() as session:
                             async with session.get(url) as response:
                                 return await response.json()
-                """
-            }
+                """,
+            },
         }
 
         return samples.get(language, {}).get(pattern, "// No sample available")
@@ -361,18 +353,18 @@ class TestDataGenerator:
             {
                 "code": "const x = 'test'",
                 "standard": "javascript-es2025",
-                "expected_violations": ["Use let or const appropriately"]
+                "expected_violations": ["Use let or const appropriately"],
             },
             {
                 "code": "def test():\n    pass",
                 "standard": "python-testing",
-                "expected_violations": ["Test function should start with test_"]
+                "expected_violations": ["Test function should start with test_"],
             },
             {
                 "code": "<div onclick='alert(1)'>Click</div>",
                 "standard": "frontend-security",
-                "expected_violations": ["Avoid inline event handlers"]
-            }
+                "expected_violations": ["Avoid inline event handlers"],
+            },
         ]
 
 
@@ -418,20 +410,17 @@ def create_test_mcp_config(data_dir: Path) -> dict[str, Any]:
         "server": {
             "name": "mcp-standards-test",
             "version": "0.1.0",
-            "description": "Test MCP Standards Server"
+            "description": "Test MCP Standards Server",
         },
         "data": {
             "standards_dir": str(data_dir / "standards"),
             "cache_dir": str(data_dir / "cache"),
-            "rules_file": str(data_dir / "standards" / "rules.json")
+            "rules_file": str(data_dir / "standards" / "rules.json"),
         },
-        "sync": {
-            "enabled": False,  # Disable sync for tests
-            "interval": 3600
-        },
+        "sync": {"enabled": False, "interval": 3600},  # Disable sync for tests
         "search": {
             "enabled": True,
             "model": "sentence-transformers/all-MiniLM-L6-v2",
-            "cache_embeddings": True
-        }
+            "cache_embeddings": True,
+        },
     }

@@ -48,7 +48,7 @@ class TestAsyncSemanticSearch:
             batch_size=2,
             max_batch_wait_time=0.01,
             enable_vector_cache=True,
-            enable_cache_warming=False  # Disable for testing
+            enable_cache_warming=False,  # Disable for testing
         )
 
         engine = AsyncSemanticSearch(config)
@@ -69,9 +69,7 @@ class TestAsyncSemanticSearch:
         """Test document indexing performance."""
         # Index single document
         await search_engine.index_document(
-            "doc1",
-            "This is a test document about machine learning",
-            {"category": "ai"}
+            "doc1", "This is a test document about machine learning", {"category": "ai"}
         )
 
         assert "doc1" in search_engine.documents
@@ -84,7 +82,7 @@ class TestAsyncSemanticSearch:
         documents = [
             ("doc1", "Machine learning basics", {"category": "ai"}),
             ("doc2", "Deep learning fundamentals", {"category": "ai"}),
-            ("doc3", "Python programming guide", {"category": "programming"})
+            ("doc3", "Python programming guide", {"category": "programming"}),
         ]
 
         start_time = time.time()
@@ -99,9 +97,13 @@ class TestAsyncSemanticSearch:
         """Test search performance."""
         # Index some documents
         documents = [
-            ("doc1", "Machine learning and artificial intelligence", {"category": "ai"}),
+            (
+                "doc1",
+                "Machine learning and artificial intelligence",
+                {"category": "ai"},
+            ),
             ("doc2", "Python programming tutorials", {"category": "programming"}),
-            ("doc3", "Data science fundamentals", {"category": "data"})
+            ("doc3", "Data science fundamentals", {"category": "data"}),
         ]
         await search_engine.index_documents_batch(documents)
 
@@ -112,7 +114,7 @@ class TestAsyncSemanticSearch:
 
         assert len(results) > 0
         assert search_time < 1.0
-        assert all(hasattr(r, 'score') for r in results)
+        assert all(hasattr(r, "score") for r in results)
 
     @pytest.mark.asyncio
     async def test_batch_search(self, search_engine):
@@ -121,7 +123,7 @@ class TestAsyncSemanticSearch:
         documents = [
             ("doc1", "Machine learning basics", {"category": "ai"}),
             ("doc2", "Python programming", {"category": "programming"}),
-            ("doc3", "Data analysis", {"category": "data"})
+            ("doc3", "Data analysis", {"category": "data"}),
         ]
         await search_engine.index_documents_batch(documents)
 
@@ -173,7 +175,7 @@ class TestRedisConnectionPooling:
             connection_pool_size=5,
             max_connections=10,
             health_check_interval=1.0,
-            enable_metrics=True
+            enable_metrics=True,
         )
 
     @pytest.fixture
@@ -208,11 +210,7 @@ class TestRedisConnectionPooling:
 
     def test_batch_operations(self, redis_cache):
         """Test batch cache operations."""
-        data = {
-            "key1": "value1",
-            "key2": {"nested": "data"},
-            "key3": [1, 2, 3]
-        }
+        data = {"key1": "value1", "key2": {"nested": "data"}, "key3": [1, 2, 3]}
 
         # Test mset
         redis_cache.mset(data)
@@ -254,7 +252,7 @@ class TestRedisConnectionPooling:
             {"method": "set", "args": ["key1", "value1"]},
             {"method": "set", "args": ["key2", "value2"]},
             {"method": "get", "args": ["key1"]},
-            {"method": "get", "args": ["key2"]}
+            {"method": "get", "args": ["key2"]},
         ]
 
         results = redis_cache.execute_pipeline(operations)
@@ -275,7 +273,7 @@ class TestVectorIndexCaching:
             memory_cache_ttl=300,
             enable_compression=True,
             warming_batch_size=10,
-            enable_cache_warming=False  # Disable for testing
+            enable_cache_warming=False,  # Disable for testing
         )
 
     @pytest.fixture
@@ -294,9 +292,7 @@ class TestVectorIndexCaching:
 
         # Build and cache index
         index = await vector_cache.build_and_cache_index(
-            "test_index",
-            vectors,
-            index_type="Flat"
+            "test_index", vectors, index_type="Flat"
         )
 
         assert index is not None
@@ -329,9 +325,7 @@ class TestVectorIndexCaching:
 
         start_time = time.time()
         distances, indices = await vector_cache.search_index(
-            "search_index",
-            query_vectors,
-            k=10
+            "search_index", query_vectors, k=10
         )
         search_time = time.time() - start_time
 
@@ -384,7 +378,7 @@ class TestMemoryManagement:
             max_memory_usage=512,  # 512MB
             monitoring_interval=0.1,
             enable_object_pooling=True,
-            enable_gc_optimization=True
+            enable_gc_optimization=True,
         )
 
     @pytest.fixture
@@ -399,9 +393,7 @@ class TestMemoryManagement:
     async def test_memory_tracking(self, memory_manager):
         """Test memory tracking functionality."""
         # Track some objects
-        test_objects = [
-            {"data": f"test_{i}"} for i in range(10)
-        ]
+        test_objects = [{"data": f"test_{i}"} for i in range(10)]
 
         for i, obj in enumerate(test_objects):
             memory_manager.track_object(obj, f"test_category_{i % 3}")
@@ -487,7 +479,7 @@ class TestPerformanceMonitoring:
             collection_interval=0.1,
             enable_system_metrics=True,
             enable_application_metrics=True,
-            enable_prometheus=False  # Disable for testing
+            enable_prometheus=False,  # Disable for testing
         )
 
     @pytest.fixture
@@ -526,6 +518,7 @@ class TestPerformanceMonitoring:
     @pytest.mark.asyncio
     async def test_benchmarking(self, performance_monitor):
         """Test performance benchmarking."""
+
         def test_operation():
             time.sleep(0.001)  # Simulate work
             return "result"
@@ -565,7 +558,7 @@ class TestDatabaseOptimization:
             enable_query_cache=True,
             enable_query_batching=True,
             batch_size=5,
-            batch_timeout=0.01
+            batch_timeout=0.01,
         )
 
     @pytest.fixture
@@ -612,7 +605,7 @@ class TestDatabaseOptimization:
         queries = [
             ("SELECT * FROM users", {}),
             ("SELECT * FROM products", {}),
-            ("SELECT * FROM orders", {})
+            ("SELECT * FROM orders", {}),
         ]
 
         results = await db_optimizer.execute_batch(queries)
@@ -657,7 +650,7 @@ class TestAsyncMCPServer:
             enable_request_batching=True,
             batch_size=5,
             batch_timeout=0.01,
-            enable_metrics=True
+            enable_metrics=True,
         )
 
     @pytest.fixture
@@ -678,10 +671,7 @@ class TestAsyncMCPServer:
     @pytest.mark.asyncio
     async def test_request_processing(self, mcp_server):
         """Test request processing."""
-        request = {
-            "method": "list_tools",
-            "params": {}
-        }
+        request = {"method": "list_tools", "params": {}}
 
         result = await mcp_server._process_request(request, "test_connection")
 
@@ -760,7 +750,7 @@ class TestIntegrationPerformance:
             documents = [
                 ("doc1", "Machine learning fundamentals", {"category": "ai"}),
                 ("doc2", "Python programming guide", {"category": "programming"}),
-                ("doc3", "Data science basics", {"category": "data"})
+                ("doc3", "Data science basics", {"category": "data"}),
             ]
 
             # Index documents
@@ -770,11 +760,9 @@ class TestIntegrationPerformance:
 
             # Perform searches
             start_time = time.time()
-            results = await search_engine.search_batch([
-                "machine learning",
-                "python",
-                "data science"
-            ])
+            results = await search_engine.search_batch(
+                ["machine learning", "python", "data science"]
+            )
             search_time = time.time() - start_time
 
             # Verify performance
@@ -795,9 +783,7 @@ class TestIntegrationPerformance:
     async def test_concurrent_performance(self):
         """Test performance under concurrent load."""
         search_config = AsyncSearchConfig(
-            batch_size=20,
-            max_concurrent_batches=4,
-            enable_cache_warming=False
+            batch_size=20, max_concurrent_batches=4, enable_cache_warming=False
         )
 
         search_engine = AsyncSemanticSearch(search_config)
@@ -806,8 +792,7 @@ class TestIntegrationPerformance:
         try:
             # Index documents
             documents = [
-                (f"doc_{i}", f"Document content {i}", {"id": i})
-                for i in range(100)
+                (f"doc_{i}", f"Document content {i}", {"id": i}) for i in range(100)
             ]
             await search_engine.index_documents_batch(documents)
 
@@ -839,7 +824,7 @@ class TestIntegrationPerformance:
         memory_config = MemoryConfig(
             max_memory_usage=256,  # 256MB limit
             monitoring_interval=0.1,
-            enable_gc_optimization=True
+            enable_gc_optimization=True,
         )
 
         memory_manager = MemoryMgr(memory_config)
@@ -861,7 +846,9 @@ class TestIntegrationPerformance:
             # Should have triggered cleanup/eviction
             assert len(efficient_dict) <= 1000
             assert len(efficient_list) <= 1000
-            assert stats["memory_stats"]["current_usage_mb"] < 512  # Should be reasonable
+            assert (
+                stats["memory_stats"]["current_usage_mb"] < 512
+            )  # Should be reasonable
 
         finally:
             await memory_manager.stop()
@@ -877,7 +864,7 @@ async def test_performance_regression():
         "search_time": 0.1,
         "indexing_time": 0.5,
         "cache_time": 0.001,
-        "memory_cleanup": 0.05
+        "memory_cleanup": 0.05,
     }
 
     # Test search performance
@@ -887,10 +874,7 @@ async def test_performance_regression():
 
     try:
         # Index test documents
-        documents = [
-            (f"doc_{i}", f"Test content {i}", {"id": i})
-            for i in range(100)
-        ]
+        documents = [(f"doc_{i}", f"Test content {i}", {"id": i}) for i in range(100)]
 
         start_time = time.time()
         await search_engine.index_documents_batch(documents)

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class HealthStatus(str, Enum):
     """Health check status levels."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -30,6 +31,7 @@ class HealthStatus(str, Enum):
 @dataclass
 class HealthCheckResult:
     """Result of a health check operation."""
+
     name: str
     status: HealthStatus
     message: str
@@ -40,8 +42,8 @@ class HealthCheckResult:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         result = asdict(self)
-        result['timestamp'] = self.timestamp.isoformat()
-        result['status'] = self.status.value
+        result["timestamp"] = self.timestamp.isoformat()
+        result["status"] = self.status.value
         return result
 
 
@@ -85,7 +87,7 @@ class HealthChecker:
                 message=message,
                 duration_ms=duration_ms,
                 timestamp=datetime.now(),
-                details=details
+                details=details,
             )
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -97,10 +99,12 @@ class HealthChecker:
                 message=f"Check failed: {str(e)}",
                 duration_ms=duration_ms,
                 timestamp=datetime.now(),
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
-    async def check_health(self, check_names: list[str] | None = None) -> dict[str, Any]:
+    async def check_health(
+        self, check_names: list[str] | None = None
+    ) -> dict[str, Any]:
         """Run health checks and return comprehensive status."""
         if check_names is None:
             check_names = list(self.checks.keys())
@@ -149,14 +153,24 @@ class HealthChecker:
             "checks": {result.name: result.to_dict() for result in all_results},
             "summary": {
                 "total_checks": len(all_results),
-                "healthy": len([r for r in all_results if r.status == HealthStatus.HEALTHY]),
-                "degraded": len([r for r in all_results if r.status == HealthStatus.DEGRADED]),
-                "unhealthy": len([r for r in all_results if r.status == HealthStatus.UNHEALTHY]),
-                "unknown": len([r for r in all_results if r.status == HealthStatus.UNKNOWN])
-            }
+                "healthy": len(
+                    [r for r in all_results if r.status == HealthStatus.HEALTHY]
+                ),
+                "degraded": len(
+                    [r for r in all_results if r.status == HealthStatus.DEGRADED]
+                ),
+                "unhealthy": len(
+                    [r for r in all_results if r.status == HealthStatus.UNHEALTHY]
+                ),
+                "unknown": len(
+                    [r for r in all_results if r.status == HealthStatus.UNKNOWN]
+                ),
+            },
         }
 
-    def _determine_overall_status(self, results: list[HealthCheckResult]) -> HealthStatus:
+    def _determine_overall_status(
+        self, results: list[HealthCheckResult]
+    ) -> HealthStatus:
         """Determine overall health status from individual check results."""
         if not results:
             return HealthStatus.UNKNOWN
@@ -176,20 +190,32 @@ class HealthChecker:
         """Check system CPU and load average."""
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
-            load_avg = psutil.getloadavg()[0] if hasattr(psutil, 'getloadavg') else 0
+            load_avg = psutil.getloadavg()[0] if hasattr(psutil, "getloadavg") else 0
 
             details = {
                 "cpu_percent": cpu_percent,
                 "load_average": load_avg,
-                "cpu_count": psutil.cpu_count()
+                "cpu_count": psutil.cpu_count(),
             }
 
             if cpu_percent > 90:
-                return HealthStatus.UNHEALTHY, f"High CPU usage: {cpu_percent}%", details
+                return (
+                    HealthStatus.UNHEALTHY,
+                    f"High CPU usage: {cpu_percent}%",
+                    details,
+                )
             elif cpu_percent > 70:
-                return HealthStatus.DEGRADED, f"Elevated CPU usage: {cpu_percent}%", details
+                return (
+                    HealthStatus.DEGRADED,
+                    f"Elevated CPU usage: {cpu_percent}%",
+                    details,
+                )
             else:
-                return HealthStatus.HEALTHY, f"CPU usage normal: {cpu_percent}%", details
+                return (
+                    HealthStatus.HEALTHY,
+                    f"CPU usage normal: {cpu_percent}%",
+                    details,
+                )
 
         except Exception as e:
             return HealthStatus.UNKNOWN, f"Unable to check CPU: {e}", {}
@@ -203,15 +229,27 @@ class HealthChecker:
                 "total_gb": round(memory.total / 1024**3, 2),
                 "available_gb": round(memory.available / 1024**3, 2),
                 "used_percent": memory.percent,
-                "used_gb": round(memory.used / 1024**3, 2)
+                "used_gb": round(memory.used / 1024**3, 2),
             }
 
             if memory.percent > 90:
-                return HealthStatus.UNHEALTHY, f"High memory usage: {memory.percent}%", details
+                return (
+                    HealthStatus.UNHEALTHY,
+                    f"High memory usage: {memory.percent}%",
+                    details,
+                )
             elif memory.percent > 80:
-                return HealthStatus.DEGRADED, f"Elevated memory usage: {memory.percent}%", details
+                return (
+                    HealthStatus.DEGRADED,
+                    f"Elevated memory usage: {memory.percent}%",
+                    details,
+                )
             else:
-                return HealthStatus.HEALTHY, f"Memory usage normal: {memory.percent}%", details
+                return (
+                    HealthStatus.HEALTHY,
+                    f"Memory usage normal: {memory.percent}%",
+                    details,
+                )
 
         except Exception as e:
             return HealthStatus.UNKNOWN, f"Unable to check memory: {e}", {}
@@ -219,23 +257,35 @@ class HealthChecker:
     async def _check_disk_space(self) -> tuple:
         """Check disk space usage."""
         try:
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             details = {
                 "total_gb": round(disk.total / 1024**3, 2),
                 "free_gb": round(disk.free / 1024**3, 2),
                 "used_percent": round((disk.used / disk.total) * 100, 2),
-                "used_gb": round(disk.used / 1024**3, 2)
+                "used_gb": round(disk.used / 1024**3, 2),
             }
 
             used_percent = (disk.used / disk.total) * 100
 
             if used_percent > 95:
-                return HealthStatus.UNHEALTHY, f"Critical disk usage: {used_percent:.1f}%", details
+                return (
+                    HealthStatus.UNHEALTHY,
+                    f"Critical disk usage: {used_percent:.1f}%",
+                    details,
+                )
             elif used_percent > 85:
-                return HealthStatus.DEGRADED, f"High disk usage: {used_percent:.1f}%", details
+                return (
+                    HealthStatus.DEGRADED,
+                    f"High disk usage: {used_percent:.1f}%",
+                    details,
+                )
             else:
-                return HealthStatus.HEALTHY, f"Disk usage normal: {used_percent:.1f}%", details
+                return (
+                    HealthStatus.HEALTHY,
+                    f"Disk usage normal: {used_percent:.1f}%",
+                    details,
+                )
 
         except Exception as e:
             return HealthStatus.UNKNOWN, f"Unable to check disk space: {e}", {}
@@ -258,14 +308,22 @@ class HealthChecker:
             if retrieved_value == test_value:
                 # Clean up
                 await cache.delete(test_key)
-                return HealthStatus.HEALTHY, "Redis connection working", {"response_time_ms": 0}
+                return (
+                    HealthStatus.HEALTHY,
+                    "Redis connection working",
+                    {"response_time_ms": 0},
+                )
             else:
                 return HealthStatus.DEGRADED, "Redis data inconsistency", {}
 
         except ImportError:
             return HealthStatus.DEGRADED, "Redis client not available", {}
         except Exception as e:
-            return HealthStatus.UNHEALTHY, f"Redis connection failed: {e}", {"error": str(e)}
+            return (
+                HealthStatus.UNHEALTHY,
+                f"Redis connection failed: {e}",
+                {"error": str(e)},
+            )
 
     async def _check_chromadb_connection(self) -> tuple:
         """Check ChromaDB connection."""
@@ -273,11 +331,21 @@ class HealthChecker:
             chromadb_url = "http://localhost:8000"  # Default ChromaDB URL
 
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{chromadb_url}/api/v1/heartbeat", timeout=5) as response:
+                async with session.get(
+                    f"{chromadb_url}/api/v1/heartbeat", timeout=5
+                ) as response:
                     if response.status == 200:
-                        return HealthStatus.HEALTHY, "ChromaDB connection working", {"url": chromadb_url}
+                        return (
+                            HealthStatus.HEALTHY,
+                            "ChromaDB connection working",
+                            {"url": chromadb_url},
+                        )
                     else:
-                        return HealthStatus.DEGRADED, f"ChromaDB returned status {response.status}", {}
+                        return (
+                            HealthStatus.DEGRADED,
+                            f"ChromaDB returned status {response.status}",
+                            {},
+                        )
 
         except aiohttp.ClientError as e:
             return HealthStatus.DEGRADED, f"ChromaDB connection failed: {e}", {}
@@ -298,17 +366,33 @@ class HealthChecker:
                 count = len(standards)
 
                 if count > 0:
-                    return HealthStatus.HEALTHY, f"Standards loaded: {count} available", {"standards_count": count}
+                    return (
+                        HealthStatus.HEALTHY,
+                        f"Standards loaded: {count} available",
+                        {"standards_count": count},
+                    )
                 else:
-                    return HealthStatus.DEGRADED, "No standards loaded", {"standards_count": 0}
+                    return (
+                        HealthStatus.DEGRADED,
+                        "No standards loaded",
+                        {"standards_count": 0},
+                    )
 
             except Exception as e:
-                return HealthStatus.DEGRADED, f"Standards engine error: {e}", {"error": str(e)}
+                return (
+                    HealthStatus.DEGRADED,
+                    f"Standards engine error: {e}",
+                    {"error": str(e)},
+                )
 
         except ImportError:
             return HealthStatus.DEGRADED, "Standards engine not available", {}
         except Exception as e:
-            return HealthStatus.UNKNOWN, f"Standards check error: {e}", {"error": str(e)}
+            return (
+                HealthStatus.UNKNOWN,
+                f"Standards check error: {e}",
+                {"error": str(e)},
+            )
 
 
 # Global health checker instance
@@ -344,7 +428,7 @@ async def readiness_check() -> dict[str, Any]:
         "ready": is_ready,
         "status": result["status"],
         "timestamp": result["timestamp"],
-        "checks": result["checks"]
+        "checks": result["checks"],
     }
 
 
@@ -357,11 +441,14 @@ async def liveness_check() -> dict[str, Any]:
     result = await checker.check_health(basic_checks)
 
     # Liveness allows degraded state
-    is_alive = result["status"] in [HealthStatus.HEALTHY.value, HealthStatus.DEGRADED.value]
+    is_alive = result["status"] in [
+        HealthStatus.HEALTHY.value,
+        HealthStatus.DEGRADED.value,
+    ]
 
     return {
         "alive": is_alive,
         "status": result["status"],
         "timestamp": result["timestamp"],
-        "uptime_seconds": result["uptime_seconds"]
+        "uptime_seconds": result["uptime_seconds"],
     }

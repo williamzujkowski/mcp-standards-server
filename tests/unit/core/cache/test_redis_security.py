@@ -24,7 +24,7 @@ class TestRedisCacheSecurity:
 
         # Simulate old pickle-serialized data
         pickled_data = pickle.dumps(test_data)
-        old_format = b'Up' + pickled_data  # 'p' for pickle serializer
+        old_format = b"Up" + pickled_data  # 'p' for pickle serializer
 
         # Test that attempting to deserialize pickle data raises an error
         with pytest.raises(ValueError, match="Pickle deserialization is disabled"):
@@ -34,7 +34,7 @@ class TestRedisCacheSecurity:
         """Test that pickle deserialization attempts are logged."""
         test_data = {"key": "value"}
         pickled_data = pickle.dumps(test_data)
-        old_format = b'Up' + pickled_data
+        old_format = b"Up" + pickled_data
 
         with pytest.raises(ValueError):
             cache._deserialize(old_format)
@@ -50,7 +50,7 @@ class TestRedisCacheSecurity:
         serialized = cache._serialize(test_data)
 
         # Should use msgpack ('m' serializer)
-        assert serialized[1:2] == b'm'
+        assert serialized[1:2] == b"m"
 
         # Should be able to deserialize
         deserialized = cache._deserialize(serialized)
@@ -62,11 +62,11 @@ class TestRedisCacheSecurity:
         test_data = {"set": {"a", "b", "c"}}
 
         # Mock msgpack to fail
-        with patch('msgpack.packb', side_effect=TypeError("Mock msgpack failure")):
+        with patch("msgpack.packb", side_effect=TypeError("Mock msgpack failure")):
             serialized = cache._serialize(test_data)
 
             # Should fall back to JSON ('j' serializer)
-            assert serialized[1:2] == b'j'
+            assert serialized[1:2] == b"j"
 
             # Should be able to deserialize
             deserialized = cache._deserialize(serialized)
@@ -75,6 +75,7 @@ class TestRedisCacheSecurity:
 
     def test_unsafe_serialization_rejected(self, cache):
         """Test that unsafe/unserializable data is rejected."""
+
         # Create an object that can't be serialized by msgpack or JSON
         class UnsafeObject:
             def __init__(self):
@@ -91,10 +92,7 @@ class TestRedisCacheSecurity:
         encoder = cache._get_json_encoder()
 
         # Test safe types
-        safe_data = {
-            "set": {1, 2, 3},
-            "bytes": b"test data"
-        }
+        safe_data = {"set": {1, 2, 3}, "bytes": b"test data"}
 
         json_str = json.dumps(safe_data, cls=encoder)
         assert "__type__" in json_str
@@ -131,6 +129,7 @@ class TestRedisCacheSecurity:
 
         # Generate a key with the same input but different salt
         import hashlib
+
         raw_key = hashlib.sha256(b"test").hexdigest()
 
         # Should be different due to salting
@@ -144,7 +143,7 @@ class TestRedisCacheSecurity:
         serialized = cache._serialize(large_data)
 
         # Should be compressed (starts with 'Z')
-        assert serialized[0:1] == b'Z'
+        assert serialized[0:1] == b"Z"
 
         # Should decompress safely
         deserialized = cache._deserialize(serialized)
@@ -163,11 +162,16 @@ class TestRedisCacheSecurity:
     def test_no_code_execution_in_deserialization(self, cache):
         """Test that deserialization cannot execute arbitrary code."""
         # Test that even if someone tries to inject code, it's not executed
-        malicious_json = '{"__type__": "exec", "code": "import os; os.system(\'rm -rf /\')"}'
+        malicious_json = (
+            '{"__type__": "exec", "code": "import os; os.system(\'rm -rf /\')"}'
+        )
 
         # Should not execute the code, just return the data
         result = cache._json_object_hook(json.loads(malicious_json))
-        assert result == {"__type__": "exec", "code": "import os; os.system('rm -rf /')"}
+        assert result == {
+            "__type__": "exec",
+            "code": "import os; os.system('rm -rf /')",
+        }
 
         # Should not have executed anything dangerous
         assert "__type__" in result
@@ -219,14 +223,21 @@ class TestRedisCacheSecurity:
         for key, value in metrics.items():
             assert isinstance(value, int | float | str)
             assert key in [
-                'l1_hits', 'l1_misses', 'l2_hits', 'l2_misses',
-                'errors', 'slow_queries', 'l1_hit_rate', 'l2_hit_rate',
-                'l1_cache_size', 'circuit_breaker_state'
+                "l1_hits",
+                "l1_misses",
+                "l2_hits",
+                "l2_misses",
+                "errors",
+                "slow_queries",
+                "l1_hit_rate",
+                "l2_hit_rate",
+                "l1_cache_size",
+                "circuit_breaker_state",
             ]
 
     def test_health_check_security(self, cache):
         """Test that health check doesn't expose sensitive information."""
-        with patch('redis.Redis') as mock_redis:
+        with patch("redis.Redis") as mock_redis:
             mock_client = MagicMock()
             mock_client.ping.return_value = True
             mock_redis.return_value.__enter__.return_value = mock_client
@@ -235,10 +246,14 @@ class TestRedisCacheSecurity:
 
             # Should only contain safe health information
             safe_keys = {
-                'status', 'l1_cache_size', 'circuit_breaker_state',
-                'metrics', 'redis_connected', 'latency_ms'
+                "status",
+                "l1_cache_size",
+                "circuit_breaker_state",
+                "metrics",
+                "redis_connected",
+                "latency_ms",
             }
 
             assert set(health.keys()) == safe_keys
-            assert health['status'] in ['healthy', 'degraded', 'unhealthy']
-            assert isinstance(health['redis_connected'], bool)
+            assert health["status"] in ["healthy", "degraded", "unhealthy"]
+            assert isinstance(health["redis_connected"], bool)

@@ -14,15 +14,19 @@ from pydantic import BaseModel, Field
 
 class AuthConfig(BaseModel):
     """Authentication configuration."""
+
     enabled: bool = Field(default=False, description="Enable authentication")
     secret_key: str = Field(default="", description="JWT secret key")
     algorithm: str = Field(default="HS256", description="JWT algorithm")
     token_expiry_hours: int = Field(default=24, description="Token expiry in hours")
-    api_keys: dict[str, str] = Field(default_factory=dict, description="API key to user mapping")
+    api_keys: dict[str, str] = Field(
+        default_factory=dict, description="API key to user mapping"
+    )
 
 
 class TokenPayload(BaseModel):
     """JWT token payload structure."""
+
     sub: str  # Subject (user ID)
     exp: int  # Expiration timestamp
     iat: int  # Issued at timestamp
@@ -46,6 +50,7 @@ class AuthManager:
         elif self.config.enabled and not self.config.secret_key:
             # Generate a random secret key if auth is enabled but no key provided
             import secrets
+
             self.config.secret_key = secrets.token_urlsafe(32)
 
         # Track revoked tokens (in production, use Redis)
@@ -68,13 +73,13 @@ class AuthManager:
             exp=int(exp.timestamp()),
             iat=int(now.timestamp()),
             jti=f"{user_id}:{int(now.timestamp())}",
-            scope=scope
+            scope=scope,
         )
 
         token = jwt.encode(
             payload.model_dump(),
             self.config.secret_key,
-            algorithm=self.config.algorithm
+            algorithm=self.config.algorithm,
         )
 
         return token
@@ -92,9 +97,7 @@ class AuthManager:
         try:
             # Decode and verify token
             payload_dict = jwt.decode(
-                token,
-                self.config.secret_key,
-                algorithms=[self.config.algorithm]
+                token, self.config.secret_key, algorithms=[self.config.algorithm]
             )
 
             payload = TokenPayload(**payload_dict)
@@ -135,7 +138,9 @@ class AuthManager:
         """Revoke a token by its JTI."""
         self._revoked_tokens.add(jti)
 
-    def extract_auth_from_headers(self, headers: dict[str, str]) -> tuple[str | None, str | None]:
+    def extract_auth_from_headers(
+        self, headers: dict[str, str]
+    ) -> tuple[str | None, str | None]:
         """
         Extract authentication credentials from headers.
 
@@ -153,7 +158,9 @@ class AuthManager:
 
         return None, None
 
-    def check_permission(self, payload: TokenPayload | None, required_scope: str) -> bool:
+    def check_permission(
+        self, payload: TokenPayload | None, required_scope: str
+    ) -> bool:
         """Check if a token payload has the required scope."""
         if not self.config.enabled:
             return True

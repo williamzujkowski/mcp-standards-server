@@ -13,8 +13,8 @@ from .error_middleware import (
 )
 
 __all__ = [
-    'error_handling_middleware',
-    'request_logging_middleware',
-    'WebSocketErrorHandler',
-    'setup_error_handling'
+    "error_handling_middleware",
+    "request_logging_middleware",
+    "WebSocketErrorHandler",
+    "setup_error_handling",
 ]

@@ -18,5 +18,5 @@ __all__ = [
     "MetadataSchema",
     "StandardMetadata",
     "StandardsValidator",
-    "QualityAssuranceSystem"
+    "QualityAssuranceSystem",
 ]

@@ -8,7 +8,13 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from src.core.errors import ErrorCode, MCPError
-from src.core.retry import CircuitBreaker, RetryConfig, RetryManager, RetryStrategy, with_retry
+from src.core.retry import (
+    CircuitBreaker,
+    RetryConfig,
+    RetryManager,
+    RetryStrategy,
+    with_retry,
+)
 
 
 class TestRetryConfig:
@@ -32,7 +38,7 @@ class TestRetryConfig:
             max_retries=5,
             initial_delay=0.5,
             strategy=RetryStrategy.LINEAR,
-            retry_on=(ValueError, KeyError)
+            retry_on=(ValueError, KeyError),
         )
 
         assert config.max_retries == 5
@@ -52,7 +58,7 @@ class TestRetryManager:
             max_retries=3,
             initial_delay=0.01,  # 10ms for fast tests
             max_delay=0.1,
-            jitter=False  # Disable for predictable tests
+            jitter=False,  # Disable for predictable tests
         )
         return RetryManager(config)
 
@@ -68,9 +74,7 @@ class TestRetryManager:
     def test_calculate_delay_linear(self):
         """Test linear backoff delay calculation."""
         config = RetryConfig(
-            strategy=RetryStrategy.LINEAR,
-            initial_delay=0.01,
-            jitter=False
+            strategy=RetryStrategy.LINEAR, initial_delay=0.01, jitter=False
         )
         manager = RetryManager(config)
 
@@ -84,9 +88,7 @@ class TestRetryManager:
     def test_calculate_delay_constant(self):
         """Test constant delay calculation."""
         config = RetryConfig(
-            strategy=RetryStrategy.CONSTANT,
-            initial_delay=0.05,
-            jitter=False
+            strategy=RetryStrategy.CONSTANT, initial_delay=0.05, jitter=False
         )
         manager = RetryManager(config)
 
@@ -104,11 +106,7 @@ class TestRetryManager:
 
     def test_calculate_delay_with_jitter(self):
         """Test delay calculation with jitter."""
-        config = RetryConfig(
-            initial_delay=1.0,
-            jitter=True,
-            jitter_factor=0.1
-        )
+        config = RetryConfig(initial_delay=1.0, jitter=True, jitter_factor=0.1)
         manager = RetryManager(config)
 
         # Generate multiple delays for same attempt
@@ -125,10 +123,7 @@ class TestRetryManager:
         async_func = AsyncMock(return_value="success")
 
         result = await retry_manager.retry_async(
-            async_func,
-            1, 2,
-            operation_name="test_op",
-            kwarg="value"
+            async_func, 1, 2, operation_name="test_op", kwarg="value"
         )
 
         assert result == "success"
@@ -137,16 +132,15 @@ class TestRetryManager:
     @pytest.mark.asyncio
     async def test_retry_async_success_after_retries(self, retry_manager):
         """Test async retry succeeds after failures."""
-        async_func = AsyncMock(side_effect=[
-            ConnectionError("Network error"),
-            TimeoutError("Timeout"),
-            "success"
-        ])
-
-        result = await retry_manager.retry_async(
-            async_func,
-            operation_name="test_op"
+        async_func = AsyncMock(
+            side_effect=[
+                ConnectionError("Network error"),
+                TimeoutError("Timeout"),
+                "success",
+            ]
         )
+
+        result = await retry_manager.retry_async(async_func, operation_name="test_op")
 
         assert result == "success"
         assert async_func.call_count == 3
@@ -157,10 +151,7 @@ class TestRetryManager:
         async_func = AsyncMock(side_effect=ConnectionError("Network error"))
 
         with pytest.raises(ConnectionError):
-            await retry_manager.retry_async(
-                async_func,
-                operation_name="test_op"
-            )
+            await retry_manager.retry_async(async_func, operation_name="test_op")
 
         assert async_func.call_count == 4  # initial + 3 retries
 
@@ -170,24 +161,15 @@ class TestRetryManager:
         async_func = AsyncMock(side_effect=ValueError("Bad value"))
 
         with pytest.raises(ValueError):
-            await retry_manager.retry_async(
-                async_func,
-                operation_name="test_op"
-            )
+            await retry_manager.retry_async(async_func, operation_name="test_op")
 
         assert async_func.call_count == 1  # No retries
 
     def test_retry_sync_success_after_retries(self, retry_manager):
         """Test sync retry succeeds after failures."""
-        sync_func = Mock(side_effect=[
-            ConnectionError("Network error"),
-            "success"
-        ])
+        sync_func = Mock(side_effect=[ConnectionError("Network error"), "success"])
 
-        result = retry_manager.retry_sync(
-            sync_func,
-            operation_name="test_op"
-        )
+        result = retry_manager.retry_sync(sync_func, operation_name="test_op")
 
         assert result == "success"
         assert sync_func.call_count == 2
@@ -233,6 +215,7 @@ class TestRetryDecorator:
 
     def test_decorator_preserves_metadata(self):
         """Test decorator preserves function metadata."""
+
         @with_retry()
         def example_func():
             """Example function docstring."""
@@ -251,7 +234,7 @@ class TestCircuitBreaker:
         return CircuitBreaker(
             failure_threshold=2,
             recovery_timeout=0.1,  # 100ms for fast tests
-            expected_exception=ConnectionError
+            expected_exception=ConnectionError,
         )
 
     def test_initial_state(self, circuit_breaker):

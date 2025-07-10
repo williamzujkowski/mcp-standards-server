@@ -1,6 +1,5 @@
 """Tests for base analyzer functionality."""
 
-
 from src.analyzers.base import (
     AnalyzerPlugin,
     AnalyzerResult,
@@ -29,38 +28,44 @@ class MockAnalyzer(BaseAnalyzer):
 
     def analyze_security(self, ast, result: AnalyzerResult):
         if "vulnerability" in ast.get("content", ""):
-            result.add_issue(SecurityIssue(
-                type=IssueType.SECURITY,
-                severity=Severity.HIGH,
-                message="Mock vulnerability detected",
-                file_path=result.file_path,
-                line_number=1,
-                column_number=1,
-                cwe_id="CWE-000"
-            ))
+            result.add_issue(
+                SecurityIssue(
+                    type=IssueType.SECURITY,
+                    severity=Severity.HIGH,
+                    message="Mock vulnerability detected",
+                    file_path=result.file_path,
+                    line_number=1,
+                    column_number=1,
+                    cwe_id="CWE-000",
+                )
+            )
 
     def analyze_performance(self, ast, result: AnalyzerResult):
         if "slow" in ast.get("content", ""):
-            result.add_issue(PerformanceIssue(
-                type=IssueType.PERFORMANCE,
-                severity=Severity.MEDIUM,
-                message="Mock performance issue",
-                file_path=result.file_path,
-                line_number=1,
-                column_number=1,
-                impact="Slow operation"
-            ))
+            result.add_issue(
+                PerformanceIssue(
+                    type=IssueType.PERFORMANCE,
+                    severity=Severity.MEDIUM,
+                    message="Mock performance issue",
+                    file_path=result.file_path,
+                    line_number=1,
+                    column_number=1,
+                    impact="Slow operation",
+                )
+            )
 
     def analyze_best_practices(self, ast, result: AnalyzerResult):
         if "bad_practice" in ast.get("content", ""):
-            result.add_issue(Issue(
-                type=IssueType.BEST_PRACTICE,
-                severity=Severity.LOW,
-                message="Mock best practice violation",
-                file_path=result.file_path,
-                line_number=1,
-                column_number=1
-            ))
+            result.add_issue(
+                Issue(
+                    type=IssueType.BEST_PRACTICE,
+                    severity=Severity.LOW,
+                    message="Mock best practice violation",
+                    file_path=result.file_path,
+                    line_number=1,
+                    column_number=1,
+                )
+            )
 
     def _calculate_complexity(self, ast) -> int:
         return 5
@@ -74,10 +79,7 @@ class TestAnalyzerResult:
 
     def test_result_creation(self):
         """Test creating analyzer result."""
-        result = AnalyzerResult(
-            file_path="/test/file.py",
-            language="python"
-        )
+        result = AnalyzerResult(file_path="/test/file.py", language="python")
 
         assert result.file_path == "/test/file.py"
         assert result.language == "python"
@@ -94,7 +96,7 @@ class TestAnalyzerResult:
             message="Test issue",
             file_path="/test/file.py",
             line_number=10,
-            column_number=5
+            column_number=5,
         )
 
         result.add_issue(issue)
@@ -111,7 +113,7 @@ class TestAnalyzerResult:
             message="High severity",
             file_path="/test/file.py",
             line_number=1,
-            column_number=1
+            column_number=1,
         )
 
         low_issue = Issue(
@@ -120,7 +122,7 @@ class TestAnalyzerResult:
             message="Low severity",
             file_path="/test/file.py",
             line_number=2,
-            column_number=1
+            column_number=1,
         )
 
         result.add_issue(high_issue)
@@ -140,17 +142,19 @@ class TestAnalyzerResult:
             file_path="/test/file.py",
             language="python",
             ast_hash="abc123",
-            analysis_time=1.5
+            analysis_time=1.5,
         )
 
-        result.add_issue(Issue(
-            type=IssueType.SECURITY,
-            severity=Severity.HIGH,
-            message="Test issue",
-            file_path="/test/file.py",
-            line_number=1,
-            column_number=1
-        ))
+        result.add_issue(
+            Issue(
+                type=IssueType.SECURITY,
+                severity=Severity.HIGH,
+                message="Test issue",
+                file_path="/test/file.py",
+                line_number=1,
+                column_number=1,
+            )
+        )
 
         result.metrics = {"lines_of_code": 100}
 
@@ -179,7 +183,7 @@ class TestSecurityIssue:
             line_number=10,
             column_number=5,
             cwe_id="CWE-89",
-            owasp_category="A03:2021"
+            owasp_category="A03:2021",
         )
 
         assert issue.type == IssueType.SECURITY
@@ -250,16 +254,16 @@ class TestBaseAnalyzer:
     def test_find_pattern_matches(self):
         """Test pattern matching functionality."""
         analyzer = MockAnalyzer()
-        content = '''Line 1
+        content = """Line 1
 Line with pattern match
 Another line
-pattern appears here too'''
+pattern appears here too"""
 
-        matches = analyzer.find_pattern_matches(content, [r'pattern'])
+        matches = analyzer.find_pattern_matches(content, [r"pattern"])
 
         assert len(matches) == 2
-        assert matches[0] == ('pattern', 2, 10)
-        assert matches[1] == ('pattern', 4, 0)
+        assert matches[0] == ("pattern", 2, 10)
+        assert matches[1] == ("pattern", 4, 0)
 
 
 class TestAnalyzerPlugin:

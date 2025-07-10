@@ -1,6 +1,5 @@
 """Tests for Go language analyzer."""
 
-
 import pytest
 
 from src.analyzers.base import IssueType
@@ -23,7 +22,8 @@ class TestGoAnalyzer:
     def test_sql_injection_detection(self, analyzer, tmp_path):
         """Test SQL injection vulnerability detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 import "database/sql"
@@ -36,19 +36,23 @@ func vulnerable(userInput string) {
 func safe(userInput string) {
     db.Query("SELECT * FROM users WHERE id = ?", userInput)
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
         # Should find SQL injection in vulnerable function
-        sql_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-89"]
+        sql_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-89"
+        ]
         assert len(sql_issues) >= 1
         assert any("SQL injection" in issue.message for issue in sql_issues)
 
     def test_command_injection_detection(self, analyzer, tmp_path):
         """Test command injection detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 import "os/exec"
@@ -57,17 +61,21 @@ func vulnerable(userInput string) {
     cmd := exec.Command("sh", "-c", "echo " + userInput)
     cmd.Run()
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        cmd_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-78"]
+        cmd_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-78"
+        ]
         assert len(cmd_issues) >= 1
 
     def test_race_condition_detection(self, analyzer, tmp_path):
         """Test race condition detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 var counter int
@@ -77,17 +85,21 @@ func increment() {
         counter = counter + 1
     }()
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        race_issues = [i for i in result.issues if "race condition" in i.message.lower()]
+        race_issues = [
+            i for i in result.issues if "race condition" in i.message.lower()
+        ]
         assert len(race_issues) >= 1
 
     def test_error_handling_detection(self, analyzer, tmp_path):
         """Test error handling issue detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 import "os"
@@ -99,7 +111,8 @@ func ignoreError() {
 func panicWithoutRecover() {
     panic("something went wrong")
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
@@ -109,7 +122,8 @@ func panicWithoutRecover() {
     def test_crypto_issues(self, analyzer, tmp_path):
         """Test cryptographic issue detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 import (
@@ -123,22 +137,28 @@ func weakHash(data []byte) {
     md5.Sum(data)
     sha1.Sum(data)
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
         # Check for weak crypto
-        crypto_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-327"]
+        crypto_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-327"
+        ]
         assert len(crypto_issues) >= 2  # MD5 and SHA1
 
         # Check for hardcoded secrets
-        secret_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-798"]
+        secret_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-798"
+        ]
         assert len(secret_issues) >= 1
 
     def test_performance_string_concat(self, analyzer, tmp_path):
         """Test string concatenation performance issue."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 func badStringConcat(items []string) string {
@@ -148,17 +168,21 @@ func badStringConcat(items []string) string {
     }
     return result
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
         perf_issues = [i for i in result.issues if i.type == IssueType.PERFORMANCE]
-        assert any("string concatenation" in issue.message.lower() for issue in perf_issues)
+        assert any(
+            "string concatenation" in issue.message.lower() for issue in perf_issues
+        )
 
     def test_defer_in_loop(self, analyzer, tmp_path):
         """Test defer in loop detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 func deferInLoop(files []string) {
@@ -167,17 +191,21 @@ func deferInLoop(files []string) {
         defer f.Close()
     }
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        defer_issues = [i for i in result.issues if "defer in loop" in i.message.lower()]
+        defer_issues = [
+            i for i in result.issues if "defer in loop" in i.message.lower()
+        ]
         assert len(defer_issues) >= 1
 
     def test_slice_append_performance(self, analyzer, tmp_path):
         """Test slice append without pre-allocation."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 func inefficientAppend(n int) []int {
@@ -187,17 +215,23 @@ func inefficientAppend(n int) []int {
     }
     return result
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        append_issues = [i for i in result.issues if "append without pre-allocation" in i.message.lower()]
+        append_issues = [
+            i
+            for i in result.issues
+            if "append without pre-allocation" in i.message.lower()
+        ]
         assert len(append_issues) >= 1
 
     def test_naming_conventions(self, analyzer, tmp_path):
         """Test Go naming convention checks."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 // Missing package comment
@@ -209,7 +243,8 @@ func publicFunction() {
 type privateStruct struct {
     // This is fine
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
@@ -220,7 +255,8 @@ type privateStruct struct {
     def test_interface_complexity(self, analyzer, tmp_path):
         """Test interface complexity detection."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 type ComplexInterface interface {
@@ -232,17 +268,23 @@ type ComplexInterface interface {
     Method6()
     Method7()
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        interface_issues = [i for i in result.issues if "interface" in i.message.lower() and "methods" in i.message.lower()]
+        interface_issues = [
+            i
+            for i in result.issues
+            if "interface" in i.message.lower() and "methods" in i.message.lower()
+        ]
         assert len(interface_issues) >= 1
 
     def test_context_usage(self, analyzer, tmp_path):
         """Test context.Context usage recommendations."""
         test_file = tmp_path / "test.go"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 package main
 
 import (
@@ -258,7 +300,8 @@ func QueryDatabase(query string) (*sql.Rows, error) {
     // Missing context parameter
     return db.Query(query)
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 

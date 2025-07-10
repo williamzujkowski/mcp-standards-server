@@ -24,7 +24,7 @@ class MCPServer:
 
         # Register default handlers
         if standards_engine:
-            self.handlers['standards'] = StandardsHandler(standards_engine)
+            self.handlers["standards"] = StandardsHandler(standards_engine)
 
     async def start(self):
         """Start the MCP server."""
@@ -33,7 +33,7 @@ class MCPServer:
 
         # Initialize handlers
         for handler in self.handlers.values():
-            if hasattr(handler, 'initialize'):
+            if hasattr(handler, "initialize"):
                 await handler.initialize()
 
         logger.info("MCP server started successfully")
@@ -45,12 +45,14 @@ class MCPServer:
 
         # Cleanup handlers
         for handler in self.handlers.values():
-            if hasattr(handler, 'cleanup'):
+            if hasattr(handler, "cleanup"):
                 await handler.cleanup()
 
         logger.info("MCP server stopped")
 
-    async def handle_request(self, request: dict[str, Any], client_id: str = "default") -> dict[str, Any]:
+    async def handle_request(
+        self, request: dict[str, Any], client_id: str = "default"
+    ) -> dict[str, Any]:
         """Handle an incoming MCP request."""
         if not self.running:
             return {"error": "Server not running"}
@@ -62,57 +64,64 @@ class MCPServer:
             # Apply rate limiting
             is_allowed, limit_info = self.rate_limiter.check_all_limits(client_id)
             if not is_allowed:
-                return {
-                    "error": "Rate limit exceeded",
-                    "rate_limit": limit_info
-                }
+                return {"error": "Rate limit exceeded", "rate_limit": limit_info}
 
-            method = request.get('method')
-            params = request.get('params', {})
+            method = request.get("method")
+            params = request.get("params", {})
 
-            if method == 'list_tools':
+            if method == "list_tools":
                 return await self._list_tools()
-            elif method == 'call_tool':
+            elif method == "call_tool":
                 return await self._call_tool(params)
             else:
                 return {"error": f"Unknown method: {method}"}
 
         except Exception as e:
             logger.error(f"Request handling error: {str(e)}")
-            return self.error_handler.handle_exception(e, context={"method": "handle_request"})
+            return self.error_handler.handle_exception(
+                e, context={"method": "handle_request"}
+            )
 
     async def _list_tools(self) -> dict[str, Any]:
         """List available tools."""
         tools = []
 
         for handler in self.handlers.values():
-            if hasattr(handler, 'get_tools'):
+            if hasattr(handler, "get_tools"):
                 tools.extend(await handler.get_tools())
 
         return {"tools": tools}
 
     async def _call_tool(self, params: dict[str, Any]) -> dict[str, Any]:
         """Call a specific tool."""
-        tool_name = params.get('name')
-        tool_args = params.get('arguments', {})
+        tool_name = params.get("name")
+        tool_args = params.get("arguments", {})
 
         try:
             # Validate tool arguments
-            tool_args = self.security_middleware.validate_and_sanitize_request(tool_args)
+            tool_args = self.security_middleware.validate_and_sanitize_request(
+                tool_args
+            )
 
             # Find appropriate handler
             for handler in self.handlers.values():
-                if hasattr(handler, 'handle_tool'):
+                if hasattr(handler, "handle_tool"):
                     result = await handler.handle_tool(tool_name, tool_args)
                     if result is not None:
                         # Add security headers to response
                         if isinstance(result, dict):
-                            result.setdefault('headers', {})
-                            result['headers'] = self.security_middleware.add_security_headers(result['headers'])
+                            result.setdefault("headers", {})
+                            result["headers"] = (
+                                self.security_middleware.add_security_headers(
+                                    result["headers"]
+                                )
+                            )
                         return result
 
             return {"error": f"Tool not found: {tool_name}"}
 
         except Exception as e:
             logger.error(f"Tool call error: {str(e)}")
-            return self.error_handler.handle_exception(e, context={"method": "_call_tool", "tool_name": tool_name})
+            return self.error_handler.handle_exception(
+                e, context={"method": "_call_tool", "tool_name": tool_name}
+            )

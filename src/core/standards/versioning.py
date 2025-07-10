@@ -23,9 +23,10 @@ logger = logging.getLogger(__name__)
 
 class ChangeType(Enum):
     """Types of changes that can occur in standards."""
-    MAJOR = "major"      # Breaking changes
-    MINOR = "minor"      # New features, backward compatible
-    PATCH = "patch"      # Bug fixes, clarifications
+
+    MAJOR = "major"  # Breaking changes
+    MINOR = "minor"  # New features, backward compatible
+    PATCH = "patch"  # Bug fixes, clarifications
     METADATA = "metadata"  # Only metadata changes
     EDITORIAL = "editorial"  # Documentation/formatting only
 
@@ -33,6 +34,7 @@ class ChangeType(Enum):
 @dataclass
 class Change:
     """Represents a single change in a standard."""
+
     type: ChangeType
     section: str
     description: str
@@ -50,13 +52,14 @@ class Change:
             "old_content": self.old_content,
             "new_content": self.new_content,
             "impact_level": self.impact_level,
-            "migration_notes": self.migration_notes
+            "migration_notes": self.migration_notes,
         }
 
 
 @dataclass
 class VersionInfo:
     """Information about a specific version of a standard."""
+
     version: str
     created_date: datetime
     author: str
@@ -74,11 +77,11 @@ class VersionInfo:
             "description": self.description,
             "changes": [change.to_dict() for change in self.changes],
             "metadata_hash": self.metadata_hash,
-            "content_hash": self.content_hash
+            "content_hash": self.content_hash,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'VersionInfo':
+    def from_dict(cls, data: dict[str, Any]) -> "VersionInfo":
         """Create VersionInfo from dictionary."""
         changes = [
             Change(
@@ -88,7 +91,7 @@ class VersionInfo:
                 old_content=change_data.get("old_content"),
                 new_content=change_data.get("new_content"),
                 impact_level=change_data.get("impact_level", "low"),
-                migration_notes=change_data.get("migration_notes")
+                migration_notes=change_data.get("migration_notes"),
             )
             for change_data in data.get("changes", [])
         ]
@@ -100,13 +103,14 @@ class VersionInfo:
             description=data["description"],
             changes=changes,
             metadata_hash=data["metadata_hash"],
-            content_hash=data["content_hash"]
+            content_hash=data["content_hash"],
         )
 
 
 @dataclass
 class CompatibilityCheck:
     """Result of backward compatibility analysis."""
+
     is_compatible: bool
     compatibility_level: str  # "full", "partial", "breaking"
     breaking_changes: list[Change]
@@ -122,7 +126,7 @@ class CompatibilityCheck:
             "breaking_changes": [change.to_dict() for change in self.breaking_changes],
             "warnings": self.warnings,
             "migration_required": self.migration_required,
-            "migration_complexity": self.migration_complexity
+            "migration_complexity": self.migration_complexity,
         }
 
 
@@ -138,7 +142,9 @@ class StandardsVersionManager:
             versions_dir: Directory to store version history (defaults to standards_dir/versions)
         """
         self.standards_dir = Path(standards_dir)
-        self.versions_dir = Path(versions_dir) if versions_dir else self.standards_dir / "versions"
+        self.versions_dir = (
+            Path(versions_dir) if versions_dir else self.standards_dir / "versions"
+        )
         self.versions_dir.mkdir(exist_ok=True)
 
         # Load version history
@@ -155,8 +161,7 @@ class StandardsVersionManager:
 
                 for standard_name, versions in history_data.items():
                     self.version_history[standard_name] = [
-                        VersionInfo.from_dict(version_data)
-                        for version_data in versions
+                        VersionInfo.from_dict(version_data) for version_data in versions
                     ]
             except Exception as e:
                 logger.error(f"Failed to load version history: {e}")
@@ -169,7 +174,7 @@ class StandardsVersionManager:
         for standard_name, versions in self.version_history.items():
             history_data[standard_name] = [version.to_dict() for version in versions]
 
-        with open(history_file, 'w') as f:
+        with open(history_file, "w") as f:
             json.dump(history_data, f, indent=2, default=str)
 
     def create_version(
@@ -179,7 +184,7 @@ class StandardsVersionManager:
         metadata: dict[str, Any],
         version: str | None = None,
         description: str = "",
-        author: str = "Unknown"
+        author: str = "Unknown",
     ) -> VersionInfo:
         """
         Create a new version of a standard.
@@ -219,7 +224,7 @@ class StandardsVersionManager:
             description=description,
             changes=changes,
             metadata_hash=metadata_hash,
-            content_hash=content_hash
+            content_hash=content_hash,
         )
 
         # Add to history
@@ -238,10 +243,7 @@ class StandardsVersionManager:
         return version_info
 
     def _auto_increment_version(
-        self,
-        standard_name: str,
-        content: str,
-        metadata: dict[str, Any]
+        self, standard_name: str, content: str, metadata: dict[str, Any]
     ) -> str:
         """Automatically determine next version number based on changes."""
         previous_version = self.get_latest_version(standard_name)
@@ -278,10 +280,7 @@ class StandardsVersionManager:
             return ChangeType.PATCH
 
     def detect_changes(
-        self,
-        standard_name: str,
-        new_content: str,
-        new_metadata: dict[str, Any]
+        self, standard_name: str, new_content: str, new_metadata: dict[str, Any]
     ) -> list[Change]:
         """
         Detect changes between current and previous version.
@@ -306,9 +305,7 @@ class StandardsVersionManager:
         changes = []
 
         # Detect content changes
-        content_changes = self._detect_content_changes(
-            previous_content, new_content
-        )
+        content_changes = self._detect_content_changes(previous_content, new_content)
         changes.extend(content_changes)
 
         # Detect metadata changes
@@ -319,7 +316,9 @@ class StandardsVersionManager:
 
         return changes
 
-    def _detect_content_changes(self, old_content: str, new_content: str) -> list[Change]:
+    def _detect_content_changes(
+        self, old_content: str, new_content: str
+    ) -> list[Change]:
         """Detect changes in content using diff analysis."""
         changes = []
 
@@ -335,18 +334,26 @@ class StandardsVersionManager:
             if old_section != new_section:
                 change_type = self._classify_content_change(old_section, new_section)
 
-                changes.append(Change(
-                    type=change_type,
-                    section=section_name,
-                    description=self._generate_change_description(old_section, new_section),
-                    old_content=old_section if old_section else None,
-                    new_content=new_section if new_section else None,
-                    impact_level=self._assess_impact_level(change_type, section_name)
-                ))
+                changes.append(
+                    Change(
+                        type=change_type,
+                        section=section_name,
+                        description=self._generate_change_description(
+                            old_section, new_section
+                        ),
+                        old_content=old_section if old_section else None,
+                        new_content=new_section if new_section else None,
+                        impact_level=self._assess_impact_level(
+                            change_type, section_name
+                        ),
+                    )
+                )
 
         return changes
 
-    def _detect_metadata_changes(self, old_metadata: dict[str, Any], new_metadata: dict[str, Any]) -> list[Change]:
+    def _detect_metadata_changes(
+        self, old_metadata: dict[str, Any], new_metadata: dict[str, Any]
+    ) -> list[Change]:
         """Detect changes in metadata."""
         changes = []
 
@@ -360,14 +367,16 @@ class StandardsVersionManager:
             if old_value != new_value:
                 change_type = self._classify_metadata_change(key, old_value, new_value)
 
-                changes.append(Change(
-                    type=change_type,
-                    section=f"metadata.{key}",
-                    description=f"Changed {key} from {old_value} to {new_value}",
-                    old_content=str(old_value) if old_value is not None else None,
-                    new_content=str(new_value) if new_value is not None else None,
-                    impact_level=self._assess_metadata_impact(key)
-                ))
+                changes.append(
+                    Change(
+                        type=change_type,
+                        section=f"metadata.{key}",
+                        description=f"Changed {key} from {old_value} to {new_value}",
+                        old_content=str(old_value) if old_value is not None else None,
+                        new_content=str(new_value) if new_value is not None else None,
+                        impact_level=self._assess_metadata_impact(key),
+                    )
+                )
 
         return changes
 
@@ -377,25 +386,27 @@ class StandardsVersionManager:
         current_section = "introduction"
         current_content = []
 
-        for line in content.split('\n'):
-            if line.startswith('#'):
+        for line in content.split("\n"):
+            if line.startswith("#"):
                 # Save previous section
                 if current_content:
-                    sections[current_section] = '\n'.join(current_content)
+                    sections[current_section] = "\n".join(current_content)
 
                 # Start new section
-                current_section = line.strip('#').strip().lower().replace(' ', '_')
+                current_section = line.strip("#").strip().lower().replace(" ", "_")
                 current_content = []
             else:
                 current_content.append(line)
 
         # Save last section
         if current_content:
-            sections[current_section] = '\n'.join(current_content)
+            sections[current_section] = "\n".join(current_content)
 
         return sections
 
-    def _classify_content_change(self, old_content: str, new_content: str) -> ChangeType:
+    def _classify_content_change(
+        self, old_content: str, new_content: str
+    ) -> ChangeType:
         """Classify the type of content change."""
         if not old_content:
             return ChangeType.MINOR  # New section added
@@ -408,13 +419,20 @@ class StandardsVersionManager:
         else:
             return ChangeType.PATCH
 
-    def _classify_metadata_change(self, key: str, old_value: Any, new_value: Any) -> ChangeType:
+    def _classify_metadata_change(
+        self, key: str, old_value: Any, new_value: Any
+    ) -> ChangeType:
         """Classify the type of metadata change."""
         # Breaking metadata changes
-        breaking_fields = ['version', 'dependencies', 'nist_controls', 'compliance_frameworks']
+        breaking_fields = [
+            "version",
+            "dependencies",
+            "nist_controls",
+            "compliance_frameworks",
+        ]
 
         # Minor metadata changes
-        minor_fields = ['tags', 'domain', 'type', 'maturity_level']
+        minor_fields = ["tags", "domain", "type", "maturity_level"]
 
         if key in breaking_fields:
             return ChangeType.MAJOR
@@ -431,10 +449,12 @@ class StandardsVersionManager:
             "deprecated",
             "removed",
             "no longer supported",
-            "incompatible"
+            "incompatible",
         ]
 
-        return any(indicator in new_content.lower() for indicator in breaking_indicators)
+        return any(
+            indicator in new_content.lower() for indicator in breaking_indicators
+        )
 
     def _is_feature_addition(self, old_content: str, new_content: str) -> bool:
         """Determine if content change is a feature addition."""
@@ -456,7 +476,12 @@ class StandardsVersionManager:
 
     def _assess_impact_level(self, change_type: ChangeType, section: str) -> str:
         """Assess impact level of a change."""
-        critical_sections = ['security', 'authentication', 'authorization', 'compliance']
+        critical_sections = [
+            "security",
+            "authentication",
+            "authorization",
+            "compliance",
+        ]
 
         if change_type == ChangeType.MAJOR:
             return "high"
@@ -467,8 +492,8 @@ class StandardsVersionManager:
 
     def _assess_metadata_impact(self, key: str) -> str:
         """Assess impact level of metadata changes."""
-        high_impact = ['version', 'dependencies', 'nist_controls']
-        medium_impact = ['compliance_frameworks', 'domain', 'type']
+        high_impact = ["version", "dependencies", "nist_controls"]
+        medium_impact = ["compliance_frameworks", "domain", "type"]
 
         if key in high_impact:
             return "high"
@@ -478,10 +503,7 @@ class StandardsVersionManager:
             return "low"
 
     def check_compatibility(
-        self,
-        standard_name: str,
-        target_version: str,
-        base_version: str | None = None
+        self, standard_name: str, target_version: str, base_version: str | None = None
     ) -> CompatibilityCheck:
         """
         Check backward compatibility between versions.
@@ -503,7 +525,7 @@ class StandardsVersionManager:
                     breaking_changes=[],
                     warnings=[],
                     migration_required=False,
-                    migration_complexity="simple"
+                    migration_complexity="simple",
                 )
             base_version = base_version_info.version
 
@@ -518,7 +540,9 @@ class StandardsVersionManager:
                 if change.type == ChangeType.MAJOR:
                     breaking_changes.append(change)
                 elif change.impact_level == "high":
-                    warnings.append(f"High impact change in {change.section}: {change.description}")
+                    warnings.append(
+                        f"High impact change in {change.section}: {change.description}"
+                    )
 
         # Determine compatibility level
         if not breaking_changes:
@@ -541,7 +565,7 @@ class StandardsVersionManager:
             breaking_changes=breaking_changes,
             warnings=warnings,
             migration_required=migration_required,
-            migration_complexity=migration_complexity
+            migration_complexity=migration_complexity,
         )
 
     def _assess_migration_complexity(self, breaking_changes: list[Change]) -> str:
@@ -561,10 +585,7 @@ class StandardsVersionManager:
             return "simple"
 
     def generate_migration_guide(
-        self,
-        standard_name: str,
-        from_version: str,
-        to_version: str
+        self, standard_name: str, from_version: str, to_version: str
     ) -> str:
         """
         Generate migration guide between versions.
@@ -578,7 +599,9 @@ class StandardsVersionManager:
             Markdown migration guide
         """
         # Get compatibility check
-        compatibility = self.check_compatibility(standard_name, to_version, from_version)
+        compatibility = self.check_compatibility(
+            standard_name, to_version, from_version
+        )
 
         # Get version range
         versions = self.get_version_range(standard_name, from_version, to_version)
@@ -590,35 +613,29 @@ class StandardsVersionManager:
             f"**Compatibility Level:** {compatibility.compatibility_level}",
             f"**Migration Required:** {'Yes' if compatibility.migration_required else 'No'}",
             f"**Complexity:** {compatibility.migration_complexity}",
-            ""
+            "",
         ]
 
         if compatibility.breaking_changes:
-            guide_lines.extend([
-                "## Breaking Changes",
-                ""
-            ])
+            guide_lines.extend(["## Breaking Changes", ""])
 
             for change in compatibility.breaking_changes:
-                guide_lines.extend([
-                    f"### {change.section}",
-                    f"**Description:** {change.description}",
-                    f"**Impact:** {change.impact_level}",
-                    ""
-                ])
+                guide_lines.extend(
+                    [
+                        f"### {change.section}",
+                        f"**Description:** {change.description}",
+                        f"**Impact:** {change.impact_level}",
+                        "",
+                    ]
+                )
 
                 if change.migration_notes:
-                    guide_lines.extend([
-                        "**Migration Steps:**",
-                        change.migration_notes,
-                        ""
-                    ])
+                    guide_lines.extend(
+                        ["**Migration Steps:**", change.migration_notes, ""]
+                    )
 
         if compatibility.warnings:
-            guide_lines.extend([
-                "## Warnings",
-                ""
-            ])
+            guide_lines.extend(["## Warnings", ""])
 
             for warning in compatibility.warnings:
                 guide_lines.append(f"- {warning}")
@@ -626,19 +643,18 @@ class StandardsVersionManager:
             guide_lines.append("")
 
         # Add version-by-version changes
-        guide_lines.extend([
-            "## Detailed Changes",
-            ""
-        ])
+        guide_lines.extend(["## Detailed Changes", ""])
 
         for version_info in versions:
-            guide_lines.extend([
-                f"### Version {version_info.version}",
-                f"*{version_info.created_date.strftime('%Y-%m-%d')} by {version_info.author}*",
-                "",
-                version_info.description,
-                ""
-            ])
+            guide_lines.extend(
+                [
+                    f"### Version {version_info.version}",
+                    f"*{version_info.created_date.strftime('%Y-%m-%d')} by {version_info.author}*",
+                    "",
+                    version_info.description,
+                    "",
+                ]
+            )
 
             if version_info.changes:
                 guide_lines.append("**Changes:**")
@@ -646,7 +662,7 @@ class StandardsVersionManager:
                     guide_lines.append(f"- **{change.section}:** {change.description}")
                 guide_lines.append("")
 
-        return '\n'.join(guide_lines)
+        return "\n".join(guide_lines)
 
     def get_latest_version(self, standard_name: str) -> VersionInfo | None:
         """Get latest version info for a standard."""
@@ -662,7 +678,7 @@ class StandardsVersionManager:
             sorted_versions = sorted(
                 versions,
                 key=lambda v: semantic_version.Version(v.version),
-                reverse=True
+                reverse=True,
             )
             return sorted_versions[0]
         except Exception:
@@ -670,10 +686,7 @@ class StandardsVersionManager:
             return max(versions, key=lambda v: v.created_date)
 
     def get_version_range(
-        self,
-        standard_name: str,
-        from_version: str,
-        to_version: str
+        self, standard_name: str, from_version: str, to_version: str
     ) -> list[VersionInfo]:
         """Get all versions between two version numbers."""
         if standard_name not in self.version_history:
@@ -691,7 +704,9 @@ class StandardsVersionManager:
                 if from_sem_ver < version_sem_ver <= to_sem_ver:
                     range_versions.append(version_info)
 
-            return sorted(range_versions, key=lambda v: semantic_version.Version(v.version))
+            return sorted(
+                range_versions, key=lambda v: semantic_version.Version(v.version)
+            )
         except Exception:
             # Fall back to simple string comparison
             return [v for v in versions if from_version < v.version <= to_version]
@@ -701,28 +716,26 @@ class StandardsVersionManager:
         standard_name: str,
         version_info: VersionInfo,
         content: str,
-        metadata: dict[str, Any]
+        metadata: dict[str, Any],
     ):
         """Save version files to disk."""
         version_dir = self.versions_dir / standard_name / version_info.version
         version_dir.mkdir(parents=True, exist_ok=True)
 
         # Save content
-        with open(version_dir / "content.md", 'w') as f:
+        with open(version_dir / "content.md", "w") as f:
             f.write(content)
 
         # Save metadata
-        with open(version_dir / "metadata.yaml", 'w') as f:
+        with open(version_dir / "metadata.yaml", "w") as f:
             yaml.dump(metadata, f, default_flow_style=False)
 
         # Save version info
-        with open(version_dir / "version_info.json", 'w') as f:
+        with open(version_dir / "version_info.json", "w") as f:
             json.dump(version_info.to_dict(), f, indent=2, default=str)
 
     def _load_version_content(
-        self,
-        standard_name: str,
-        version: str
+        self, standard_name: str, version: str
     ) -> tuple[str, dict[str, Any]]:
         """Load content and metadata for a specific version."""
         version_dir = self.versions_dir / standard_name / version
@@ -741,14 +754,10 @@ class StandardsVersionManager:
 
     def _calculate_hash(self, content: str) -> str:
         """Calculate SHA-256 hash of content."""
-        return hashlib.sha256(content.encode('utf-8')).hexdigest()
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def generate_diff(
-        self,
-        standard_name: str,
-        version1: str,
-        version2: str,
-        format: str = "unified"
+        self, standard_name: str, version1: str, version2: str, format: str = "unified"
     ) -> str:
         """
         Generate diff between two versions.
@@ -772,25 +781,25 @@ class StandardsVersionManager:
                 content2.splitlines(keepends=True),
                 fromfile=f"{standard_name} v{version1}",
                 tofile=f"{standard_name} v{version2}",
-                lineterm=""
+                lineterm="",
             )
-            return ''.join(diff)
+            return "".join(diff)
         elif format == "context":
             diff = difflib.context_diff(
                 content1.splitlines(keepends=True),
                 content2.splitlines(keepends=True),
                 fromfile=f"{standard_name} v{version1}",
                 tofile=f"{standard_name} v{version2}",
-                lineterm=""
+                lineterm="",
             )
-            return ''.join(diff)
+            return "".join(diff)
         elif format == "html":
             differ = difflib.HtmlDiff()
             return differ.make_file(
                 content1.splitlines(),
                 content2.splitlines(),
                 f"{standard_name} v{version1}",
-                f"{standard_name} v{version2}"
+                f"{standard_name} v{version2}",
             )
         else:
             raise ValueError(f"Unsupported diff format: {format}")

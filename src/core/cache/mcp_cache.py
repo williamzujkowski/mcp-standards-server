@@ -29,11 +29,11 @@ logger = logging.getLogger(__name__)
 class CacheStrategy(Enum):
     """Cache strategy for different tool types."""
 
-    NO_CACHE = "no_cache"           # Never cache (e.g., write operations)
-    SHORT_TTL = "short_ttl"         # Cache for short period (e.g., 1-5 minutes)
-    MEDIUM_TTL = "medium_ttl"       # Cache for medium period (e.g., 5-30 minutes)
-    LONG_TTL = "long_ttl"           # Cache for long period (e.g., 1-24 hours)
-    PERMANENT = "permanent"         # Cache permanently until invalidated
+    NO_CACHE = "no_cache"  # Never cache (e.g., write operations)
+    SHORT_TTL = "short_ttl"  # Cache for short period (e.g., 1-5 minutes)
+    MEDIUM_TTL = "medium_ttl"  # Cache for medium period (e.g., 5-30 minutes)
+    LONG_TTL = "long_ttl"  # Cache for long period (e.g., 1-24 hours)
+    PERMANENT = "permanent"  # Cache permanently until invalidated
 
 
 @dataclass
@@ -43,12 +43,18 @@ class ToolCacheConfig:
     tool_name: str
     strategy: CacheStrategy = CacheStrategy.MEDIUM_TTL
     ttl_seconds: int | None = None  # Override default TTL
-    compress_threshold: int = 1024     # Compress responses larger than this
-    include_in_key: list[str] = field(default_factory=list)  # Which args to include in cache key
+    compress_threshold: int = 1024  # Compress responses larger than this
+    include_in_key: list[str] = field(
+        default_factory=list
+    )  # Which args to include in cache key
     exclude_from_key: list[str] = field(default_factory=list)  # Which args to exclude
-    invalidate_on: list[str] = field(default_factory=list)  # Tool names that invalidate this cache
-    warm_on_startup: bool = False      # Whether to warm this cache on startup
-    warm_args: list[dict[str, Any]] = field(default_factory=list)  # Arguments for cache warming
+    invalidate_on: list[str] = field(
+        default_factory=list
+    )  # Tool names that invalidate this cache
+    warm_on_startup: bool = False  # Whether to warm this cache on startup
+    warm_args: list[dict[str, Any]] = field(
+        default_factory=list
+    )  # Arguments for cache warming
 
 
 @dataclass
@@ -90,10 +96,10 @@ class MCPCache:
     # Default TTLs for different strategies (in seconds)
     DEFAULT_TTLS = {
         CacheStrategy.NO_CACHE: 0,
-        CacheStrategy.SHORT_TTL: 300,      # 5 minutes
-        CacheStrategy.MEDIUM_TTL: 1800,    # 30 minutes
-        CacheStrategy.LONG_TTL: 86400,     # 24 hours
-        CacheStrategy.PERMANENT: 0,        # No expiry
+        CacheStrategy.SHORT_TTL: 300,  # 5 minutes
+        CacheStrategy.MEDIUM_TTL: 1800,  # 30 minutes
+        CacheStrategy.LONG_TTL: 86400,  # 24 hours
+        CacheStrategy.PERMANENT: 0,  # No expiry
     }
 
     # Default tool configurations
@@ -104,97 +110,94 @@ class MCPCache:
             strategy=CacheStrategy.LONG_TTL,
             include_in_key=["standard_id"],
             invalidate_on=["sync_standards", "generate_standard"],
-            warm_on_startup=True
+            warm_on_startup=True,
         ),
         "list_available_standards": ToolCacheConfig(
             tool_name="list_available_standards",
             strategy=CacheStrategy.MEDIUM_TTL,
             include_in_key=["category", "limit"],
-            invalidate_on=["sync_standards", "generate_standard"]
+            invalidate_on=["sync_standards", "generate_standard"],
         ),
         "search_standards": ToolCacheConfig(
             tool_name="search_standards",
             strategy=CacheStrategy.SHORT_TTL,
             include_in_key=["query", "limit", "min_relevance", "filters"],
-            compress_threshold=2048
+            compress_threshold=2048,
         ),
         "get_optimized_standard": ToolCacheConfig(
             tool_name="get_optimized_standard",
             strategy=CacheStrategy.MEDIUM_TTL,
-            include_in_key=["standard_id", "format_type", "token_budget", "required_sections"],
-            compress_threshold=512
+            include_in_key=[
+                "standard_id",
+                "format_type",
+                "token_budget",
+                "required_sections",
+            ],
+            compress_threshold=512,
         ),
         "estimate_token_usage": ToolCacheConfig(
             tool_name="estimate_token_usage",
             strategy=CacheStrategy.LONG_TTL,
-            include_in_key=["standard_ids", "format_types"]
+            include_in_key=["standard_ids", "format_types"],
         ),
         "get_cross_references": ToolCacheConfig(
             tool_name="get_cross_references",
             strategy=CacheStrategy.MEDIUM_TTL,
             include_in_key=["standard_id", "concept", "max_depth"],
-            invalidate_on=["generate_cross_references"]
+            invalidate_on=["generate_cross_references"],
         ),
         "list_templates": ToolCacheConfig(
             tool_name="list_templates",
             strategy=CacheStrategy.LONG_TTL,
             include_in_key=["domain"],
-            warm_on_startup=True
+            warm_on_startup=True,
         ),
-
         # Analytics tools (shorter cache due to changing data)
         "get_standards_analytics": ToolCacheConfig(
             tool_name="get_standards_analytics",
             strategy=CacheStrategy.SHORT_TTL,
             include_in_key=["metric_type", "time_range", "standard_ids"],
-            ttl_seconds=180  # 3 minutes
+            ttl_seconds=180,  # 3 minutes
         ),
         "get_recommendations": ToolCacheConfig(
             tool_name="get_recommendations",
             strategy=CacheStrategy.SHORT_TTL,
-            include_in_key=["analysis_type", "context"]
+            include_in_key=["analysis_type", "context"],
         ),
-
         # Tools that should never be cached
         "sync_standards": ToolCacheConfig(
-            tool_name="sync_standards",
-            strategy=CacheStrategy.NO_CACHE
+            tool_name="sync_standards", strategy=CacheStrategy.NO_CACHE
         ),
         "generate_standard": ToolCacheConfig(
-            tool_name="generate_standard",
-            strategy=CacheStrategy.NO_CACHE
+            tool_name="generate_standard", strategy=CacheStrategy.NO_CACHE
         ),
         "validate_standard": ToolCacheConfig(
-            tool_name="validate_standard",
-            strategy=CacheStrategy.NO_CACHE
+            tool_name="validate_standard", strategy=CacheStrategy.NO_CACHE
         ),
         "track_standards_usage": ToolCacheConfig(
-            tool_name="track_standards_usage",
-            strategy=CacheStrategy.NO_CACHE
+            tool_name="track_standards_usage", strategy=CacheStrategy.NO_CACHE
         ),
         "generate_cross_references": ToolCacheConfig(
-            tool_name="generate_cross_references",
-            strategy=CacheStrategy.NO_CACHE
+            tool_name="generate_cross_references", strategy=CacheStrategy.NO_CACHE
         ),
-
         # Context-dependent tools (cache with care)
         "get_applicable_standards": ToolCacheConfig(
             tool_name="get_applicable_standards",
             strategy=CacheStrategy.SHORT_TTL,
             include_in_key=["context", "include_resolution_details"],
-            compress_threshold=1024
+            compress_threshold=1024,
         ),
         "suggest_improvements": ToolCacheConfig(
             tool_name="suggest_improvements",
             strategy=CacheStrategy.SHORT_TTL,
             include_in_key=["code", "context"],
-            compress_threshold=2048
+            compress_threshold=2048,
         ),
         "validate_against_standard": ToolCacheConfig(
             tool_name="validate_against_standard",
             strategy=CacheStrategy.SHORT_TTL,
             include_in_key=["code", "standard", "language"],
-            ttl_seconds=600  # 10 minutes
+            ttl_seconds=600,  # 10 minutes
         ),
     }
 
@@ -203,7 +206,7 @@ class MCPCache:
         redis_cache: RedisCache | None = None,
         custom_configs: dict[str, ToolCacheConfig] | None = None,
         enable_compression: bool = True,
-        enable_metrics: bool = True
+        enable_metrics: bool = True,
     ):
         """Initialize MCP cache.
 
@@ -244,7 +247,7 @@ class MCPCache:
         self,
         tool_name: str,
         arguments: dict[str, Any],
-        config: ToolCacheConfig | None = None
+        config: ToolCacheConfig | None = None,
     ) -> str:
         """Generate cache key for tool call.
 
@@ -262,7 +265,9 @@ class MCPCache:
             key_args = {k: arguments.get(k) for k in config.include_in_key}
         elif config and config.exclude_from_key:
             # Include all except excluded
-            key_args = {k: v for k, v in arguments.items() if k not in config.exclude_from_key}
+            key_args = {
+                k: v for k, v in arguments.items() if k not in config.exclude_from_key
+            }
         else:
             # Include all arguments
             key_args = arguments
@@ -300,7 +305,7 @@ class MCPCache:
 
         if self.enable_metrics:
             self.metrics.compressed_saves += 1
-            self.metrics.compression_bytes_saved += (original_size - compressed_size)
+            self.metrics.compression_bytes_saved += original_size - compressed_size
 
         return compressed, original_size
 
@@ -309,11 +314,7 @@ class MCPCache:
         decompressed = zlib.decompress(data)
         return json.loads(decompressed)
 
-    async def get(
-        self,
-        tool_name: str,
-        arguments: dict[str, Any]
-    ) -> Any | None:
+    async def get(self, tool_name: str, arguments: dict[str, Any]) -> Any | None:
         """Get cached response for tool call.
 
         Returns None if not cached or cache miss.
@@ -374,7 +375,7 @@ class MCPCache:
         tool_name: str,
         arguments: dict[str, Any],
         response: Any,
-        ttl_override: int | None = None
+        ttl_override: int | None = None,
     ) -> bool:
         """Cache tool response.
 
@@ -407,13 +408,15 @@ class MCPCache:
                 cache_data = {
                     "_compressed": True,
                     "data": compressed_data,
-                    "original_size": original_size
+                    "original_size": original_size,
                 }
             else:
                 cache_data = response
 
             # Set in cache
-            success = await self.redis.async_set(cache_key, cache_data, ttl=ttl if ttl > 0 else None)
+            success = await self.redis.async_set(
+                cache_key, cache_data, ttl=ttl if ttl > 0 else None
+            )
 
             # Check if this tool invalidates others
             if tool_name in self._invalidation_map:
@@ -427,7 +430,9 @@ class MCPCache:
                 self.metrics.errors += 1
             return False
 
-    async def invalidate(self, tool_name: str, arguments: dict[str, Any] | None = None) -> bool:
+    async def invalidate(
+        self, tool_name: str, arguments: dict[str, Any] | None = None
+    ) -> bool:
         """Invalidate cache for specific tool call or all calls to a tool.
 
         Args:
@@ -473,7 +478,7 @@ class MCPCache:
     async def warm_cache(
         self,
         executor: Callable[[str, dict[str, Any]], Any],
-        tools: list[str] | None = None
+        tools: list[str] | None = None,
     ) -> dict[str, int]:
         """Warm cache by pre-executing specified tools.
 
@@ -488,7 +493,11 @@ class MCPCache:
 
         # Determine which tools to warm
         if tools is None:
-            tools = [name for name, config in self.tool_configs.items() if config.warm_on_startup]
+            tools = [
+                name
+                for name, config in self.tool_configs.items()
+                if config.warm_on_startup
+            ]
 
         for tool_name in tools:
             config = self.tool_configs.get(tool_name)
@@ -522,7 +531,7 @@ class MCPCache:
     async def start_background_warming(
         self,
         executor: Callable[[str, dict[str, Any]], Any],
-        interval_seconds: int = 3600
+        interval_seconds: int = 3600,
     ):
         """Start background cache warming tasks.
 
@@ -530,6 +539,7 @@ class MCPCache:
             executor: Function to execute tool calls
             interval_seconds: How often to warm cache
         """
+
         async def warm_task():
             while True:
                 try:
@@ -559,18 +569,20 @@ class MCPCache:
                 "hit_rate": self.metrics.get_hit_rate(),
                 "errors": self.metrics.errors,
                 "invalidations": self.metrics.invalidations,
-                "warm_requests": self.metrics.warm_requests
+                "warm_requests": self.metrics.warm_requests,
             },
             "performance": {
                 "avg_hit_time_ms": self.metrics.get_avg_hit_time_ms(),
-                "avg_miss_time_ms": self.metrics.get_avg_miss_time_ms()
+                "avg_miss_time_ms": self.metrics.get_avg_miss_time_ms(),
             },
             "compression": {
                 "compressed_saves": self.metrics.compressed_saves,
-                "bytes_saved": self.metrics.compression_bytes_saved
+                "bytes_saved": self.metrics.compression_bytes_saved,
             },
             "by_tool": self.metrics.by_tool,
-            "redis_metrics": self.redis.get_metrics() if hasattr(self.redis, 'get_metrics') else {}
+            "redis_metrics": (
+                self.redis.get_metrics() if hasattr(self.redis, "get_metrics") else {}
+            ),
         }
 
     def reset_metrics(self):
@@ -592,7 +604,7 @@ class MCPCache:
         tool_name: str,
         strategy: CacheStrategy | None = None,
         ttl_seconds: int | None = None,
-        **kwargs
+        **kwargs,
     ):
         """Configure or reconfigure a tool's caching behavior."""
         if tool_name not in self.tool_configs:
@@ -622,11 +634,11 @@ class MCPCache:
             "compression_enabled": self.enable_compression,
             "metrics_enabled": self.enable_metrics,
             "configured_tools": len(self.tool_configs),
-            "active_warming_tasks": len(self._warm_tasks)
+            "active_warming_tasks": len(self._warm_tasks),
         }
 
         # Check Redis health
-        if hasattr(self.redis, 'health_check'):
+        if hasattr(self.redis, "health_check"):
             redis_health = await self.redis.async_health_check()
             health["redis"] = redis_health
             if redis_health.get("status") != "healthy":
@@ -637,9 +649,7 @@ class MCPCache:
 
 # Convenience decorator for caching tool responses
 def cache_tool_response(
-    cache: MCPCache,
-    tool_name: str | None = None,
-    ttl_override: int | None = None
+    cache: MCPCache, tool_name: str | None = None, ttl_override: int | None = None
 ):
     """Decorator to automatically cache tool responses.
 
@@ -648,6 +658,7 @@ def cache_tool_response(
         async def my_tool_handler(args):
             return expensive_operation(args)
     """
+
     def decorator(func: Callable):
         async def wrapper(arguments: dict[str, Any], **kwargs):
             nonlocal tool_name
@@ -668,4 +679,5 @@ def cache_tool_response(
             return result
 
         return wrapper
+
     return decorator

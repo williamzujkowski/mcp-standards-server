@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 # Mock aioredis to avoid import errors in Python 3.12
-sys.modules['aioredis'] = MagicMock()
+sys.modules["aioredis"] = MagicMock()
 
 from src.core.mcp.async_server import AsyncMCPServer, MCPSession  # noqa: E402
 
@@ -29,21 +29,19 @@ class TestAsyncMCPServer:
             "max_connections": 100,
             "heartbeat_interval": 30,
             "message_timeout": 60,
-            "auth": {
-                "enabled": False
-            }
+            "auth": {"enabled": False},
         }
 
     @pytest.fixture
     def server(self, config):
         """Create async server instance."""
-        with patch('src.core.mcp.async_server.MCPStandardsServer'):
+        with patch("src.core.mcp.async_server.MCPStandardsServer"):
             server = AsyncMCPServer(config)
             return server
 
     def test_server_initialization(self, config):
         """Test server initialization."""
-        with patch('src.core.mcp.async_server.MCPStandardsServer'):
+        with patch("src.core.mcp.async_server.MCPStandardsServer"):
             server = AsyncMCPServer(config)
 
             assert server.config == config
@@ -51,11 +49,11 @@ class TestAsyncMCPServer:
             assert server.port == 3000
             assert server.sessions == {}
             assert server.running is False
-            assert hasattr(server, 'mcp_server')
+            assert hasattr(server, "mcp_server")
 
     async def test_start_server(self, server):
         """Test server startup."""
-        with patch('asyncio.create_server') as mock_create_server:
+        with patch("asyncio.create_server") as mock_create_server:
             mock_server = AsyncMock()
             mock_create_server.return_value = mock_server
 
@@ -89,7 +87,7 @@ class TestAsyncMCPServer:
         mock_writer.get_extra_info = Mock(return_value=("127.0.0.1", 12345))
 
         # Mock session creation
-        with patch.object(server, '_create_session') as mock_create_session:
+        with patch.object(server, "_create_session") as mock_create_session:
             mock_session = Mock(spec=MCPSession)
             mock_session.handle = AsyncMock()
             mock_create_session.return_value = mock_session
@@ -131,10 +129,7 @@ class TestAsyncMCPServer:
         mock_session2 = Mock(spec=MCPSession)
         mock_session2.send_message = AsyncMock()
 
-        server.sessions = {
-            "session1": mock_session1,
-            "session2": mock_session2
-        }
+        server.sessions = {"session1": mock_session1, "session2": mock_session2}
 
         message = {"type": "broadcast", "data": "test"}
         await server.broadcast_message(message)
@@ -203,13 +198,13 @@ class TestMCPSession:
         """Test session message handling loop."""
         # Mock message reading
         messages = [
-            json.dumps({"type": "hello", "version": "1.0"}).encode() + b'\n',
-            json.dumps({"type": "request", "method": "test"}).encode() + b'\n',
-            b''  # EOF
+            json.dumps({"type": "hello", "version": "1.0"}).encode() + b"\n",
+            json.dumps({"type": "request", "method": "test"}).encode() + b"\n",
+            b"",  # EOF
         ]
         session.reader.readline = AsyncMock(side_effect=messages)
 
-        with patch.object(session, '_process_message') as mock_process:
+        with patch.object(session, "_process_message") as mock_process:
             mock_process.return_value = AsyncMock()
 
             await session.handle()
@@ -222,7 +217,7 @@ class TestMCPSession:
 
         await session.send_message(message)
 
-        expected_data = json.dumps(message).encode() + b'\n'
+        expected_data = json.dumps(message).encode() + b"\n"
         session.writer.write.assert_called_once_with(expected_data)
         session.writer.drain.assert_called_once()
 
@@ -231,10 +226,10 @@ class TestMCPSession:
         message = {
             "type": "hello",
             "version": "1.0",
-            "capabilities": ["tools", "resources"]
+            "capabilities": ["tools", "resources"],
         }
 
-        with patch.object(session, 'send_message') as mock_send:
+        with patch.object(session, "send_message") as mock_send:
             await session._process_message(message)
 
             # Should send hello response
@@ -251,8 +246,8 @@ class TestMCPSession:
             "method": "get_applicable_standards",
             "params": {
                 "project_context": {"languages": ["python"]},
-                "requirements": ["testing"]
-            }
+                "requirements": ["testing"],
+            },
         }
 
         # Mock tool execution
@@ -260,7 +255,7 @@ class TestMCPSession:
             return_value={"standards": []}
         )
 
-        with patch.object(session, 'send_message') as mock_send:
+        with patch.object(session, "send_message") as mock_send:
             await session._process_message(message)
 
             # Should send response
@@ -273,7 +268,7 @@ class TestMCPSession:
         """Test processing invalid message."""
         message = {"invalid": "message"}
 
-        with patch.object(session, 'send_message') as mock_send:
+        with patch.object(session, "send_message") as mock_send:
             await session._process_message(message)
 
             # Should send error response
@@ -299,10 +294,10 @@ class TestMCPSession:
         message = {
             "type": "request",
             "id": "req-123",
-            "method": "get_applicable_standards"
+            "method": "get_applicable_standards",
         }
 
-        with patch.object(session, 'send_message') as mock_send:
+        with patch.object(session, "send_message") as mock_send:
             await session._process_message(message)
 
             # Should send error for unauthenticated request
@@ -314,7 +309,7 @@ class TestMCPSession:
         """Test heartbeat handling."""
         message = {"type": "ping"}
 
-        with patch.object(session, 'send_message') as mock_send:
+        with patch.object(session, "send_message") as mock_send:
             await session._process_message(message)
 
             # Should send pong response

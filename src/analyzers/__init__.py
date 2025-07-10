@@ -9,15 +9,15 @@ from .rust_analyzer import RustAnalyzer
 from .typescript_analyzer import TypeScriptAnalyzer
 
 __all__ = [
-    'BaseAnalyzer',
-    'AnalyzerResult',
-    'SecurityIssue',
-    'PerformanceIssue',
-    'GoAnalyzer',
-    'JavaAnalyzer',
-    'PythonAnalyzer',
-    'RustAnalyzer',
-    'TypeScriptAnalyzer',
-    'ASTParser',
-    'PatternMatcher'
+    "BaseAnalyzer",
+    "AnalyzerResult",
+    "SecurityIssue",
+    "PerformanceIssue",
+    "GoAnalyzer",
+    "JavaAnalyzer",
+    "PythonAnalyzer",
+    "RustAnalyzer",
+    "TypeScriptAnalyzer",
+    "ASTParser",
+    "PatternMatcher",
 ]

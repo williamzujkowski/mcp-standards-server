@@ -2,7 +2,6 @@
 Unit tests for privacy filtering and PII detection.
 """
 
-
 import pytest
 
 from src.core.privacy import (
@@ -41,7 +40,7 @@ class TestPrivacyConfig:
             hash_pii=True,
             pii_types={PIIType.EMAIL, PIIType.PHONE},
             redaction_char="*",
-            min_confidence=0.9
+            min_confidence=0.9,
         )
 
         assert config.detect_pii is False
@@ -176,11 +175,7 @@ class TestPIIDetector:
 
     def test_custom_patterns(self):
         """Test custom pattern detection."""
-        config = PrivacyConfig(
-            custom_patterns={
-                "employee_id": r"EMP\d{6}"
-            }
-        )
+        config = PrivacyConfig(custom_patterns={"employee_id": r"EMP\d{6}"})
         detector = PIIDetector(config)
 
         text = "Employee ID: EMP123456"
@@ -269,7 +264,7 @@ class TestPrivacyFilter:
             "name": "John Doe",
             "email": "john@example.com",
             "phone": "555-123-4567",
-            "age": 30
+            "age": 30,
         }
 
         filtered, matches = filter.filter_dict(data)
@@ -283,12 +278,7 @@ class TestPrivacyFilter:
     def test_filter_dict_nested(self, filter):
         """Test nested dictionary filtering."""
         data = {
-            "user": {
-                "email": "john@example.com",
-                "profile": {
-                    "ssn": "123-45-6789"
-                }
-            }
+            "user": {"email": "john@example.com", "profile": {"ssn": "123-45-6789"}}
         }
 
         filtered, matches = filter.filter_dict(data)
@@ -302,10 +292,7 @@ class TestPrivacyFilter:
         """Test dictionary with list filtering."""
         data = {
             "emails": ["john@example.com", "jane@test.com"],
-            "users": [
-                {"email": "user1@example.com"},
-                {"email": "user2@test.com"}
-            ]
+            "users": [{"email": "user1@example.com"}, {"email": "user2@test.com"}],
         }
 
         filtered, matches = filter.filter_dict(data)
@@ -319,10 +306,7 @@ class TestPrivacyFilter:
 
     def test_filter_dict_key_filtering(self, filter):
         """Test that dictionary keys are also filtered."""
-        data = {
-            "john@example.com": "value",
-            "normal_key": "john@example.com"
-        }
+        data = {"john@example.com": "value", "normal_key": "john@example.com"}
 
         filtered, matches = filter.filter_dict(data)
 
@@ -343,10 +327,7 @@ class TestPrivacyFilter:
 
     def test_privacy_report_dict(self, filter):
         """Test privacy report generation for dictionary."""
-        data = {
-            "email": "john@example.com",
-            "credit_card": "4532015112830366"
-        }
+        data = {"email": "john@example.com", "credit_card": "4532015112830366"}
         report = filter.get_privacy_report(data)
 
         assert report["has_pii"] is True
@@ -410,4 +391,3 @@ class TestPrivacyFilterSingleton:
 
         assert filter.config.detect_pii is True
         assert filter.config.redact_pii is True
-

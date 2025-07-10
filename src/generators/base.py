@@ -20,6 +20,7 @@ from .validator import StandardsValidator
 @dataclass
 class GenerationResult:
     """Result of standard generation."""
+
     standard: str
     metadata: dict[str, Any]
     warnings: list[str]
@@ -53,7 +54,7 @@ class StandardsGenerator:
         domain: str | None = None,
         output_path: str | None = None,
         validate: bool = True,
-        preview: bool = True
+        preview: bool = True,
     ) -> GenerationResult:
         """
         Generate a standard document.
@@ -72,11 +73,11 @@ class StandardsGenerator:
         """
         # Create metadata from context
         metadata = {
-            'title': title,
-            'domain': domain or 'general',
-            'created_date': datetime.utcnow().isoformat(),
-            'author': context.get('author', 'MCP Standards Generator'),
-            **context
+            "title": title,
+            "domain": domain or "general",
+            "created_date": datetime.utcnow().isoformat(),
+            "author": context.get("author", "MCP Standards Generator"),
+            **context,
         }
 
         std_metadata = StandardMetadata.from_dict(metadata)
@@ -94,11 +95,11 @@ class StandardsGenerator:
         qa_results = self.qa_system.assess_standard(content, std_metadata)
 
         # Extract warnings and quality score
-        warnings = validation_results.get('warnings', [])
+        warnings = validation_results.get("warnings", [])
         if qa_results:
-            warnings.extend(qa_results.get('warnings', []))
+            warnings.extend(qa_results.get("warnings", []))
 
-        quality_score = qa_results.get('overall_score', 0.8) if qa_results else 0.8
+        quality_score = qa_results.get("overall_score", 0.8) if qa_results else 0.8
 
         # Save to file if output_path is provided
         if output_path and not preview:
@@ -108,21 +109,23 @@ class StandardsGenerator:
             standard=content,
             metadata=std_metadata.to_dict(),
             warnings=warnings,
-            quality_score=quality_score
+            quality_score=quality_score,
         )
 
-    def _save_standard(self, content: str, output_path: str, metadata: StandardMetadata):
+    def _save_standard(
+        self, content: str, output_path: str, metadata: StandardMetadata
+    ):
         """Save the standard to file with metadata."""
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         # Save main content
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         # Save metadata
-        metadata_path = output_path.replace('.md', '.yaml')
-        with open(metadata_path, 'w', encoding='utf-8') as f:
+        metadata_path = output_path.replace(".md", ".yaml")
+        with open(metadata_path, "w", encoding="utf-8") as f:
             yaml.dump(metadata.to_dict(), f, default_flow_style=False)
 
     def list_templates(self, domain: str | None = None) -> list[dict[str, Any]]:
@@ -133,8 +136,11 @@ class StandardsGenerator:
             # Filter templates by domain if specified
             filtered_templates = []
             for template in templates:
-                template_domain = template.get('domain', 'general')
-                if template_domain == domain or domain in template.get('name', '').lower():
+                template_domain = template.get("domain", "general")
+                if (
+                    template_domain == domain
+                    or domain in template.get("name", "").lower()
+                ):
                     filtered_templates.append(template)
             return filtered_templates
 
@@ -149,10 +155,9 @@ class StandardsGenerator:
         return self.engine.validate_template(template_name)
 
     def create_custom_template(
-        self,
-        template_name: str,
-        base_template: str,
-        customizations: dict[str, Any]
+        self, template_name: str, base_template: str, customizations: dict[str, Any]
     ) -> str:
         """Create a custom template based on an existing one."""
-        return self.engine.create_custom_template(template_name, base_template, customizations)
+        return self.engine.create_custom_template(
+            template_name, base_template, customizations
+        )

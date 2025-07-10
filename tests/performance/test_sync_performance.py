@@ -33,27 +33,25 @@ def performance_synchronizer():
 
         # Performance-oriented configuration
         config = {
-            'repository': {
-                'owner': 'test',
-                'repo': 'test',
-                'branch': 'main',
-                'path': 'docs/standards'
+            "repository": {
+                "owner": "test",
+                "repo": "test",
+                "branch": "main",
+                "path": "docs/standards",
             },
-            'sync': {
-                'file_patterns': ['*.md', '*.yaml', '*.yml', '*.json'],
-                'exclude_patterns': [],
-                'max_file_size': 10485760,  # 10MB
-                'retry_attempts': 1,  # Minimize retries for performance tests
-                'retry_delay': 0.1
+            "sync": {
+                "file_patterns": ["*.md", "*.yaml", "*.yml", "*.json"],
+                "exclude_patterns": [],
+                "max_file_size": 10485760,  # 10MB
+                "retry_attempts": 1,  # Minimize retries for performance tests
+                "retry_delay": 0.1,
             },
-            'cache': {
-                'ttl_hours': 24,
-                'max_size_mb': 1000
-            }
+            "cache": {"ttl_hours": 24, "max_size_mb": 1000},
         }
 
         import yaml
-        with open(config_path, 'w') as f:
+
+        with open(config_path, "w") as f:
             yaml.dump(config, f)
 
         yield StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
@@ -62,6 +60,7 @@ def performance_synchronizer():
 @pytest.fixture
 def memory_tracker():
     """Track memory usage during tests."""
+
     class MemoryTracker:
         def __init__(self):
             self.process = psutil.Process()
@@ -97,26 +96,34 @@ class TestLargeRepositoryPerformance:
         # Generate 1000 test files
         files = [
             {
-                'path': f'docs/standards/category{i//100}/standard{i:04d}.md',
-                'name': f'standard{i:04d}.md',
-                'sha': f'sha{i:032x}',
-                'size': 1024 * (1 + i % 10),  # 1-10KB files
-                'download_url': f'https://example.com/files/standard{i:04d}.md'
+                "path": f"docs/standards/category{i//100}/standard{i:04d}.md",
+                "name": f"standard{i:04d}.md",
+                "sha": f"sha{i:032x}",
+                "size": 1024 * (1 + i % 10),  # 1-10KB files
+                "download_url": f"https://example.com/files/standard{i:04d}.md",
             }
             for i in range(1000)
         ]
 
         # Mock file content generator
         async def generate_content(url):
-            file_num = int(url.split('standard')[1].split('.md')[0])
+            file_num = int(url.split("standard")[1].split(".md")[0])
             size = 1024 * (1 + file_num % 10)
-            return b'x' * size  # Generate appropriate sized content
+            return b"x" * size  # Generate appropriate sized content
 
         memory_tracker.start()
 
-        with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                with patch.object(performance_synchronizer, '_download_file', side_effect=generate_content):
+        with patch.object(
+            performance_synchronizer, "_list_repository_files", return_value=files
+        ):
+            with patch.object(
+                performance_synchronizer, "_filter_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer,
+                    "_download_file",
+                    side_effect=generate_content,
+                ):
 
                     start_time = time.time()
                     result = await performance_synchronizer.sync()
@@ -133,10 +140,12 @@ class TestLargeRepositoryPerformance:
 
         # Memory performance: Should not use excessive memory
         memory_delta = memory_tracker.get_memory_delta()
-        assert memory_delta < 500, f"Memory usage increased by {memory_delta:.2f}MB, expected < 500MB"
+        assert (
+            memory_delta < 500
+        ), f"Memory usage increased by {memory_delta:.2f}MB, expected < 500MB"
 
         # Calculate throughput
-        total_size_mb = sum(f['size'] for f in files) / 1024 / 1024
+        total_size_mb = sum(f["size"] for f in files) / 1024 / 1024
         throughput_mbps = total_size_mb / sync_duration
 
         print("\nPerformance Results:")
@@ -150,13 +159,13 @@ class TestLargeRepositoryPerformance:
         """Test performance of incremental sync with existing cache."""
         # Pre-populate cache with 900 files
         for i in range(900):
-            performance_synchronizer.file_metadata[f'file{i}.md'] = FileMetadata(
-                path=f'docs/standards/file{i}.md',
-                sha=f'sha{i:032x}',
+            performance_synchronizer.file_metadata[f"file{i}.md"] = FileMetadata(
+                path=f"docs/standards/file{i}.md",
+                sha=f"sha{i:032x}",
                 size=1024,
-                last_modified='',
-                local_path=performance_synchronizer.cache_dir / f'file{i}.md',
-                sync_time=datetime.now()
+                last_modified="",
+                local_path=performance_synchronizer.cache_dir / f"file{i}.md",
+                sync_time=datetime.now(),
             )
 
         # Create file list with 900 unchanged + 100 new files
@@ -164,32 +173,44 @@ class TestLargeRepositoryPerformance:
 
         # Unchanged files
         for i in range(900):
-            files.append({
-                'path': f'docs/standards/file{i}.md',
-                'sha': f'sha{i:032x}',  # Same SHA
-                'size': 1024,
-                'download_url': f'https://example.com/file{i}.md'
-            })
+            files.append(
+                {
+                    "path": f"docs/standards/file{i}.md",
+                    "sha": f"sha{i:032x}",  # Same SHA
+                    "size": 1024,
+                    "download_url": f"https://example.com/file{i}.md",
+                }
+            )
 
         # New files
         for i in range(900, 1000):
-            files.append({
-                'path': f'docs/standards/file{i}.md',
-                'sha': f'sha{i:032x}',
-                'size': 1024,
-                'download_url': f'https://example.com/file{i}.md'
-            })
+            files.append(
+                {
+                    "path": f"docs/standards/file{i}.md",
+                    "sha": f"sha{i:032x}",
+                    "size": 1024,
+                    "download_url": f"https://example.com/file{i}.md",
+                }
+            )
 
         download_count = 0
 
         async def mock_download(session, url):
             nonlocal download_count
             download_count += 1
-            return b'x' * 1024
+            return b"x" * 1024
 
-        with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                with patch.object(performance_synchronizer, '_download_file', side_effect=mock_download):
+        with patch.object(
+            performance_synchronizer, "_list_repository_files", return_value=files
+        ):
+            with patch.object(
+                performance_synchronizer, "_filter_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer,
+                    "_download_file",
+                    side_effect=mock_download,
+                ):
 
                     start_time = time.time()
                     await performance_synchronizer.sync()
@@ -197,7 +218,9 @@ class TestLargeRepositoryPerformance:
 
         # Should only download the 100 new files
         assert download_count == 100
-        assert sync_duration < 5.0, f"Incremental sync took {sync_duration:.2f}s, expected < 5s"
+        assert (
+            sync_duration < 5.0
+        ), f"Incremental sync took {sync_duration:.2f}s, expected < 5s"
 
         print("\nIncremental Sync Performance:")
         print(f"- Total files: {len(files)}")
@@ -218,44 +241,53 @@ class TestConcurrencyPerformance:
         async def mock_download_with_delay(session, url):
             # Simulate network latency
             await asyncio.sleep(0.05)  # 50ms latency
-            return b'x' * 1024
+            return b"x" * 1024
 
         for num_files in test_sizes:
             files = [
                 {
-                    'path': f'file{i}.md',
-                    'sha': f'sha{i}',
-                    'size': 1024,
-                    'download_url': f'https://example.com/file{i}.md'
+                    "path": f"file{i}.md",
+                    "sha": f"sha{i}",
+                    "size": 1024,
+                    "download_url": f"https://example.com/file{i}.md",
                 }
                 for i in range(num_files)
             ]
 
-            with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-                with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                    with patch.object(performance_synchronizer, '_download_file',
-                                    side_effect=mock_download_with_delay):
+            with patch.object(
+                performance_synchronizer, "_list_repository_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer, "_filter_files", return_value=files
+                ):
+                    with patch.object(
+                        performance_synchronizer,
+                        "_download_file",
+                        side_effect=mock_download_with_delay,
+                    ):
 
                         start_time = time.time()
                         await performance_synchronizer.sync()
                         duration = time.time() - start_time
 
                         results[num_files] = {
-                            'duration': duration,
-                            'files_per_second': num_files / duration,
-                            'avg_time_per_file': duration / num_files * 1000  # ms
+                            "duration": duration,
+                            "files_per_second": num_files / duration,
+                            "avg_time_per_file": duration / num_files * 1000,  # ms
                         }
 
         print("\nConcurrency Performance Results:")
         for num_files, metrics in results.items():
-            print(f"- {num_files} files: {metrics['duration']:.2f}s "
-                  f"({metrics['files_per_second']:.1f} files/s, "
-                  f"{metrics['avg_time_per_file']:.1f}ms/file)")
+            print(
+                f"- {num_files} files: {metrics['duration']:.2f}s "
+                f"({metrics['files_per_second']:.1f} files/s, "
+                f"{metrics['avg_time_per_file']:.1f}ms/file)"
+            )
 
         # Verify concurrency is working (should be much faster than sequential)
         for num_files, metrics in results.items():
             sequential_time = num_files * 0.05  # 50ms per file if sequential
-            assert metrics['duration'] < sequential_time * 0.5  # At least 2x speedup
+            assert metrics["duration"] < sequential_time * 0.5  # At least 2x speedup
 
     @pytest.mark.asyncio
     async def test_connection_pool_efficiency(self, performance_synchronizer):
@@ -271,7 +303,7 @@ class TestConcurrencyPerformance:
             async def get(self, url, **kwargs):
                 mock_response = AsyncMock()
                 mock_response.status = 200
-                mock_response.read = AsyncMock(return_value=b'content')
+                mock_response.read = AsyncMock(return_value=b"content")
                 mock_response.headers = {}
                 return mock_response
 
@@ -283,27 +315,35 @@ class TestConcurrencyPerformance:
 
         files = [
             {
-                'path': f'file{i}.md',
-                'sha': f'sha{i}',
-                'download_url': f'https://example.com/file{i}.md'
+                "path": f"file{i}.md",
+                "sha": f"sha{i}",
+                "download_url": f"https://example.com/file{i}.md",
             }
             for i in range(num_files)
         ]
 
-        with patch('aiohttp.ClientSession', MockSession):
-            with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-                with patch.object(performance_synchronizer, '_filter_files', return_value=files):
+        with patch("aiohttp.ClientSession", MockSession):
+            with patch.object(
+                performance_synchronizer, "_list_repository_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer, "_filter_files", return_value=files
+                ):
                     await performance_synchronizer.sync()
 
         # Should reuse connection pool efficiently
-        assert connection_creations < 10, f"Created {connection_creations} sessions, expected < 10"
+        assert (
+            connection_creations < 10
+        ), f"Created {connection_creations} sessions, expected < 10"
 
 
 class TestMemoryEfficiency:
     """Test memory usage efficiency."""
 
     @pytest.mark.asyncio
-    async def test_memory_usage_large_files(self, performance_synchronizer, memory_tracker):
+    async def test_memory_usage_large_files(
+        self, performance_synchronizer, memory_tracker
+    ):
         """Test memory efficiency when handling large files."""
         # Create mix of small and large files
         files = []
@@ -315,27 +355,36 @@ class TestMemoryEfficiency:
                 # Others are small (10KB)
                 size = 10 * 1024
 
-            files.append({
-                'path': f'file{i}.md',
-                'sha': f'sha{i}',
-                'size': size,
-                'download_url': f'https://example.com/file{i}.md'
-            })
+            files.append(
+                {
+                    "path": f"file{i}.md",
+                    "sha": f"sha{i}",
+                    "size": size,
+                    "download_url": f"https://example.com/file{i}.md",
+                }
+            )
 
         async def generate_sized_content(session, url):
             # Extract file number from URL
-            file_num = int(url.split('file')[1].split('.md')[0])
+            file_num = int(url.split("file")[1].split(".md")[0])
             if file_num % 10 == 0:
-                return b'x' * (5 * 1024 * 1024)  # 5MB
+                return b"x" * (5 * 1024 * 1024)  # 5MB
             else:
-                return b'x' * (10 * 1024)  # 10KB
+                return b"x" * (10 * 1024)  # 10KB
 
         memory_tracker.start()
 
-        with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                with patch.object(performance_synchronizer, '_download_file',
-                                side_effect=generate_sized_content):
+        with patch.object(
+            performance_synchronizer, "_list_repository_files", return_value=files
+        ):
+            with patch.object(
+                performance_synchronizer, "_filter_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer,
+                    "_download_file",
+                    side_effect=generate_sized_content,
+                ):
 
                     # Take memory snapshots during sync
                     async def sync_with_monitoring():
@@ -372,15 +421,17 @@ class TestMemoryEfficiency:
 
         # Add 10,000 metadata entries
         for i in range(10000):
-            performance_synchronizer.file_metadata[f'path/to/file{i}.md'] = FileMetadata(
-                path=f'path/to/file{i}.md',
-                sha=f'sha{i:032x}',
-                size=1024 + i,
-                last_modified=f'2024-01-01T{i%24:02d}:00:00Z',
-                local_path=performance_synchronizer.cache_dir / f'file{i}.md',
-                version=f'1.0.{i}',
-                content_hash=f'hash{i:032x}',
-                sync_time=datetime.now()
+            performance_synchronizer.file_metadata[f"path/to/file{i}.md"] = (
+                FileMetadata(
+                    path=f"path/to/file{i}.md",
+                    sha=f"sha{i:032x}",
+                    size=1024 + i,
+                    last_modified=f"2024-01-01T{i%24:02d}:00:00Z",
+                    local_path=performance_synchronizer.cache_dir / f"file{i}.md",
+                    version=f"1.0.{i}",
+                    content_hash=f"hash{i:032x}",
+                    sync_time=datetime.now(),
+                )
             )
 
         sys.getsizeof(performance_synchronizer.file_metadata)
@@ -411,19 +462,23 @@ class TestFileSystemPerformance:
         files = []
         for i in range(100):
             depth = i % 10 + 1  # 1-10 levels deep
-            path_parts = ['docs', 'standards'] + [f'level{j}' for j in range(depth)]
-            path_parts.append(f'file{i}.md')
+            path_parts = ["docs", "standards"] + [f"level{j}" for j in range(depth)]
+            path_parts.append(f"file{i}.md")
 
-            files.append({
-                'path': '/'.join(path_parts),
-                'sha': f'sha{i}',
-                'download_url': f'https://example.com/file{i}.md'
-            })
+            files.append(
+                {
+                    "path": "/".join(path_parts),
+                    "sha": f"sha{i}",
+                    "download_url": f"https://example.com/file{i}.md",
+                }
+            )
 
         async def mock_download(session, url):
-            return b'content'
+            return b"content"
 
-        with patch.object(performance_synchronizer, '_download_file', side_effect=mock_download):
+        with patch.object(
+            performance_synchronizer, "_download_file", side_effect=mock_download
+        ):
             start_time = time.time()
 
             for file_info in files:
@@ -447,25 +502,29 @@ class TestFileSystemPerformance:
         print(f"- Duration: {duration:.2f}s")
 
     @pytest.mark.asyncio
-    async def test_file_write_performance(self, performance_synchronizer, memory_tracker):
+    async def test_file_write_performance(
+        self, performance_synchronizer, memory_tracker
+    ):
         """Test performance of writing many files."""
         num_files = 500
         file_size = 10 * 1024  # 10KB each
 
         files = [
             {
-                'path': f'docs/standards/file{i}.md',
-                'sha': f'sha{i}',
-                'download_url': f'https://example.com/file{i}.md'
+                "path": f"docs/standards/file{i}.md",
+                "sha": f"sha{i}",
+                "download_url": f"https://example.com/file{i}.md",
             }
             for i in range(num_files)
         ]
 
-        content = b'x' * file_size
+        content = b"x" * file_size
 
         memory_tracker.start()
 
-        with patch.object(performance_synchronizer, '_download_file', return_value=content):
+        with patch.object(
+            performance_synchronizer, "_download_file", return_value=content
+        ):
             start_time = time.time()
 
             async with aiohttp.ClientSession() as session:
@@ -508,12 +567,12 @@ class TestCachePerformance:
             performance_synchronizer.file_metadata.clear()
 
             for i in range(cache_size):
-                performance_synchronizer.file_metadata[f'file{i}.md'] = FileMetadata(
-                    path=f'file{i}.md',
-                    sha=f'sha{i}',
+                performance_synchronizer.file_metadata[f"file{i}.md"] = FileMetadata(
+                    path=f"file{i}.md",
+                    sha=f"sha{i}",
                     size=1000,
-                    last_modified='',
-                    local_path=Path(f'file{i}.md')
+                    last_modified="",
+                    local_path=Path(f"file{i}.md"),
                 )
 
             # Measure lookup time
@@ -521,7 +580,7 @@ class TestCachePerformance:
 
             # Perform 1000 random lookups
             for i in range(1000):
-                key = f'file{i * (cache_size // 1000)}.md'
+                key = f"file{i * (cache_size // 1000)}.md"
                 _ = performance_synchronizer.file_metadata.get(key)
 
             lookup_time = time.time() - start_time
@@ -542,15 +601,15 @@ class TestCachePerformance:
         num_entries = 5000
 
         for i in range(num_entries):
-            performance_synchronizer.file_metadata[f'file{i}.md'] = FileMetadata(
-                path=f'docs/standards/category{i//100}/file{i}.md',
-                sha=f'sha{i:032x}',
+            performance_synchronizer.file_metadata[f"file{i}.md"] = FileMetadata(
+                path=f"docs/standards/category{i//100}/file{i}.md",
+                sha=f"sha{i:032x}",
                 size=1024 * (i % 100 + 1),
-                last_modified=f'2024-01-{(i%28)+1:02d}T12:00:00Z',
-                local_path=performance_synchronizer.cache_dir / f'file{i}.md',
-                version=f'1.{i//100}.{i%100}',
-                content_hash=f'hash{i:032x}',
-                sync_time=datetime.now() - timedelta(hours=i % 24)
+                last_modified=f"2024-01-{(i%28)+1:02d}T12:00:00Z",
+                local_path=performance_synchronizer.cache_dir / f"file{i}.md",
+                version=f"1.{i//100}.{i%100}",
+                content_hash=f"hash{i:032x}",
+                sync_time=datetime.now() - timedelta(hours=i % 24),
             )
 
         # Measure save performance
@@ -559,7 +618,9 @@ class TestCachePerformance:
         save_duration = time.time() - start_time
 
         # Measure file size
-        metadata_size = performance_synchronizer.metadata_file.stat().st_size / 1024 / 1024  # MB
+        metadata_size = (
+            performance_synchronizer.metadata_file.stat().st_size / 1024 / 1024
+        )  # MB
 
         # Clear and measure load performance
         performance_synchronizer.file_metadata.clear()
@@ -591,7 +652,7 @@ class TestNetworkPerformance:
     async def test_retry_overhead(self, performance_synchronizer):
         """Test performance impact of retry logic."""
         files = [
-            {'path': f'file{i}.md', 'sha': f'sha{i}', 'download_url': f'url{i}'}
+            {"path": f"file{i}.md", "sha": f"sha{i}", "download_url": f"url{i}"}
             for i in range(50)
         ]
 
@@ -602,18 +663,27 @@ class TestNetworkPerformance:
             retry_count += 1
 
             # Fail 20% of first attempts
-            if retry_count % 5 == 0 and url not in getattr(flaky_download, 'retried', set()):
-                if not hasattr(flaky_download, 'retried'):
+            if retry_count % 5 == 0 and url not in getattr(
+                flaky_download, "retried", set()
+            ):
+                if not hasattr(flaky_download, "retried"):
                     flaky_download.retried = set()
                 flaky_download.retried.add(url)
                 raise aiohttp.ClientError("Simulated failure")
 
-            return b'content'
+            return b"content"
 
-        with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                with patch.object(performance_synchronizer, '_download_file',
-                                side_effect=flaky_download):
+        with patch.object(
+            performance_synchronizer, "_list_repository_files", return_value=files
+        ):
+            with patch.object(
+                performance_synchronizer, "_filter_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer,
+                    "_download_file",
+                    side_effect=flaky_download,
+                ):
 
                     start_time = time.time()
                     result = await performance_synchronizer.sync()
@@ -651,17 +721,24 @@ class TestNetworkPerformance:
                 )
 
             await asyncio.sleep(0.01)  # Simulate network delay
-            return b'content'
+            return b"content"
 
         files = [
-            {'path': f'file{i}.md', 'sha': f'sha{i}', 'download_url': f'url{i}'}
+            {"path": f"file{i}.md", "sha": f"sha{i}", "download_url": f"url{i}"}
             for i in range(110)  # More files than rate limit
         ]
 
-        with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-            with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                with patch.object(performance_synchronizer, '_download_file',
-                                side_effect=mock_download_with_rate_limit):
+        with patch.object(
+            performance_synchronizer, "_list_repository_files", return_value=files
+        ):
+            with patch.object(
+                performance_synchronizer, "_filter_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer,
+                    "_download_file",
+                    side_effect=mock_download_with_rate_limit,
+                ):
 
                     start_time = time.time()
                     result = await performance_synchronizer.sync()
@@ -693,26 +770,33 @@ class TestPerformanceBenchmarks:
 
         files = [
             {
-                'path': f'docs/standards/benchmark{i}.md',
-                'sha': f'sha{i}',
-                'size': 5000,
-                'download_url': f'https://example.com/benchmark{i}.md'
+                "path": f"docs/standards/benchmark{i}.md",
+                "sha": f"sha{i}",
+                "size": 5000,
+                "download_url": f"https://example.com/benchmark{i}.md",
             }
             for i in range(100)
         ]
 
         async def mock_download(session, url):
             await asyncio.sleep(0.001)  # Minimal delay
-            return b'x' * 5000
+            return b"x" * 5000
 
         for _ in range(iterations):
             # Clear cache between iterations
             performance_synchronizer.file_metadata.clear()
 
-            with patch.object(performance_synchronizer, '_list_repository_files', return_value=files):
-                with patch.object(performance_synchronizer, '_filter_files', return_value=files):
-                    with patch.object(performance_synchronizer, '_download_file',
-                                    side_effect=mock_download):
+            with patch.object(
+                performance_synchronizer, "_list_repository_files", return_value=files
+            ):
+                with patch.object(
+                    performance_synchronizer, "_filter_files", return_value=files
+                ):
+                    with patch.object(
+                        performance_synchronizer,
+                        "_download_file",
+                        side_effect=mock_download,
+                    ):
 
                         start_time = time.time()
                         await performance_synchronizer.sync()

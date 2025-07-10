@@ -67,7 +67,10 @@ class TestRateLimiter:
         # Mock request history with old requests
         current_time = int(time.time())
         old_requests = [current_time - 120, current_time - 90]  # 2 and 1.5 minutes ago
-        recent_requests = [current_time - 30, current_time - 15]  # 30 and 15 seconds ago
+        recent_requests = [
+            current_time - 30,
+            current_time - 15,
+        ]  # 30 and 15 seconds ago
 
         mock_redis.get.return_value = old_requests + recent_requests
 
@@ -122,16 +125,24 @@ class TestMultiTierRateLimiter:
 
     def test_multi_tier_limiter_checks_all_tiers(self, multi_tier_limiter):
         """Test that all tiers are checked."""
-        with patch.object(multi_tier_limiter.tiers["minute"], 'check_rate_limit') as mock_minute:
-            with patch.object(multi_tier_limiter.tiers["hour"], 'check_rate_limit') as mock_hour:
-                with patch.object(multi_tier_limiter.tiers["day"], 'check_rate_limit') as mock_day:
+        with patch.object(
+            multi_tier_limiter.tiers["minute"], "check_rate_limit"
+        ) as mock_minute:
+            with patch.object(
+                multi_tier_limiter.tiers["hour"], "check_rate_limit"
+            ) as mock_hour:
+                with patch.object(
+                    multi_tier_limiter.tiers["day"], "check_rate_limit"
+                ) as mock_day:
 
                     # Mock all tiers allowing requests
                     mock_minute.return_value = (True, {"remaining": 99, "limit": 100})
                     mock_hour.return_value = (True, {"remaining": 4999, "limit": 5000})
                     mock_day.return_value = (True, {"remaining": 49999, "limit": 50000})
 
-                    is_allowed, limit_info = multi_tier_limiter.check_all_limits("user123")
+                    is_allowed, limit_info = multi_tier_limiter.check_all_limits(
+                        "user123"
+                    )
 
                     assert is_allowed is True
                     assert "minute" in limit_info
@@ -140,17 +151,30 @@ class TestMultiTierRateLimiter:
 
     def test_multi_tier_limiter_blocks_on_any_tier(self, multi_tier_limiter):
         """Test that any tier blocking stops the request."""
-        with patch.object(multi_tier_limiter.tiers["minute"], 'check_rate_limit') as mock_minute:
-            with patch.object(multi_tier_limiter.tiers["hour"], 'check_rate_limit') as mock_hour:
-                with patch.object(multi_tier_limiter.tiers["day"], 'check_rate_limit') as mock_day:
+        with patch.object(
+            multi_tier_limiter.tiers["minute"], "check_rate_limit"
+        ) as mock_minute:
+            with patch.object(
+                multi_tier_limiter.tiers["hour"], "check_rate_limit"
+            ) as mock_hour:
+                with patch.object(
+                    multi_tier_limiter.tiers["day"], "check_rate_limit"
+                ) as mock_day:
 
                     # Mock minute tier blocking
-                    mock_minute.return_value = (False, {
-                        "remaining": 0, "limit": 100, "tier": "minute",
-                        "retry_after": 30
-                    })
+                    mock_minute.return_value = (
+                        False,
+                        {
+                            "remaining": 0,
+                            "limit": 100,
+                            "tier": "minute",
+                            "retry_after": 30,
+                        },
+                    )
 
-                    is_allowed, limit_info = multi_tier_limiter.check_all_limits("user123")
+                    is_allowed, limit_info = multi_tier_limiter.check_all_limits(
+                        "user123"
+                    )
 
                     assert is_allowed is False
                     assert limit_info["tier"] == "minute"
@@ -162,9 +186,15 @@ class TestMultiTierRateLimiter:
 
     def test_multi_tier_limiter_reset_all(self, multi_tier_limiter):
         """Test that all tier limits can be reset."""
-        with patch.object(multi_tier_limiter.tiers["minute"], 'reset_limit') as mock_minute:
-            with patch.object(multi_tier_limiter.tiers["hour"], 'reset_limit') as mock_hour:
-                with patch.object(multi_tier_limiter.tiers["day"], 'reset_limit') as mock_day:
+        with patch.object(
+            multi_tier_limiter.tiers["minute"], "reset_limit"
+        ) as mock_minute:
+            with patch.object(
+                multi_tier_limiter.tiers["hour"], "reset_limit"
+            ) as mock_hour:
+                with patch.object(
+                    multi_tier_limiter.tiers["day"], "reset_limit"
+                ) as mock_day:
 
                     multi_tier_limiter.reset_all_limits("user123")
 
@@ -209,7 +239,9 @@ class TestAdaptiveRateLimiter:
 
         assert limit == 150  # base_limit * 1.5
 
-    def test_adaptive_limiter_low_reputation_penalty(self, adaptive_limiter, mock_redis):
+    def test_adaptive_limiter_low_reputation_penalty(
+        self, adaptive_limiter, mock_redis
+    ):
         """Test lower limits for low reputation users."""
         # Mock low reputation
         mock_redis.get.return_value = "0.2"
@@ -218,7 +250,9 @@ class TestAdaptiveRateLimiter:
 
         assert limit == 50  # base_limit * 0.5
 
-    def test_adaptive_limiter_reputation_update_good(self, adaptive_limiter, mock_redis):
+    def test_adaptive_limiter_reputation_update_good(
+        self, adaptive_limiter, mock_redis
+    ):
         """Test reputation update for good requests."""
         # Mock existing reputation
         mock_redis.get.return_value = "0.5"
@@ -287,11 +321,13 @@ class TestRateLimitingIntegration:
         rate_limiter = MultiTierRateLimiter()
 
         # Simulate security violation by updating reputation
-        with patch.object(rate_limiter.tiers["minute"], 'check_rate_limit') as mock_check:
-            mock_check.return_value = (False, {
-                "remaining": 0, "limit": 10, "tier": "minute",
-                "retry_after": 60
-            })
+        with patch.object(
+            rate_limiter.tiers["minute"], "check_rate_limit"
+        ) as mock_check:
+            mock_check.return_value = (
+                False,
+                {"remaining": 0, "limit": 10, "tier": "minute", "retry_after": 60},
+            )
 
             is_allowed, limit_info = rate_limiter.check_all_limits("suspicious_user")
 
@@ -355,7 +391,9 @@ class TestRateLimitingSecurityIntegration:
         client_ids = ["ip:192.168.1.1", "user:john_doe", "api_key:abc123"]
 
         for client_id in client_ids:
-            with patch.object(rate_limiter.tiers["minute"], 'check_rate_limit') as mock_check:
+            with patch.object(
+                rate_limiter.tiers["minute"], "check_rate_limit"
+            ) as mock_check:
                 mock_check.return_value = (True, {"remaining": 99, "limit": 100})
 
                 is_allowed, limit_info = rate_limiter.check_all_limits(client_id)

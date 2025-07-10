@@ -11,6 +11,7 @@ from typing import Any
 
 class IssueType(Enum):
     """Types of issues that can be detected."""
+
     SECURITY = "security"
     PERFORMANCE = "performance"
     BEST_PRACTICE = "best_practice"
@@ -23,6 +24,7 @@ class IssueType(Enum):
 
 class Severity(Enum):
     """Severity levels for detected issues."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -33,6 +35,7 @@ class Severity(Enum):
 @dataclass
 class Issue:
     """Base class for detected issues."""
+
     type: IssueType
     severity: Severity
     message: str
@@ -53,18 +56,19 @@ class Issue:
             "location": {
                 "file": self.file_path,
                 "line": self.line_number,
-                "column": self.column_number
+                "column": self.column_number,
             },
             "code_snippet": self.code_snippet,
             "recommendation": self.recommendation,
             "references": self.references,
-            "confidence": self.confidence
+            "confidence": self.confidence,
         }
 
 
 @dataclass
 class SecurityIssue(Issue):
     """Security-specific issue."""
+
     cwe_id: str | None = None
     owasp_category: str | None = None
 
@@ -75,6 +79,7 @@ class SecurityIssue(Issue):
 @dataclass
 class PerformanceIssue(Issue):
     """Performance-specific issue."""
+
     impact: str | None = None
 
     def __post_init__(self):
@@ -84,6 +89,7 @@ class PerformanceIssue(Issue):
 @dataclass
 class AnalyzerResult:
     """Result of code analysis."""
+
     file_path: str
     language: str
     issues: list[Issue] = field(default_factory=list)
@@ -121,8 +127,8 @@ class AnalyzerResult:
                 "by_type": {
                     issue_type.value: len(self.get_issues_by_type(issue_type))
                     for issue_type in IssueType
-                }
-            }
+                },
+            },
         }
 
 
@@ -170,7 +176,7 @@ class BaseAnalyzer(ABC):
         return {
             "security": self._get_security_patterns(),
             "performance": self._get_performance_patterns(),
-            "best_practices": self._get_best_practice_patterns()
+            "best_practices": self._get_best_practice_patterns(),
         }
 
     def _get_security_patterns(self) -> dict[str, Any]:
@@ -178,30 +184,30 @@ class BaseAnalyzer(ABC):
         return {
             "sql_injection": [
                 r'(SELECT|INSERT|UPDATE|DELETE).*\+.*(%s|{}|f"|f\')',
-                r'(execute|query)\s*\(.*\%.*\)',
-                r'(execute|query)\s*\(.*\+.*\)'
+                r"(execute|query)\s*\(.*\%.*\)",
+                r"(execute|query)\s*\(.*\+.*\)",
             ],
             "xss": [
-                r'innerHTML\s*=',
-                r'document\.write\(',
-                r'eval\s*\(',
+                r"innerHTML\s*=",
+                r"document\.write\(",
+                r"eval\s*\(",
                 r'setTimeout\s*\([\'"].*[\'"]',
-                r'setInterval\s*\([\'"].*[\'"]'
+                r'setInterval\s*\([\'"].*[\'"]',
             ],
             "path_traversal": [
-                r'\.\./',
-                r'\.\.\\',
-                r'(open|read|write).*\+.*user_input'
+                r"\.\./",
+                r"\.\.\\",
+                r"(open|read|write).*\+.*user_input",
             ],
             "command_injection": [
-                r'(exec|system|popen|subprocess).*\+',
-                r'os\.(system|exec|popen).*\%',
-                r'`.*\$.*`'  # Shell command substitution
+                r"(exec|system|popen|subprocess).*\+",
+                r"os\.(system|exec|popen).*\%",
+                r"`.*\$.*`",  # Shell command substitution
             ],
             "hardcoded_secrets": [
                 r'(password|passwd|pwd|secret|key|token|api_key)\s*=\s*[\'"][^\'"]{8,}[\'"]',
-                r'(AWS|aws|AZURE|azure|GCP|gcp).*=\s*[\'"][^\'"]+[\'"]'
-            ]
+                r'(AWS|aws|AZURE|azure|GCP|gcp).*=\s*[\'"][^\'"]+[\'"]',
+            ],
         }
 
     def _get_performance_patterns(self) -> dict[str, Any]:
@@ -224,10 +230,7 @@ class BaseAnalyzer(ABC):
     def analyze_file(self, file_path: Path) -> AnalyzerResult:
         """Analyze a single file."""
         content = file_path.read_text()
-        result = AnalyzerResult(
-            file_path=str(file_path),
-            language=self.language
-        )
+        result = AnalyzerResult(file_path=str(file_path), language=self.language)
 
         try:
             # Parse AST
@@ -243,14 +246,16 @@ class BaseAnalyzer(ABC):
             result.metrics = self._collect_metrics(ast, content)
 
         except Exception as e:
-            result.add_issue(Issue(
-                type=IssueType.CODE_QUALITY,
-                severity=Severity.HIGH,
-                message=f"Failed to parse file: {str(e)}",
-                file_path=str(file_path),
-                line_number=1,
-                column_number=1
-            ))
+            result.add_issue(
+                Issue(
+                    type=IssueType.CODE_QUALITY,
+                    severity=Severity.HIGH,
+                    message=f"Failed to parse file: {str(e)}",
+                    file_path=str(file_path),
+                    line_number=1,
+                    column_number=1,
+                )
+            )
 
         return result
 
@@ -275,7 +280,7 @@ class BaseAnalyzer(ABC):
             "dist",
             "build",
             "__pycache__",
-            ".pytest_cache"
+            ".pytest_cache",
         ]
 
         for pattern in skip_patterns:
@@ -291,18 +296,18 @@ class BaseAnalyzer(ABC):
 
     def _collect_metrics(self, ast: Any, content: str) -> dict[str, Any]:
         """Collect code metrics."""
-        lines = content.split('\n')
+        lines = content.split("\n")
         return {
             "lines_of_code": len(lines),
             "lines_of_comments": sum(1 for line in lines if self._is_comment(line)),
             "complexity": self._calculate_complexity(ast),
-            "dependencies": self._extract_dependencies(ast)
+            "dependencies": self._extract_dependencies(ast),
         }
 
     def _is_comment(self, line: str) -> bool:
         """Check if line is a comment."""
         line = line.strip()
-        return line.startswith('#') or line.startswith('//')
+        return line.startswith("#") or line.startswith("//")
 
     @abstractmethod
     def _calculate_complexity(self, ast: Any) -> int:
@@ -314,10 +319,12 @@ class BaseAnalyzer(ABC):
         """Extract external dependencies."""
         pass
 
-    def find_pattern_matches(self, content: str, patterns: list[str]) -> list[tuple[str, int, int]]:
+    def find_pattern_matches(
+        self, content: str, patterns: list[str]
+    ) -> list[tuple[str, int, int]]:
         """Find all pattern matches in content."""
         matches = []
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         for pattern in patterns:
             regex = re.compile(pattern, re.IGNORECASE)
@@ -336,9 +343,11 @@ class AnalyzerPlugin:
     @classmethod
     def register(cls, language: str):
         """Decorator to register an analyzer."""
+
         def decorator(analyzer_class):
             cls._analyzers[language.lower()] = analyzer_class
             return analyzer_class
+
         return decorator
 
     @classmethod

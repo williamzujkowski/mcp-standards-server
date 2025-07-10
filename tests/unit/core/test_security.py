@@ -1,6 +1,5 @@
 """Tests for security middleware."""
 
-
 import pytest
 
 from src.core.security import (
@@ -35,7 +34,7 @@ class TestSecurityConfig:
             max_request_size=1024,
             max_json_depth=10,
             enable_security_headers=False,
-            mask_errors=False
+            mask_errors=False,
         )
 
         assert config.max_request_size == 1024
@@ -52,13 +51,13 @@ class TestSecurityHeaders:
         headers = SecurityHeaders.get_security_headers()
 
         expected_headers = [
-            'X-Content-Type-Options',
-            'X-Frame-Options',
-            'X-XSS-Protection',
-            'Strict-Transport-Security',
-            'Referrer-Policy',
-            'Content-Security-Policy',
-            'Permissions-Policy'
+            "X-Content-Type-Options",
+            "X-Frame-Options",
+            "X-XSS-Protection",
+            "Strict-Transport-Security",
+            "Referrer-Policy",
+            "Content-Security-Policy",
+            "Permissions-Policy",
         ]
 
         for header in expected_headers:
@@ -68,11 +67,11 @@ class TestSecurityHeaders:
         """Test security header values are correct."""
         headers = SecurityHeaders.get_security_headers()
 
-        assert headers['X-Content-Type-Options'] == 'nosniff'
-        assert headers['X-Frame-Options'] == 'DENY'
-        assert headers['X-XSS-Protection'] == '1; mode=block'
-        assert 'max-age=31536000' in headers['Strict-Transport-Security']
-        assert 'includeSubDomains' in headers['Strict-Transport-Security']
+        assert headers["X-Content-Type-Options"] == "nosniff"
+        assert headers["X-Frame-Options"] == "DENY"
+        assert headers["X-XSS-Protection"] == "1; mode=block"
+        assert "max-age=31536000" in headers["Strict-Transport-Security"]
+        assert "includeSubDomains" in headers["Strict-Transport-Security"]
 
 
 class TestInputSanitizer:
@@ -103,9 +102,7 @@ class TestInputSanitizer:
         data = {
             "clean_key": "clean_value",
             "dirty_key\x00": "dirty_value\x07",
-            "nested": {
-                "key": "value\x1f"
-            }
+            "nested": {"key": "value\x1f"},
         }
 
         result = sanitizer.sanitize_dict(data)
@@ -122,7 +119,7 @@ class TestInputSanitizer:
             "clean_item",
             "dirty_item\x00",
             {"nested": "value\x07"},
-            ["nested", "list\x1f"]
+            ["nested", "list\x1f"],
         ]
 
         result = sanitizer.sanitize_list(data)
@@ -221,7 +218,7 @@ class TestSecurityValidator:
             "' OR '1'='1",
             "'; DROP TABLE users; --",
             "UNION SELECT * FROM passwords",
-            "1' OR 1=1 --"
+            "1' OR 1=1 --",
         ]
 
         for pattern in malicious_patterns:
@@ -240,7 +237,7 @@ class TestSecurityValidator:
             "javascript:alert('xss')",
             "onload=alert('xss')",
             "eval(malicious_code)",
-            "__import__('os').system('rm -rf /')"
+            "__import__('os').system('rm -rf /')",
         ]
 
         for pattern in malicious_patterns:
@@ -253,9 +250,7 @@ class TestSecurityValidator:
         malicious_data = {
             "user": "normal_user",
             "query": "'; DROP TABLE users; --",
-            "nested": {
-                "script": "<script>alert('xss')</script>"
-            }
+            "nested": {"script": "<script>alert('xss')</script>"},
         }
 
         with pytest.raises(ValueError, match="dangerous"):
@@ -316,7 +311,7 @@ class TestSecurityMiddleware:
 
         malicious_data = {
             "query": "'; DROP TABLE users; --",
-            "script": "<script>alert('xss')</script>"
+            "script": "<script>alert('xss')</script>",
         }
 
         with pytest.raises(SecurityError):
@@ -338,6 +333,7 @@ class TestSecurityDecorator:
 
     def test_decorator_application(self):
         """Test that security decorator is applied correctly."""
+
         @security_middleware()
         def test_function(data):
             return data
@@ -355,6 +351,7 @@ class TestSecurityDecorator:
 
     def test_decorator_with_kwargs(self):
         """Test decorator with keyword arguments."""
+
         @security_middleware()
         def test_function(name, data=None):
             return {"name": name, "data": data}

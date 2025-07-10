@@ -11,21 +11,23 @@ from pathlib import Path
 
 # ANSI color codes
 class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    WARNING = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    GREEN = "\033[92m"
+    WARNING = "\033[93m"
+    RED = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
 
 def colored(text: str, color: str) -> str:
     """Return colored text if colors are enabled."""
-    if os.environ.get('NO_COLOR'):
+    if os.environ.get("NO_COLOR"):
         return text
     return f"{color}{text}{Colors.ENDC}"
+
 
 class ImprovedHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom help formatter with better formatting and examples."""
@@ -37,12 +39,10 @@ class ImprovedHelpFormatter(argparse.RawDescriptionHelpFormatter):
         # Add color to option names
         if action.option_strings:
             for option in action.option_strings:
-                help_text = help_text.replace(
-                    option,
-                    colored(option, Colors.CYAN)
-                )
+                help_text = help_text.replace(option, colored(option, Colors.CYAN))
 
         return help_text
+
 
 def create_enhanced_parser() -> argparse.ArgumentParser:
     """Create enhanced argument parser with detailed help."""
@@ -106,129 +106,124 @@ def create_enhanced_parser() -> argparse.ArgumentParser:
 """
 
     parser = argparse.ArgumentParser(
-        prog='mcp-standards',
+        prog="mcp-standards",
         description=description,
         epilog=epilog,
         formatter_class=ImprovedHelpFormatter,
-        add_help=False  # We'll add custom help
+        add_help=False,  # We'll add custom help
     )
 
     # Custom help action
     parser.add_argument(
-        '-h', '--help',
-        action='help',
-        help='Show this help message and exit'
+        "-h", "--help", action="help", help="Show this help message and exit"
     )
 
     # Global options group
-    global_opts = parser.add_argument_group(
-        colored('GLOBAL OPTIONS', Colors.BOLD)
+    global_opts = parser.add_argument_group(colored("GLOBAL OPTIONS", Colors.BOLD))
+
+    global_opts.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output for debugging",
     )
 
     global_opts.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Enable verbose output for debugging'
-    )
-
-    global_opts.add_argument(
-        '-c', '--config',
+        "-c",
+        "--config",
         type=Path,
-        metavar='FILE',
-        help='Use custom configuration file'
+        metavar="FILE",
+        help="Use custom configuration file",
     )
 
     global_opts.add_argument(
-        '--no-color',
-        action='store_true',
-        help='Disable colored output'
+        "--no-color", action="store_true", help="Disable colored output"
     )
 
     global_opts.add_argument(
-        '--json',
-        action='store_true',
-        help='Output in JSON format (where applicable)'
+        "--json", action="store_true", help="Output in JSON format (where applicable)"
     )
 
     global_opts.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s 1.0.0',
-        help='Show program version'
+        "--version",
+        action="version",
+        version="%(prog)s 1.0.0",
+        help="Show program version",
     )
 
     # Commands
     subparsers = parser.add_subparsers(
-        title=colored('COMMANDS', Colors.BOLD),
-        dest='command',
-        help='Available commands',
-        metavar=''
+        title=colored("COMMANDS", Colors.BOLD),
+        dest="command",
+        help="Available commands",
+        metavar="",
     )
 
     # Sync command
     sync_parser = subparsers.add_parser(
-        'sync',
-        help='Synchronize standards from repository',
+        "sync",
+        help="Synchronize standards from repository",
         description=create_sync_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_sync_arguments(sync_parser)
 
     # Status command
     status_parser = subparsers.add_parser(
-        'status',
-        help='Show sync status and statistics',
+        "status",
+        help="Show sync status and statistics",
         description=create_status_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_status_arguments(status_parser)
 
     # Cache command
     cache_parser = subparsers.add_parser(
-        'cache',
-        help='Manage local cache',
+        "cache",
+        help="Manage local cache",
         description=create_cache_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_cache_arguments(cache_parser)
 
     # Config command
     config_parser = subparsers.add_parser(
-        'config',
-        help='Show or manage configuration',
+        "config",
+        help="Show or manage configuration",
         description=create_config_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_config_arguments(config_parser)
 
     # Query command
     query_parser = subparsers.add_parser(
-        'query',
-        help='Query standards based on context',
+        "query",
+        help="Query standards based on context",
         description=create_query_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_query_arguments(query_parser)
 
     # Validate command
     validate_parser = subparsers.add_parser(
-        'validate',
-        help='Validate code against standards',
+        "validate",
+        help="Validate code against standards",
         description=create_validate_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_validate_arguments(validate_parser)
 
     # Serve command
     serve_parser = subparsers.add_parser(
-        'serve',
-        help='Start MCP server',
+        "serve",
+        help="Start MCP server",
         description=create_serve_description(),
-        formatter_class=ImprovedHelpFormatter
+        formatter_class=ImprovedHelpFormatter,
     )
     add_serve_arguments(serve_parser)
 
     return parser
+
 
 def create_sync_description() -> str:
     """Create detailed description for sync command."""
@@ -252,41 +247,39 @@ Supports incremental updates, force sync, and checking for updates.
   mcp-standards sync --include "*.yaml" --exclude "*.draft.*"
 """
 
+
 def add_sync_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for sync command."""
     parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help='Force sync all files (ignore cache)'
+        "-f", "--force", action="store_true", help="Force sync all files (ignore cache)"
     )
 
     parser.add_argument(
-        '--check',
-        action='store_true',
-        help='Check for updates without downloading'
+        "--check", action="store_true", help="Check for updates without downloading"
     )
 
     parser.add_argument(
-        '--include',
-        metavar='PATTERN',
-        action='append',
-        help='Include files matching pattern (can be repeated)'
+        "--include",
+        metavar="PATTERN",
+        action="append",
+        help="Include files matching pattern (can be repeated)",
     )
 
     parser.add_argument(
-        '--exclude',
-        metavar='PATTERN',
-        action='append',
-        help='Exclude files matching pattern (can be repeated)'
+        "--exclude",
+        metavar="PATTERN",
+        action="append",
+        help="Exclude files matching pattern (can be repeated)",
     )
 
     parser.add_argument(
-        '--parallel',
+        "--parallel",
         type=int,
-        metavar='N',
+        metavar="N",
         default=5,
-        help='Number of parallel downloads (default: 5)'
+        help="Number of parallel downloads (default: 5)",
     )
+
 
 def create_status_description() -> str:
     """Create detailed description for status command."""
@@ -310,25 +303,25 @@ and system health.
   mcp-standards status --check-health
 """
 
+
 def add_status_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for status command."""
     parser.add_argument(
-        '--detailed',
-        action='store_true',
-        help='Show detailed information including all files'
+        "--detailed",
+        action="store_true",
+        help="Show detailed information including all files",
     )
 
     parser.add_argument(
-        '--check-health',
-        action='store_true',
-        help='Perform health checks and report issues'
+        "--check-health",
+        action="store_true",
+        help="Perform health checks and report issues",
     )
 
     parser.add_argument(
-        '--summary',
-        action='store_true',
-        help='Show only summary information'
+        "--summary", action="store_true", help="Show only summary information"
     )
+
 
 def create_cache_description() -> str:
     """Create detailed description for cache command."""
@@ -352,46 +345,38 @@ analyzing, and importing/exporting cache contents.
   mcp-standards cache --analyze
 """
 
+
 def add_cache_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for cache command."""
     action_group = parser.add_mutually_exclusive_group()
 
     action_group.add_argument(
-        '--list',
-        action='store_true',
-        help='List all cached files'
+        "--list", action="store_true", help="List all cached files"
     )
 
     action_group.add_argument(
-        '--clear',
-        action='store_true',
-        help='Clear all cached files'
+        "--clear", action="store_true", help="Clear all cached files"
     )
 
     action_group.add_argument(
-        '--clear-outdated',
-        action='store_true',
-        help='Clear only outdated files'
+        "--clear-outdated", action="store_true", help="Clear only outdated files"
     )
 
     action_group.add_argument(
-        '--analyze',
-        action='store_true',
-        help='Analyze cache usage and statistics'
+        "--analyze", action="store_true", help="Analyze cache usage and statistics"
     )
 
     parser.add_argument(
-        '--export',
-        metavar='PATH',
-        help='Export cache to file or directory'
+        "--export", metavar="PATH", help="Export cache to file or directory"
     )
 
     parser.add_argument(
-        '--import',
-        metavar='PATH',
-        dest='import_path',
-        help='Import cache from file or directory'
+        "--import",
+        metavar="PATH",
+        dest="import_path",
+        help="Import cache from file or directory",
     )
+
 
 def create_config_description() -> str:
     """Create detailed description for config command."""
@@ -415,46 +400,33 @@ configuration sources and formats.
   mcp-standards config --validate
 """
 
+
 def add_config_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for config command."""
     action_group = parser.add_mutually_exclusive_group()
 
     action_group.add_argument(
-        '--init',
-        action='store_true',
-        help='Initialize new configuration interactively'
+        "--init", action="store_true", help="Initialize new configuration interactively"
     )
 
     action_group.add_argument(
-        '--show',
-        action='store_true',
-        help='Display current configuration'
+        "--show", action="store_true", help="Display current configuration"
     )
 
     action_group.add_argument(
-        '--validate',
-        action='store_true',
-        help='Validate configuration file'
+        "--validate", action="store_true", help="Validate configuration file"
     )
 
     action_group.add_argument(
-        '--edit',
-        action='store_true',
-        help='Open configuration in editor'
+        "--edit", action="store_true", help="Open configuration in editor"
     )
+
+    parser.add_argument("--get", metavar="KEY", help="Get specific configuration value")
 
     parser.add_argument(
-        '--get',
-        metavar='KEY',
-        help='Get specific configuration value'
+        "--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value"
     )
 
-    parser.add_argument(
-        '--set',
-        nargs=2,
-        metavar=('KEY', 'VALUE'),
-        help='Set configuration value'
-    )
 
 def create_query_description() -> str:
     """Create detailed description for query command."""
@@ -478,57 +450,44 @@ and requirements. Supports semantic search for natural language queries.
   mcp-standards query --context .mcp-context.json
 """
 
+
 def add_query_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for query command."""
     parser.add_argument(
-        '--project-type',
-        choices=['web-application', 'api', 'cli', 'library', 'mobile', 'desktop'],
-        help='Type of project'
+        "--project-type",
+        choices=["web-application", "api", "cli", "library", "mobile", "desktop"],
+        help="Type of project",
     )
 
     parser.add_argument(
-        '--framework',
-        action='append',
-        help='Frameworks used (can be repeated)'
+        "--framework", action="append", help="Frameworks used (can be repeated)"
     )
 
     parser.add_argument(
-        '--language',
-        action='append',
-        help='Programming languages (can be repeated)'
+        "--language", action="append", help="Programming languages (can be repeated)"
     )
 
     parser.add_argument(
-        '--requirements',
-        action='append',
-        help='Special requirements (can be repeated)'
+        "--requirements", action="append", help="Special requirements (can be repeated)"
+    )
+
+    parser.add_argument("--semantic", metavar="QUERY", help="Natural language query")
+
+    parser.add_argument(
+        "--context", type=Path, metavar="FILE", help="Load context from JSON file"
     )
 
     parser.add_argument(
-        '--semantic',
-        metavar='QUERY',
-        help='Natural language query'
+        "--format",
+        choices=["text", "json", "yaml", "markdown"],
+        default="text",
+        help="Output format (default: text)",
     )
 
     parser.add_argument(
-        '--context',
-        type=Path,
-        metavar='FILE',
-        help='Load context from JSON file'
+        "--detailed", action="store_true", help="Include full standard content"
     )
 
-    parser.add_argument(
-        '--format',
-        choices=['text', 'json', 'yaml', 'markdown'],
-        default='text',
-        help='Output format (default: text)'
-    )
-
-    parser.add_argument(
-        '--detailed',
-        action='store_true',
-        help='Include full standard content'
-    )
 
 def create_validate_description() -> str:
     """Create detailed description for validate command."""
@@ -552,54 +511,51 @@ issues and various output formats for CI/CD integration.
   mcp-standards validate . --format junit --output results.xml
 """
 
+
 def add_validate_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for validate command."""
     parser.add_argument(
-        'paths',
-        nargs='*',
-        default=['.'],
-        help='Paths to validate (default: current directory)'
+        "paths",
+        nargs="*",
+        default=["."],
+        help="Paths to validate (default: current directory)",
     )
 
     parser.add_argument(
-        '--fix',
-        action='store_true',
-        help='Automatically fix issues where possible'
+        "--fix", action="store_true", help="Automatically fix issues where possible"
     )
 
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be fixed without applying'
+        "--dry-run",
+        action="store_true",
+        help="Show what would be fixed without applying",
     )
 
     parser.add_argument(
-        '--format',
-        choices=['text', 'json', 'junit', 'sarif'],
-        default='text',
-        help='Output format (default: text)'
+        "--format",
+        choices=["text", "json", "junit", "sarif"],
+        default="text",
+        help="Output format (default: text)",
     )
 
     parser.add_argument(
-        '--severity',
-        choices=['error', 'warning', 'info'],
-        default='info',
-        help='Minimum severity to report (default: info)'
+        "--severity",
+        choices=["error", "warning", "info"],
+        default="info",
+        help="Minimum severity to report (default: info)",
     )
 
     parser.add_argument(
-        '--fail-on',
-        choices=['error', 'warning', 'info'],
-        default='error',
-        help='Exit with error if issues at this level (default: error)'
+        "--fail-on",
+        choices=["error", "warning", "info"],
+        default="error",
+        help="Exit with error if issues at this level (default: error)",
     )
 
     parser.add_argument(
-        '--output',
-        type=Path,
-        metavar='FILE',
-        help='Write results to file'
+        "--output", type=Path, metavar="FILE", help="Write results to file"
     )
+
 
 def create_serve_description() -> str:
     """Create detailed description for serve command."""
@@ -623,53 +579,48 @@ programmatic access to standards functionality.
   mcp-standards serve --daemon
 """
 
+
 def add_serve_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for serve command."""
     parser.add_argument(
-        '--host',
-        default='localhost',
-        help='Host to bind to (default: localhost)'
+        "--host", default="localhost", help="Host to bind to (default: localhost)"
     )
 
     parser.add_argument(
-        '--port',
-        type=int,
-        default=3000,
-        help='Port to listen on (default: 3000)'
+        "--port", type=int, default=3000, help="Port to listen on (default: 3000)"
     )
 
     parser.add_argument(
-        '--stdio',
-        action='store_true',
-        help='Run in stdio mode for direct integration'
+        "--stdio", action="store_true", help="Run in stdio mode for direct integration"
     )
 
     parser.add_argument(
-        '--daemon',
-        action='store_true',
-        help='Run as background daemon'
+        "--daemon", action="store_true", help="Run as background daemon"
     )
 
     parser.add_argument(
-        '--log-level',
-        choices=['debug', 'info', 'warning', 'error'],
-        default='info',
-        help='Logging level (default: info)'
+        "--log-level",
+        choices=["debug", "info", "warning", "error"],
+        default="info",
+        help="Logging level (default: info)",
     )
+
 
 def suggest_command(invalid_cmd: str, commands: list[str]) -> str | None:
     """Suggest a command based on similarity."""
     from difflib import get_close_matches
+
     matches = get_close_matches(invalid_cmd, commands, n=1, cutoff=0.6)
     return matches[0] if matches else None
+
 
 def main():
     """Enhanced main entry point."""
     # Handle NO_COLOR environment variable
-    if os.environ.get('NO_COLOR'):
+    if os.environ.get("NO_COLOR"):
         for attr in dir(Colors):
-            if not attr.startswith('_'):
-                setattr(Colors, attr, '')
+            if not attr.startswith("_"):
+                setattr(Colors, attr, "")
 
     parser = create_enhanced_parser()
 
@@ -684,8 +635,12 @@ def main():
 
         # Show quick start hint
         print(f"\n{colored('💡 Quick start:', Colors.YELLOW)}")
-        print(f"   Try '{colored('mcp-standards config --init', Colors.GREEN)}' to get started")
-        print(f"   Or  '{colored('mcp-standards --help', Colors.GREEN)}' for more information\n")
+        print(
+            f"   Try '{colored('mcp-standards config --init', Colors.GREEN)}' to get started"
+        )
+        print(
+            f"   Or  '{colored('mcp-standards --help', Colors.GREEN)}' for more information\n"
+        )
         return 1
 
     # Command handling would go here
@@ -695,5 +650,6 @@ def main():
 
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

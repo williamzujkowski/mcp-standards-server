@@ -46,7 +46,7 @@ class TestMCPErrors:
             message="Invalid parameter",
             details={"field": "test"},
             field="test_field",
-            suggestion="Fix the parameter"
+            suggestion="Fix the parameter",
         )
 
         assert error.code == ErrorCode.VALIDATION_INVALID_PARAMETERS
@@ -59,7 +59,7 @@ class TestMCPErrors:
         error = MCPError(
             code=ErrorCode.TOOL_NOT_FOUND,
             message="Tool not found",
-            details={"tool_name": "test_tool"}
+            details={"tool_name": "test_tool"},
         )
 
         error_dict = error.to_dict()
@@ -70,10 +70,7 @@ class TestMCPErrors:
 
     def test_validation_error(self):
         """Test ValidationError specific functionality."""
-        error = ValidationError(
-            message="Invalid value",
-            field="test_field"
-        )
+        error = ValidationError(message="Invalid value", field="test_field")
 
         assert error.code == ErrorCode.VALIDATION_INVALID_PARAMETERS
         assert error.error_detail.field == "test_field"
@@ -82,8 +79,7 @@ class TestMCPErrors:
     def test_authentication_error(self):
         """Test AuthenticationError specific functionality."""
         error = AuthenticationError(
-            message="Invalid token",
-            code=ErrorCode.AUTH_INVALID_TOKEN
+            message="Invalid token", code=ErrorCode.AUTH_INVALID_TOKEN
         )
 
         assert error.code == ErrorCode.AUTH_INVALID_TOKEN
@@ -148,11 +144,7 @@ class TestLoggingConfig:
 
     def test_logging_config_creation(self):
         """Test LoggingConfig creation."""
-        config = LoggingConfig(
-            level="DEBUG",
-            format="json",
-            log_dir="/tmp/logs"
-        )
+        config = LoggingConfig(level="DEBUG", format="json", log_dir="/tmp/logs")
 
         assert config.level == logging.DEBUG
         assert config.format == "json"
@@ -165,7 +157,7 @@ class TestLoggingConfig:
                 level="INFO",
                 format="text",
                 log_dir=temp_dir,
-                enable_error_tracking=True
+                enable_error_tracking=True,
             )
 
             error_handler = setup_logging(config)
@@ -187,7 +179,7 @@ class TestLoggingConfig:
             lineno=1,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
 
         # Create and test the context filter
@@ -195,9 +187,9 @@ class TestLoggingConfig:
         context_filter.filter(record)
 
         # Check that context was added to record
-        assert hasattr(record, 'request_id')
+        assert hasattr(record, "request_id")
         assert record.request_id == "test-123"
-        assert hasattr(record, 'user_id')
+        assert hasattr(record, "user_id")
         assert record.user_id == "user-456"
 
         # Clear context
@@ -215,7 +207,7 @@ class TestLoggingConfig:
             lineno=1,
             msg="Test error",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
 
         handler.emit(record)
@@ -231,10 +223,11 @@ class TestDecorators:
 
     def test_with_error_handling_decorator(self):
         """Test with_error_handling decorator."""
+
         @with_error_handling(
             error_code=ErrorCode.TOOL_EXECUTION_FAILED,
             raise_errors=False,
-            default_return="default"
+            default_return="default",
         )
         def failing_function():
             raise ValueError("Test error")
@@ -244,9 +237,9 @@ class TestDecorators:
 
     def test_with_error_handling_decorator_async(self):
         """Test with_error_handling decorator with async function."""
+
         @with_error_handling(
-            error_code=ErrorCode.TOOL_EXECUTION_FAILED,
-            raise_errors=True
+            error_code=ErrorCode.TOOL_EXECUTION_FAILED, raise_errors=True
         )
         async def failing_async_function():
             raise ValueError("Test error")
@@ -259,7 +252,8 @@ class TestDecorators:
 
     def test_with_logging_decorator(self):
         """Test with_logging decorator."""
-        with patch('src.core.decorators.logger') as mock_logger:
+        with patch("src.core.decorators.logger") as mock_logger:
+
             @with_logging(level=logging.DEBUG, log_args=True)
             def test_function(arg1, arg2="default"):
                 return "result"
@@ -271,6 +265,7 @@ class TestDecorators:
 
     def test_with_context_decorator(self):
         """Test with_context decorator."""
+
         @with_context(operation="test_op", module="test_module")
         def test_function():
             # Context should be set during execution
@@ -284,11 +279,12 @@ class TestDecorators:
 
     def test_deprecated_decorator(self):
         """Test deprecated decorator."""
-        with patch('src.core.decorators.logger') as mock_logger:
+        with patch("src.core.decorators.logger") as mock_logger:
+
             @deprecated(
                 reason="Use new_function instead",
                 version="1.0.0",
-                alternative="new_function"
+                alternative="new_function",
             )
             def old_function():
                 return "old"
@@ -311,9 +307,9 @@ class TestErrorMiddleware(AioHTTPTestCase):
         setup_error_handling(app)
 
         # Add test routes
-        app.router.add_get('/success', self.success_handler)
-        app.router.add_get('/error', self.error_handler)
-        app.router.add_get('/mcp-error', self.mcp_error_handler)
+        app.router.add_get("/success", self.success_handler)
+        app.router.add_get("/error", self.error_handler)
+        app.router.add_get("/mcp-error", self.mcp_error_handler)
 
         return app
 
@@ -368,15 +364,14 @@ class TestIntegration:
                 level="INFO",
                 format="json",
                 log_dir=temp_dir,
-                enable_error_tracking=True
+                enable_error_tracking=True,
             )
 
             error_handler = setup_logging(config)
 
             # Create function with error handling
             @with_error_handling(
-                error_code=ErrorCode.TOOL_EXECUTION_FAILED,
-                log_errors=True
+                error_code=ErrorCode.TOOL_EXECUTION_FAILED, log_errors=True
             )
             def test_function():
                 raise ValueError("Test error")
@@ -394,11 +389,7 @@ class TestIntegration:
     def test_logging_context_propagation(self):
         """Test that logging context is properly propagated."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            config = LoggingConfig(
-                level="DEBUG",
-                format="json",
-                log_dir=temp_dir
-            )
+            config = LoggingConfig(level="DEBUG", format="json", log_dir=temp_dir)
 
             setup_logging(config)
 
@@ -413,14 +404,14 @@ class TestIntegration:
                 lineno=1,
                 msg="Test message",
                 args=(),
-                exc_info=None
+                exc_info=None,
             )
 
             # Create and test the context filter
             context_filter = ContextFilter()
             context_filter.filter(record)
 
-            assert hasattr(record, 'request_id')
+            assert hasattr(record, "request_id")
             assert record.request_id == "test-123"
 
 

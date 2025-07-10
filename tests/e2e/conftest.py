@@ -1,4 +1,5 @@
 """E2E test configuration and shared fixtures."""
+
 import asyncio
 import json
 import logging
@@ -66,7 +67,9 @@ class MCPTestClient:
                 logger.error(f"Error in stdio_client: {e}")
                 raise
             else:
-                logger.warning(f"Ignoring asyncio cancellation error during cleanup: {e}")
+                logger.warning(
+                    f"Ignoring asyncio cancellation error during cleanup: {e}"
+                )
 
     async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Call a tool on the MCP server."""
@@ -80,17 +83,21 @@ class MCPTestClient:
             logger.debug(f"Raw result from tool {tool_name}: {result}")
 
             # Extract the content from the result
-            if hasattr(result, 'content') and result.content:
+            if hasattr(result, "content") and result.content:
                 # Parse the JSON content from the first text content
                 if result.content[0].text:
                     text_content = result.content[0].text
                     logger.debug(f"Text content from tool {tool_name}: {text_content}")
                     try:
                         parsed_result = json.loads(text_content)
-                        logger.debug(f"Parsed result from tool {tool_name}: {parsed_result}")
+                        logger.debug(
+                            f"Parsed result from tool {tool_name}: {parsed_result}"
+                        )
                         return parsed_result
                     except json.JSONDecodeError as e:
-                        logger.error(f"Failed to parse JSON response from {tool_name}: {e}")
+                        logger.error(
+                            f"Failed to parse JSON response from {tool_name}: {e}"
+                        )
                         logger.error(f"Raw text was: {repr(text_content)}")
                         raise
                 else:
@@ -122,7 +129,9 @@ async def mcp_server(tmp_path_factory):
     env["PYTHONPATH"] = str(Path(__file__).parent.parent.parent)  # Project root
 
     # Enable coverage in subprocess
-    env["COVERAGE_PROCESS_START"] = str(Path(__file__).parent.parent.parent / ".coveragerc")
+    env["COVERAGE_PROCESS_START"] = str(
+        Path(__file__).parent.parent.parent / ".coveragerc"
+    )
 
     # Ensure sitecustomize.py is in PYTHONPATH for coverage subprocess
     project_root = Path(__file__).parent.parent.parent
@@ -141,7 +150,7 @@ async def mcp_server(tmp_path_factory):
     server_params = StdioServerParameters(
         command=sys.executable,  # Use the same Python interpreter
         args=["-m", "src"],
-        env=env
+        env=env,
     )
 
     # Start server process
@@ -152,7 +161,7 @@ async def mcp_server(tmp_path_factory):
         *server_params.args,
         env=server_params.env,
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
 
     # Monitor server startup with reduced timeout

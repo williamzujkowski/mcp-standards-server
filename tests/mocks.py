@@ -1,6 +1,5 @@
 """Mock implementations for heavy dependencies during testing."""
 
-
 import numpy as np
 
 
@@ -36,7 +35,7 @@ class MockSentenceTransformer:
 class MockNearestNeighbors:
     """Mock scikit-learn NearestNeighbors for testing."""
 
-    def __init__(self, n_neighbors=5, metric='cosine', algorithm='brute'):
+    def __init__(self, n_neighbors=5, metric="cosine", algorithm="brute"):
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.algorithm = algorithm
@@ -47,7 +46,9 @@ class MockNearestNeighbors:
         self._fit_X = X
         return self
 
-    def kneighbors(self, X: np.ndarray, n_neighbors: int = None) -> tuple[np.ndarray, np.ndarray]:
+    def kneighbors(
+        self, X: np.ndarray, n_neighbors: int = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Find k nearest neighbors."""
         if self._fit_X is None:
             raise ValueError("Must fit before calling kneighbors")
@@ -58,7 +59,9 @@ class MockNearestNeighbors:
 
         # Generate mock distances and indices
         distances = np.random.rand(n_samples, min(n_neighbors, n_indexed))
-        indices = np.random.randint(0, n_indexed, size=(n_samples, min(n_neighbors, n_indexed)))
+        indices = np.random.randint(
+            0, n_indexed, size=(n_samples, min(n_neighbors, n_indexed))
+        )
 
         # Sort by distance
         for i in range(n_samples):

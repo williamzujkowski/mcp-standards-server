@@ -24,20 +24,19 @@ class TestCombinedServerIntegration:
     def mcp_config(self):
         """Create MCP configuration."""
         return {
-            "auth": {
-                "enabled": False  # Disable for testing
-            },
-            "privacy": {
-                "enabled": False  # Disable for testing
-            },
+            "auth": {"enabled": False},  # Disable for testing
+            "privacy": {"enabled": False},  # Disable for testing
             "rate_limit_window": 60,
-            "rate_limit_max_requests": 1000  # High limit for testing
+            "rate_limit_max_requests": 1000,  # High limit for testing
         }
 
     @pytest.fixture
     async def combined_server(self, mcp_config):
         """Create combined server instance."""
-        with patch.dict(os.environ, {"HTTP_HOST": "127.0.0.1", "HTTP_PORT": "8082", "HTTP_ONLY": "true"}):
+        with patch.dict(
+            os.environ,
+            {"HTTP_HOST": "127.0.0.1", "HTTP_PORT": "8082", "HTTP_ONLY": "true"},
+        ):
             server = CombinedServer(mcp_config)
 
             # Start the server in HTTP-only mode for testing
@@ -64,111 +63,125 @@ class TestCombinedServerIntegration:
     async def test_health_endpoints_work(self, combined_server, client_session):
         """Test that health endpoints work after startup."""
         # Test basic health endpoint
-        async with client_session.get('http://127.0.0.1:8082/health') as response:
+        async with client_session.get("http://127.0.0.1:8082/health") as response:
             assert response.status in [200, 503]  # May be unhealthy but should respond
             data = await response.json()
-            assert 'status' in data
-            assert 'timestamp' in data
+            assert "status" in data
+            assert "timestamp" in data
 
         # Test liveness endpoint
-        async with client_session.get('http://127.0.0.1:8082/health/live') as response:
+        async with client_session.get("http://127.0.0.1:8082/health/live") as response:
             assert response.status in [200, 503]
             data = await response.json()
-            assert 'alive' in data
+            assert "alive" in data
 
         # Test readiness endpoint
-        async with client_session.get('http://127.0.0.1:8082/health/ready') as response:
+        async with client_session.get("http://127.0.0.1:8082/health/ready") as response:
             assert response.status in [200, 503]
             data = await response.json()
-            assert 'ready' in data
+            assert "ready" in data
 
     async def test_service_info_endpoints(self, combined_server, client_session):
         """Test service information endpoints."""
         # Test status endpoint
-        async with client_session.get('http://127.0.0.1:8082/status') as response:
+        async with client_session.get("http://127.0.0.1:8082/status") as response:
             assert response.status == 200
             data = await response.json()
-            assert data['service'] == 'mcp-standards-server'
-            assert data['status'] == 'running'
+            assert data["service"] == "mcp-standards-server"
+            assert data["status"] == "running"
 
         # Test info endpoint
-        async with client_session.get('http://127.0.0.1:8082/info') as response:
+        async with client_session.get("http://127.0.0.1:8082/info") as response:
             assert response.status == 200
             data = await response.json()
-            assert data['name'] == 'MCP Standards Server'
-            assert 'endpoints' in data
+            assert data["name"] == "MCP Standards Server"
+            assert "endpoints" in data
 
         # Test root endpoint
-        async with client_session.get('http://127.0.0.1:8082/') as response:
+        async with client_session.get("http://127.0.0.1:8082/") as response:
             assert response.status == 200
             data = await response.json()
-            assert data['service'] == 'MCP Standards Server'
-            assert data['status'] == 'running'
+            assert data["service"] == "MCP Standards Server"
+            assert data["status"] == "running"
 
     async def test_standards_api_endpoints(self, combined_server, client_session):
         """Test standards API endpoints."""
         # Mock standards engine
-        with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
-            mock_instance.list_standards = AsyncMock(return_value=[
-                {
+            mock_instance.list_standards = AsyncMock(
+                return_value=[
+                    {
+                        "id": "test-standard",
+                        "title": "Test Standard",
+                        "category": "testing",
+                        "description": "A test standard for integration testing",
+                    }
+                ]
+            )
+            mock_instance.get_standard = AsyncMock(
+                return_value={
                     "id": "test-standard",
                     "title": "Test Standard",
                     "category": "testing",
-                    "description": "A test standard for integration testing"
+                    "description": "A test standard for integration testing",
+                    "content": "# Test Standard\n\nThis is a test standard.",
                 }
-            ])
-            mock_instance.get_standard = AsyncMock(return_value={
-                "id": "test-standard",
-                "title": "Test Standard",
-                "category": "testing",
-                "description": "A test standard for integration testing",
-                "content": "# Test Standard\n\nThis is a test standard."
-            })
+            )
             mock_engine.return_value = mock_instance
 
             # Test list standards
-            async with client_session.get('http://127.0.0.1:8082/api/standards') as response:
+            async with client_session.get(
+                "http://127.0.0.1:8082/api/standards"
+            ) as response:
                 assert response.status == 200
                 data = await response.json()
-                assert 'standards' in data
-                assert data['total'] == 1
-                assert data['standards'][0]['id'] == 'test-standard'
+                assert "standards" in data
+                assert data["total"] == 1
+                assert data["standards"][0]["id"] == "test-standard"
 
             # Test get specific standard
-            async with client_session.get('http://127.0.0.1:8082/api/standards/test-standard') as response:
+            async with client_session.get(
+                "http://127.0.0.1:8082/api/standards/test-standard"
+            ) as response:
                 assert response.status == 200
                 data = await response.json()
-                assert 'standard' in data
-                assert data['standard']['id'] == 'test-standard'
+                assert "standard" in data
+                assert data["standard"]["id"] == "test-standard"
 
     async def test_metrics_endpoint(self, combined_server, client_session):
         """Test metrics endpoint."""
-        with patch('src.core.performance.metrics.get_performance_monitor') as mock_metrics:
+        with patch(
+            "src.core.performance.metrics.get_performance_monitor"
+        ) as mock_metrics:
             mock_monitor = Mock()
-            mock_monitor.get_prometheus_metrics = Mock(return_value="""
+            mock_monitor.get_prometheus_metrics = Mock(
+                return_value="""
 # HELP mcp_requests_total Total number of MCP requests
 # TYPE mcp_requests_total counter
 mcp_requests_total{tool="get_applicable_standards"} 42
-""")
+"""
+            )
             mock_metrics.return_value = mock_monitor
 
-            async with client_session.get('http://127.0.0.1:8082/metrics') as response:
+            async with client_session.get("http://127.0.0.1:8082/metrics") as response:
                 assert response.status == 200
-                assert response.content_type == 'text/plain'
+                assert response.content_type == "text/plain"
                 text = await response.text()
-                assert 'mcp_tool_calls_total' in text
+                assert "mcp_tool_calls_total" in text
 
     async def test_error_handling(self, combined_server, client_session):
         """Test error handling in API endpoints."""
         # Test non-existent standard
-        async with client_session.get('http://127.0.0.1:8082/api/standards/nonexistent') as response:
+        async with client_session.get(
+            "http://127.0.0.1:8082/api/standards/nonexistent"
+        ) as response:
             assert response.status == 404
             data = await response.json()
-            assert 'error' in data
+            assert "error" in data
 
         # Test invalid endpoint
-        async with client_session.get('http://127.0.0.1:8082/api/invalid') as response:
+        async with client_session.get("http://127.0.0.1:8082/api/invalid") as response:
             assert response.status == 404
 
     async def test_concurrent_requests(self, combined_server, client_session):
@@ -177,7 +190,7 @@ mcp_requests_total{tool="get_applicable_standards"} 42
         tasks = []
         for _i in range(10):
             task = asyncio.create_task(
-                client_session.get('http://127.0.0.1:8082/status')
+                client_session.get("http://127.0.0.1:8082/status")
             )
             tasks.append(task)
 
@@ -192,7 +205,10 @@ mcp_requests_total{tool="get_applicable_standards"} 42
 
     async def test_graceful_shutdown(self, mcp_config):
         """Test graceful shutdown of combined server."""
-        with patch.dict(os.environ, {"HTTP_HOST": "127.0.0.1", "HTTP_PORT": "8083", "HTTP_ONLY": "true"}):
+        with patch.dict(
+            os.environ,
+            {"HTTP_HOST": "127.0.0.1", "HTTP_PORT": "8083", "HTTP_ONLY": "true"},
+        ):
             server = CombinedServer(mcp_config)
 
             # Start server
@@ -229,19 +245,21 @@ class TestEndToEndWorkflow:
                 "applicability": {
                     "languages": ["python"],
                     "frameworks": ["pytest"],
-                    "project_types": ["testing"]
+                    "project_types": ["testing"],
                 },
                 "rules": {
                     "test_naming": {
                         "title": "Test Naming Convention",
                         "description": "Tests should follow naming conventions",
                         "severity": "warning",
-                        "category": "naming"
+                        "category": "naming",
                     }
-                }
+                },
             }
 
-            with open(os.path.join(standards_dir, "test-workflow-standard.json"), "w") as f:
+            with open(
+                os.path.join(standards_dir, "test-workflow-standard.json"), "w"
+            ) as f:
                 json.dump(test_standard, f)
 
             yield temp_dir
@@ -249,17 +267,19 @@ class TestEndToEndWorkflow:
     async def test_full_workflow(self, temp_data_dir):
         """Test complete workflow from startup to API usage."""
         # Mock environment
-        with patch.dict(os.environ, {
-            "HTTP_HOST": "127.0.0.1",
-            "HTTP_PORT": "8084",
-            "HTTP_ONLY": "true",
-            "DATA_DIR": temp_data_dir
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "HTTP_HOST": "127.0.0.1",
+                "HTTP_PORT": "8084",
+                "HTTP_ONLY": "true",
+                "DATA_DIR": temp_data_dir,
+            },
+        ):
             # Create and start server
-            server = CombinedServer({
-                "auth": {"enabled": False},
-                "privacy": {"enabled": False}
-            })
+            server = CombinedServer(
+                {"auth": {"enabled": False}, "privacy": {"enabled": False}}
+            )
 
             await server.start_http_server()
 
@@ -267,72 +287,92 @@ class TestEndToEndWorkflow:
                 # Create client session
                 async with aiohttp.ClientSession() as session:
                     # Test 1: Check server is running
-                    async with session.get('http://127.0.0.1:8084/status') as response:
+                    async with session.get("http://127.0.0.1:8084/status") as response:
                         assert response.status == 200
                         data = await response.json()
-                        assert data['status'] == 'running'
+                        assert data["status"] == "running"
 
                     # Test 2: Check health
-                    async with session.get('http://127.0.0.1:8084/health') as response:
+                    async with session.get("http://127.0.0.1:8084/health") as response:
                         # Health may be degraded but should respond
                         assert response.status in [200, 503]
                         data = await response.json()
-                        assert 'status' in data
+                        assert "status" in data
 
                     # Test 3: List standards (with mocked engine)
-                    with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
+                    with patch(
+                        "src.core.standards.engine.StandardsEngine"
+                    ) as mock_engine:
                         mock_instance = Mock()
-                        mock_instance.list_standards = AsyncMock(return_value=[
-                            {
+                        mock_instance.list_standards = AsyncMock(
+                            return_value=[
+                                {
+                                    "id": "test-workflow-standard",
+                                    "title": "Test Workflow Standard",
+                                    "category": "testing",
+                                    "description": "Standard for testing end-to-end workflow",
+                                }
+                            ]
+                        )
+                        mock_engine.return_value = mock_instance
+
+                        async with session.get(
+                            "http://127.0.0.1:8084/api/standards"
+                        ) as response:
+                            assert response.status == 200
+                            data = await response.json()
+                            assert data["total"] == 1
+                            assert (
+                                data["standards"][0]["id"] == "test-workflow-standard"
+                            )
+
+                    # Test 4: Get specific standard
+                    with patch(
+                        "src.core.standards.engine.StandardsEngine"
+                    ) as mock_engine:
+                        mock_instance = Mock()
+                        mock_instance.get_standard = AsyncMock(
+                            return_value={
                                 "id": "test-workflow-standard",
                                 "title": "Test Workflow Standard",
                                 "category": "testing",
-                                "description": "Standard for testing end-to-end workflow"
+                                "description": "Standard for testing end-to-end workflow",
+                                "content": "# Test Workflow Standard\n\nThis is a test standard.",
                             }
-                        ])
+                        )
                         mock_engine.return_value = mock_instance
 
-                        async with session.get('http://127.0.0.1:8084/api/standards') as response:
+                        async with session.get(
+                            "http://127.0.0.1:8084/api/standards/test-workflow-standard"
+                        ) as response:
                             assert response.status == 200
                             data = await response.json()
-                            assert data['total'] == 1
-                            assert data['standards'][0]['id'] == 'test-workflow-standard'
-
-                    # Test 4: Get specific standard
-                    with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
-                        mock_instance = Mock()
-                        mock_instance.get_standard = AsyncMock(return_value={
-                            "id": "test-workflow-standard",
-                            "title": "Test Workflow Standard",
-                            "category": "testing",
-                            "description": "Standard for testing end-to-end workflow",
-                            "content": "# Test Workflow Standard\n\nThis is a test standard."
-                        })
-                        mock_engine.return_value = mock_instance
-
-                        async with session.get('http://127.0.0.1:8084/api/standards/test-workflow-standard') as response:
-                            assert response.status == 200
-                            data = await response.json()
-                            assert data['standard']['id'] == 'test-workflow-standard'
+                            assert data["standard"]["id"] == "test-workflow-standard"
 
                     # Test 5: Check metrics
-                    with patch('src.http_server.get_performance_monitor') as mock_metrics:
+                    with patch(
+                        "src.http_server.get_performance_monitor"
+                    ) as mock_metrics:
                         mock_monitor = Mock()
-                        mock_monitor.get_prometheus_metrics = Mock(return_value="# Test metrics\ntest_metric 1\n")
+                        mock_monitor.get_prometheus_metrics = Mock(
+                            return_value="# Test metrics\ntest_metric 1\n"
+                        )
                         mock_metrics.return_value = mock_monitor
 
-                        async with session.get('http://127.0.0.1:8084/metrics') as response:
+                        async with session.get(
+                            "http://127.0.0.1:8084/metrics"
+                        ) as response:
                             assert response.status == 200
-                            assert response.content_type == 'text/plain'
+                            assert response.content_type == "text/plain"
                             text = await response.text()
-                            assert 'mcp_tool_calls_total' in text
+                            assert "mcp_tool_calls_total" in text
 
                     # Test 6: Check service info
-                    async with session.get('http://127.0.0.1:8084/info') as response:
+                    async with session.get("http://127.0.0.1:8084/info") as response:
                         assert response.status == 200
                         data = await response.json()
-                        assert data['name'] == 'MCP Standards Server'
-                        assert 'endpoints' in data
+                        assert data["name"] == "MCP Standards Server"
+                        assert "endpoints" in data
 
             finally:
                 # Cleanup
@@ -340,16 +380,18 @@ class TestEndToEndWorkflow:
 
     async def test_performance_under_load(self, temp_data_dir):
         """Test server performance under load."""
-        with patch.dict(os.environ, {
-            "HTTP_HOST": "127.0.0.1",
-            "HTTP_PORT": "8085",
-            "HTTP_ONLY": "true",
-            "DATA_DIR": temp_data_dir
-        }):
-            server = CombinedServer({
-                "auth": {"enabled": False},
-                "privacy": {"enabled": False}
-            })
+        with patch.dict(
+            os.environ,
+            {
+                "HTTP_HOST": "127.0.0.1",
+                "HTTP_PORT": "8085",
+                "HTTP_ONLY": "true",
+                "DATA_DIR": temp_data_dir,
+            },
+        ):
+            server = CombinedServer(
+                {"auth": {"enabled": False}, "privacy": {"enabled": False}}
+            )
 
             await server.start_http_server()
 
@@ -365,7 +407,7 @@ class TestEndToEndWorkflow:
                 for session in sessions:
                     for _i in range(20):  # 20 requests per session
                         task = asyncio.create_task(
-                            session.get('http://127.0.0.1:8085/status')
+                            session.get("http://127.0.0.1:8085/status")
                         )
                         tasks.append(task)
 

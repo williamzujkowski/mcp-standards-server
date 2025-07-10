@@ -17,12 +17,16 @@ env["COVERAGE_PROCESS_START"] = str(project_root / ".coveragerc")
 
 # Run coverage with pytest
 cmd = [
-    sys.executable, "-m", "coverage", "run",
+    sys.executable,
+    "-m",
+    "coverage",
+    "run",
     "--parallel-mode",
-    "-m", "pytest",
+    "-m",
+    "pytest",
     "tests/e2e/",
     "--timeout=300",
-    "-v"
+    "-v",
 ]
 
 print(f"Running: {' '.join(cmd)}")

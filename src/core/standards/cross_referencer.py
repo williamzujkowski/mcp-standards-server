@@ -91,64 +91,84 @@ class CrossReferencer:
             "security": [
                 r"\b(?:authentication|authorization|encryption|security|vulnerability|threat)\b",
                 r"\b(?:oauth|jwt|ssl|tls|csrf|xss|sql injection)\b",
-                r"\b(?:access control|audit|compliance|privacy)\b"
+                r"\b(?:access control|audit|compliance|privacy)\b",
             ],
             "performance": [
                 r"\b(?:performance|optimization|caching|latency|throughput)\b",
                 r"\b(?:load balancing|scaling|memory|cpu|response time)\b",
-                r"\b(?:benchmark|profiling|monitoring)\b"
+                r"\b(?:benchmark|profiling|monitoring)\b",
             ],
             "architecture": [
                 r"\b(?:microservices|monolith|architecture|design pattern)\b",
                 r"\b(?:api|rest|graphql|event driven|pub/sub)\b",
-                r"\b(?:container|kubernetes|docker|cloud native)\b"
+                r"\b(?:container|kubernetes|docker|cloud native)\b",
             ],
             "data": [
                 r"\b(?:database|data model|schema|migration)\b",
                 r"\b(?:sql|nosql|graph|time series|vector)\b",
-                r"\b(?:etl|pipeline|stream|batch processing)\b"
+                r"\b(?:etl|pipeline|stream|batch processing)\b",
             ],
             "testing": [
                 r"\b(?:testing|test|unit test|integration test)\b",
                 r"\b(?:automation|ci/cd|continuous integration)\b",
-                r"\b(?:coverage|mock|stub|assertion)\b"
+                r"\b(?:coverage|mock|stub|assertion)\b",
             ],
             "ai_ml": [
                 r"\b(?:machine learning|artificial intelligence|model|training)\b",
                 r"\b(?:neural network|deep learning|feature|dataset)\b",
-                r"\b(?:inference|prediction|classification|regression)\b"
+                r"\b(?:inference|prediction|classification|regression)\b",
             ],
             "blockchain": [
                 r"\b(?:blockchain|smart contract|cryptocurrency|token)\b",
                 r"\b(?:defi|nft|dao|web3|ethereum|solidity)\b",
-                r"\b(?:consensus|mining|staking|gas)\b"
+                r"\b(?:consensus|mining|staking|gas)\b",
             ],
             "frontend": [
                 r"\b(?:ui|user interface|frontend|react|vue|angular)\b",
                 r"\b(?:responsive|accessibility|seo|progressive web app)\b",
-                r"\b(?:javascript|typescript|css|html)\b"
-            ]
+                r"\b(?:javascript|typescript|css|html)\b",
+            ],
         }
 
     def _load_relationship_keywords(self) -> dict[str, list[str]]:
         """Load keywords that indicate relationships between standards."""
         return {
             "depends_on": [
-                "requires", "depends on", "based on", "built upon",
-                "prerequisite", "foundation", "underlying"
+                "requires",
+                "depends on",
+                "based on",
+                "built upon",
+                "prerequisite",
+                "foundation",
+                "underlying",
             ],
             "implements": [
-                "implements", "follows", "adheres to", "complies with",
-                "conforms to", "adopts", "applies"
+                "implements",
+                "follows",
+                "adheres to",
+                "complies with",
+                "conforms to",
+                "adopts",
+                "applies",
             ],
             "extends": [
-                "extends", "builds on", "enhances", "augments",
-                "specializes", "refines", "elaborates"
+                "extends",
+                "builds on",
+                "enhances",
+                "augments",
+                "specializes",
+                "refines",
+                "elaborates",
             ],
             "related": [
-                "related to", "similar to", "comparable to", "analogous",
-                "corresponding", "parallel", "aligned with"
-            ]
+                "related to",
+                "similar to",
+                "comparable to",
+                "analogous",
+                "corresponding",
+                "parallel",
+                "aligned with",
+            ],
         }
 
     def _load_existing_references(self) -> None:
@@ -193,12 +213,12 @@ class CrossReferencer:
                     "confidence": ref.confidence,
                     "description": ref.description,
                     "auto_generated": ref.auto_generated,
-                    "created_at": ref.created_at.isoformat()
+                    "created_at": ref.created_at.isoformat(),
                 }
                 for ref in refs
             ]
 
-        with open(self.cache_dir / "cross_references.json", 'w') as f:
+        with open(self.cache_dir / "cross_references.json", "w") as f:
             json.dump(refs_data, f, indent=2)
 
         # Save concept index
@@ -211,15 +231,17 @@ class CrossReferencer:
                     "section_id": ref.section_id,
                     "context": ref.context,
                     "frequency": ref.frequency,
-                    "importance": ref.importance
+                    "importance": ref.importance,
                 }
                 for ref in refs
             ]
 
-        with open(self.cache_dir / "concept_index.json", 'w') as f:
+        with open(self.cache_dir / "concept_index.json", "w") as f:
             json.dump(concepts_data, f, indent=2)
 
-    def generate_cross_references(self, force_refresh: bool = False) -> CrossReferenceResult:
+    def generate_cross_references(
+        self, force_refresh: bool = False
+    ) -> CrossReferenceResult:
         """
         Generate cross-references between all standards.
 
@@ -336,7 +358,9 @@ class CrossReferencer:
                                 standard_id=std_id,
                                 context=concept_type,
                                 frequency=1,
-                                importance=self._calculate_concept_importance(concept, concept_type)
+                                importance=self._calculate_concept_importance(
+                                    concept, concept_type
+                                ),
                             )
                         )
 
@@ -351,7 +375,7 @@ class CrossReferencer:
             "testing": 0.6,
             "ai_ml": 0.7,
             "blockchain": 0.7,
-            "frontend": 0.5
+            "frontend": 0.5,
         }
 
         # Specific concept weights
@@ -363,7 +387,7 @@ class CrossReferencer:
             "microservices": 0.8,
             "api": 0.8,
             "database": 0.75,
-            "testing": 0.7
+            "testing": 0.7,
         }
 
         base_weight = type_weights.get(concept_type, 0.5)
@@ -372,9 +396,7 @@ class CrossReferencer:
         return (base_weight + concept_weight) / 2
 
     def _generate_references_for_standard(
-        self,
-        std_id: str,
-        standards: dict[str, dict[str, Any]]
+        self, std_id: str, standards: dict[str, dict[str, Any]]
     ) -> list[CrossReference]:
         """Generate cross-references for a specific standard."""
         new_references = []
@@ -401,7 +423,7 @@ class CrossReferencer:
                     target_standard=target_std,
                     relationship_type=rel_type,
                     confidence=strength,
-                    description=f"Shares concepts: {', '.join([c['concept'] for c in concepts[:3]])}"
+                    description=f"Shares concepts: {', '.join([c['concept'] for c in concepts[:3]])}",
                 )
 
                 self.references[std_id].append(ref)
@@ -428,15 +450,19 @@ class CrossReferencer:
         for concept in my_concepts:
             for ref in self.concept_index[concept]:
                 if ref.standard_id != std_id:
-                    shared[ref.standard_id].append({
-                        "concept": concept,
-                        "frequency": ref.frequency,
-                        "importance": ref.importance
-                    })
+                    shared[ref.standard_id].append(
+                        {
+                            "concept": concept,
+                            "frequency": ref.frequency,
+                            "importance": ref.importance,
+                        }
+                    )
 
         return shared
 
-    def _calculate_relationship_strength(self, shared_concepts: list[dict[str, Any]]) -> float:
+    def _calculate_relationship_strength(
+        self, shared_concepts: list[dict[str, Any]]
+    ) -> float:
         """Calculate the strength of relationship based on shared concepts."""
         if not shared_concepts:
             return 0.0
@@ -459,10 +485,7 @@ class CrossReferencer:
         return min(avg_score + concept_bonus, 1.0)
 
     def _determine_relationship_type(
-        self,
-        source_std: str,
-        target_std: str,
-        standards: dict[str, dict[str, Any]]
+        self, source_std: str, target_std: str, standards: dict[str, dict[str, Any]]
     ) -> str:
         """Determine the type of relationship between two standards."""
         source_data = standards.get(source_std, {})
@@ -480,7 +503,10 @@ class CrossReferencer:
         if source_domain and target_domain:
             if source_domain == target_domain:
                 return "related"
-            elif f"{source_domain}_" in target_domain or f"{target_domain}_" in source_domain:
+            elif (
+                f"{source_domain}_" in target_domain
+                or f"{target_domain}_" in source_domain
+            ):
                 return "extends"
 
         # Check maturity levels
@@ -493,9 +519,7 @@ class CrossReferencer:
         return "related"
 
     def _find_explicit_dependencies(
-        self,
-        std_id: str,
-        standards: dict[str, dict[str, Any]]
+        self, std_id: str, standards: dict[str, dict[str, Any]]
     ) -> list[CrossReference]:
         """Find explicitly mentioned dependencies in the standard."""
         references = []
@@ -511,7 +535,7 @@ class CrossReferencer:
                     relationship_type="depends_on",
                     confidence=1.0,
                     description="Explicit dependency",
-                    auto_generated=False
+                    auto_generated=False,
                 )
                 references.append(ref)
                 self.references[std_id].append(ref)
@@ -529,9 +553,7 @@ class CrossReferencer:
                 self.relationship_graph[ref.target_standard].add(ref.source_standard)
 
     def get_references_for_standard(
-        self,
-        std_id: str,
-        max_depth: int = 2
+        self, std_id: str, max_depth: int = 2
     ) -> list[dict[str, Any]]:
         """
         Get cross-references for a specific standard.
@@ -558,7 +580,7 @@ class CrossReferencer:
                     "relationship_type": ref.relationship_type,
                     "confidence": ref.confidence,
                     "description": ref.description,
-                    "depth": depth
+                    "depth": depth,
                 }
                 result.append(ref_data)
 
@@ -570,9 +592,7 @@ class CrossReferencer:
         return result
 
     def find_concept_references(
-        self,
-        concept: str,
-        max_depth: int = 2
+        self, concept: str, max_depth: int = 2
     ) -> list[dict[str, Any]]:
         """
         Find all standards that reference a specific concept.
@@ -589,28 +609,32 @@ class CrossReferencer:
 
         # Direct matches
         for ref in self.concept_index.get(concept_lower, []):
-            result.append({
-                "standard_id": ref.standard_id,
-                "section_id": ref.section_id,
-                "context": ref.context,
-                "frequency": ref.frequency,
-                "importance": ref.importance,
-                "match_type": "direct"
-            })
+            result.append(
+                {
+                    "standard_id": ref.standard_id,
+                    "section_id": ref.section_id,
+                    "context": ref.context,
+                    "frequency": ref.frequency,
+                    "importance": ref.importance,
+                    "match_type": "direct",
+                }
+            )
 
         # Fuzzy matches
         for indexed_concept, refs in self.concept_index.items():
             if concept_lower in indexed_concept or indexed_concept in concept_lower:
                 for ref in refs:
-                    result.append({
-                        "standard_id": ref.standard_id,
-                        "section_id": ref.section_id,
-                        "context": ref.context,
-                        "frequency": ref.frequency,
-                        "importance": ref.importance,
-                        "match_type": "fuzzy",
-                        "matched_concept": indexed_concept
-                    })
+                    result.append(
+                        {
+                            "standard_id": ref.standard_id,
+                            "section_id": ref.section_id,
+                            "context": ref.context,
+                            "frequency": ref.frequency,
+                            "importance": ref.importance,
+                            "match_type": "fuzzy",
+                            "matched_concept": indexed_concept,
+                        }
+                    )
 
         return result
 
@@ -628,12 +652,14 @@ class CrossReferencer:
             nodes.add(std_id)
             for ref in refs:
                 nodes.add(ref.target_standard)
-                edges.append({
-                    "source": ref.source_standard,
-                    "target": ref.target_standard,
-                    "type": ref.relationship_type,
-                    "confidence": ref.confidence
-                })
+                edges.append(
+                    {
+                        "source": ref.source_standard,
+                        "target": ref.target_standard,
+                        "type": ref.relationship_type,
+                        "confidence": ref.confidence,
+                    }
+                )
 
         return {
             "nodes": [{"id": node} for node in nodes],
@@ -641,8 +667,8 @@ class CrossReferencer:
             "stats": {
                 "total_nodes": len(nodes),
                 "total_edges": len(edges),
-                "avg_connections": len(edges) / len(nodes) if nodes else 0
-            }
+                "avg_connections": len(edges) / len(nodes) if nodes else 0,
+            },
         }
 
     def suggest_missing_references(self) -> list[dict[str, Any]]:
@@ -662,7 +688,9 @@ class CrossReferencer:
                 all_standards.add(ref.target_standard)
 
         for std1 in all_standards:
-            existing_targets = {ref.target_standard for ref in self.references.get(std1, [])}
+            existing_targets = {
+                ref.target_standard for ref in self.references.get(std1, [])
+            }
 
             shared_concepts = self._find_shared_concepts(std1)
             for std2, concepts in shared_concepts.items():
@@ -670,12 +698,14 @@ class CrossReferencer:
                     strength = self._calculate_relationship_strength(concepts)
 
                     if strength > 0.5:  # Higher threshold for suggestions
-                        suggestions.append({
-                            "source": std1,
-                            "target": std2,
-                            "confidence": strength,
-                            "reason": f"High concept overlap: {', '.join([c['concept'] for c in concepts[:3]])}"
-                        })
+                        suggestions.append(
+                            {
+                                "source": std1,
+                                "target": std2,
+                                "confidence": strength,
+                                "reason": f"High concept overlap: {', '.join([c['concept'] for c in concepts[:3]])}",
+                            }
+                        )
 
         # Sort by confidence
         suggestions.sort(key=lambda x: x["confidence"], reverse=True)

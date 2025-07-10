@@ -57,13 +57,15 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_health_endpoint(self):
         """Test health endpoint."""
-        with patch('src.core.health.get_health_checker') as mock_checker:
+        with patch("src.core.health.get_health_checker") as mock_checker:
             mock_health = Mock()
-            mock_health.check_health = AsyncMock(return_value={
-                "status": "healthy",
-                "checks": {},
-                "timestamp": "2024-01-01T00:00:00"
-            })
+            mock_health.check_health = AsyncMock(
+                return_value={
+                    "status": "healthy",
+                    "checks": {},
+                    "timestamp": "2024-01-01T00:00:00",
+                }
+            )
             mock_checker.return_value = mock_health
 
             resp = await self.client.request("GET", "/health")
@@ -74,11 +76,8 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_liveness_endpoint(self):
         """Test liveness endpoint."""
-        with patch('src.core.health.liveness_check') as mock_liveness:
-            mock_liveness.return_value = {
-                "alive": True,
-                "status": "healthy"
-            }
+        with patch("src.core.health.liveness_check") as mock_liveness:
+            mock_liveness.return_value = {"alive": True, "status": "healthy"}
 
             resp = await self.client.request("GET", "/health/live")
             assert resp.status == 200
@@ -88,11 +87,8 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_readiness_endpoint(self):
         """Test readiness endpoint."""
-        with patch('src.core.health.readiness_check') as mock_readiness:
-            mock_readiness.return_value = {
-                "ready": True,
-                "status": "healthy"
-            }
+        with patch("src.core.health.readiness_check") as mock_readiness:
+            mock_readiness.return_value = {"ready": True, "status": "healthy"}
 
             resp = await self.client.request("GET", "/health/ready")
             assert resp.status == 200
@@ -102,9 +98,11 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_metrics_endpoint(self):
         """Test metrics endpoint."""
-        with patch('src.http_server.get_performance_monitor') as mock_monitor:
+        with patch("src.http_server.get_performance_monitor") as mock_monitor:
             mock_perf = Mock()
-            mock_perf.get_prometheus_metrics = Mock(return_value="# HELP test\ntest_metric 1.0\n")
+            mock_perf.get_prometheus_metrics = Mock(
+                return_value="# HELP test\ntest_metric 1.0\n"
+            )
             mock_monitor.return_value = mock_perf
 
             resp = await self.client.request("GET", "/metrics")
@@ -116,15 +114,17 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_list_standards_endpoint(self):
         """Test list standards API endpoint."""
-        with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
-            mock_instance.list_standards = AsyncMock(return_value=[
-                {
-                    "id": "test-standard",
-                    "title": "Test Standard",
-                    "category": "testing"
-                }
-            ])
+            mock_instance.list_standards = AsyncMock(
+                return_value=[
+                    {
+                        "id": "test-standard",
+                        "title": "Test Standard",
+                        "category": "testing",
+                    }
+                ]
+            )
             mock_engine.return_value = mock_instance
 
             resp = await self.client.request("GET", "/api/standards")
@@ -137,13 +137,15 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_get_standard_endpoint(self):
         """Test get specific standard endpoint."""
-        with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
-            mock_instance.get_standard = AsyncMock(return_value={
-                "id": "test-standard",
-                "title": "Test Standard",
-                "content": "# Test Standard"
-            })
+            mock_instance.get_standard = AsyncMock(
+                return_value={
+                    "id": "test-standard",
+                    "title": "Test Standard",
+                    "content": "# Test Standard",
+                }
+            )
             mock_engine.return_value = mock_instance
 
             resp = await self.client.request("GET", "/api/standards/test-standard")
@@ -155,7 +157,7 @@ class TestHTTPServer(AioHTTPTestCase):
 
     async def test_get_standard_not_found(self):
         """Test get standard returns 404 for non-existent standard."""
-        with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
             mock_instance.get_standard = AsyncMock(return_value=None)
             mock_engine.return_value = mock_instance
@@ -218,12 +220,12 @@ class TestHTTPServerUnit:
 
     async def test_start_server(self, server):
         """Test server startup."""
-        with patch('aiohttp.web.AppRunner') as mock_runner_class:
+        with patch("aiohttp.web.AppRunner") as mock_runner_class:
             mock_runner = AsyncMock()
             mock_runner.setup = AsyncMock()
             mock_runner_class.return_value = mock_runner
 
-            with patch('aiohttp.web.TCPSite') as mock_site_class:
+            with patch("aiohttp.web.TCPSite") as mock_site_class:
                 mock_site = AsyncMock()
                 mock_site.start = AsyncMock()
                 mock_site_class.return_value = mock_site
@@ -242,12 +244,18 @@ class TestHTTPServerUnit:
         server._add_cors_headers(mock_response)
 
         assert mock_response.headers["Access-Control-Allow-Origin"] == "*"
-        assert mock_response.headers["Access-Control-Allow-Methods"] == "GET, POST, OPTIONS"
-        assert mock_response.headers["Access-Control-Allow-Headers"] == "Content-Type, Authorization"
+        assert (
+            mock_response.headers["Access-Control-Allow-Methods"]
+            == "GET, POST, OPTIONS"
+        )
+        assert (
+            mock_response.headers["Access-Control-Allow-Headers"]
+            == "Content-Type, Authorization"
+        )
 
     async def test_error_handling_in_health(self, server):
         """Test error handling in health endpoint."""
-        with patch('src.core.health.get_health_checker') as mock_checker:
+        with patch("src.core.health.get_health_checker") as mock_checker:
             mock_checker.side_effect = Exception("Health check failed")
 
             request = Mock()
@@ -259,7 +267,7 @@ class TestHTTPServerUnit:
 
     async def test_error_handling_in_metrics(self, server):
         """Test error handling in metrics endpoint."""
-        with patch('src.http_server.get_performance_monitor') as mock_monitor:
+        with patch("src.http_server.get_performance_monitor") as mock_monitor:
             mock_monitor.side_effect = Exception("Metrics failed")
 
             request = Mock()
@@ -270,7 +278,7 @@ class TestHTTPServerUnit:
 
     async def test_standards_api_error_handling(self, server):
         """Test error handling in standards API."""
-        with patch('src.core.standards.engine.StandardsEngine') as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_engine.side_effect = Exception("Engine failed")
 
             request = Mock()

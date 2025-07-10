@@ -55,7 +55,7 @@ class TestTokenCounter:
         assert all(isinstance(c, int) for c in counts)
         assert all(c > 0 for c in counts)
 
-    @patch('tiktoken.get_encoding')
+    @patch("tiktoken.get_encoding")
     def test_tiktoken_fallback(self, mock_encoding):
         """Test fallback when tiktoken fails."""
         mock_encoding.side_effect = Exception("Tiktoken error")
@@ -73,9 +73,7 @@ class TestTokenBudget:
     def test_budget_calculations(self):
         """Test budget property calculations."""
         budget = TokenBudget(
-            total=10000,
-            reserved_for_context=1000,
-            reserved_for_response=2000
+            total=10000, reserved_for_context=1000, reserved_for_response=2000
         )
 
         assert budget.available == 7000
@@ -87,7 +85,7 @@ class TestTokenBudget:
             total=8000,
             reserved_for_context=500,
             reserved_for_response=1500,
-            warning_threshold=0.9
+            warning_threshold=0.9,
         )
 
         assert budget.available == 6000
@@ -108,7 +106,9 @@ class TestCompressionTechniques:
 
     def test_use_abbreviations(self):
         """Test abbreviation replacement."""
-        text = "The application configuration requires authentication and authorization."
+        text = (
+            "The application configuration requires authentication and authorization."
+        )
         compressed = CompressionTechniques.use_abbreviations(text)
 
         assert "app" in compressed
@@ -182,8 +182,8 @@ class TestTokenOptimizer:
     def sample_standard(self):
         """Create sample standard for testing."""
         return {
-            'id': 'test-standard',
-            'content': """# Test Standard
+            "id": "test-standard",
+            "content": """# Test Standard
 
 ## Overview
 This is a test standard for development.
@@ -220,7 +220,7 @@ How to test your implementation.
 ## References
 - Reference 1
 - Reference 2
-"""
+""",
         }
 
     def test_parse_standard_sections(self, optimizer, sample_standard):
@@ -228,21 +228,19 @@ How to test your implementation.
         sections = optimizer._parse_standard_sections(sample_standard)
 
         assert len(sections) > 0
-        assert any(s.id == 'overview' for s in sections)
-        assert any(s.id == 'requirements' for s in sections)
-        assert any(s.id == 'implementation' for s in sections)
+        assert any(s.id == "overview" for s in sections)
+        assert any(s.id == "requirements" for s in sections)
+        assert any(s.id == "implementation" for s in sections)
 
         # Check priorities
-        security_section = next(s for s in sections if s.id == 'security')
+        security_section = next(s for s in sections if s.id == "security")
         assert security_section.priority == 9
 
     def test_format_full(self, optimizer, sample_standard):
         """Test full format generation."""
         budget = TokenBudget(total=10000)
         content, result = optimizer.optimize_standard(
-            sample_standard,
-            format_type=StandardFormat.FULL,
-            budget=budget
+            sample_standard, format_type=StandardFormat.FULL, budget=budget
         )
 
         assert content
@@ -254,9 +252,7 @@ How to test your implementation.
         """Test condensed format generation."""
         budget = TokenBudget(total=2000)
         content, result = optimizer.optimize_standard(
-            sample_standard,
-            format_type=StandardFormat.CONDENSED,
-            budget=budget
+            sample_standard, format_type=StandardFormat.CONDENSED, budget=budget
         )
 
         assert content
@@ -268,9 +264,7 @@ How to test your implementation.
         """Test reference format generation."""
         budget = TokenBudget(total=1000)
         content, result = optimizer.optimize_standard(
-            sample_standard,
-            format_type=StandardFormat.REFERENCE,
-            budget=budget
+            sample_standard, format_type=StandardFormat.REFERENCE, budget=budget
         )
 
         assert content
@@ -282,9 +276,7 @@ How to test your implementation.
         """Test summary format generation."""
         budget = TokenBudget(total=500)
         content, result = optimizer.optimize_standard(
-            sample_standard,
-            format_type=StandardFormat.SUMMARY,
-            budget=budget
+            sample_standard, format_type=StandardFormat.SUMMARY, budget=budget
         )
 
         assert content
@@ -295,13 +287,13 @@ How to test your implementation.
     def test_format_with_required_sections(self, optimizer, sample_standard):
         """Test formatting with required sections."""
         budget = TokenBudget(total=1500)
-        required = ['security', 'testing']
+        required = ["security", "testing"]
 
         content, result = optimizer.optimize_standard(
             sample_standard,
             format_type=StandardFormat.CONDENSED,
             budget=budget,
-            required_sections=required
+            required_sections=required,
         )
 
         assert all(section in result.sections_included for section in required)
@@ -326,27 +318,24 @@ How to test your implementation.
     def test_progressive_load(self, optimizer, sample_standard):
         """Test progressive loading plan."""
         loading_plan = optimizer.progressive_load(
-            sample_standard,
-            initial_sections=['overview'],
-            max_depth=2
+            sample_standard, initial_sections=["overview"], max_depth=2
         )
 
         assert len(loading_plan) > 0
-        assert any('overview' in batch[0][0] for batch in loading_plan if batch)
+        assert any("overview" in batch[0][0] for batch in loading_plan if batch)
 
     def test_estimate_tokens(self, optimizer, sample_standard):
         """Test token estimation for multiple standards."""
         standards = [sample_standard, sample_standard]  # Two copies
 
         estimates = optimizer.estimate_tokens(
-            standards,
-            format_type=StandardFormat.CONDENSED
+            standards, format_type=StandardFormat.CONDENSED
         )
 
-        assert estimates['total_original'] > 0
-        assert estimates['total_compressed'] < estimates['total_original']
-        assert len(estimates['standards']) == 2
-        assert estimates['overall_compression'] < 1.0
+        assert estimates["total_original"] > 0
+        assert estimates["total_compressed"] < estimates["total_original"]
+        assert len(estimates["standards"]) == 2
+        assert estimates["overall_compression"] < 1.0
 
     def test_caching(self, optimizer, sample_standard):
         """Test result caching."""
@@ -355,18 +344,14 @@ How to test your implementation.
         # First call - should cache
         start_time = time.time()
         content1, result1 = optimizer.optimize_standard(
-            sample_standard,
-            format_type=StandardFormat.CONDENSED,
-            budget=budget
+            sample_standard, format_type=StandardFormat.CONDENSED, budget=budget
         )
         time.time() - start_time
 
         # Second call - should use cache
         start_time = time.time()
         content2, result2 = optimizer.optimize_standard(
-            sample_standard,
-            format_type=StandardFormat.CONDENSED,
-            budget=budget
+            sample_standard, format_type=StandardFormat.CONDENSED, budget=budget
         )
         second_duration = time.time() - start_time
 
@@ -380,14 +365,20 @@ How to test your implementation.
         """Test compression statistics."""
         # Generate some cached results
         budget = TokenBudget(total=5000)
-        for format_type in [StandardFormat.FULL, StandardFormat.CONDENSED, StandardFormat.REFERENCE]:
-            optimizer.optimize_standard(sample_standard, format_type=format_type, budget=budget)
+        for format_type in [
+            StandardFormat.FULL,
+            StandardFormat.CONDENSED,
+            StandardFormat.REFERENCE,
+        ]:
+            optimizer.optimize_standard(
+                sample_standard, format_type=format_type, budget=budget
+            )
 
         stats = optimizer.get_compression_stats()
 
-        assert stats['cache_size'] >= 3
-        assert 'average_compression_ratio' in stats
-        assert 'format_usage' in stats
+        assert stats["cache_size"] >= 3
+        assert "average_compression_ratio" in stats
+        assert "format_usage" in stats
 
 
 class TestDynamicLoader:
@@ -402,43 +393,43 @@ class TestDynamicLoader:
     def test_load_section(self, loader):
         """Test section loading."""
         budget = TokenBudget(total=5000)
-        content, tokens = loader.load_section('test-standard', 'overview', budget)
+        content, tokens = loader.load_section("test-standard", "overview", budget)
 
         assert content
         assert tokens > 0
-        assert 'overview' in loader._loaded_sections['test-standard']
+        assert "overview" in loader._loaded_sections["test-standard"]
 
     def test_loading_suggestions(self, loader):
         """Test loading suggestions based on context."""
         # Load initial section
-        loader._loaded_sections['test-standard'].add('overview')
+        loader._loaded_sections["test-standard"].add("overview")
 
         # Get suggestions based on context
         context = {
-            'recent_queries': ['How to implement security?', 'Show me examples'],
-            'user_expertise': 'beginner'
+            "recent_queries": ["How to implement security?", "Show me examples"],
+            "user_expertise": "beginner",
         }
 
-        suggestions = loader.get_loading_suggestions('test-standard', context)
+        suggestions = loader.get_loading_suggestions("test-standard", context)
 
-        assert 'security' in suggestions
-        assert 'examples' in suggestions
+        assert "security" in suggestions
+        assert "examples" in suggestions
 
     def test_loading_stats(self, loader):
         """Test loading statistics."""
         budget = TokenBudget(total=5000)
 
         # Load some sections
-        loader.load_section('test-standard', 'overview', budget)
-        loader.load_section('test-standard', 'requirements', budget)
+        loader.load_section("test-standard", "overview", budget)
+        loader.load_section("test-standard", "requirements", budget)
 
-        stats = loader.get_loading_stats('test-standard')
+        stats = loader.get_loading_stats("test-standard")
 
-        assert stats['total_sections'] == 2
-        assert stats['total_tokens_used'] > 0
-        assert stats['loading_events'] == 2
-        assert 'overview' in stats['sections_loaded']
-        assert 'requirements' in stats['sections_loaded']
+        assert stats["total_sections"] == 2
+        assert stats["total_tokens_used"] > 0
+        assert stats["loading_events"] == 2
+        assert "overview" in stats["sections_loaded"]
+        assert "requirements" in stats["sections_loaded"]
 
 
 class TestUtilityFunctions:
@@ -447,7 +438,7 @@ class TestUtilityFunctions:
     def test_create_token_optimizer(self):
         """Test optimizer creation helper."""
         # With string model type
-        optimizer1 = create_token_optimizer('gpt-4', default_budget=8000)
+        optimizer1 = create_token_optimizer("gpt-4", default_budget=8000)
         assert optimizer1.model_type == ModelType.GPT4
         assert optimizer1.default_budget.total == 8000
 
@@ -475,18 +466,26 @@ implementation details, examples, and various other aspects that make it quite l
 Here we have extensive implementation details with code examples and explanations.
 """
 
-        formats = [StandardFormat.FULL, StandardFormat.CONDENSED, StandardFormat.SUMMARY]
+        formats = [
+            StandardFormat.FULL,
+            StandardFormat.CONDENSED,
+            StandardFormat.SUMMARY,
+        ]
         savings = estimate_token_savings(text, optimizer, formats)
 
-        assert savings['original_tokens'] > 0
-        assert StandardFormat.FULL.value in savings['format_savings']
-        assert StandardFormat.CONDENSED.value in savings['format_savings']
-        assert StandardFormat.SUMMARY.value in savings['format_savings']
+        assert savings["original_tokens"] > 0
+        assert StandardFormat.FULL.value in savings["format_savings"]
+        assert StandardFormat.CONDENSED.value in savings["format_savings"]
+        assert StandardFormat.SUMMARY.value in savings["format_savings"]
 
         # Verify compression increases with each format
-        full_tokens = savings['format_savings'][StandardFormat.FULL.value]['tokens']
-        condensed_tokens = savings['format_savings'][StandardFormat.CONDENSED.value]['tokens']
-        summary_tokens = savings['format_savings'][StandardFormat.SUMMARY.value]['tokens']
+        full_tokens = savings["format_savings"][StandardFormat.FULL.value]["tokens"]
+        condensed_tokens = savings["format_savings"][StandardFormat.CONDENSED.value][
+            "tokens"
+        ]
+        summary_tokens = savings["format_savings"][StandardFormat.SUMMARY.value][
+            "tokens"
+        ]
 
         assert full_tokens > condensed_tokens > summary_tokens
 
@@ -501,7 +500,8 @@ class TestIntegrationScenarios:
 
         # Generate multiple sections
         for i in range(10):
-            content = f"""## Section {i}
+            content = (
+                f"""## Section {i}
 
 This is section {i} with detailed information about various aspects.
 It contains multiple paragraphs of text to simulate a real standard document.
@@ -518,14 +518,13 @@ def example_{i}():
 ```
 
 Best practices for this section include following all guidelines carefully.
-""" * 3  # Repeat to make it larger
+"""
+                * 3
+            )  # Repeat to make it larger
 
             sections.append(content)
 
-        return {
-            'id': 'large-test-standard',
-            'content': '\n\n'.join(sections)
-        }
+        return {"id": "large-test-standard", "content": "\n\n".join(sections)}
 
     def test_token_budget_warning(self, large_standard):
         """Test token budget warning system."""
@@ -533,9 +532,7 @@ Best practices for this section include following all guidelines carefully.
         small_budget = TokenBudget(total=1000, warning_threshold=0.8)
 
         content, result = optimizer.optimize_standard(
-            large_standard,
-            format_type=StandardFormat.CONDENSED,
-            budget=small_budget
+            large_standard, format_type=StandardFormat.CONDENSED, budget=small_budget
         )
 
         # Should have excluded sections
@@ -545,7 +542,7 @@ Best practices for this section include following all guidelines carefully.
         # Check if we're near warning threshold
         usage_ratio = result.compressed_tokens / small_budget.available
         if usage_ratio > 0.8:
-            assert any('token budget' in w.lower() for w in result.warnings)
+            assert any("token budget" in w.lower() for w in result.warnings)
 
     def test_context_aware_optimization(self, large_standard):
         """Test context-aware format selection."""
@@ -554,33 +551,33 @@ Best practices for this section include following all guidelines carefully.
 
         # Beginner context - should include examples
         beginner_context = {
-            'user_expertise': 'beginner',
-            'focus_areas': ['examples', 'implementation'],
-            'query_type': 'detailed_explanation'
+            "user_expertise": "beginner",
+            "focus_areas": ["examples", "implementation"],
+            "query_type": "detailed_explanation",
         }
 
         content, result = optimizer.optimize_standard(
             large_standard,
             format_type=StandardFormat.CUSTOM,
             budget=budget,
-            context=beginner_context
+            context=beginner_context,
         )
 
         # Should include example sections
-        assert any('example' in section.lower() for section in result.sections_included)
+        assert any("example" in section.lower() for section in result.sections_included)
 
         # Expert context - should focus on advanced topics
         expert_context = {
-            'user_expertise': 'expert',
-            'focus_areas': ['performance', 'security'],
-            'query_type': 'quick_lookup'
+            "user_expertise": "expert",
+            "focus_areas": ["performance", "security"],
+            "query_type": "quick_lookup",
         }
 
         expert_content, expert_result = optimizer.optimize_standard(
             large_standard,
             format_type=StandardFormat.CUSTOM,
             budget=budget,
-            context=expert_context
+            context=expert_context,
         )
 
         # Should use reference format for expert quick lookup
@@ -594,13 +591,11 @@ Best practices for this section include following all guidelines carefully.
 
         # Initial load
         budget = TokenBudget(total=2000)
-        initial_sections = ['overview', 'requirements']
+        initial_sections = ["overview", "requirements"]
 
         # Get progressive loading plan
         loading_plan = optimizer.progressive_load(
-            large_standard,
-            initial_sections=initial_sections,
-            max_depth=3
+            large_standard, initial_sections=initial_sections, max_depth=3
         )
 
         # Simulate loading sections progressively
@@ -612,9 +607,7 @@ Best practices for this section include following all guidelines carefully.
             for section_id, estimated_tokens in batch:
                 if total_tokens_used + estimated_tokens <= budget.available:
                     content, actual_tokens = loader.load_section(
-                        'large-test-standard',
-                        section_id,
-                        budget
+                        "large-test-standard", section_id, budget
                     )
                     loaded_content.append(content)
                     total_tokens_used += actual_tokens
@@ -626,6 +619,6 @@ Best practices for this section include following all guidelines carefully.
                 break  # Can't load any more sections
 
         # Verify progressive loading worked
-        stats = loader.get_loading_stats('large-test-standard')
-        assert stats['total_sections'] > len(initial_sections)
-        assert stats['total_tokens_used'] <= budget.available
+        stats = loader.get_loading_stats("large-test-standard")
+        assert stats["total_sections"] > len(initial_sections)
+        assert stats["total_tokens_used"] <= budget.available

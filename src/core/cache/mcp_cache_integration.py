@@ -21,7 +21,7 @@ class MCPCacheMiddleware:
         self,
         cache: MCPCache | None = None,
         redis_config: CacheConfig | None = None,
-        custom_tool_configs: dict[str, ToolCacheConfig] | None = None
+        custom_tool_configs: dict[str, ToolCacheConfig] | None = None,
     ):
         """Initialize cache middleware.
 
@@ -35,8 +35,7 @@ class MCPCacheMiddleware:
         else:
             redis_cache = RedisCache(redis_config) if redis_config else RedisCache()
             self.cache = MCPCache(
-                redis_cache=redis_cache,
-                custom_configs=custom_tool_configs
+                redis_cache=redis_cache, custom_configs=custom_tool_configs
             )
 
     def wrap_tool_executor(self, executor_func):
@@ -48,8 +47,11 @@ class MCPCacheMiddleware:
         Returns:
             Wrapped function with caching
         """
+
         @wraps(executor_func)
-        async def wrapped_executor(self_ref, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        async def wrapped_executor(
+            self_ref, tool_name: str, arguments: dict[str, Any]
+        ) -> dict[str, Any]:
             # Try to get from cache first
             cached_response = await self.cache.get(tool_name, arguments)
             if cached_response is not None:
@@ -89,19 +91,19 @@ class MCPCacheMiddleware:
                 {},  # List all templates
                 {"domain": "api"},
                 {"domain": "security"},
-                {"domain": "frontend"}
+                {"domain": "frontend"},
             ],
             "list_available_standards": [
                 {},  # List all standards
                 {"limit": 50},
                 {"category": "security", "limit": 100},
-                {"category": "api", "limit": 100}
+                {"category": "api", "limit": 100},
             ],
             "get_standard_details": [
                 {"standard_id": "secure-api-design"},
                 {"standard_id": "react-best-practices"},
-                {"standard_id": "python-coding-standards"}
-            ]
+                {"standard_id": "python-coding-standards"},
+            ],
         }
 
         # Create executor function
@@ -131,10 +133,10 @@ class MCPCacheMiddleware:
                     "include_redis": {
                         "type": "boolean",
                         "description": "Include Redis-level metrics",
-                        "default": True
+                        "default": True,
                     }
-                }
-            }
+                },
+            },
         }
 
     async def handle_cache_stats(self, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -165,15 +167,15 @@ class MCPCacheMiddleware:
                     "properties": {
                         "tool_name": {
                             "type": "string",
-                            "description": "Name of the tool to invalidate cache for"
+                            "description": "Name of the tool to invalidate cache for",
                         },
                         "arguments": {
                             "type": "object",
-                            "description": "Specific arguments to invalidate (omit to clear all)"
-                        }
+                            "description": "Specific arguments to invalidate (omit to clear all)",
+                        },
                     },
-                    "required": ["tool_name"]
-                }
+                    "required": ["tool_name"],
+                },
             },
             {
                 "name": "cache_warm",
@@ -184,10 +186,10 @@ class MCPCacheMiddleware:
                         "tools": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "List of tools to warm (omit for all configured)"
+                            "description": "List of tools to warm (omit for all configured)",
                         }
-                    }
-                }
+                    },
+                },
             },
             {
                 "name": "cache_clear_all",
@@ -198,10 +200,10 @@ class MCPCacheMiddleware:
                         "confirm": {
                             "type": "boolean",
                             "description": "Confirm clearing all caches",
-                            "default": False
+                            "default": False,
                         }
-                    }
-                }
+                    },
+                },
             },
             {
                 "name": "cache_configure",
@@ -211,72 +213,66 @@ class MCPCacheMiddleware:
                     "properties": {
                         "tool_name": {
                             "type": "string",
-                            "description": "Name of the tool to configure"
+                            "description": "Name of the tool to configure",
                         },
                         "strategy": {
                             "type": "string",
-                            "enum": ["no_cache", "short_ttl", "medium_ttl", "long_ttl", "permanent"],
-                            "description": "Caching strategy"
+                            "enum": [
+                                "no_cache",
+                                "short_ttl",
+                                "medium_ttl",
+                                "long_ttl",
+                                "permanent",
+                            ],
+                            "description": "Caching strategy",
                         },
                         "ttl_seconds": {
                             "type": "integer",
-                            "description": "Custom TTL in seconds"
-                        }
+                            "description": "Custom TTL in seconds",
+                        },
                     },
-                    "required": ["tool_name"]
-                }
-            }
+                    "required": ["tool_name"],
+                },
+            },
         ]
 
     async def handle_cache_management(
-        self,
-        tool_name: str,
-        arguments: dict[str, Any],
-        mcp_server=None
+        self, tool_name: str, arguments: dict[str, Any], mcp_server=None
     ) -> dict[str, Any]:
         """Handle cache management tool calls."""
 
         if tool_name == "cache_invalidate":
             success = await self.cache.invalidate(
-                arguments["tool_name"],
-                arguments.get("arguments")
+                arguments["tool_name"], arguments.get("arguments")
             )
             return {
                 "success": success,
                 "tool": arguments["tool_name"],
-                "message": "Cache invalidated" if success else "Invalidation failed"
+                "message": "Cache invalidated" if success else "Invalidation failed",
             }
 
         elif tool_name == "cache_warm":
             if mcp_server:
+
                 async def executor(tool: str, args: dict[str, Any]) -> Any:
                     return await mcp_server._execute_tool(tool, args)
 
-                results = await self.cache.warm_cache(
-                    executor,
-                    arguments.get("tools")
-                )
-                return {
-                    "success": True,
-                    "warmed_counts": results
-                }
+                results = await self.cache.warm_cache(executor, arguments.get("tools"))
+                return {"success": True, "warmed_counts": results}
             else:
                 return {
                     "success": False,
-                    "error": "MCP server instance required for warming"
+                    "error": "MCP server instance required for warming",
                 }
 
         elif tool_name == "cache_clear_all":
             if arguments.get("confirm", False):
                 count = await self.cache.clear_all()
-                return {
-                    "success": True,
-                    "cleared_count": count
-                }
+                return {"success": True, "cleared_count": count}
             else:
                 return {
                     "success": False,
-                    "error": "Confirmation required to clear all caches"
+                    "error": "Confirmation required to clear all caches",
                 }
 
         elif tool_name == "cache_configure":
@@ -297,22 +293,25 @@ class MCPCacheMiddleware:
                     "success": True,
                     "tool": tool,
                     "strategy": config.strategy.value,
-                    "ttl_seconds": config.ttl_seconds or self.cache.DEFAULT_TTLS.get(config.strategy)
+                    "ttl_seconds": config.ttl_seconds
+                    or self.cache.DEFAULT_TTLS.get(config.strategy),
                 }
             else:
                 return {
                     "success": False,
-                    "error": f"Tool {tool} not found in cache configuration"
+                    "error": f"Tool {tool} not found in cache configuration",
                 }
 
         else:
             return {
                 "success": False,
-                "error": f"Unknown cache management tool: {tool_name}"
+                "error": f"Unknown cache management tool: {tool_name}",
             }
 
 
-def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | None = None):
+def integrate_cache_with_mcp_server(
+    mcp_server, cache_config: dict[str, Any] | None = None
+):
     """Integrate caching with an MCP server instance.
 
     Args:
@@ -342,20 +341,21 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | N
                     strategy=strategy,
                     ttl_seconds=tool_cfg.get("ttl_seconds"),
                     compress_threshold=tool_cfg.get("compress_threshold", 1024),
-                    warm_on_startup=tool_cfg.get("warm_on_startup", False)
+                    warm_on_startup=tool_cfg.get("warm_on_startup", False),
                 )
 
     # Create middleware
     middleware = MCPCacheMiddleware(
-        redis_config=redis_config,
-        custom_tool_configs=custom_configs
+        redis_config=redis_config, custom_tool_configs=custom_configs
     )
 
     # Store original executor
     original_executor = mcp_server._execute_tool
 
     # Create a wrapper that matches the expected signature
-    async def executor_adapter(self_ref, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def executor_adapter(
+        self_ref, tool_name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         # Call the original executor as a method (self is already bound)
         return await original_executor(tool_name, arguments)
 
@@ -363,14 +363,16 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | N
     wrapped_executor = middleware.wrap_tool_executor(executor_adapter)
 
     # Create the final cached executor
-    async def cached_executor(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def cached_executor(
+        tool_name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         return await wrapped_executor(mcp_server, tool_name, arguments)
 
     # Replace executor
     mcp_server._execute_tool = cached_executor
 
     # Add cache management tools to the tools list
-    if hasattr(mcp_server.server, '_tools'):
+    if hasattr(mcp_server.server, "_tools"):
         # Add cache stats tool
         mcp_server.server._tools.append(middleware.get_cache_stats_tool())
 
@@ -389,7 +391,12 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | N
         # Handle cache-specific tools
         if name == "get_cache_stats":
             return await middleware.handle_cache_stats(arguments)
-        elif name in ["cache_invalidate", "cache_warm", "cache_clear_all", "cache_configure"]:
+        elif name in [
+            "cache_invalidate",
+            "cache_warm",
+            "cache_clear_all",
+            "cache_configure",
+        ]:
             return await middleware.handle_cache_management(name, arguments, mcp_server)
         else:
             # Delegate to original handler
@@ -398,6 +405,7 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | N
     # Warm cache if configured
     if cache_config and cache_config.get("warm_on_startup", False):
         import asyncio
+
         asyncio.create_task(middleware.warm_standard_caches(mcp_server))
 
     logger.info("Cache integration completed successfully")

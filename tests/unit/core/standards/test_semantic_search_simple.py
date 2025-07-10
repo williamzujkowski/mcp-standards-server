@@ -28,7 +28,7 @@ class TestSemanticSearchBasic:
 
     def test_mock_sentence_transformer_basic(self):
         """Test that MockSentenceTransformer works correctly."""
-        model = MockSentenceTransformer('all-MiniLM-L6-v2')
+        model = MockSentenceTransformer("all-MiniLM-L6-v2")
 
         # Test single text encoding
         text = "test semantic search"
@@ -76,7 +76,9 @@ class TestSemanticSearchBasic:
         assert "test" in tokens
 
         # Test sentence tokenization
-        sentences = MockNLTKComponents.sent_tokenize("First sentence. Second sentence! Third sentence?")
+        sentences = MockNLTKComponents.sent_tokenize(
+            "First sentence. Second sentence! Third sentence?"
+        )
         assert len(sentences) == 3
         assert "First sentence" in sentences
 
@@ -86,7 +88,7 @@ class TestSemanticSearchBasic:
         assert stemmer.stem("testing") == "test"
 
         # Test stopwords
-        stopwords = MockStopwords.words('english')
+        stopwords = MockStopwords.words("english")
         assert "the" in stopwords
         assert "and" in stopwords
         assert "programming" not in stopwords
@@ -155,9 +157,9 @@ class TestSemanticSearchBasic:
             assert isinstance(doc_id, str)
             assert isinstance(content, str)
             assert isinstance(metadata, dict)
-            assert 'framework' in metadata
-            assert 'category' in metadata
-            assert 'language' in metadata
+            assert "framework" in metadata
+            assert "category" in metadata
+            assert "language" in metadata
 
         # Generate test queries
         queries = TestDataGenerator.generate_test_queries()
@@ -165,24 +167,27 @@ class TestSemanticSearchBasic:
         assert len(queries) > 0
 
         for query in queries:
-            assert 'query' in query
-            assert 'min_results' in query
-            assert isinstance(query['query'], str)
+            assert "query" in query
+            assert "min_results" in query
+            assert isinstance(query["query"], str)
 
 
 class TestSemanticSearchWithMocks:
     """Test semantic search with full mocking setup."""
 
-    @patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer)
-    @patch('redis.Redis', MockRedisClient)
-    @patch('nltk.stem.PorterStemmer', MockPorterStemmer)
-    @patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize)
-    @patch('nltk.corpus.stopwords.words', MockStopwords.words)
-    @patch('fuzzywuzzy.fuzz', MockFuzz)
-    @patch('fuzzywuzzy.process', MockProcess)
-    @patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity)
-    @patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors)
-    @patch('nltk.download')  # Mock NLTK download
+    @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+    @patch("redis.Redis", MockRedisClient)
+    @patch("nltk.stem.PorterStemmer", MockPorterStemmer)
+    @patch("nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize)
+    @patch("nltk.corpus.stopwords.words", MockStopwords.words)
+    @patch("fuzzywuzzy.fuzz", MockFuzz)
+    @patch("fuzzywuzzy.process", MockProcess)
+    @patch(
+        "sklearn.metrics.pairwise.cosine_similarity",
+        MockCosineSimilarity.cosine_similarity,
+    )
+    @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
+    @patch("nltk.download")  # Mock NLTK download
     def test_semantic_search_creation(self, mock_download):
         """Test that semantic search can be created with mocks."""
         from src.core.standards.semantic_search import create_search_engine
@@ -197,16 +202,19 @@ class TestSemanticSearchWithMocks:
 
         engine.close()
 
-    @patch('sentence_transformers.SentenceTransformer', MockSentenceTransformer)
-    @patch('redis.Redis', MockRedisClient)
-    @patch('nltk.stem.PorterStemmer', MockPorterStemmer)
-    @patch('nltk.tokenize.word_tokenize', MockNLTKComponents.word_tokenize)
-    @patch('nltk.corpus.stopwords.words', MockStopwords.words)
-    @patch('fuzzywuzzy.fuzz', MockFuzz)
-    @patch('fuzzywuzzy.process', MockProcess)
-    @patch('sklearn.metrics.pairwise.cosine_similarity', MockCosineSimilarity.cosine_similarity)
-    @patch('sklearn.neighbors.NearestNeighbors', MockNearestNeighbors)
-    @patch('nltk.download')  # Mock NLTK download
+    @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+    @patch("redis.Redis", MockRedisClient)
+    @patch("nltk.stem.PorterStemmer", MockPorterStemmer)
+    @patch("nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize)
+    @patch("nltk.corpus.stopwords.words", MockStopwords.words)
+    @patch("fuzzywuzzy.fuzz", MockFuzz)
+    @patch("fuzzywuzzy.process", MockProcess)
+    @patch(
+        "sklearn.metrics.pairwise.cosine_similarity",
+        MockCosineSimilarity.cosine_similarity,
+    )
+    @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
+    @patch("nltk.download")  # Mock NLTK download
     def test_semantic_search_indexing(self, mock_download):
         """Test that semantic search can index documents."""
         from src.core.standards.semantic_search import create_search_engine
@@ -218,7 +226,7 @@ class TestSemanticSearchWithMocks:
             engine.index_document(
                 "test-001",
                 "This is a test document for semantic search",
-                {"category": "test", "type": "example"}
+                {"category": "test", "type": "example"},
             )
 
             # Test search
@@ -235,18 +243,18 @@ class TestSemanticSearchWithMocks:
 def test_integration_readiness():
     """Test that all mock components are ready for integration."""
     # Test that all mock classes can be instantiated
-    sentence_transformer = MockSentenceTransformer('test-model')
+    sentence_transformer = MockSentenceTransformer("test-model")
     redis_client = MockRedisClient()
     stemmer = MockPorterStemmer()
     nn_model = MockNearestNeighbors()
 
     # Test that they have the required methods
-    assert hasattr(sentence_transformer, 'encode')
-    assert hasattr(redis_client, 'get')
-    assert hasattr(redis_client, 'set')
-    assert hasattr(stemmer, 'stem')
-    assert hasattr(nn_model, 'fit')
-    assert hasattr(nn_model, 'kneighbors')
+    assert hasattr(sentence_transformer, "encode")
+    assert hasattr(redis_client, "get")
+    assert hasattr(redis_client, "set")
+    assert hasattr(stemmer, "stem")
+    assert hasattr(nn_model, "fit")
+    assert hasattr(nn_model, "kneighbors")
 
     # Test basic functionality
     embedding = sentence_transformer.encode("test")

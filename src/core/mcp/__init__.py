@@ -3,4 +3,4 @@
 from .handlers import StandardsHandler
 from .server import MCPServer
 
-__all__ = ['MCPServer', 'StandardsHandler']
+__all__ = ["MCPServer", "StandardsHandler"]

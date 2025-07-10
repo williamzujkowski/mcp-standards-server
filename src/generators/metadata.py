@@ -51,23 +51,37 @@ class StandardMetadata:
             self.updated_date = datetime.now()
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'StandardMetadata':
+    def from_dict(cls, data: dict[str, Any]) -> "StandardMetadata":
         """Create StandardMetadata from dictionary."""
         # Handle datetime fields
-        if 'created_date' in data and isinstance(data['created_date'], str):
-            data['created_date'] = datetime.fromisoformat(data['created_date'])
-        if 'updated_date' in data and isinstance(data['updated_date'], str):
-            data['updated_date'] = datetime.fromisoformat(data['updated_date'])
-        if 'approval_date' in data and isinstance(data['approval_date'], str):
-            data['approval_date'] = datetime.fromisoformat(data['approval_date'])
+        if "created_date" in data and isinstance(data["created_date"], str):
+            data["created_date"] = datetime.fromisoformat(data["created_date"])
+        if "updated_date" in data and isinstance(data["updated_date"], str):
+            data["updated_date"] = datetime.fromisoformat(data["updated_date"])
+        if "approval_date" in data and isinstance(data["approval_date"], str):
+            data["approval_date"] = datetime.fromisoformat(data["approval_date"])
 
         # Extract known fields
         known_fields = {
-            'title', 'version', 'domain', 'type', 'description', 'author',
-            'created_date', 'updated_date', 'tags', 'nist_controls',
-            'compliance_frameworks', 'risk_level', 'maturity_level',
-            'implementation_guides', 'code_examples', 'dependencies',
-            'review_status', 'reviewers', 'approval_date'
+            "title",
+            "version",
+            "domain",
+            "type",
+            "description",
+            "author",
+            "created_date",
+            "updated_date",
+            "tags",
+            "nist_controls",
+            "compliance_frameworks",
+            "risk_level",
+            "maturity_level",
+            "implementation_guides",
+            "code_examples",
+            "dependencies",
+            "review_status",
+            "reviewers",
+            "approval_date",
         }
 
         standard_data = {k: v for k, v in data.items() if k in known_fields}
@@ -78,25 +92,31 @@ class StandardMetadata:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = {
-            'title': self.title,
-            'version': self.version,
-            'domain': self.domain,
-            'type': self.type,
-            'description': self.description,
-            'author': self.author,
-            'created_date': self.created_date.isoformat() if self.created_date else None,
-            'updated_date': self.updated_date.isoformat() if self.updated_date else None,
-            'tags': self.tags,
-            'nist_controls': self.nist_controls,
-            'compliance_frameworks': self.compliance_frameworks,
-            'risk_level': self.risk_level,
-            'maturity_level': self.maturity_level,
-            'implementation_guides': self.implementation_guides,
-            'code_examples': self.code_examples,
-            'dependencies': self.dependencies,
-            'review_status': self.review_status,
-            'reviewers': self.reviewers,
-            'approval_date': self.approval_date.isoformat() if self.approval_date else None,
+            "title": self.title,
+            "version": self.version,
+            "domain": self.domain,
+            "type": self.type,
+            "description": self.description,
+            "author": self.author,
+            "created_date": (
+                self.created_date.isoformat() if self.created_date else None
+            ),
+            "updated_date": (
+                self.updated_date.isoformat() if self.updated_date else None
+            ),
+            "tags": self.tags,
+            "nist_controls": self.nist_controls,
+            "compliance_frameworks": self.compliance_frameworks,
+            "risk_level": self.risk_level,
+            "maturity_level": self.maturity_level,
+            "implementation_guides": self.implementation_guides,
+            "code_examples": self.code_examples,
+            "dependencies": self.dependencies,
+            "review_status": self.review_status,
+            "reviewers": self.reviewers,
+            "approval_date": (
+                self.approval_date.isoformat() if self.approval_date else None
+            ),
         }
 
         # Add custom fields
@@ -123,14 +143,24 @@ class StandardMetadata:
         if self.version and not self._is_valid_version(self.version):
             errors.append("Version must follow semantic versioning (e.g., 1.0.0)")
 
-        if self.risk_level not in ['low', 'moderate', 'high']:
+        if self.risk_level not in ["low", "moderate", "high"]:
             errors.append("Risk level must be 'low', 'moderate', or 'high'")
 
-        if self.maturity_level not in ['planning', 'developing', 'testing', 'production', 'deprecated']:
-            errors.append("Maturity level must be one of: planning, developing, testing, production, deprecated")
+        if self.maturity_level not in [
+            "planning",
+            "developing",
+            "testing",
+            "production",
+            "deprecated",
+        ]:
+            errors.append(
+                "Maturity level must be one of: planning, developing, testing, production, deprecated"
+            )
 
-        if self.review_status not in ['draft', 'review', 'approved', 'rejected']:
-            errors.append("Review status must be one of: draft, review, approved, rejected")
+        if self.review_status not in ["draft", "review", "approved", "rejected"]:
+            errors.append(
+                "Review status must be one of: draft, review, approved, rejected"
+            )
 
         # Warning validation
         if not self.description:
@@ -140,15 +170,11 @@ class StandardMetadata:
         if not self.nist_controls:
             warnings.append("NIST controls mapping is recommended")
 
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "warnings": warnings
-        }
+        return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
 
     def _is_valid_version(self, version: str) -> bool:
         """Check if version follows semantic versioning."""
-        parts = version.split('.')
+        parts = version.split(".")
         if len(parts) != 3:
             return False
 
@@ -168,7 +194,10 @@ class MetadataSchema:
             "title": {"type": "string", "minLength": 1},
             "version": {"type": "string", "pattern": r"^\d+\.\d+\.\d+$"},
             "domain": {"type": "string", "minLength": 1},
-            "type": {"type": "string", "enum": ["technical", "compliance", "process", "architecture"]},
+            "type": {
+                "type": "string",
+                "enum": ["technical", "compliance", "process", "architecture"],
+            },
             "description": {"type": "string"},
             "author": {"type": "string"},
             "created_date": {"type": "string", "format": "date-time"},
@@ -177,16 +206,28 @@ class MetadataSchema:
             "nist_controls": {"type": "array", "items": {"type": "string"}},
             "compliance_frameworks": {"type": "array", "items": {"type": "string"}},
             "risk_level": {"type": "string", "enum": ["low", "moderate", "high"]},
-            "maturity_level": {"type": "string", "enum": ["planning", "developing", "testing", "production", "deprecated"]},
+            "maturity_level": {
+                "type": "string",
+                "enum": [
+                    "planning",
+                    "developing",
+                    "testing",
+                    "production",
+                    "deprecated",
+                ],
+            },
             "implementation_guides": {"type": "array", "items": {"type": "string"}},
             "code_examples": {"type": "array", "items": {"type": "string"}},
             "dependencies": {"type": "array", "items": {"type": "string"}},
-            "review_status": {"type": "string", "enum": ["draft", "review", "approved", "rejected"]},
+            "review_status": {
+                "type": "string",
+                "enum": ["draft", "review", "approved", "rejected"],
+            },
             "reviewers": {"type": "array", "items": {"type": "string"}},
-            "approval_date": {"type": "string", "format": "date-time"}
+            "approval_date": {"type": "string", "format": "date-time"},
         },
         "required": ["title", "version", "domain", "type"],
-        "additionalProperties": True
+        "additionalProperties": True,
     }
 
     TECHNICAL_SCHEMA = {
@@ -198,8 +239,8 @@ class MetadataSchema:
             "tools": {"type": "array", "items": {"type": "string"}},
             "platforms": {"type": "array", "items": {"type": "string"}},
             "performance_requirements": {"type": "object"},
-            "security_requirements": {"type": "object"}
-        }
+            "security_requirements": {"type": "object"},
+        },
     }
 
     COMPLIANCE_SCHEMA = {
@@ -209,8 +250,8 @@ class MetadataSchema:
             "regulatory_requirements": {"type": "array", "items": {"type": "string"}},
             "audit_requirements": {"type": "object"},
             "evidence_requirements": {"type": "array", "items": {"type": "string"}},
-            "compliance_metrics": {"type": "object"}
-        }
+            "compliance_metrics": {"type": "object"},
+        },
     }
 
     PROCESS_SCHEMA = {
@@ -220,8 +261,8 @@ class MetadataSchema:
             "process_steps": {"type": "array", "items": {"type": "object"}},
             "roles_responsibilities": {"type": "object"},
             "decision_points": {"type": "array", "items": {"type": "object"}},
-            "success_criteria": {"type": "array", "items": {"type": "string"}}
-        }
+            "success_criteria": {"type": "array", "items": {"type": "string"}},
+        },
     }
 
     ARCHITECTURE_SCHEMA = {
@@ -232,8 +273,8 @@ class MetadataSchema:
             "design_principles": {"type": "array", "items": {"type": "string"}},
             "technology_stack": {"type": "object"},
             "scalability_requirements": {"type": "object"},
-            "availability_requirements": {"type": "object"}
-        }
+            "availability_requirements": {"type": "object"},
+        },
     }
 
     @classmethod
@@ -243,16 +284,19 @@ class MetadataSchema:
             "technical": cls.TECHNICAL_SCHEMA,
             "compliance": cls.COMPLIANCE_SCHEMA,
             "process": cls.PROCESS_SCHEMA,
-            "architecture": cls.ARCHITECTURE_SCHEMA
+            "architecture": cls.ARCHITECTURE_SCHEMA,
         }
 
         return schema_map.get(standard_type, cls.BASE_SCHEMA)
 
     @classmethod
-    def validate_against_schema(cls, data: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
+    def validate_against_schema(
+        cls, data: dict[str, Any], schema: dict[str, Any]
+    ) -> dict[str, Any]:
         """Validate data against schema."""
         try:
             import jsonschema
+
             jsonschema.validate(data, schema)
             return {"valid": True, "errors": []}
         except ImportError:
@@ -262,7 +306,9 @@ class MetadataSchema:
             return {"valid": False, "errors": [str(e)]}
 
     @classmethod
-    def _basic_validation(cls, data: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
+    def _basic_validation(
+        cls, data: dict[str, Any], schema: dict[str, Any]
+    ) -> dict[str, Any]:
         """Basic validation without jsonschema."""
         errors = []
 

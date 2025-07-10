@@ -63,22 +63,36 @@ class PerformanceMetrics:
             "response_times": {
                 "min": min(self.response_times) if self.response_times else 0,
                 "max": max(self.response_times) if self.response_times else 0,
-                "mean": statistics.mean(self.response_times) if self.response_times else 0,
-                "median": statistics.median(self.response_times) if self.response_times else 0,
-                "p95": self._percentile(self.response_times, 95) if self.response_times else 0,
-                "p99": self._percentile(self.response_times, 99) if self.response_times else 0
+                "mean": (
+                    statistics.mean(self.response_times) if self.response_times else 0
+                ),
+                "median": (
+                    statistics.median(self.response_times) if self.response_times else 0
+                ),
+                "p95": (
+                    self._percentile(self.response_times, 95)
+                    if self.response_times
+                    else 0
+                ),
+                "p99": (
+                    self._percentile(self.response_times, 99)
+                    if self.response_times
+                    else 0
+                ),
             },
             "memory_usage": {
                 "min": min(self.memory_usage) if self.memory_usage else 0,
                 "max": max(self.memory_usage) if self.memory_usage else 0,
-                "mean": statistics.mean(self.memory_usage) if self.memory_usage else 0
+                "mean": statistics.mean(self.memory_usage) if self.memory_usage else 0,
             },
             "cpu_usage": {
                 "min": min(self.cpu_usage) if self.cpu_usage else 0,
                 "max": max(self.cpu_usage) if self.cpu_usage else 0,
-                "mean": statistics.mean(self.cpu_usage) if self.cpu_usage else 0
+                "mean": statistics.mean(self.cpu_usage) if self.cpu_usage else 0,
             },
-            "throughput": len(self.response_times) / total_duration if total_duration > 0 else 0
+            "throughput": (
+                len(self.response_times) / total_duration if total_duration > 0 else 0
+            ),
         }
 
     @staticmethod
@@ -108,8 +122,7 @@ class TestLoadPerformance:
             start = time.time()
             try:
                 await mcp_client.call_tool(
-                    "get_applicable_standards",
-                    {"context": context}
+                    "get_applicable_standards", {"context": context}
                 )
                 duration = time.time() - start
                 metrics.record_response_time(duration)
@@ -152,9 +165,11 @@ class TestLoadPerformance:
         print(f"Total requests: {summary['total_requests']}")
         print(f"Total duration: {summary['total_duration']:.2f}s")
         print(f"Throughput: {summary['throughput']:.2f} req/s")
-        print(f"Response times - p50: {summary['response_times']['median']:.3f}s, "
-              f"p95: {summary['response_times']['p95']:.3f}s, "
-              f"p99: {summary['response_times']['p99']:.3f}s")
+        print(
+            f"Response times - p50: {summary['response_times']['median']:.3f}s, "
+            f"p95: {summary['response_times']['p95']:.3f}s, "
+            f"p99: {summary['response_times']['p99']:.3f}s"
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.performance
@@ -171,7 +186,7 @@ class TestLoadPerformance:
             "Frontend testing strategies",
             "Cloud deployment best practices",
             "Error handling in distributed systems",
-            "Authentication and authorization"
+            "Authentication and authorization",
         ]
 
         # Run searches multiple times
@@ -183,13 +198,15 @@ class TestLoadPerformance:
                 start = time.time()
                 try:
                     result = await mcp_client.call_tool(
-                        "search_standards",
-                        {"query": query, "limit": 5}
+                        "search_standards", {"query": query, "limit": 5}
                     )
                     duration = time.time() - start
 
                     # Check if search is disabled
-                    if "error" in result and "search" in result.get("error", "").lower():
+                    if (
+                        "error" in result
+                        and "search" in result.get("error", "").lower()
+                    ):
                         search_disabled = True
                         break
 
@@ -220,8 +237,7 @@ class TestLoadPerformance:
         async def get_standards(context):
             start = time.time()
             result = await mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
+                "get_applicable_standards", {"context": context}
             )
             metrics.record_response_time(time.time() - start)
             return result
@@ -230,8 +246,7 @@ class TestLoadPerformance:
             start = time.time()
             try:
                 result = await mcp_client.call_tool(
-                    "search_standards",
-                    {"query": query, "limit": 3}
+                    "search_standards", {"query": query, "limit": 3}
                 )
                 metrics.record_response_time(time.time() - start)
                 return result
@@ -242,8 +257,7 @@ class TestLoadPerformance:
         async def validate_code(code, standard):
             start = time.time()
             result = await mcp_client.call_tool(
-                "validate_against_standard",
-                {"code": code, "standard": standard}
+                "validate_against_standard", {"code": code, "standard": standard}
             )
             metrics.record_response_time(time.time() - start)
             return result
@@ -261,7 +275,7 @@ class TestLoadPerformance:
         search_queries = [
             "performance optimization",
             "security best practices",
-            "testing strategies"
+            "testing strategies",
         ]
         for i in range(30):
             query = search_queries[i % len(search_queries)]
@@ -303,10 +317,7 @@ class TestMemoryPerformance:
             context = SAMPLE_CONTEXTS["react_web_app"].copy()
             context["iteration"] = i
 
-            await mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
-            )
+            await mcp_client.call_tool("get_applicable_standards", {"context": context})
 
             # Check memory periodically
             if i % 20 == 0:
@@ -338,16 +349,13 @@ class TestMemoryPerformance:
         metrics = PerformanceMetrics()
 
         # Access many different standards
-        standard_ids = [
-            f"standard_{i}" for i in range(50)
-        ]
+        standard_ids = [f"standard_{i}" for i in range(50)]
 
         # First pass - populate cache
         for std_id in standard_ids:
             try:
                 await mcp_client.call_tool(
-                    "get_standard_details",
-                    {"standard_id": std_id}
+                    "get_standard_details", {"standard_id": std_id}
                 )
             except Exception:
                 pass  # Some standards may not exist
@@ -364,8 +372,7 @@ class TestMemoryPerformance:
         for std_id in standard_ids:
             try:
                 await mcp_client.call_tool(
-                    "get_standard_details",
-                    {"standard_id": std_id}
+                    "get_standard_details", {"standard_id": std_id}
                 )
             except Exception:
                 pass
@@ -387,8 +394,7 @@ class TestResponseTimeBenchmarks:
 
         async def operation():
             return await mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
+                "get_applicable_standards", {"context": context}
             )
 
         # Run benchmark
@@ -406,15 +412,17 @@ class TestResponseTimeBenchmarks:
 
         async def operation():
             return await mcp_client.call_tool(
-                "search_standards",
-                {"query": query, "limit": 5}
+                "search_standards", {"query": query, "limit": 5}
             )
 
         result = await benchmark(operation)
 
         # Handle case where search is disabled
         if "error" in result:
-            assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
+            assert (
+                "search" in result["error"].lower()
+                or "disabled" in result["error"].lower()
+            )
         else:
             assert "results" in result
             assert isinstance(result["results"], list)
@@ -437,8 +445,8 @@ class TestResponseTimeBenchmarks:
                 {
                     "code": code,
                     "standard": "react-18-patterns",
-                    "language": "javascript"
-                }
+                    "language": "javascript",
+                },
             )
 
         result = await benchmark(operation)
@@ -473,7 +481,9 @@ class TestScalabilityLimits:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Count successful connections
-        connected_count = sum(1 for r in results if r is not None and not isinstance(r, Exception))
+        connected_count = sum(
+            1 for r in results if r is not None and not isinstance(r, Exception)
+        )
 
         # Should handle at least 20 concurrent clients
         assert connected_count >= 20
@@ -485,8 +495,7 @@ class TestScalabilityLimits:
         # This test is limited by our test data
         # We only have 3 test standards, so adjust expectations
         result = await mcp_client.call_tool(
-            "list_available_standards",
-            {"limit": 1000}  # Request many standards
+            "list_available_standards", {"limit": 1000}  # Request many standards
         )
 
         assert "standards" in result
@@ -494,6 +503,7 @@ class TestScalabilityLimits:
         # Measure serialization time
         start = time.time()
         import json
+
         serialized = json.dumps(result)
         serialization_time = time.time() - start
 

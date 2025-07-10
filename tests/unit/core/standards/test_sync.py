@@ -35,31 +35,31 @@ class TestFileMetadata:
             local_path=Path("/tmp/test.md"),
             version="1.0.0",
             content_hash="def456",
-            sync_time=datetime(2024, 1, 1, 12, 0, 0)
+            sync_time=datetime(2024, 1, 1, 12, 0, 0),
         )
 
         result = metadata.to_dict()
 
-        assert result['path'] == "docs/standards/test.md"
-        assert result['sha'] == "abc123"
-        assert result['size'] == 1024
-        assert result['last_modified'] == "2024-01-01T00:00:00Z"
-        assert result['local_path'] == "/tmp/test.md"
-        assert result['version'] == "1.0.0"
-        assert result['content_hash'] == "def456"
-        assert result['sync_time'] == "2024-01-01T12:00:00"
+        assert result["path"] == "docs/standards/test.md"
+        assert result["sha"] == "abc123"
+        assert result["size"] == 1024
+        assert result["last_modified"] == "2024-01-01T00:00:00Z"
+        assert result["local_path"] == "/tmp/test.md"
+        assert result["version"] == "1.0.0"
+        assert result["content_hash"] == "def456"
+        assert result["sync_time"] == "2024-01-01T12:00:00"
 
     def test_from_dict(self):
         """Test creating FileMetadata from dictionary."""
         data = {
-            'path': "docs/standards/test.md",
-            'sha': "abc123",
-            'size': 1024,
-            'last_modified': "2024-01-01T00:00:00Z",
-            'local_path': "/tmp/test.md",
-            'version': "1.0.0",
-            'content_hash': "def456",
-            'sync_time': "2024-01-01T12:00:00"
+            "path": "docs/standards/test.md",
+            "sha": "abc123",
+            "size": 1024,
+            "last_modified": "2024-01-01T00:00:00Z",
+            "local_path": "/tmp/test.md",
+            "version": "1.0.0",
+            "content_hash": "def456",
+            "sync_time": "2024-01-01T12:00:00",
         }
 
         metadata = FileMetadata.from_dict(data)
@@ -112,9 +112,9 @@ class TestGitHubRateLimiter:
         limiter = GitHubRateLimiter()
 
         headers = {
-            'X-RateLimit-Remaining': '30',
-            'X-RateLimit-Reset': '1704110400',  # 2024-01-01 12:00:00 UTC
-            'X-RateLimit-Limit': '60'
+            "X-RateLimit-Remaining": "30",
+            "X-RateLimit-Reset": "1704110400",  # 2024-01-01 12:00:00 UTC
+            "X-RateLimit-Limit": "60",
         }
 
         limiter.update_from_headers(headers)
@@ -168,26 +168,23 @@ class TestStandardsSynchronizer:
 
         # Create default config
         config = {
-            'repository': {
-                'owner': 'williamzujkowski',
-                'repo': 'standards',
-                'branch': 'master',
-                'path': 'docs/standards'
+            "repository": {
+                "owner": "williamzujkowski",
+                "repo": "standards",
+                "branch": "master",
+                "path": "docs/standards",
             },
-            'sync': {
-                'file_patterns': ['*.md', '*.yaml'],
-                'exclude_patterns': ['*test*'],
-                'max_file_size': 1048576,
-                'retry_attempts': 3,
-                'retry_delay': 1
+            "sync": {
+                "file_patterns": ["*.md", "*.yaml"],
+                "exclude_patterns": ["*test*"],
+                "max_file_size": 1048576,
+                "retry_attempts": 3,
+                "retry_delay": 1,
             },
-            'cache': {
-                'ttl_hours': 24,
-                'max_size_mb': 100
-            }
+            "cache": {"ttl_hours": 24, "max_size_mb": 100},
         }
 
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             yaml.dump(config, f)
 
         return StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
@@ -196,16 +193,22 @@ class TestStandardsSynchronizer:
         """Test synchronizer initialization."""
         assert synchronizer.config_path.exists()
         assert synchronizer.cache_dir.exists()
-        assert synchronizer.metadata_file.exists() or len(synchronizer.file_metadata) == 0
+        assert (
+            synchronizer.metadata_file.exists() or len(synchronizer.file_metadata) == 0
+        )
 
     def test_filter_files(self, synchronizer):
         """Test file filtering logic."""
         files = [
-            {'name': 'test.md', 'size': 1000, 'path': 'docs/standards/test.md'},
-            {'name': 'config.yaml', 'size': 500, 'path': 'docs/standards/config.yaml'},
-            {'name': 'test_file.md', 'size': 200, 'path': 'docs/standards/test_file.md'},
-            {'name': 'large.md', 'size': 2000000, 'path': 'docs/standards/large.md'},
-            {'name': 'script.py', 'size': 300, 'path': 'docs/standards/script.py'}
+            {"name": "test.md", "size": 1000, "path": "docs/standards/test.md"},
+            {"name": "config.yaml", "size": 500, "path": "docs/standards/config.yaml"},
+            {
+                "name": "test_file.md",
+                "size": 200,
+                "path": "docs/standards/test_file.md",
+            },
+            {"name": "large.md", "size": 2000000, "path": "docs/standards/large.md"},
+            {"name": "script.py", "size": 300, "path": "docs/standards/script.py"},
         ]
 
         filtered = synchronizer._filter_files(files)
@@ -216,7 +219,7 @@ class TestStandardsSynchronizer:
         # Should exclude large.md (exceeds size limit)
         # Should exclude script.py (doesn't match file patterns)
         assert len(filtered) == 1
-        assert any(f['name'] == 'config.yaml' for f in filtered)
+        assert any(f["name"] == "config.yaml" for f in filtered)
 
     @pytest.mark.asyncio
     async def test_download_file(self, synchronizer):
@@ -224,7 +227,7 @@ class TestStandardsSynchronizer:
         url = "https://raw.githubusercontent.com/test/repo/main/file.md"
         content = b"# Test Content"
 
-        with patch('aiohttp.ClientSession.get') as mock_get:
+        with patch("aiohttp.ClientSession.get") as mock_get:
             # Mock successful response
             mock_response = AsyncMock()
             mock_response.status = 200
@@ -244,7 +247,7 @@ class TestStandardsSynchronizer:
         url = "https://raw.githubusercontent.com/test/repo/main/file.md"
         content = b"# Test Content"
 
-        with patch('aiohttp.ClientSession.get') as mock_get:
+        with patch("aiohttp.ClientSession.get") as mock_get:
             # First attempt fails, second succeeds
             mock_response_fail = AsyncMock()
             mock_response_fail.status = 500
@@ -257,7 +260,7 @@ class TestStandardsSynchronizer:
 
             mock_get.return_value.__aenter__.side_effect = [
                 mock_response_fail,
-                mock_response_success
+                mock_response_success,
             ]
 
             async with aiohttp.ClientSession() as session:
@@ -270,23 +273,23 @@ class TestStandardsSynchronizer:
     async def test_sync_file(self, synchronizer):
         """Test syncing a single file."""
         file_info = {
-            'path': 'docs/standards/test.md',
-            'sha': 'abc123',
-            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md',
-            'size': 1000
+            "path": "docs/standards/test.md",
+            "sha": "abc123",
+            "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
+            "size": 1000,
         }
 
         content = b"# Test Standard\n\nThis is a test."
 
-        with patch.object(synchronizer, '_download_file', return_value=content):
+        with patch.object(synchronizer, "_download_file", return_value=content):
             async with aiohttp.ClientSession() as session:
                 result = await synchronizer._sync_file(session, file_info)
 
             assert result is True
-            assert file_info['path'] in synchronizer.file_metadata
+            assert file_info["path"] in synchronizer.file_metadata
 
-            metadata = synchronizer.file_metadata[file_info['path']]
-            assert metadata.sha == 'abc123'
+            metadata = synchronizer.file_metadata[file_info["path"]]
+            assert metadata.sha == "abc123"
             assert metadata.size == len(content)
             assert metadata.local_path.exists()
             assert metadata.local_path.read_bytes() == content
@@ -294,25 +297,25 @@ class TestStandardsSynchronizer:
     @pytest.mark.asyncio
     async def test_sync_file_skip_unchanged(self, synchronizer):
         """Test skipping unchanged files."""
-        file_path = 'docs/standards/test.md'
+        file_path = "docs/standards/test.md"
 
         # Add existing metadata
         synchronizer.file_metadata[file_path] = FileMetadata(
             path=file_path,
-            sha='abc123',
+            sha="abc123",
             size=1000,
-            last_modified='',
-            local_path=synchronizer.cache_dir / 'test.md',
-            sync_time=datetime.now()
+            last_modified="",
+            local_path=synchronizer.cache_dir / "test.md",
+            sync_time=datetime.now(),
         )
 
         file_info = {
-            'path': file_path,
-            'sha': 'abc123',  # Same SHA
-            'download_url': 'https://raw.githubusercontent.com/test/repo/main/test.md'
+            "path": file_path,
+            "sha": "abc123",  # Same SHA
+            "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
         }
 
-        with patch.object(synchronizer, '_download_file') as mock_download:
+        with patch.object(synchronizer, "_download_file") as mock_download:
             async with aiohttp.ClientSession() as session:
                 result = await synchronizer._sync_file(session, file_info, force=False)
 
@@ -324,63 +327,59 @@ class TestStandardsSynchronizer:
         # Add some metadata with different sync times
         now = datetime.now()
 
-        synchronizer.file_metadata['old.md'] = FileMetadata(
-            path='old.md',
-            sha='abc',
+        synchronizer.file_metadata["old.md"] = FileMetadata(
+            path="old.md",
+            sha="abc",
             size=100,
-            last_modified='',
-            local_path=Path('old.md'),
-            sync_time=now - timedelta(hours=48)  # Old
+            last_modified="",
+            local_path=Path("old.md"),
+            sync_time=now - timedelta(hours=48),  # Old
         )
 
-        synchronizer.file_metadata['recent.md'] = FileMetadata(
-            path='recent.md',
-            sha='def',
+        synchronizer.file_metadata["recent.md"] = FileMetadata(
+            path="recent.md",
+            sha="def",
             size=200,
-            last_modified='',
-            local_path=Path('recent.md'),
-            sync_time=now - timedelta(hours=12)  # Recent
+            last_modified="",
+            local_path=Path("recent.md"),
+            sync_time=now - timedelta(hours=12),  # Recent
         )
 
         updates = synchronizer.check_updates()
 
-        assert len(updates['outdated_files']) == 1
-        assert updates['outdated_files'][0]['path'] == 'old.md'
-        assert len(updates['current_files']) == 1
-        assert 'recent.md' in updates['current_files']
+        assert len(updates["outdated_files"]) == 1
+        assert updates["outdated_files"][0]["path"] == "old.md"
+        assert len(updates["current_files"]) == 1
+        assert "recent.md" in updates["current_files"]
 
     def test_get_cached_standards(self, synchronizer, temp_dir):
         """Test getting cached standards list."""
         # Create some cached files
-        cache_file1 = synchronizer.cache_dir / 'test1.md'
-        cache_file2 = synchronizer.cache_dir / 'test2.yaml'
-        cache_file1.write_text('# Test 1')
-        cache_file2.write_text('test: 2')
+        cache_file1 = synchronizer.cache_dir / "test1.md"
+        cache_file2 = synchronizer.cache_dir / "test2.yaml"
+        cache_file1.write_text("# Test 1")
+        cache_file2.write_text("test: 2")
 
         # Add metadata
-        synchronizer.file_metadata['test1.md'] = FileMetadata(
-            path='test1.md',
-            sha='abc',
-            size=8,
-            last_modified='',
-            local_path=cache_file1
+        synchronizer.file_metadata["test1.md"] = FileMetadata(
+            path="test1.md", sha="abc", size=8, last_modified="", local_path=cache_file1
         )
 
-        synchronizer.file_metadata['test2.yaml'] = FileMetadata(
-            path='test2.yaml',
-            sha='def',
+        synchronizer.file_metadata["test2.yaml"] = FileMetadata(
+            path="test2.yaml",
+            sha="def",
             size=8,
-            last_modified='',
-            local_path=cache_file2
+            last_modified="",
+            local_path=cache_file2,
         )
 
         # Add metadata for non-existent file
-        synchronizer.file_metadata['missing.md'] = FileMetadata(
-            path='missing.md',
-            sha='ghi',
+        synchronizer.file_metadata["missing.md"] = FileMetadata(
+            path="missing.md",
+            sha="ghi",
             size=0,
-            last_modified='',
-            local_path=synchronizer.cache_dir / 'missing.md'
+            last_modified="",
+            local_path=synchronizer.cache_dir / "missing.md",
         )
 
         cached = synchronizer.get_cached_standards()
@@ -392,16 +391,12 @@ class TestStandardsSynchronizer:
     def test_clear_cache(self, synchronizer, temp_dir):
         """Test clearing cache."""
         # Create cached file
-        cache_file = synchronizer.cache_dir / 'test.md'
-        cache_file.write_text('# Test')
+        cache_file = synchronizer.cache_dir / "test.md"
+        cache_file.write_text("# Test")
 
         # Add metadata
-        synchronizer.file_metadata['test.md'] = FileMetadata(
-            path='test.md',
-            sha='abc',
-            size=6,
-            last_modified='',
-            local_path=cache_file
+        synchronizer.file_metadata["test.md"] = FileMetadata(
+            path="test.md", sha="abc", size=6, last_modified="", local_path=cache_file
         )
 
         # Clear cache
@@ -413,39 +408,39 @@ class TestStandardsSynchronizer:
     def test_get_sync_status(self, synchronizer):
         """Test getting sync status."""
         # Add some metadata
-        synchronizer.file_metadata['test1.md'] = FileMetadata(
-            path='test1.md',
-            sha='abc',
+        synchronizer.file_metadata["test1.md"] = FileMetadata(
+            path="test1.md",
+            sha="abc",
             size=1000,
-            last_modified='',
-            local_path=Path('test1.md'),
-            sync_time=datetime.now()
+            last_modified="",
+            local_path=Path("test1.md"),
+            sync_time=datetime.now(),
         )
 
-        synchronizer.file_metadata['test2.md'] = FileMetadata(
-            path='test2.md',
-            sha='def',
+        synchronizer.file_metadata["test2.md"] = FileMetadata(
+            path="test2.md",
+            sha="def",
             size=2000,
-            last_modified='',
-            local_path=Path('test2.md'),
-            sync_time=datetime.now()
+            last_modified="",
+            local_path=Path("test2.md"),
+            sync_time=datetime.now(),
         )
 
         status = synchronizer.get_sync_status()
 
-        assert status['total_files'] == 2
-        assert status['total_size_mb'] == pytest.approx(0.00286, rel=0.01)
-        assert 'test1.md' in status['last_sync_times']
-        assert 'test2.md' in status['last_sync_times']
-        assert 'rate_limit' in status
-        assert 'config' in status
+        assert status["total_files"] == 2
+        assert status["total_size_mb"] == pytest.approx(0.00286, rel=0.01)
+        assert "test1.md" in status["last_sync_times"]
+        assert "test2.md" in status["last_sync_times"]
+        assert "rate_limit" in status
+        assert "config" in status
 
 
 class TestConvenienceFunctions:
     """Test module-level convenience functions."""
 
-    @patch('src.core.standards.sync.StandardsSynchronizer')
-    @patch('asyncio.run')
+    @patch("src.core.standards.sync.StandardsSynchronizer")
+    @patch("asyncio.run")
     def test_sync_standards(self, mock_run, mock_synchronizer_class):
         """Test sync_standards function."""
         mock_synchronizer = Mock()
@@ -454,23 +449,23 @@ class TestConvenienceFunctions:
         mock_result = Mock(spec=SyncResult)
         mock_run.return_value = mock_result
 
-        result = sync_standards(force=True, config_path=Path('test.yaml'))
+        result = sync_standards(force=True, config_path=Path("test.yaml"))
 
-        mock_synchronizer_class.assert_called_once_with(config_path=Path('test.yaml'))
+        mock_synchronizer_class.assert_called_once_with(config_path=Path("test.yaml"))
         mock_run.assert_called_once()
         assert result == mock_result
 
-    @patch('src.core.standards.sync.StandardsSynchronizer')
+    @patch("src.core.standards.sync.StandardsSynchronizer")
     def test_check_for_updates(self, mock_synchronizer_class):
         """Test check_for_updates function."""
         mock_synchronizer = Mock()
-        mock_updates = {'outdated_files': [], 'current_files': []}
+        mock_updates = {"outdated_files": [], "current_files": []}
         mock_synchronizer.check_updates.return_value = mock_updates
         mock_synchronizer_class.return_value = mock_synchronizer
 
-        result = check_for_updates(config_path=Path('test.yaml'))
+        result = check_for_updates(config_path=Path("test.yaml"))
 
-        mock_synchronizer_class.assert_called_once_with(config_path=Path('test.yaml'))
+        mock_synchronizer_class.assert_called_once_with(config_path=Path("test.yaml"))
         mock_synchronizer.check_updates.assert_called_once()
         assert result == mock_updates
 

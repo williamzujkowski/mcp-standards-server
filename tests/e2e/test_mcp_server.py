@@ -72,9 +72,9 @@ class TestMCPTools:
                     "project_type": "web_application",
                     "framework": "react",
                     "language": "javascript",
-                    "requirements": ["accessibility", "performance"]
+                    "requirements": ["accessibility", "performance"],
                 }
-            }
+            },
         )
 
         assert "standards" in result
@@ -105,8 +105,8 @@ class TestMCPTools:
             {
                 "code": code_content,
                 "standard": "react-18-patterns",
-                "language": "javascript"
-            }
+                "language": "javascript",
+            },
         )
 
         assert "violations" in result
@@ -121,8 +121,8 @@ class TestMCPTools:
             "search_standards",
             {
                 "query": "How to implement accessibility in React components?",
-                "limit": 5
-            }
+                "limit": 5,
+            },
         )
 
         # Since search is disabled in tests, we should get either:
@@ -130,7 +130,10 @@ class TestMCPTools:
         # 2. An error indicating search is disabled
         # 3. A simple keyword-based search result
         if "error" in result:
-            assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
+            assert (
+                "search" in result["error"].lower()
+                or "disabled" in result["error"].lower()
+            )
         else:
             assert "results" in result
             assert isinstance(result["results"], list)
@@ -140,10 +143,7 @@ class TestMCPTools:
     async def test_get_standard_details(self, mcp_client):
         """Test get_standard_details tool."""
         result = await mcp_client.call_tool(
-            "get_standard_details",
-            {
-                "standard_id": "react-18-patterns"
-            }
+            "get_standard_details", {"standard_id": "react-18-patterns"}
         )
 
         assert "id" in result
@@ -156,10 +156,7 @@ class TestMCPTools:
     async def test_list_available_standards(self, mcp_client):
         """Test list_available_standards tool."""
         result = await mcp_client.call_tool(
-            "list_available_standards",
-            {
-                "category": "frontend"
-            }
+            "list_available_standards", {"category": "frontend"}
         )
 
         assert "standards" in result
@@ -187,9 +184,9 @@ class TestMCPTools:
                 "code": code_content,
                 "context": {
                     "language": "javascript",
-                    "project_type": "web_application"
-                }
-            }
+                    "project_type": "web_application",
+                },
+            },
         )
 
         assert "suggestions" in result
@@ -210,32 +207,21 @@ class TestStandardsSynchronization:
     async def test_sync_standards_workflow(self, mcp_client):
         """Test complete standards synchronization workflow."""
         # Check sync status
-        status_result = await mcp_client.call_tool(
-            "get_sync_status",
-            {}
-        )
+        status_result = await mcp_client.call_tool("get_sync_status", {})
 
         assert "last_sync" in status_result
         assert "total_standards" in status_result
         assert "outdated_standards" in status_result
 
         # Trigger sync
-        sync_result = await mcp_client.call_tool(
-            "sync_standards",
-            {
-                "force": False
-            }
-        )
+        sync_result = await mcp_client.call_tool("sync_standards", {"force": False})
 
         assert "status" in sync_result
         assert "synced_files" in sync_result
         assert sync_result["status"] in ["success", "partial", "failed"]
 
         # Verify sync updated status
-        new_status = await mcp_client.call_tool(
-            "get_sync_status",
-            {}
-        )
+        new_status = await mcp_client.call_tool("get_sync_status", {})
 
         # Check sync status - sync might not update last_sync if no files are found
         # Just verify that sync was attempted
@@ -252,12 +238,7 @@ class TestStandardsSynchronization:
             # Simulate rate limit error
             mock_sync.side_effect = Exception("API rate limit exceeded")
 
-            result = await mcp_client.call_tool(
-                "sync_standards",
-                {
-                    "force": True
-                }
-            )
+            result = await mcp_client.call_tool("sync_standards", {"force": True})
 
             # Since we're mocking the sync method, the result might be different
             # The important thing is that sync was attempted and handled the error
@@ -278,24 +259,19 @@ class TestRuleEngineIntegration:
             {
                 "project_type": "web_application",
                 "framework": "react",
-                "requirements": ["accessibility"]
+                "requirements": ["accessibility"],
             },
-            {
-                "project_type": "api",
-                "language": "python",
-                "framework": "fastapi"
-            },
+            {"project_type": "api", "language": "python", "framework": "fastapi"},
             {
                 "project_type": "mobile_app",
                 "framework": "react-native",
-                "platform": ["ios", "android"]
-            }
+                "platform": ["ios", "android"],
+            },
         ]
 
         for context in contexts:
             result = await mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
+                "get_applicable_standards", {"context": context}
             )
 
             assert "standards" in result
@@ -314,15 +290,12 @@ class TestRuleEngineIntegration:
             "framework": "react",
             "language": "typescript",
             "requirements": ["accessibility", "performance", "security"],
-            "team_size": "large"
+            "team_size": "large",
         }
 
         result = await mcp_client.call_tool(
             "get_applicable_standards",
-            {
-                "context": context,
-                "include_resolution_details": True
-            }
+            {"context": context, "include_resolution_details": True},
         )
 
         assert "standards" in result
@@ -344,22 +317,20 @@ class TestSemanticSearchFunctionality:
             "How to optimize React component performance?",
             "Best practices for Python API error handling",
             "Implementing secure authentication in web apps",
-            "Accessibility guidelines for mobile applications"
+            "Accessibility guidelines for mobile applications",
         ]
 
         for query in queries:
             result = await mcp_client.call_tool(
-                "search_standards",
-                {
-                    "query": query,
-                    "limit": 3,
-                    "min_relevance": 0.7
-                }
+                "search_standards", {"query": query, "limit": 3, "min_relevance": 0.7}
             )
 
             # Handle case where search is disabled
             if "error" in result:
-                assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
+                assert (
+                    "search" in result["error"].lower()
+                    or "disabled" in result["error"].lower()
+                )
                 continue
 
             assert "results" in result
@@ -375,15 +346,18 @@ class TestSemanticSearchFunctionality:
                 "query": "testing best practices",
                 "filters": {
                     "categories": ["testing", "quality"],
-                    "languages": ["javascript", "python"]
+                    "languages": ["javascript", "python"],
                 },
-                "limit": 10
-            }
+                "limit": 10,
+            },
         )
 
         # Handle case where search is disabled
         if "error" in result:
-            assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
+            assert (
+                "search" in result["error"].lower()
+                or "disabled" in result["error"].lower()
+            )
             return
 
         assert "results" in result
@@ -397,10 +371,7 @@ class TestErrorHandling:
     async def test_invalid_tool_name(self, mcp_client):
         """Test handling of invalid tool names."""
         try:
-            result = await mcp_client.call_tool(
-                "non_existent_tool",
-                {}
-            )
+            result = await mcp_client.call_tool("non_existent_tool", {})
             # If we get here, check if result indicates an error
             raise AssertionError(f"Expected error but got result: {result}")
         except Exception as e:
@@ -416,14 +387,19 @@ class TestErrorHandling:
                 {
                     # Missing required 'context' parameter
                     "invalid_param": "value"
-                }
+                },
             )
             # If we get here, check if result indicates an error or empty standards
-            assert "error" in result or result.get("standards") == [], f"Expected error or empty result but got: {result}"
+            assert (
+                "error" in result or result.get("standards") == []
+            ), f"Expected error or empty result but got: {result}"
         except Exception as e:
             # This is also acceptable - could be validation error or JSON decode error
             error_msg = str(e).lower()
-            assert any(x in error_msg for x in ["required parameter", "context", "expecting value", "json"])
+            assert any(
+                x in error_msg
+                for x in ["required parameter", "context", "expecting value", "json"]
+            )
 
     @pytest.mark.asyncio
     async def test_malformed_context(self, mcp_client):
@@ -434,9 +410,9 @@ class TestErrorHandling:
                 "context": {
                     # Invalid project type
                     "project_type": "invalid_type",
-                    "framework": None
+                    "framework": None,
                 }
-            }
+            },
         )
 
         # Should return empty or default standards
@@ -451,10 +427,7 @@ class TestErrorHandling:
         # This test doesn't make sense for MCP since timeouts are handled at transport level
         # Let's test a long-running operation instead
         result = await mcp_client.call_tool(
-            "generate_cross_references",
-            {
-                "force_refresh": True  # This might take time
-            }
+            "generate_cross_references", {"force_refresh": True}  # This might take time
         )
 
         # Just verify the operation completes
@@ -474,12 +447,11 @@ class TestConcurrentRequests:
             context = {
                 "project_type": "web_application",
                 "framework": "react",
-                "request_id": f"test_{i}"
+                "request_id": f"test_{i}",
             }
 
             task = mcp_client.call_tool(
-                "get_applicable_standards",
-                {"context": context}
+                "get_applicable_standards", {"context": context}
             )
             tasks.append(task)
 
@@ -499,14 +471,11 @@ class TestConcurrentRequests:
             "Python testing strategies",
             "API security best practices",
             "Mobile app accessibility",
-            "Database optimization techniques"
+            "Database optimization techniques",
         ]
 
         tasks = [
-            mcp_client.call_tool(
-                "search_standards",
-                {"query": query, "limit": 3}
-            )
+            mcp_client.call_tool("search_standards", {"query": query, "limit": 3})
             for query in queries
         ]
 
@@ -516,7 +485,10 @@ class TestConcurrentRequests:
         for result in results:
             # Handle case where search is disabled
             if "error" in result:
-                assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
+                assert (
+                    "search" in result["error"].lower()
+                    or "disabled" in result["error"].lower()
+                )
             else:
                 assert "results" in result
 
@@ -530,16 +502,14 @@ class TestCachingBehavior:
         # First call - should load from source
         start_time = time.time()
         result1 = await mcp_client.call_tool(
-            "get_standard_details",
-            {"standard_id": "react-18-patterns"}
+            "get_standard_details", {"standard_id": "react-18-patterns"}
         )
         time.time() - start_time
 
         # Second call - should be cached
         start_time = time.time()
         result2 = await mcp_client.call_tool(
-            "get_standard_details",
-            {"standard_id": "react-18-patterns"}
+            "get_standard_details", {"standard_id": "react-18-patterns"}
         )
         time.time() - start_time
 
@@ -555,20 +525,15 @@ class TestCachingBehavior:
         """Test cache invalidation after sync."""
         # Get initial data
         await mcp_client.call_tool(
-            "get_standard_details",
-            {"standard_id": "python-testing"}
+            "get_standard_details", {"standard_id": "python-testing"}
         )
 
         # Force sync
-        await mcp_client.call_tool(
-            "sync_standards",
-            {"force": True}
-        )
+        await mcp_client.call_tool("sync_standards", {"force": True})
 
         # Get data again - should be refreshed
         result2 = await mcp_client.call_tool(
-            "get_standard_details",
-            {"standard_id": "python-testing"}
+            "get_standard_details", {"standard_id": "python-testing"}
         )
 
         # Cache invalidation might not add metadata in current implementation

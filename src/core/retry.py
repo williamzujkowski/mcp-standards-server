@@ -18,11 +18,12 @@ from src.core.metrics import get_mcp_metrics
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RetryStrategy(str, Enum):
     """Retry strategy types."""
+
     EXPONENTIAL = "exponential"
     LINEAR = "linear"
     CONSTANT = "constant"
@@ -31,6 +32,7 @@ class RetryStrategy(str, Enum):
 @dataclass
 class RetryConfig:
     """Configuration for retry behavior."""
+
     max_retries: int = 3
     initial_delay: float = 1.0  # seconds
     max_delay: float = 60.0  # seconds
@@ -74,7 +76,7 @@ class RetryManager:
         elif self.config.strategy == RetryStrategy.LINEAR:
             delay = self.config.initial_delay * (attempt + 1)
         else:  # EXPONENTIAL
-            delay = self.config.initial_delay * (self.config.exponential_base ** attempt)
+            delay = self.config.initial_delay * (self.config.exponential_base**attempt)
 
         # Apply max delay cap
         delay = min(delay, self.config.max_delay)
@@ -88,11 +90,7 @@ class RetryManager:
         return max(0, delay)  # Ensure non-negative
 
     async def retry_async(
-        self,
-        func: Callable[..., T],
-        *args,
-        operation_name: str = "operation",
-        **kwargs
+        self, func: Callable[..., T], *args, operation_name: str = "operation", **kwargs
     ) -> T:
         """
         Retry an async operation with exponential backoff.
@@ -116,7 +114,7 @@ class RetryManager:
                 # Record attempt
                 self.metrics.collector.increment(
                     "mcp_retry_attempts_total",
-                    labels={"operation": operation_name, "attempt": str(attempt)}
+                    labels={"operation": operation_name, "attempt": str(attempt)},
                 )
 
                 # Call the function
@@ -124,10 +122,12 @@ class RetryManager:
 
                 # Success - record and return
                 if attempt > 0:
-                    logger.info(f"Operation '{operation_name}' succeeded after {attempt} retries")
+                    logger.info(
+                        f"Operation '{operation_name}' succeeded after {attempt} retries"
+                    )
                     self.metrics.collector.increment(
                         "mcp_retry_success_total",
-                        labels={"operation": operation_name, "attempts": str(attempt)}
+                        labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
                 return result
@@ -142,7 +142,7 @@ class RetryManager:
                     )
                     self.metrics.collector.increment(
                         "mcp_retry_failures_total",
-                        labels={"operation": operation_name, "error": type(e).__name__}
+                        labels={"operation": operation_name, "error": type(e).__name__},
                     )
                     raise
 
@@ -159,7 +159,9 @@ class RetryManager:
 
             except Exception as e:
                 # Non-retryable exception
-                logger.error(f"Operation '{operation_name}' failed with non-retryable error: {e}")
+                logger.error(
+                    f"Operation '{operation_name}' failed with non-retryable error: {e}"
+                )
                 raise
 
         # Should not reach here, but just in case
@@ -167,11 +169,7 @@ class RetryManager:
             raise last_exception
 
     def retry_sync(
-        self,
-        func: Callable[..., T],
-        *args,
-        operation_name: str = "operation",
-        **kwargs
+        self, func: Callable[..., T], *args, operation_name: str = "operation", **kwargs
     ) -> T:
         """
         Retry a sync operation with exponential backoff.
@@ -195,7 +193,7 @@ class RetryManager:
                 # Record attempt
                 self.metrics.collector.increment(
                     "mcp_retry_attempts_total",
-                    labels={"operation": operation_name, "attempt": str(attempt)}
+                    labels={"operation": operation_name, "attempt": str(attempt)},
                 )
 
                 # Call the function
@@ -203,10 +201,12 @@ class RetryManager:
 
                 # Success - record and return
                 if attempt > 0:
-                    logger.info(f"Operation '{operation_name}' succeeded after {attempt} retries")
+                    logger.info(
+                        f"Operation '{operation_name}' succeeded after {attempt} retries"
+                    )
                     self.metrics.collector.increment(
                         "mcp_retry_success_total",
-                        labels={"operation": operation_name, "attempts": str(attempt)}
+                        labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
                 return result
@@ -221,7 +221,7 @@ class RetryManager:
                     )
                     self.metrics.collector.increment(
                         "mcp_retry_failures_total",
-                        labels={"operation": operation_name, "error": type(e).__name__}
+                        labels={"operation": operation_name, "error": type(e).__name__},
                     )
                     raise
 
@@ -238,7 +238,9 @@ class RetryManager:
 
             except Exception as e:
                 # Non-retryable exception
-                logger.error(f"Operation '{operation_name}' failed with non-retryable error: {e}")
+                logger.error(
+                    f"Operation '{operation_name}' failed with non-retryable error: {e}"
+                )
                 raise
 
         # Should not reach here, but just in case
@@ -250,7 +252,7 @@ def with_retry(
     max_retries: int = 3,
     initial_delay: float = 1.0,
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL,
-    operation_name: str | None = None
+    operation_name: str | None = None,
 ):
     """
     Decorator to add retry logic to functions.
@@ -261,22 +263,28 @@ def with_retry(
         strategy: Retry strategy to use
         operation_name: Name for logging (defaults to function name)
     """
+
     def decorator(func):
         config = RetryConfig(
-            max_retries=max_retries,
-            initial_delay=initial_delay,
-            strategy=strategy
+            max_retries=max_retries, initial_delay=initial_delay, strategy=strategy
         )
         retry_manager = RetryManager(config)
 
         if asyncio.iscoroutinefunction(func):
+
             async def wrapper(*args, **kwargs):
                 name = operation_name or func.__name__
-                return await retry_manager.retry_async(func, *args, operation_name=name, **kwargs)
+                return await retry_manager.retry_async(
+                    func, *args, operation_name=name, **kwargs
+                )
+
         else:
+
             def wrapper(*args, **kwargs):
                 name = operation_name or func.__name__
-                return retry_manager.retry_sync(func, *args, operation_name=name, **kwargs)
+                return retry_manager.retry_sync(
+                    func, *args, operation_name=name, **kwargs
+                )
 
         wrapper.__name__ = func.__name__
         wrapper.__doc__ = func.__doc__
@@ -292,7 +300,7 @@ class CircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout: float = 60.0,
-        expected_exception: type = Exception
+        expected_exception: type = Exception,
     ):
         """
         Initialize circuit breaker.
@@ -338,7 +346,9 @@ class CircuitBreaker:
             raise MCPError(
                 code=ErrorCode.SYSTEM_UNAVAILABLE,
                 message="Circuit breaker is open - service temporarily unavailable",
-                details={"recovery_time": self._last_failure_time + self.recovery_timeout}
+                details={
+                    "recovery_time": self._last_failure_time + self.recovery_timeout
+                },
             )
 
         try:
@@ -356,7 +366,9 @@ class CircuitBreaker:
             raise MCPError(
                 code=ErrorCode.SYSTEM_UNAVAILABLE,
                 message="Circuit breaker is open - service temporarily unavailable",
-                details={"recovery_time": self._last_failure_time + self.recovery_timeout}
+                details={
+                    "recovery_time": self._last_failure_time + self.recovery_timeout
+                },
             )
 
         try:
@@ -381,7 +393,9 @@ class CircuitBreaker:
 
         if self._failure_count >= self.failure_threshold:
             self._state = "open"
-            logger.warning(f"Circuit breaker opened after {self._failure_count} failures")
+            logger.warning(
+                f"Circuit breaker opened after {self._failure_count} failures"
+            )
 
 
 # Global retry manager instance

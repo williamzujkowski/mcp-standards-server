@@ -1,6 +1,5 @@
 """Tests for Rust language analyzer."""
 
-
 import pytest
 
 from src.analyzers.base import IssueType
@@ -23,7 +22,8 @@ class TestRustAnalyzer:
     def test_unsafe_code_detection(self, analyzer, tmp_path):
         """Test unsafe code block detection."""
         test_file = tmp_path / "unsafe_code.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 fn dangerous_function() {
     unsafe {
         let raw_ptr = 0x1234 as *const i32;
@@ -43,11 +43,17 @@ fn dangerous_function() {
 unsafe fn unsafe_function(ptr: *const u8) -> u8 {
     *ptr
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        unsafe_issues = [i for i in result.issues if i.type == IssueType.MEMORY_SAFETY or (hasattr(i, 'cwe_id') and i.cwe_id in ["CWE-824", "CWE-843", "CWE-125"])]
+        unsafe_issues = [
+            i
+            for i in result.issues
+            if i.type == IssueType.MEMORY_SAFETY
+            or (hasattr(i, "cwe_id") and i.cwe_id in ["CWE-824", "CWE-843", "CWE-125"])
+        ]
         assert len(unsafe_issues) >= 3
 
         # Check for specific unsafe patterns
@@ -58,7 +64,8 @@ unsafe fn unsafe_function(ptr: *const u8) -> u8 {
     def test_use_after_free_detection(self, analyzer, tmp_path):
         """Test use-after-free detection."""
         test_file = tmp_path / "memory_safety.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 fn use_after_drop() {
     let mut data = vec![1, 2, 3];
     let ptr = &data[0];
@@ -73,11 +80,14 @@ fn box_leak() {
     let raw = Box::into_raw(boxed);
     // Missing Box::from_raw to reclaim memory
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        memory_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-416"]
+        memory_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-416"
+        ]
         assert len(memory_issues) >= 1
 
         leak_issues = [i for i in result.issues if "leak" in i.message.lower()]
@@ -86,7 +96,8 @@ fn box_leak() {
     def test_ownership_and_borrowing(self, analyzer, tmp_path):
         """Test ownership and borrowing issue detection."""
         test_file = tmp_path / "ownership.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 fn multiple_mutable_borrows() {
     let mut data = vec![1, 2, 3];
     let ref1 = &mut data;
@@ -105,11 +116,14 @@ fn excessive_cloning() {
     let copy5 = data.clone();
     let copy6 = data.clone();
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        borrow_issues = [i for i in result.issues if "mutable borrow" in i.message.lower()]
+        borrow_issues = [
+            i for i in result.issues if "mutable borrow" in i.message.lower()
+        ]
         assert len(borrow_issues) >= 1
 
         clone_issues = [i for i in result.issues if "clone" in i.message.lower()]
@@ -118,7 +132,8 @@ fn excessive_cloning() {
     def test_concurrency_safety(self, analyzer, tmp_path):
         """Test concurrency safety detection."""
         test_file = tmp_path / "concurrency.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 use std::thread;
 use std::rc::Rc;
 
@@ -143,20 +158,28 @@ struct CustomType {
 }
 
 // Missing Send/Sync implementation for type used across threads
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        static_mut_issues = [i for i in result.issues if "static mutable" in i.message.lower()]
+        static_mut_issues = [
+            i for i in result.issues if "static mutable" in i.message.lower()
+        ]
         assert len(static_mut_issues) >= 1
 
-        rc_issues = [i for i in result.issues if "Rc" in i.message and "thread" in i.message.lower()]
+        rc_issues = [
+            i
+            for i in result.issues
+            if "Rc" in i.message and "thread" in i.message.lower()
+        ]
         assert len(rc_issues) >= 1
 
     def test_crypto_and_secrets(self, analyzer, tmp_path):
         """Test cryptographic and secret handling issues."""
         test_file = tmp_path / "crypto.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 use rand::random;
 
 const API_KEY: &str = "sk_live_1234567890abcdef";
@@ -171,22 +194,28 @@ fn hardcoded_password() {
     let password = "admin123";
     authenticate(password);
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
         # Check for hardcoded secrets
-        secret_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-798"]
+        secret_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-798"
+        ]
         assert len(secret_issues) >= 2
 
         # Check for weak RNG
-        rng_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-338"]
+        rng_issues = [
+            i for i in result.issues if hasattr(i, "cwe_id") and i.cwe_id == "CWE-338"
+        ]
         assert len(rng_issues) >= 1
 
     def test_error_handling(self, analyzer, tmp_path):
         """Test error handling patterns."""
         test_file = tmp_path / "errors.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 fn uses_unwrap() {
     let result = some_operation();
     let value = result.unwrap();  // Can panic
@@ -209,7 +238,8 @@ pub fn library_function() {
 pub fn unfinished_function() {
     unimplemented!("TODO: implement this");
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
@@ -219,13 +249,16 @@ pub fn unfinished_function() {
         panic_issues = [i for i in result.issues if "panic" in i.message.lower()]
         assert len(panic_issues) >= 1
 
-        conversion_issues = [i for i in result.issues if "conversion" in i.message.lower()]
+        conversion_issues = [
+            i for i in result.issues if "conversion" in i.message.lower()
+        ]
         assert len(conversion_issues) >= 1
 
     def test_performance_allocations(self, analyzer, tmp_path):
         """Test allocation performance issues."""
         test_file = tmp_path / "performance.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 fn unnecessary_allocations() {
     let s = "hello".to_string().as_str();  // Unnecessary String allocation
 
@@ -238,7 +271,8 @@ fn vec_push_without_capacity() {
         vec.push(i);  // Multiple reallocations
     }
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
@@ -248,7 +282,8 @@ fn vec_push_without_capacity() {
     def test_iterator_performance(self, analyzer, tmp_path):
         """Test iterator usage patterns."""
         test_file = tmp_path / "iterators.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 fn inefficient_iterator_usage() {
     let data = vec![1, 2, 3, 4, 5];
 
@@ -264,7 +299,8 @@ fn inefficient_iterator_usage() {
         .into_iter()
         .filter(|x| x > 5);
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
@@ -274,7 +310,8 @@ fn inefficient_iterator_usage() {
     def test_async_patterns(self, analyzer, tmp_path):
         """Test async/await patterns."""
         test_file = tmp_path / "async_code.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 async fn blocking_in_async() {
     std::thread::sleep(std::time::Duration::from_secs(1));  // Blocking in async
 
@@ -285,7 +322,8 @@ async fn missing_await() {
     let future = async_operation();
     // Missing .await
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
@@ -295,7 +333,8 @@ async fn missing_await() {
     def test_best_practices(self, analyzer, tmp_path):
         """Test Rust best practices."""
         test_file = tmp_path / "best_practices.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 const lowercase_const: i32 = 42;  // Should be UPPERCASE
 
 pub fn public_function() {
@@ -312,11 +351,14 @@ fn production_code() {
     panic!("Should return Result");
     todo!("Implement this");
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 
-        naming_issues = [i for i in result.issues if "SCREAMING_SNAKE_CASE" in i.message]
+        naming_issues = [
+            i for i in result.issues if "SCREAMING_SNAKE_CASE" in i.message
+        ]
         assert len(naming_issues) >= 1
 
         doc_issues = [i for i in result.issues if "documentation" in i.message.lower()]
@@ -325,7 +367,8 @@ fn production_code() {
     def test_testing_recommendations(self, analyzer, tmp_path):
         """Test testing pattern recommendations."""
         test_file = tmp_path / "no_tests.rs"
-        test_file.write_text('''
+        test_file.write_text(
+            """
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -353,7 +396,8 @@ pub fn another_function() {
 pub fn yet_another_function() {
     // More code
 }
-''')
+"""
+        )
 
         result = analyzer.analyze_file(test_file)
 

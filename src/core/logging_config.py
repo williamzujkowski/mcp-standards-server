@@ -18,6 +18,7 @@ from typing import Any
 
 try:
     from pythonjsonlogger import jsonlogger
+
     HAS_JSON_LOGGER = True
 except ImportError:
     HAS_JSON_LOGGER = False
@@ -31,21 +32,21 @@ class ContextFilter(logging.Filter):
     @classmethod
     def set_context(cls, **kwargs):
         """Set context variables for the current thread."""
-        if not hasattr(cls._context, 'data'):
+        if not hasattr(cls._context, "data"):
             cls._context.data = {}
         cls._context.data.update(kwargs)
 
     @classmethod
     def clear_context(cls):
         """Clear context for the current thread."""
-        if hasattr(cls._context, 'data'):
+        if hasattr(cls._context, "data"):
             cls._context.data.clear()
 
     @classmethod
     @contextmanager
     def context(cls, **kwargs):
         """Context manager for temporary context variables."""
-        old_context = getattr(cls._context, 'data', {}).copy()
+        old_context = getattr(cls._context, "data", {}).copy()
         cls.set_context(**kwargs)
         try:
             yield
@@ -54,7 +55,7 @@ class ContextFilter(logging.Filter):
 
     def filter(self, record):
         """Add context data to log record."""
-        if hasattr(self._context, 'data'):
+        if hasattr(self._context, "data"):
             for key, value in self._context.data.items():
                 setattr(record, key, value)
         return True
@@ -78,17 +79,19 @@ class ErrorTrackingHandler(logging.Handler):
 
             # Track last N errors
             error_info = {
-                'timestamp': datetime.fromtimestamp(record.created).isoformat(),
-                'logger': record.name,
-                'level': record.levelname,
-                'message': record.getMessage(),
-                'module': record.module,
-                'function': record.funcName,
-                'line': record.lineno
+                "timestamp": datetime.fromtimestamp(record.created).isoformat(),
+                "logger": record.name,
+                "level": record.levelname,
+                "message": record.getMessage(),
+                "module": record.module,
+                "function": record.funcName,
+                "line": record.lineno,
             }
 
-            if hasattr(record, 'exc_info') and record.exc_info:
-                error_info['exception'] = ''.join(traceback.format_exception(*record.exc_info))
+            if hasattr(record, "exc_info") and record.exc_info:
+                error_info["exception"] = "".join(
+                    traceback.format_exception(*record.exc_info)
+                )
 
             self.last_errors.append(error_info)
             if len(self.last_errors) > self.max_last_errors:
@@ -97,9 +100,9 @@ class ErrorTrackingHandler(logging.Handler):
     def get_error_stats(self) -> dict[str, Any]:
         """Get error statistics."""
         return {
-            'error_counts': self.error_counts.copy(),
-            'last_errors': self.last_errors.copy(),
-            'total_errors': sum(self.error_counts.values())
+            "error_counts": self.error_counts.copy(),
+            "last_errors": self.last_errors.copy(),
+            "total_errors": sum(self.error_counts.values()),
         }
 
     def reset_stats(self):
@@ -114,9 +117,9 @@ class StructuredFormatter(logging.Formatter):
     def format(self, record):
         """Format log record with additional structure."""
         # Add standard fields
-        record.service = 'mcp-standards-server'
-        record.environment = os.getenv('ENVIRONMENT', 'development')
-        record.hostname = os.getenv('HOSTNAME', 'localhost')
+        record.service = "mcp-standards-server"
+        record.environment = os.getenv("ENVIRONMENT", "development")
+        record.hostname = os.getenv("HOSTNAME", "localhost")
 
         # Add error details if present
         if record.exc_info:
@@ -140,7 +143,7 @@ class LoggingConfig:
         backup_count: int = 5,
         enable_console: bool = True,
         enable_file: bool = True,
-        enable_error_tracking: bool = True
+        enable_error_tracking: bool = True,
     ):
         self.level = self._parse_level(level)
         self.format = format
@@ -184,27 +187,27 @@ def setup_logging(config: LoggingConfig | None = None) -> ErrorTrackingHandler:
     # Create formatters
     if config.format == "json" and HAS_JSON_LOGGER:
         json_format = {
-            'timestamp': '%(asctime)s',
-            'level': '%(levelname)s',
-            'logger': '%(name)s',
-            'module': '%(module)s',
-            'function': '%(funcName)s',
-            'line': '%(lineno)d',
-            'message': '%(message)s',
-            'service': '%(service)s',
-            'environment': '%(environment)s',
-            'hostname': '%(hostname)s'
+            "timestamp": "%(asctime)s",
+            "level": "%(levelname)s",
+            "logger": "%(name)s",
+            "module": "%(module)s",
+            "function": "%(funcName)s",
+            "line": "%(lineno)d",
+            "message": "%(message)s",
+            "service": "%(service)s",
+            "environment": "%(environment)s",
+            "hostname": "%(hostname)s",
         }
         formatter = jsonlogger.JsonFormatter(
             json_format,
             timestamp=True,
-            static_fields={'service': 'mcp-standards-server'}
+            static_fields={"service": "mcp-standards-server"},
         )
     else:
         # Text format
         text_format = (
-            '%(asctime)s - %(name)s - %(levelname)s - '
-            '[%(module)s:%(funcName)s:%(lineno)d] - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - "
+            "[%(module)s:%(funcName)s:%(lineno)d] - %(message)s"
         )
         formatter = StructuredFormatter(text_format)
 
@@ -224,13 +227,15 @@ def setup_logging(config: LoggingConfig | None = None) -> ErrorTrackingHandler:
 
     # File handler with rotation
     if config.enable_file:
-        log_file = config.log_file or f"mcp-standards-server-{datetime.now():%Y%m%d}.log"
+        log_file = (
+            config.log_file or f"mcp-standards-server-{datetime.now():%Y%m%d}.log"
+        )
         file_path = config.log_dir / log_file
 
         file_handler = logging.handlers.RotatingFileHandler(
             filename=str(file_path),
             maxBytes=config.max_bytes,
-            backupCount=config.backup_count
+            backupCount=config.backup_count,
         )
         file_handler.setLevel(config.level)
         file_handler.setFormatter(formatter)
@@ -252,16 +257,16 @@ def setup_logging(config: LoggingConfig | None = None) -> ErrorTrackingHandler:
     logger.info(
         "Logging configured",
         extra={
-            'config': {
-                'level': logging.getLevelName(config.level),
-                'format': config.format,
-                'handlers': {
-                    'console': config.enable_console,
-                    'file': config.enable_file,
-                    'error_tracking': config.enable_error_tracking
-                }
+            "config": {
+                "level": logging.getLevelName(config.level),
+                "format": config.format,
+                "handlers": {
+                    "console": config.enable_console,
+                    "file": config.enable_file,
+                    "error_tracking": config.enable_error_tracking,
+                },
             }
-        }
+        },
     )
 
     return error_handler
@@ -270,17 +275,17 @@ def setup_logging(config: LoggingConfig | None = None) -> ErrorTrackingHandler:
 def configure_module_loggers():
     """Configure logging levels for specific modules."""
     # Reduce noise from third-party libraries
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('aiohttp').setLevel(logging.WARNING)
-    logging.getLogger('asyncio').setLevel(logging.WARNING)
-    logging.getLogger('websockets').setLevel(logging.WARNING)
-    logging.getLogger('chromadb').setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("aiohttp").setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("websockets").setLevel(logging.WARNING)
+    logging.getLogger("chromadb").setLevel(logging.WARNING)
 
     # Set specific levels for our modules
-    logging.getLogger('src.core.cache').setLevel(logging.INFO)
-    logging.getLogger('src.core.standards').setLevel(logging.INFO)
-    logging.getLogger('src.core.security').setLevel(logging.INFO)
-    logging.getLogger('src.core.performance').setLevel(logging.INFO)
+    logging.getLogger("src.core.cache").setLevel(logging.INFO)
+    logging.getLogger("src.core.standards").setLevel(logging.INFO)
+    logging.getLogger("src.core.security").setLevel(logging.INFO)
+    logging.getLogger("src.core.performance").setLevel(logging.INFO)
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -306,10 +311,7 @@ def get_error_handler() -> ErrorTrackingHandler | None:
 
 
 def init_logging(
-    level: str = "INFO",
-    format: str = "json",
-    log_file: str | None = None,
-    **kwargs
+    level: str = "INFO", format: str = "json", log_file: str | None = None, **kwargs
 ) -> ErrorTrackingHandler:
     """
     Initialize logging with environment-aware configuration.
@@ -326,17 +328,13 @@ def init_logging(
     global _error_handler
 
     # Get configuration from environment
-    env_level = os.getenv('LOG_LEVEL', level)
-    env_format = os.getenv('LOG_FORMAT', format)
-    env_file = os.getenv('LOG_FILE', log_file)
-    env_dir = os.getenv('LOG_DIR', kwargs.get('log_dir', 'logs'))
+    env_level = os.getenv("LOG_LEVEL", level)
+    env_format = os.getenv("LOG_FORMAT", format)
+    env_file = os.getenv("LOG_FILE", log_file)
+    env_dir = os.getenv("LOG_DIR", kwargs.get("log_dir", "logs"))
 
     config = LoggingConfig(
-        level=env_level,
-        format=env_format,
-        log_file=env_file,
-        log_dir=env_dir,
-        **kwargs
+        level=env_level, format=env_format, log_file=env_file, log_dir=env_dir, **kwargs
     )
 
     _error_handler = setup_logging(config)

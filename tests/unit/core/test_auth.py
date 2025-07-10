@@ -22,7 +22,7 @@ class TestAuthManager:
             secret_key="test_secret_key_for_testing_only",
             algorithm="HS256",
             token_expiry_hours=1,
-            api_keys={"test_api_key": "test_user"}
+            api_keys={"test_api_key": "test_user"},
         )
 
     @pytest.fixture
@@ -56,7 +56,7 @@ class TestAuthManager:
         payload = jwt.decode(
             token,
             auth_manager.config.secret_key,
-            algorithms=[auth_manager.config.algorithm]
+            algorithms=[auth_manager.config.algorithm],
         )
 
         assert payload["sub"] == user_id
@@ -88,13 +88,13 @@ class TestAuthManager:
             "exp": int(exp.timestamp()),
             "iat": int(now.timestamp()),
             "jti": "test_jti",
-            "scope": "mcp:tools"
+            "scope": "mcp:tools",
         }
 
         token = jwt.encode(
             payload,
             auth_manager.config.secret_key,
-            algorithm=auth_manager.config.algorithm
+            algorithm=auth_manager.config.algorithm,
         )
 
         is_valid, payload, error = auth_manager.verify_token(token)
@@ -116,7 +116,7 @@ class TestAuthManager:
         token = jwt.encode(
             {"sub": "test_user", "exp": int(time.time()) + 3600},
             "wrong_secret",
-            algorithm="HS256"
+            algorithm="HS256",
         )
 
         is_valid, payload, error = auth_manager.verify_token(token)
@@ -201,7 +201,7 @@ class TestAuthManager:
             exp=int(time.time()) + 3600,
             iat=int(time.time()),
             jti="test_jti",
-            scope="mcp:tools mcp:admin"
+            scope="mcp:tools mcp:admin",
         )
 
         assert auth_manager.check_permission(payload, "mcp:tools")
@@ -214,7 +214,7 @@ class TestAuthManager:
             exp=int(time.time()) + 3600,
             iat=int(time.time()),
             jti="test_jti",
-            scope="mcp:tools"
+            scope="mcp:tools",
         )
 
         assert not auth_manager.check_permission(payload, "mcp:admin")
