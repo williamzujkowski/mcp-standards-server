@@ -1,22 +1,23 @@
 """Set up test data for E2E tests."""
 
 import json
-import yaml
 from pathlib import Path
+
+import yaml
 
 
 def setup_test_data(data_dir: Path):
     """Set up test standards and rules data."""
-    
+
     # Create directories
     standards_dir = data_dir / "standards"
     meta_dir = standards_dir / "meta"
     cache_dir = standards_dir / "cache"
-    
+
     standards_dir.mkdir(parents=True, exist_ok=True)
     meta_dir.mkdir(exist_ok=True)
     cache_dir.mkdir(exist_ok=True)
-    
+
     # Create test standards
     test_standards = {
         "react-18-patterns": {
@@ -32,7 +33,7 @@ def setup_test_data(data_dir: Path):
             }
         },
         "python-testing": {
-            "id": "python-testing", 
+            "id": "python-testing",
             "name": "Python Testing Standards",
             "version": "2.1.0",
             "category": "testing",
@@ -42,18 +43,18 @@ def setup_test_data(data_dir: Path):
         "javascript-es6-standards": {
             "id": "javascript-es6-standards",
             "name": "JavaScript ES6+ Standards",
-            "version": "1.2.0", 
+            "version": "1.2.0",
             "category": "frontend",
             "tags": ["javascript", "es6", "frontend", "web"],
             "content": "Modern JavaScript standards for ES6 and beyond..."
         }
     }
-    
+
     # Write standards to cache
     for std_id, std_data in test_standards.items():
         std_file = cache_dir / f"{std_id}.json"
         std_file.write_text(json.dumps(std_data, indent=2))
-    
+
     # Create test rules
     test_rules = {
         "rules": [
@@ -174,11 +175,11 @@ def setup_test_data(data_dir: Path):
             }
         ]
     }
-    
+
     # Write rules file
     rules_file = meta_dir / "enhanced-selection-rules.json"
     rules_file.write_text(json.dumps(test_rules, indent=2))
-    
+
     # Create sync config that points to local test data
     sync_config = {
         "repository": {
@@ -195,6 +196,6 @@ def setup_test_data(data_dir: Path):
             "enabled": False  # Disable actual GitHub sync in tests
         }
     }
-    
+
     sync_file = standards_dir / "sync_config.yaml"
     sync_file.write_text(yaml.dump(sync_config, default_flow_style=False))

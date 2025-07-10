@@ -1,0 +1,1914 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A comprehensive LLM context management system using Model Context Protocol (MCP)">
+      
+      
+      
+        <link rel="canonical" href="https://mcp-standards-server.readthedocs.io/community/review-process/">
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
+    
+    
+      
+        <title>Community Review Process - MCP Standards Server</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2afb09e1.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#community-review-process" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="MCP Standards Server" class="md-header__button md-logo" aria-label="MCP Standards Server" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MCP Standards Server
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Community Review Process
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/williamzujkowski/mcp-standards-server" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    williamzujkowski/mcp-standards-server
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../guides/installation.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/mcp-tools.md" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="MCP Standards Server" class="md-nav__button md-logo" aria-label="MCP Standards Server" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MCP Standards Server
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/williamzujkowski/mcp-standards-server" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    williamzujkowski/mcp-standards-server
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/installation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/mcp-tools.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    MCP Tools
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Goals
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Process Principles
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Review Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-level-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      High-Level Process
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Stages
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Triggers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewer-roles-and-responsibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reviewer Roles and Responsibilities
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reviewer Roles and Responsibilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#maintainers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Maintainers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-experts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Domain Experts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#editorial-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editorial Team
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-reviewers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Community Reviewers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-stages_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Stages
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Review Stages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-initial-triage-24-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Initial Triage (24 hours)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-technical-review-3-5-days" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Technical Review (3-5 days)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Technical Review (3-5 days)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#technical-accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Technical Accuracy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-feasibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation Feasibility
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture-and-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture and Design
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Domain Alignment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-editorial-review-2-3-days" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Editorial Review (2-3 days)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Editorial Review (2-3 days)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#content-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content Quality
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#language-and-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      Language and Style
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structure-and-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Structure and Format
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation Standards
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-community-review-5-7-days" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Community Review (5-7 days)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-final-approval-1-2-days" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Final Approval (1-2 days)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feedback-integration-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feedback Integration Process
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feedback Integration Process">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feedback-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feedback Categories
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integration Workflow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conflict-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conflict Resolution
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approval-and-publication-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Approval and Publication Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Approval and Publication Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#approval-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      Approval Criteria
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Approval Criteria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#technical-excellence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Technical Excellence
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#content-quality_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content Quality
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      Community Value
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-compliance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Process Compliance
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#publication-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Publication Process
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-publication-activities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-Publication Activities
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quality-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quality Gates
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quality Gates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automated-quality-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automated Quality Gates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-quality-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Quality Gates
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tools-and-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tools and Automation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tools and Automation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#review-management-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Management Tools
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automated-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automated Workflows
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-metrics-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quality Metrics Dashboard
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#escalation-and-conflict-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Escalation and Conflict Resolution
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Escalation and Conflict Resolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#escalation-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Escalation Triggers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#escalation-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Escalation Levels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resolution-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resolution Documentation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-and-continuous-improvement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metrics and Continuous Improvement
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics and Continuous Improvement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-performance-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Performance Indicators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continuous-improvement-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Continuous Improvement Process
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feedback-mechanisms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feedback Mechanisms
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-process-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Process Templates
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Review Process Templates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-reviewer-onboarding" class="md-nav__link">
+    <span class="md-ellipsis">
+      New Reviewer Onboarding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-status-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review Status Communication
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="community-review-process">Community Review Process<a class="headerlink" href="#community-review-process" title="Permanent link">&para;</a></h1>
+<p>This document outlines the structured review workflow for standards contributions, including reviewer assignment, tracking, feedback integration, and approval workflows.</p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#review-workflow">Review Workflow</a></li>
+<li><a href="#reviewer-roles-and-responsibilities">Reviewer Roles and Responsibilities</a></li>
+<li><a href="#review-stages">Review Stages</a></li>
+<li><a href="#feedback-integration-process">Feedback Integration Process</a></li>
+<li><a href="#approval-and-publication-workflow">Approval and Publication Workflow</a></li>
+<li><a href="#quality-gates">Quality Gates</a></li>
+<li><a href="#tools-and-automation">Tools and Automation</a></li>
+<li><a href="#escalation-and-conflict-resolution">Escalation and Conflict Resolution</a></li>
+<li><a href="#metrics-and-continuous-improvement">Metrics and Continuous Improvement</a></li>
+</ol>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The community review process ensures that all standards meet high quality, consistency, and community needs. Our process balances thorough review with timely feedback to maintain momentum while ensuring excellence.</p>
+<h3 id="goals">Goals<a class="headerlink" href="#goals" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Quality Assurance</strong>: Ensure standards meet technical and editorial excellence</li>
+<li><strong>Community Input</strong>: Incorporate diverse perspectives and expertise</li>
+<li><strong>Consistency</strong>: Maintain coherent standards across domains</li>
+<li><strong>Transparency</strong>: Provide clear, traceable review processes</li>
+<li><strong>Efficiency</strong>: Deliver timely feedback and decisions</li>
+</ul>
+<h3 id="process-principles">Process Principles<a class="headerlink" href="#process-principles" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Inclusive</strong>: Welcome contributions from all community members</li>
+<li><strong>Constructive</strong>: Focus on improvement, not criticism</li>
+<li><strong>Collaborative</strong>: Encourage dialogue between authors and reviewers</li>
+<li><strong>Evidence-based</strong>: Make decisions based on clear criteria</li>
+<li><strong>Iterative</strong>: Support continuous improvement</li>
+</ul>
+<h2 id="review-workflow">Review Workflow<a class="headerlink" href="#review-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="high-level-process">High-Level Process<a class="headerlink" href="#high-level-process" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>graph TD
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    A[Author Submits Standard] --&gt; B[Initial Triage]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    B --&gt; C[Assign Reviewers]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    C --&gt; D[Technical Review]
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    D --&gt; E[Editorial Review]
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    E --&gt; F[Community Review]
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    F --&gt; G{All Reviews Pass?}
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    G --&gt;|No| H[Author Addresses Feedback]
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    H --&gt; D
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    G --&gt;|Yes| I[Final Approval]
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    I --&gt; J[Publication]
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    J --&gt; K[Post-Publication Monitoring]
+</code></pre></div>
+<h3 id="review-stages">Review Stages<a class="headerlink" href="#review-stages" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Duration</th>
+<th>Participants</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Initial Triage</td>
+<td>24 hours</td>
+<td>Maintainers</td>
+<td>Assignment or rejection</td>
+</tr>
+<tr>
+<td>Technical Review</td>
+<td>3-5 days</td>
+<td>Domain experts</td>
+<td>Technical approval</td>
+</tr>
+<tr>
+<td>Editorial Review</td>
+<td>2-3 days</td>
+<td>Editorial team</td>
+<td>Content approval</td>
+</tr>
+<tr>
+<td>Community Review</td>
+<td>5-7 days</td>
+<td>Community members</td>
+<td>Community consensus</td>
+</tr>
+<tr>
+<td>Final Approval</td>
+<td>1-2 days</td>
+<td>Maintainers</td>
+<td>Publication decision</td>
+</tr>
+</tbody>
+</table>
+<h3 id="review-triggers">Review Triggers<a class="headerlink" href="#review-triggers" title="Permanent link">&para;</a></h3>
+<p>Reviews are triggered by:</p>
+<ul>
+<li><strong>New standard submissions</strong> via pull requests</li>
+<li><strong>Major version updates</strong> (version bumps &gt;= 1.0)</li>
+<li><strong>Community requests</strong> for existing standard reviews</li>
+<li><strong>Scheduled reviews</strong> for standards older than 12 months</li>
+<li><strong>Compliance updates</strong> when regulations change</li>
+</ul>
+<h2 id="reviewer-roles-and-responsibilities">Reviewer Roles and Responsibilities<a class="headerlink" href="#reviewer-roles-and-responsibilities" title="Permanent link">&para;</a></h2>
+<h3 id="maintainers">Maintainers<a class="headerlink" href="#maintainers" title="Permanent link">&para;</a></h3>
+<p><strong>Selection Criteria:</strong>
+- Significant contributions to the project
+- Deep understanding of standards development
+- Proven track record in technical leadership
+- Active community participation</p>
+<p><strong>Responsibilities:</strong>
+- Initial triage and reviewer assignment
+- Final approval decisions
+- Escalation resolution
+- Process oversight and improvement</p>
+<p><strong>Time Commitment:</strong> 5-10 hours per week</p>
+<h3 id="domain-experts">Domain Experts<a class="headerlink" href="#domain-experts" title="Permanent link">&para;</a></h3>
+<p><strong>Selection Criteria:</strong>
+- Recognized expertise in specific domains
+- Professional experience implementing standards
+- Ability to assess technical accuracy
+- Commitment to timely reviews</p>
+<p><strong>Responsibilities:</strong>
+- Technical accuracy validation
+- Implementation feasibility assessment
+- Best practices verification
+- Architecture review</p>
+<p><strong>Current Domain Experts:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Expert</th>
+<th>Expertise Areas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API Design</td>
+<td>@api-expert</td>
+<td>REST, GraphQL, gRPC, OpenAPI</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>@security-expert</td>
+<td>Authentication, Authorization, Cryptography</td>
+</tr>
+<tr>
+<td>AI/ML</td>
+<td>@ml-expert</td>
+<td>MLOps, Model Governance, Data Science</td>
+</tr>
+<tr>
+<td>Cloud Native</td>
+<td>@cloud-expert</td>
+<td>Kubernetes, Microservices, DevOps</td>
+</tr>
+<tr>
+<td>Data Engineering</td>
+<td>@data-expert</td>
+<td>Pipelines, Governance, Analytics</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>@frontend-expert</td>
+<td>React, Vue, Accessibility, Performance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="editorial-team">Editorial Team<a class="headerlink" href="#editorial-team" title="Permanent link">&para;</a></h3>
+<p><strong>Selection Criteria:</strong>
+- Strong technical writing skills
+- Experience with documentation standards
+- Attention to detail
+- Understanding of audience needs</p>
+<p><strong>Responsibilities:</strong>
+- Grammar and style validation
+- Clarity and readability assessment
+- Consistency with style guide
+- Accessibility review</p>
+<h3 id="community-reviewers">Community Reviewers<a class="headerlink" href="#community-reviewers" title="Permanent link">&para;</a></h3>
+<p><strong>Selection Criteria:</strong>
+- Regular community participation
+- Relevant implementation experience
+- Constructive feedback history
+- Commitment to review timeline</p>
+<p><strong>Responsibilities:</strong>
+- Practical feedback on usability
+- Use case validation
+- Implementation experience sharing
+- Quality scoring participation</p>
+<h2 id="review-stages_1">Review Stages<a class="headerlink" href="#review-stages_1" title="Permanent link">&para;</a></h2>
+<h3 id="1-initial-triage-24-hours">1. Initial Triage (24 hours)<a class="headerlink" href="#1-initial-triage-24-hours" title="Permanent link">&para;</a></h3>
+<p><strong>Performed by:</strong> Maintainers</p>
+<p><strong>Criteria:</strong>
+- [ ] Submission follows contribution guidelines
+- [ ] Required files are present (MD + YAML)
+- [ ] Basic quality threshold met (&gt;60%)
+- [ ] No obvious duplicates or conflicts
+- [ ] Appropriate domain classification</p>
+<p><strong>Outcomes:</strong>
+- <strong>Accept</strong>: Proceed to reviewer assignment
+- <strong>Request Changes</strong>: Return to author with specific requirements
+- <strong>Reject</strong>: Close with explanation</p>
+<p><strong>Automated Checks:</strong>
+- File format validation
+- Metadata completeness
+- Link verification
+- Basic quality scoring</p>
+<h3 id="2-technical-review-3-5-days">2. Technical Review (3-5 days)<a class="headerlink" href="#2-technical-review-3-5-days" title="Permanent link">&para;</a></h3>
+<p><strong>Performed by:</strong> Domain experts (1-2 reviewers)</p>
+<p><strong>Review Checklist:</strong></p>
+<h4 id="technical-accuracy">Technical Accuracy<a class="headerlink" href="#technical-accuracy" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Factual correctness of all technical statements</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Current and relevant technology references</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Accurate code examples and implementations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Proper security considerations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Performance implications addressed</li>
+</ul>
+<h4 id="implementation-feasibility">Implementation Feasibility<a class="headerlink" href="#implementation-feasibility" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Realistic implementation requirements</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Appropriate complexity level</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Clear implementation guidance</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Testable requirements</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Scalability considerations</li>
+</ul>
+<h4 id="architecture-and-design">Architecture and Design<a class="headerlink" href="#architecture-and-design" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Sound architectural principles</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Appropriate design patterns</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Integration considerations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Dependency management</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Extensibility and maintainability</li>
+</ul>
+<h4 id="domain-alignment">Domain Alignment<a class="headerlink" href="#domain-alignment" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Fits within domain boundaries</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Complements existing standards</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Addresses real domain needs</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Follows domain conventions</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Appropriate abstraction level</li>
+</ul>
+<p><strong>Review Template:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gu">## Technical Review: [Standard Name]</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="gu">### Summary</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Brief overview of the standard and review findings.
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="gu">### Technical Accuracy: ✅/❌</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">-</span><span class="w"> </span>Accuracy assessment
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">-</span><span class="w"> </span>Any factual corrections needed
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="gu">### Implementation Feasibility: ✅/❌  </span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">-</span><span class="w"> </span>Feasibility analysis
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="k">-</span><span class="w"> </span>Implementation concerns or suggestions
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="gu">### Architecture Review: ✅/❌</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="k">-</span><span class="w"> </span>Architectural soundness
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="k">-</span><span class="w"> </span>Design pattern appropriateness
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="gu">### Code Examples: ✅/❌</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="k">-</span><span class="w"> </span>Example quality and correctness
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="k">-</span><span class="w"> </span>Additional examples needed
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="gu">### Security Considerations: ✅/❌</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="k">-</span><span class="w"> </span>Security analysis
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="k">-</span><span class="w"> </span>Missing security aspects
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="gu">### Recommendations</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="k">1.</span> [Priority] Specific improvement suggestion
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="k">2.</span> [Priority] Another recommendation
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="gu">### Decision: APPROVE / REQUEST_CHANGES / REJECT</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>Rationale for decision
+</code></pre></div>
+<h3 id="3-editorial-review-2-3-days">3. Editorial Review (2-3 days)<a class="headerlink" href="#3-editorial-review-2-3-days" title="Permanent link">&para;</a></h3>
+<p><strong>Performed by:</strong> Editorial team (1 reviewer)</p>
+<p><strong>Review Checklist:</strong></p>
+<h4 id="content-quality">Content Quality<a class="headerlink" href="#content-quality" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Clear and concise writing</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Logical information flow</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Appropriate section organization</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Complete coverage of topics</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Actionable guidance</li>
+</ul>
+<h4 id="language-and-style">Language and Style<a class="headerlink" href="#language-and-style" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Grammar and spelling accuracy</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Consistent terminology usage</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Appropriate tone and voice</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Accessibility-friendly language</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Style guide compliance</li>
+</ul>
+<h4 id="structure-and-format">Structure and Format<a class="headerlink" href="#structure-and-format" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Proper markdown formatting</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Consistent heading structure</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Effective use of lists and tables</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Appropriate visual elements</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cross-reference formatting</li>
+</ul>
+<h4 id="documentation-standards">Documentation Standards<a class="headerlink" href="#documentation-standards" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Complete metadata</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Proper version numbering</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Required sections present</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Link validation</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Citation formatting</li>
+</ul>
+<p><strong>Editorial Review Template:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gu">## Editorial Review: [Standard Name]</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="gu">### Content Quality: ✅/❌</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">-</span><span class="w"> </span>Writing clarity assessment
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">-</span><span class="w"> </span>Organization feedback
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="gu">### Language and Style: ✅/❌</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">-</span><span class="w"> </span>Grammar and style issues
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">-</span><span class="w"> </span>Terminology consistency
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="gu">### Structure: ✅/❌</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">-</span><span class="w"> </span>Formatting review
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">-</span><span class="w"> </span>Structural improvements
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="gu">### Completeness: ✅/❌</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="k">-</span><span class="w"> </span>Missing sections or information
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="k">-</span><span class="w"> </span>Metadata completeness
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="gu">### Suggested Edits</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>[Line-by-line editorial suggestions]
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="gu">### Decision: APPROVE / REQUEST_CHANGES</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>Editorial rationale
+</code></pre></div>
+<h3 id="4-community-review-5-7-days">4. Community Review (5-7 days)<a class="headerlink" href="#4-community-review-5-7-days" title="Permanent link">&para;</a></h3>
+<p><strong>Performed by:</strong> Community members (3-5 reviewers)</p>
+<p><strong>Review Focus:</strong>
+- Practical usability
+- Real-world applicability
+- Missing use cases
+- Implementation experience
+- Community value</p>
+<p><strong>Community Review Process:</strong></p>
+<ol>
+<li><strong>Open Call</strong>: Announcement in community channels</li>
+<li><strong>Self-Assignment</strong>: Community members volunteer</li>
+<li><strong>Guided Review</strong>: Structured feedback collection</li>
+<li><strong>Consensus Building</strong>: Discussion and alignment</li>
+<li><strong>Summary Report</strong>: Consolidated community feedback</li>
+</ol>
+<p><strong>Community Review Template:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gu">## Community Review: [Standard Name]</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="gu">### Reviewer Background</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Brief description of relevant experience
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="gu">### Usability Assessment: ⭐⭐⭐⭐⭐</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>Rate the practical usability (1-5 stars)
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="gu">### Use Case Coverage: ✅/❌</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="k">-</span><span class="w"> </span>Are relevant use cases covered?
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">-</span><span class="w"> </span>What&#39;s missing?
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="gu">### Implementation Experience: ✅/❌</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="k">-</span><span class="w"> </span>Have you implemented similar solutions?
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="k">-</span><span class="w"> </span>What challenges should be addressed?
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="gu">### Community Value: ⭐⭐⭐⭐⭐</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>Rate the value to the community (1-5 stars)
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="gu">### Specific Feedback</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>[Detailed feedback and suggestions]
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="gu">### Recommendation: APPROVE / REQUEST_CHANGES / NEEDS_DISCUSSION</span>
+</code></pre></div>
+<h3 id="5-final-approval-1-2-days">5. Final Approval (1-2 days)<a class="headerlink" href="#5-final-approval-1-2-days" title="Permanent link">&para;</a></h3>
+<p><strong>Performed by:</strong> Maintainers</p>
+<p><strong>Final Review Checklist:</strong>
+- [ ] All review stages completed successfully
+- [ ] Author addressed all required feedback
+- [ ] Quality score meets minimum threshold (80%)
+- [ ] No unresolved conflicts or concerns
+- [ ] Publication readiness confirmed</p>
+<h2 id="feedback-integration-process">Feedback Integration Process<a class="headerlink" href="#feedback-integration-process" title="Permanent link">&para;</a></h2>
+<h3 id="feedback-categories">Feedback Categories<a class="headerlink" href="#feedback-categories" title="Permanent link">&para;</a></h3>
+<p><strong>Must Fix (Blocking)</strong>
+- Technical inaccuracies
+- Security vulnerabilities
+- Major usability issues
+- Compliance violations</p>
+<p><strong>Should Fix (Important)</strong>
+- Performance concerns
+- Unclear documentation
+- Missing examples
+- Style inconsistencies</p>
+<p><strong>Could Fix (Optional)</strong>
+- Minor improvements
+- Additional examples
+- Enhanced explanations
+- Future considerations</p>
+<h3 id="integration-workflow">Integration Workflow<a class="headerlink" href="#integration-workflow" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Feedback Collection</strong>: All reviewer feedback compiled</li>
+<li><strong>Categorization</strong>: Feedback sorted by priority and type</li>
+<li><strong>Author Notification</strong>: Structured feedback provided to author</li>
+<li><strong>Discussion Period</strong>: Author and reviewers discuss concerns</li>
+<li><strong>Implementation</strong>: Author implements required changes</li>
+<li><strong>Re-review</strong>: Updated standard reviewed for compliance</li>
+<li><strong>Approval</strong>: Final approval once all requirements met</li>
+</ol>
+<h3 id="conflict-resolution">Conflict Resolution<a class="headerlink" href="#conflict-resolution" title="Permanent link">&para;</a></h3>
+<p><strong>Common Conflicts:</strong>
+- Disagreement between reviewers
+- Author disputes feedback
+- Technical approach debates
+- Resource or timeline concerns</p>
+<p><strong>Resolution Process:</strong>
+1. <strong>Direct Discussion</strong>: Encourage reviewer-author dialogue
+2. <strong>Expert Consultation</strong>: Involve additional domain experts
+3. <strong>Community Input</strong>: Seek broader community perspective
+4. <strong>Maintainer Decision</strong>: Final decision by maintainers
+5. <strong>Documentation</strong>: Record decision rationale</p>
+<h2 id="approval-and-publication-workflow">Approval and Publication Workflow<a class="headerlink" href="#approval-and-publication-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="approval-criteria">Approval Criteria<a class="headerlink" href="#approval-criteria" title="Permanent link">&para;</a></h3>
+<p>All standards must meet these criteria for approval:</p>
+<h4 id="technical-excellence">Technical Excellence<a class="headerlink" href="#technical-excellence" title="Permanent link">&para;</a></h4>
+<ul>
+<li>✅ Technical accuracy verified</li>
+<li>✅ Implementation feasibility confirmed</li>
+<li>✅ Security considerations addressed</li>
+<li>✅ Performance implications documented</li>
+</ul>
+<h4 id="content-quality_1">Content Quality<a class="headerlink" href="#content-quality_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>✅ Clear and actionable guidance</li>
+<li>✅ Complete coverage of scope</li>
+<li>✅ Appropriate examples provided</li>
+<li>✅ Proper documentation structure</li>
+</ul>
+<h4 id="community-value">Community Value<a class="headerlink" href="#community-value" title="Permanent link">&para;</a></h4>
+<ul>
+<li>✅ Addresses real community needs</li>
+<li>✅ Complements existing standards</li>
+<li>✅ Demonstrates practical utility</li>
+<li>✅ Supports accessibility and inclusion</li>
+</ul>
+<h4 id="process-compliance">Process Compliance<a class="headerlink" href="#process-compliance" title="Permanent link">&para;</a></h4>
+<ul>
+<li>✅ All review stages completed</li>
+<li>✅ Feedback properly addressed</li>
+<li>✅ Quality score ≥ 80%</li>
+<li>✅ Metadata complete and accurate</li>
+</ul>
+<h3 id="publication-process">Publication Process<a class="headerlink" href="#publication-process" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Final Approval</strong>: Maintainer grants final approval</li>
+<li><strong>Version Assignment</strong>: Final version number assigned</li>
+<li><strong>Publication</strong>: Standard published to repository</li>
+<li><strong>Announcement</strong>: Community notification of new standard</li>
+<li><strong>Index Update</strong>: Standards index updated</li>
+<li><strong>Monitoring Setup</strong>: Post-publication monitoring enabled</li>
+</ol>
+<h3 id="post-publication-activities">Post-Publication Activities<a class="headerlink" href="#post-publication-activities" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Community Announcement</strong>: Newsletter, Discord, GitHub</li>
+<li><strong>Documentation Update</strong>: Index and cross-references</li>
+<li><strong>Feedback Monitoring</strong>: Track implementation feedback</li>
+<li><strong>Usage Analytics</strong>: Monitor adoption and usage</li>
+<li><strong>Maintenance Planning</strong>: Schedule future reviews</li>
+</ul>
+<h2 id="quality-gates">Quality Gates<a class="headerlink" href="#quality-gates" title="Permanent link">&para;</a></h2>
+<h3 id="automated-quality-gates">Automated Quality Gates<a class="headerlink" href="#automated-quality-gates" title="Permanent link">&para;</a></h3>
+<p><strong>Pre-Review Gates:</strong>
+- File format validation
+- Metadata completeness check
+- Link verification
+- Basic quality scoring (&gt;60%)
+- Security scanning
+- Compliance validation</p>
+<p><strong>Post-Review Gates:</strong>
+- All reviewer approvals received
+- Quality score threshold met (≥80%)
+- Required feedback addressed
+- Final maintainer approval
+- Publication readiness check</p>
+<h3 id="manual-quality-gates">Manual Quality Gates<a class="headerlink" href="#manual-quality-gates" title="Permanent link">&para;</a></h3>
+<p><strong>Review Stage Gates:</strong>
+- Technical expert approval
+- Editorial team approval<br />
+- Community consensus achieved
+- Maintainer final approval</p>
+<p><strong>Exception Process:</strong>
+- Exceptional circumstances documented
+- Maintainer override with rationale
+- Community notification of exceptions
+- Post-publication review scheduled</p>
+<h2 id="tools-and-automation">Tools and Automation<a class="headerlink" href="#tools-and-automation" title="Permanent link">&para;</a></h2>
+<h3 id="review-management-tools">Review Management Tools<a class="headerlink" href="#review-management-tools" title="Permanent link">&para;</a></h3>
+<p><strong>GitHub Integration:</strong>
+- Pull request workflow
+- Review assignment automation
+- Status tracking
+- Approval collection</p>
+<p><strong>Custom Tools:</strong>
+- Review dashboard
+- Quality scoring system
+- Feedback aggregation
+- Timeline tracking</p>
+<h3 id="automated-workflows">Automated Workflows<a class="headerlink" href="#automated-workflows" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># .github/workflows/review-assignment.yml</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Review Assignment</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">on</span><span class="p">:</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">opened</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;standards/**&#39;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">jobs</span><span class="p">:</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">assign-reviewers</span><span class="p">:</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Determine Domain</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">domain</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">          </span><span class="no"># Extract domain from PR files</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Assign Technical Reviewers</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">          </span><span class="no"># Auto-assign domain experts</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Create Review Checklist</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">          </span><span class="no"># Generate review templates</span>
+</code></pre></div>
+<h3 id="quality-metrics-dashboard">Quality Metrics Dashboard<a class="headerlink" href="#quality-metrics-dashboard" title="Permanent link">&para;</a></h3>
+<p><strong>Real-time Metrics:</strong>
+- Review queue length
+- Average review time
+- Quality score distribution
+- Reviewer workload
+- Community participation</p>
+<p><strong>Historical Analysis:</strong>
+- Review trend analysis
+- Quality improvements over time
+- Reviewer performance metrics
+- Process bottleneck identification</p>
+<h2 id="escalation-and-conflict-resolution">Escalation and Conflict Resolution<a class="headerlink" href="#escalation-and-conflict-resolution" title="Permanent link">&para;</a></h2>
+<h3 id="escalation-triggers">Escalation Triggers<a class="headerlink" href="#escalation-triggers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Timeline Exceeded</strong>: Review taking longer than allocated time</li>
+<li><strong>Reviewer Unavailability</strong>: Assigned reviewer cannot complete review</li>
+<li><strong>Technical Disagreement</strong>: Reviewers cannot reach consensus</li>
+<li><strong>Author Disputes</strong>: Author disagrees with required changes</li>
+<li><strong>Quality Concerns</strong>: Standard quality below threshold</li>
+</ul>
+<h3 id="escalation-levels">Escalation Levels<a class="headerlink" href="#escalation-levels" title="Permanent link">&para;</a></h3>
+<p><strong>Level 1: Peer Resolution</strong>
+- Direct discussion between parties
+- Additional expert consultation
+- Extended review period
+- Compromise solutions</p>
+<p><strong>Level 2: Maintainer Intervention</strong>
+- Maintainer mediates discussion
+- Additional reviewers assigned
+- Process modifications
+- Timeline adjustments</p>
+<p><strong>Level 3: Community Decision</strong>
+- Public discussion period
+- Community voting process
+- Advisory committee input
+- Final binding decision</p>
+<h3 id="resolution-documentation">Resolution Documentation<a class="headerlink" href="#resolution-documentation" title="Permanent link">&para;</a></h3>
+<p>All escalations and resolutions are documented:
+- Issue description and timeline
+- Parties involved
+- Resolution process used
+- Final decision and rationale
+- Process improvements identified</p>
+<h2 id="metrics-and-continuous-improvement">Metrics and Continuous Improvement<a class="headerlink" href="#metrics-and-continuous-improvement" title="Permanent link">&para;</a></h2>
+<h3 id="key-performance-indicators">Key Performance Indicators<a class="headerlink" href="#key-performance-indicators" title="Permanent link">&para;</a></h3>
+<p><strong>Efficiency Metrics:</strong>
+- Average review time by stage
+- Time from submission to publication
+- Review queue backlog
+- Reviewer response time</p>
+<p><strong>Quality Metrics:</strong>
+- Initial quality score distribution
+- Post-review quality improvements
+- Community satisfaction ratings
+- Standard adoption rates</p>
+<p><strong>Participation Metrics:</strong>
+- Number of active reviewers
+- Community review participation
+- Reviewer retention rates
+- Geographic/demographic diversity</p>
+<h3 id="continuous-improvement-process">Continuous Improvement Process<a class="headerlink" href="#continuous-improvement-process" title="Permanent link">&para;</a></h3>
+<p><strong>Monthly Reviews:</strong>
+- Metric analysis and trending
+- Process bottleneck identification
+- Reviewer feedback collection
+- Tool and automation assessment</p>
+<p><strong>Quarterly Improvements:</strong>
+- Process refinements implemented
+- Tool enhancements deployed
+- Reviewer training updates
+- Community feedback integration</p>
+<p><strong>Annual Assessment:</strong>
+- Comprehensive process review
+- Strategic direction alignment
+- Major process overhauls
+- Long-term metric analysis</p>
+<h3 id="feedback-mechanisms">Feedback Mechanisms<a class="headerlink" href="#feedback-mechanisms" title="Permanent link">&para;</a></h3>
+<p><strong>Reviewer Feedback:</strong>
+- Post-review surveys
+- Regular feedback sessions
+- Process improvement suggestions
+- Tool enhancement requests</p>
+<p><strong>Author Feedback:</strong>
+- Submission experience surveys
+- Process clarity assessment
+- Timeline satisfaction
+- Support quality evaluation</p>
+<p><strong>Community Feedback:</strong>
+- Community satisfaction surveys
+- Public feedback forums
+- Standards quality assessment
+- Process transparency evaluation</p>
+<h2 id="review-process-templates">Review Process Templates<a class="headerlink" href="#review-process-templates" title="Permanent link">&para;</a></h2>
+<h3 id="new-reviewer-onboarding">New Reviewer Onboarding<a class="headerlink" href="#new-reviewer-onboarding" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gh"># Welcome to the Standards Review Team!</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="gu">## Getting Started</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">1.</span> Review the contribution guidelines
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">2.</span> Complete reviewer training modules
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">3.</span> Set up review tools and access
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">4.</span> Join reviewer communication channels
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="gu">## First Review Assignment</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="k">-</span><span class="w"> </span>Start with editorial reviews
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">-</span><span class="w"> </span>Shadow experienced reviewers
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">-</span><span class="w"> </span>Receive mentorship and feedback
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="k">-</span><span class="w"> </span>Gradually increase review complexity
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="gu">## Ongoing Development</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="k">-</span><span class="w"> </span>Participate in reviewer forums
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="k">-</span><span class="w"> </span>Attend training sessions
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="k">-</span><span class="w"> </span>Provide process feedback
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="k">-</span><span class="w"> </span>Consider domain specialization
+</code></pre></div>
+<h3 id="review-status-communication">Review Status Communication<a class="headerlink" href="#review-status-communication" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gh"># Review Status Update: [Standard Name]</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="gs">**Current Stage:**</span> Technical Review
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="gs">**Assigned Reviewers:**</span> <span class="ni">@reviewer1</span>, <span class="ni">@reviewer2</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="gs">**Expected Completion:**</span> [Date]
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="gs">**Progress:**</span> 2/3 reviews completed
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="gu">## Recent Activity</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">-</span><span class="w"> </span>[Date] Technical review completed by <span class="ni">@reviewer1</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">-</span><span class="w"> </span>[Date] Editorial feedback provided
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="k">-</span><span class="w"> </span>[Date] Author responded to initial feedback
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="gu">## Next Steps</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="k">-</span><span class="w"> </span>Awaiting final technical review
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="k">-</span><span class="w"> </span>Community review to begin [Date]
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="k">-</span><span class="w"> </span>Estimated publication: [Date]
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="gu">## Questions or Concerns?</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>Contact the review team at [contact info]
+</code></pre></div>
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>The community review process is designed to ensure high-quality standards while fostering inclusive participation and continuous improvement. By following these structured workflows and maintaining focus on our core principles, we can build a robust collection of standards that serve the entire community.</p>
+<p>The process continues to evolve based on community feedback and changing needs. All community members are encouraged to participate in both the review process and its ongoing improvement.</p>
+<hr />
+<p><em>For questions about the review process, please open an issue or contact the maintainers.</em></p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 8, 2025 03:59:55 UTC">July 8, 2025 03:59:55</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/williamzujkowski/mcp-standards-server" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "content.code.annotate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>

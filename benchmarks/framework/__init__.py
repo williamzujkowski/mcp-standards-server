@@ -1,10 +1,10 @@
 """Benchmarking framework for MCP Standards Server."""
 
 from .base import BaseBenchmark, BenchmarkResult, BenchmarkSuite
+from .comparison import RegressionDetector
 from .profiler import MemoryProfiler, TimeProfiler
 from .stats import StatisticalAnalyzer
 from .visualization import BenchmarkVisualizer
-from .comparison import RegressionDetector
 
 __all__ = [
     "BaseBenchmark",

@@ -5,11 +5,11 @@ This module defines the primary data structures used throughout the system
 for representing standards, requirements, evidence, and compliance mappings.
 """
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Union
 from enum import Enum
-import json
+from typing import Any
 
 
 class Priority(str, Enum):
@@ -51,18 +51,18 @@ class ImplementationStatus(str, Enum):
 class StandardMetadata:
     """Metadata associated with a standard."""
     version: str = "1.0.0"
-    last_updated: Optional[datetime] = None
-    authors: List[str] = field(default_factory=list)
-    source: Optional[str] = None
-    compliance_frameworks: List[str] = field(default_factory=list)
-    nist_controls: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
+    last_updated: datetime | None = None
+    authors: list[str] = field(default_factory=list)
+    source: str | None = None
+    compliance_frameworks: list[str] = field(default_factory=list)
+    nist_controls: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
     language: str = "en"
-    scope: Optional[str] = None
-    applicability: List[str] = field(default_factory=list)
-    
-    def to_dict(self) -> Dict[str, Any]:
+    scope: str | None = None
+    applicability: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         result = {}
         for key, value in self.__dict__.items():
@@ -73,9 +73,9 @@ class StandardMetadata:
             else:
                 result[key] = value
         return result
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'StandardMetadata':
+    def from_dict(cls, data: dict[str, Any]) -> 'StandardMetadata':
         """Create from dictionary."""
         if 'last_updated' in data and data['last_updated']:
             if isinstance(data['last_updated'], str):
@@ -93,13 +93,13 @@ class Requirement:
     category: str = "general"
     mandatory: bool = True
     evidence_required: bool = False
-    validation_criteria: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    related_controls: List[str] = field(default_factory=list)
-    implementation_notes: Optional[str] = None
-    examples: List[str] = field(default_factory=list)
-    
-    def to_dict(self) -> Dict[str, Any]:
+    validation_criteria: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    related_controls: list[str] = field(default_factory=list)
+    implementation_notes: str | None = None
+    examples: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'id': self.id,
@@ -115,9 +115,9 @@ class Requirement:
             'implementation_notes': self.implementation_notes,
             'examples': self.examples
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Requirement':
+    def from_dict(cls, data: dict[str, Any]) -> 'Requirement':
         """Create from dictionary."""
         if 'priority' in data and isinstance(data['priority'], str):
             data['priority'] = Priority(data['priority'])
@@ -131,20 +131,20 @@ class Evidence:
     requirement_id: str
     type: EvidenceType
     description: str
-    location: Optional[str] = None
+    location: str | None = None
     status: ValidationStatus = ValidationStatus.PENDING
-    created_at: Optional[datetime] = None
-    verified_at: Optional[datetime] = None
-    verifier: Optional[str] = None
-    notes: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
+    created_at: datetime | None = None
+    verified_at: datetime | None = None
+    verifier: str | None = None
+    notes: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
     def __post_init__(self):
         """Set default created_at if not provided."""
         if self.created_at is None:
             self.created_at = datetime.now()
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'id': self.id,
@@ -159,9 +159,9 @@ class Evidence:
             'notes': self.notes,
             'metadata': self.metadata
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Evidence':
+    def from_dict(cls, data: dict[str, Any]) -> 'Evidence':
         """Create from dictionary."""
         if 'type' in data and isinstance(data['type'], str):
             data['type'] = EvidenceType(data['type'])
@@ -181,14 +181,14 @@ class ComplianceMapping:
     control_id: str
     control_family: str
     implementation_status: ImplementationStatus = ImplementationStatus.NOT_IMPLEMENTED
-    assessment_methods: List[str] = field(default_factory=list)
-    responsible_entity: Optional[str] = None
-    implementation_guidance: Optional[str] = None
-    last_assessed: Optional[datetime] = None
-    next_assessment: Optional[datetime] = None
-    notes: Optional[str] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
+    assessment_methods: list[str] = field(default_factory=list)
+    responsible_entity: str | None = None
+    implementation_guidance: str | None = None
+    last_assessed: datetime | None = None
+    next_assessment: datetime | None = None
+    notes: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'standard_id': self.standard_id,
@@ -202,9 +202,9 @@ class ComplianceMapping:
             'next_assessment': self.next_assessment.isoformat() if self.next_assessment else None,
             'notes': self.notes
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ComplianceMapping':
+    def from_dict(cls, data: dict[str, Any]) -> 'ComplianceMapping':
         """Create from dictionary."""
         if 'implementation_status' in data and isinstance(data['implementation_status'], str):
             data['implementation_status'] = ImplementationStatus(data['implementation_status'])
@@ -221,21 +221,21 @@ class RuleCondition:
     field: str
     operator: str
     value: Any
-    description: Optional[str] = None
-    
-    def evaluate(self, context: Dict[str, Any]) -> bool:
+    description: str | None = None
+
+    def evaluate(self, context: dict[str, Any]) -> bool:
         """Evaluate the condition against a context."""
         if self.field not in context:
             return False
-        
+
         actual_value = context[self.field]
-        
+
         if self.operator == "equals":
             return actual_value == self.value
         elif self.operator == "contains":
-            return self.value in actual_value if isinstance(actual_value, (list, str)) else False
+            return self.value in actual_value if isinstance(actual_value, list | str) else False
         elif self.operator == "in":
-            return actual_value in self.value if isinstance(self.value, (list, tuple)) else False
+            return actual_value in self.value if isinstance(self.value, list | tuple) else False
         elif self.operator == "greater_than":
             return actual_value > self.value
         elif self.operator == "less_than":
@@ -245,8 +245,8 @@ class RuleCondition:
             return bool(re.match(self.value, str(actual_value)))
         else:
             return False
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'field': self.field,
@@ -254,9 +254,9 @@ class RuleCondition:
             'value': self.value,
             'description': self.description
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'RuleCondition':
+    def from_dict(cls, data: dict[str, Any]) -> 'RuleCondition':
         """Create from dictionary."""
         return cls(**data)
 
@@ -267,10 +267,10 @@ class CrossReference:
     source_standard: str
     target_standard: str
     relationship_type: str
-    description: Optional[str] = None
+    description: str | None = None
     confidence: float = 1.0
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'source_standard': self.source_standard,
@@ -279,9 +279,9 @@ class CrossReference:
             'description': self.description,
             'confidence': self.confidence
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'CrossReference':
+    def from_dict(cls, data: dict[str, Any]) -> 'CrossReference':
         """Create from dictionary."""
         return cls(**data)
 
@@ -293,9 +293,9 @@ class SearchResult:
     title: str
     score: float
     excerpt: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_dict(self) -> Dict[str, Any]:
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'standard_id': self.standard_id,
@@ -304,9 +304,9 @@ class SearchResult:
             'excerpt': self.excerpt,
             'metadata': self.metadata
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'SearchResult':
+    def from_dict(cls, data: dict[str, Any]) -> 'SearchResult':
         """Create from dictionary."""
         return cls(**data)
 
@@ -315,15 +315,15 @@ class SearchResult:
 class ValidationResult:
     """Result from validation operations."""
     standard_id: str
-    requirement_id: Optional[str] = None
+    requirement_id: str | None = None
     status: ValidationStatus = ValidationStatus.PENDING
-    score: Optional[float] = None
-    messages: List[str] = field(default_factory=list)
-    evidence: List[str] = field(default_factory=list)
-    suggestions: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_dict(self) -> Dict[str, Any]:
+    score: float | None = None
+    messages: list[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
+    suggestions: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'standard_id': self.standard_id,
@@ -335,9 +335,9 @@ class ValidationResult:
             'suggestions': self.suggestions,
             'metadata': self.metadata
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ValidationResult':
+    def from_dict(cls, data: dict[str, Any]) -> 'ValidationResult':
         """Create from dictionary."""
         if 'status' in data and isinstance(data['status'], str):
             data['status'] = ValidationStatus(data['status'])
@@ -353,63 +353,63 @@ class Standard:
     content: str
     category: str
     subcategory: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     metadata: StandardMetadata = field(default_factory=StandardMetadata)
-    requirements: List[Requirement] = field(default_factory=list)
-    evidence: List[Evidence] = field(default_factory=list)
-    compliance_mappings: List[ComplianceMapping] = field(default_factory=list)
-    cross_references: List[CrossReference] = field(default_factory=list)
-    rules: List[RuleCondition] = field(default_factory=list)
-    examples: List[str] = field(default_factory=list)
+    requirements: list[Requirement] = field(default_factory=list)
+    evidence: list[Evidence] = field(default_factory=list)
+    compliance_mappings: list[ComplianceMapping] = field(default_factory=list)
+    cross_references: list[CrossReference] = field(default_factory=list)
+    rules: list[RuleCondition] = field(default_factory=list)
+    examples: list[str] = field(default_factory=list)
     priority: Priority = Priority.MEDIUM
     version: str = "1.0.0"
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    author: Optional[str] = None
-    source: Optional[str] = None
-    
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    author: str | None = None
+    source: str | None = None
+
     def __post_init__(self):
         """Set default timestamps if not provided."""
         if self.created_at is None:
             self.created_at = datetime.now()
         if self.updated_at is None:
             self.updated_at = datetime.now()
-    
+
     def add_requirement(self, requirement: Requirement) -> None:
         """Add a requirement to the standard."""
         self.requirements.append(requirement)
-    
+
     def add_evidence(self, evidence: Evidence) -> None:
         """Add evidence to the standard."""
         self.evidence.append(evidence)
-    
+
     def add_compliance_mapping(self, mapping: ComplianceMapping) -> None:
         """Add a compliance mapping to the standard."""
         self.compliance_mappings.append(mapping)
-    
-    def get_mandatory_requirements(self) -> List[Requirement]:
+
+    def get_mandatory_requirements(self) -> list[Requirement]:
         """Get all mandatory requirements."""
         return [req for req in self.requirements if req.mandatory]
-    
-    def get_requirements_by_category(self, category: str) -> List[Requirement]:
+
+    def get_requirements_by_category(self, category: str) -> list[Requirement]:
         """Get requirements by category."""
         return [req for req in self.requirements if req.category == category]
-    
-    def get_evidence_by_status(self, status: ValidationStatus) -> List[Evidence]:
+
+    def get_evidence_by_status(self, status: ValidationStatus) -> list[Evidence]:
         """Get evidence by status."""
         return [ev for ev in self.evidence if ev.status == status]
-    
+
     def calculate_compliance_score(self) -> float:
         """Calculate overall compliance score."""
         if not self.requirements:
             return 0.0
-        
+
         total_requirements = len(self.requirements)
         verified_evidence = len(self.get_evidence_by_status(ValidationStatus.VERIFIED))
-        
+
         return min(verified_evidence / total_requirements, 1.0)
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             'id': self.id,
@@ -433,55 +433,55 @@ class Standard:
             'author': self.author,
             'source': self.source
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Standard':
+    def from_dict(cls, data: dict[str, Any]) -> 'Standard':
         """Create from dictionary."""
         # Handle enum conversion
         if 'priority' in data and isinstance(data['priority'], str):
             data['priority'] = Priority(data['priority'])
-        
+
         # Handle datetime conversion
         if 'created_at' in data and isinstance(data['created_at'], str):
             data['created_at'] = datetime.fromisoformat(data['created_at'])
         if 'updated_at' in data and isinstance(data['updated_at'], str):
             data['updated_at'] = datetime.fromisoformat(data['updated_at'])
-        
+
         # Handle nested objects
         if 'metadata' in data and isinstance(data['metadata'], dict):
             data['metadata'] = StandardMetadata.from_dict(data['metadata'])
-        
+
         if 'requirements' in data and isinstance(data['requirements'], list):
             data['requirements'] = [Requirement.from_dict(req) for req in data['requirements']]
-        
+
         if 'evidence' in data and isinstance(data['evidence'], list):
             data['evidence'] = [Evidence.from_dict(ev) for ev in data['evidence']]
-        
+
         if 'compliance_mappings' in data and isinstance(data['compliance_mappings'], list):
             data['compliance_mappings'] = [ComplianceMapping.from_dict(mapping) for mapping in data['compliance_mappings']]
-        
+
         if 'cross_references' in data and isinstance(data['cross_references'], list):
             data['cross_references'] = [CrossReference.from_dict(ref) for ref in data['cross_references']]
-        
+
         if 'rules' in data and isinstance(data['rules'], list):
             data['rules'] = [RuleCondition.from_dict(rule) for rule in data['rules']]
-        
+
         return cls(**data)
-    
+
     @classmethod
     def from_json(cls, json_str: str) -> 'Standard':
         """Create from JSON string."""
         data = json.loads(json_str)
         return cls.from_dict(data)
-    
+
     def to_json(self) -> str:
         """Convert to JSON string."""
         return json.dumps(self.to_dict(), indent=2)
-    
+
     def __str__(self) -> str:
         """String representation."""
         return f"Standard(id={self.id}, title={self.title}, category={self.category})"
-    
+
     def __repr__(self) -> str:
         """Detailed representation."""
         return (f"Standard(id={self.id}, title={self.title}, category={self.category}, "

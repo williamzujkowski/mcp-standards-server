@@ -1,21 +1,23 @@
 """Redis client implementation with connection pooling and retry logic."""
 
 import asyncio
+import base64
+import hashlib
 import json
 import logging
+import threading
 import time
-from typing import Any, Optional, Dict, List, Union, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from contextlib import asynccontextmanager
 from functools import wraps
-import hashlib
-import base64
+from typing import Any
 
-import redis
-from redis import asyncio as aioredis
-from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
-from cachetools import TTLCache
 import msgpack
+import redis
+from cachetools import TTLCache
+from redis import asyncio as aioredis
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
 
 logger = logging.getLogger(__name__)
 
@@ -23,56 +25,56 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CacheConfig:
     """Redis cache configuration."""
-    
+
     # Connection settings
     host: str = "localhost"
     port: int = 6379
     db: int = 0
-    password: Optional[str] = None
+    password: str | None = None
     ssl: bool = False
-    
+
     # Pool settings
     max_connections: int = 50
     max_connections_per_process: int = 10
     socket_keepalive: bool = True
-    socket_keepalive_options: Dict[str, Any] = field(default_factory=dict)
-    
+    socket_keepalive_options: dict[str, Any] = field(default_factory=dict)
+
     # Enhanced connection pool settings
     connection_pool_size: int = 20
     connection_pool_max_overflow: int = 10
     connection_pool_timeout: float = 30.0
     connection_pool_recycle: int = 3600  # seconds
     connection_pool_pre_ping: bool = True
-    
+
     # Connection health monitoring
     health_check_interval: float = 30.0  # seconds
     connection_timeout: float = 5.0
     socket_timeout: float = 5.0
     socket_connect_timeout: float = 5.0
-    
+
     # Retry settings
     max_retries: int = 3
     retry_delay: float = 0.1
     retry_backoff: float = 2.0
-    
+
     # Cache settings
     default_ttl: int = 300  # 5 minutes
     key_prefix: str = "mcp"
     enable_compression: bool = True
     compression_threshold: int = 1024  # bytes
-    
+
     # L1 cache settings
     l1_max_size: int = 1000
     l1_ttl: int = 30  # seconds
-    
+
     # Circuit breaker settings
     circuit_breaker_threshold: int = 5
     circuit_breaker_timeout: int = 30
-    
+
     # Monitoring
     enable_metrics: bool = True
     slow_query_threshold: float = 0.1  # seconds
-    
+
     # Performance optimization
     enable_pipeline: bool = True
     pipeline_batch_size: int = 100
@@ -81,48 +83,48 @@ class CacheConfig:
 
 class CircuitBreaker:
     """Simple circuit breaker implementation."""
-    
+
     def __init__(self, threshold: int = 5, timeout: int = 30):
         self.threshold = threshold
         self.timeout = timeout
         self.failure_count = 0
         self.last_failure_time = 0
         self.state = "closed"  # closed, open, half-open
-        
+
     def record_success(self):
         """Record successful operation."""
         self.failure_count = 0
         self.state = "closed"
-        
+
     def record_failure(self):
         """Record failed operation."""
         self.failure_count += 1
         self.last_failure_time = time.time()
-        
+
         if self.failure_count >= self.threshold:
             self.state = "open"
-            
+
     def can_attempt(self) -> bool:
         """Check if operation can be attempted."""
         if self.state == "closed":
             return True
-            
+
         if self.state == "open":
             if time.time() - self.last_failure_time > self.timeout:
                 self.state = "half-open"
                 return True
             return False
-            
+
         return True  # half-open state
 
 
 class RedisCache:
     """Redis cache client with L1/L2 caching and resilience features."""
-    
-    def __init__(self, config: Optional[CacheConfig] = None):
+
+    def __init__(self, config: CacheConfig | None = None):
         self.config = config or CacheConfig()
-        self._sync_pool: Optional[redis.ConnectionPool] = None
-        self._async_pool: Optional[aioredis.ConnectionPool] = None
+        self._sync_pool: redis.ConnectionPool | None = None
+        self._async_pool: aioredis.ConnectionPool | None = None
         self._l1_cache = TTLCache(
             maxsize=self.config.l1_max_size,
             ttl=self.config.l1_ttl
@@ -142,7 +144,7 @@ class RedisCache:
             'pool_exhausted': 0,
             'pipeline_operations': 0
         }
-        
+
         # Health monitoring
         self._health_check_task = None
         self._connection_health = {
@@ -152,11 +154,11 @@ class RedisCache:
             'total_checks': 0,
             'failed_checks': 0
         }
-        
+
         # Pipeline support
         self._pipeline_queue = []
         self._pipeline_lock = threading.Lock()
-        
+
         # Connection pool monitoring
         self._pool_stats = {
             'active_connections': 0,
@@ -164,19 +166,19 @@ class RedisCache:
             'total_connections': 0,
             'pool_exhaustion_count': 0
         }
-    
+
     def _get_json_encoder(self):
         """Get JSON encoder that handles common Python types."""
         class ExtendedJSONEncoder(json.JSONEncoder):
             def default(self, obj):
-                if isinstance(obj, (set, frozenset)):
+                if isinstance(obj, set | frozenset):
                     return {"__type__": "set", "values": list(obj)}
                 elif isinstance(obj, bytes):
                     return {"__type__": "bytes", "data": base64.b64encode(obj).decode('ascii')}
                 # Don't try to serialize arbitrary objects for security reasons
                 return super().default(obj)
         return ExtendedJSONEncoder
-    
+
     def _json_object_hook(self, obj):
         """JSON decoder hook to reconstruct special types."""
         if isinstance(obj, dict) and "__type__" in obj:
@@ -186,7 +188,7 @@ class RedisCache:
             elif type_name == "bytes":
                 return base64.b64decode(obj["data"].encode('ascii'))
         return obj
-        
+
     @property
     def sync_pool(self) -> redis.ConnectionPool:
         """Get or create sync connection pool."""
@@ -205,13 +207,13 @@ class RedisCache:
                 retry_on_timeout=True,
                 health_check_interval=self.config.health_check_interval,
             )
-            
+
             # Start health monitoring
             if self.config.enable_metrics:
                 self._start_health_monitoring()
-                
+
         return self._sync_pool
-        
+
     @property
     def async_pool(self) -> aioredis.ConnectionPool:
         """Get or create async connection pool."""
@@ -230,13 +232,13 @@ class RedisCache:
                 retry_on_timeout=True,
                 health_check_interval=self.config.health_check_interval,
             )
-            
+
             # Start health monitoring
             if self.config.enable_metrics:
                 self._start_health_monitoring()
-                
+
         return self._async_pool
-        
+
     def _serialize(self, value: Any) -> bytes:
         """Serialize value for storage with secure methods."""
         try:
@@ -257,7 +259,7 @@ class RedisCache:
                     f"Only msgpack and JSON serializable types are supported. "
                     f"Consider implementing a custom serialization method. Error: {e}"
                 )
-            
+
         # Compress if needed
         if self.config.enable_compression and len(data) > self.config.compression_threshold:
             import zlib
@@ -265,21 +267,21 @@ class RedisCache:
             return b'Z' + serializer.encode() + data
         else:
             return b'U' + serializer.encode() + data
-            
+
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value from storage with security checks."""
         if not data:
             return None
-            
+
         compression = data[0:1]
         serializer = data[1:2].decode()
         payload = data[2:]
-        
+
         # Decompress if needed
         if compression == b'Z':
             import zlib
             payload = zlib.decompress(payload)
-            
+
         # Deserialize based on serializer type
         if serializer == 'm':
             return msgpack.unpackb(payload, raw=False)
@@ -298,41 +300,41 @@ class RedisCache:
             )
         else:
             raise ValueError(f"Unknown serializer type: {serializer}")
-            
+
     def _build_key(self, key: str) -> str:
         """Build full cache key with prefix."""
         return f"{self.config.key_prefix}:{key}"
-        
+
     def _with_retry(self, func: Callable) -> Callable:
         """Decorator for retry logic."""
         @wraps(func)
         def wrapper(*args, **kwargs):
             last_error = None
             delay = self.config.retry_delay
-            
+
             for attempt in range(self.config.max_retries):
                 try:
                     if not self._circuit_breaker.can_attempt():
                         raise RedisConnectionError("Circuit breaker is open")
-                        
+
                     result = func(*args, **kwargs)
                     self._circuit_breaker.record_success()
                     return result
-                    
+
                 except RedisError as e:
                     last_error = e
                     self._circuit_breaker.record_failure()
                     self._metrics['errors'] += 1
-                    
+
                     if attempt < self.config.max_retries - 1:
                         time.sleep(delay)
                         delay *= self.config.retry_backoff
-                    
+
             logger.error(f"Redis operation failed after {self.config.max_retries} retries: {last_error}")
             raise last_error
-            
+
         return wrapper
-        
+
     def _with_metrics(self, operation: str) -> Callable:
         """Decorator for metrics collection."""
         def decorator(func: Callable) -> Callable:
@@ -347,7 +349,7 @@ class RedisCache:
                     if duration > self.config.slow_query_threshold:
                         self._metrics['slow_queries'] += 1
                         logger.warning(f"Slow {operation} operation: {duration:.3f}s")
-                        
+
             @wraps(func)
             async def async_wrapper(self, *args, **kwargs):
                 start_time = time.time()
@@ -359,10 +361,10 @@ class RedisCache:
                     if duration > self.config.slow_query_threshold:
                         self._metrics['slow_queries'] += 1
                         logger.warning(f"Slow {operation} operation: {duration:.3f}s")
-                        
+
             return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
         return decorator
-        
+
     def _start_health_monitoring(self):
         """Start health monitoring task."""
         if self._health_check_task is None:
@@ -371,7 +373,7 @@ class RedisCache:
                 daemon=True
             )
             self._health_check_task.start()
-    
+
     def _health_monitor_worker(self):
         """Health monitoring worker thread."""
         while True:
@@ -381,34 +383,34 @@ class RedisCache:
             except Exception as e:
                 logger.error(f"Health monitoring error: {e}")
                 time.sleep(self.config.health_check_interval)
-    
+
     def _perform_health_check(self):
         """Perform health check on connections."""
-        start_time = time.time()
-        
+        time.time()
+
         try:
             # Check sync pool
             with redis.Redis(connection_pool=self.sync_pool) as r:
                 r.ping()
-            
+
             # Update health status
             self._connection_health['is_healthy'] = True
             self._connection_health['consecutive_failures'] = 0
             self._connection_health['last_check'] = datetime.now().isoformat()
             self._connection_health['total_checks'] += 1
-            
+
             # Update pool stats
             self._update_pool_stats()
-            
+
         except Exception as e:
             self._connection_health['is_healthy'] = False
             self._connection_health['consecutive_failures'] += 1
             self._connection_health['failed_checks'] += 1
             self._connection_health['total_checks'] += 1
             self._metrics['connection_errors'] += 1
-            
+
             logger.warning(f"Health check failed: {e}")
-    
+
     def _update_pool_stats(self):
         """Update connection pool statistics."""
         try:
@@ -420,8 +422,8 @@ class RedisCache:
                 })
         except Exception as e:
             logger.debug(f"Could not update pool stats: {e}")
-    
-    def execute_pipeline(self, operations: List[Dict[str, Any]]) -> List[Any]:
+
+    def execute_pipeline(self, operations: list[dict[str, Any]]) -> list[Any]:
         """Execute multiple operations in a pipeline."""
         if not self.config.enable_pipeline:
             # Execute operations individually
@@ -431,16 +433,16 @@ class RedisCache:
                 result = method(*op.get('args', []), **op.get('kwargs', {}))
                 results.append(result)
             return results
-        
+
         try:
             with redis.Redis(connection_pool=self.sync_pool) as r:
                 pipe = r.pipeline()
-                
+
                 for op in operations:
                     method_name = op['method']
                     args = op.get('args', [])
                     kwargs = op.get('kwargs', {})
-                    
+
                     # Map our method names to Redis methods
                     if method_name == 'set':
                         pipe.set(args[0], self._serialize(args[1]), **kwargs)
@@ -450,25 +452,25 @@ class RedisCache:
                         pipe.delete(args[0])
                     else:
                         logger.warning(f"Unknown pipeline method: {method_name}")
-                
+
                 results = pipe.execute()
-                
+
                 # Deserialize results where needed
                 processed_results = []
-                for i, (result, op) in enumerate(zip(results, operations)):
+                for _i, (result, op) in enumerate(zip(results, operations, strict=False)):
                     if op['method'] == 'get' and result:
                         processed_results.append(self._deserialize(result))
                     else:
                         processed_results.append(result)
-                
+
                 self._metrics['pipeline_operations'] += 1
                 return processed_results
-                
+
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
             raise
-    
-    async def execute_pipeline_async(self, operations: List[Dict[str, Any]]) -> List[Any]:
+
+    async def execute_pipeline_async(self, operations: list[dict[str, Any]]) -> list[Any]:
         """Execute multiple operations in an async pipeline."""
         if not self.config.enable_pipeline:
             # Execute operations individually
@@ -478,16 +480,16 @@ class RedisCache:
                 result = await method(*op.get('args', []), **op.get('kwargs', {}))
                 results.append(result)
             return results
-        
+
         try:
             async with aioredis.Redis(connection_pool=self.async_pool) as r:
                 pipe = r.pipeline()
-                
+
                 for op in operations:
                     method_name = op['method']
                     args = op.get('args', [])
                     kwargs = op.get('kwargs', {})
-                    
+
                     # Map our method names to Redis methods
                     if method_name == 'set':
                         await pipe.set(args[0], self._serialize(args[1]), **kwargs)
@@ -497,45 +499,45 @@ class RedisCache:
                         await pipe.delete(args[0])
                     else:
                         logger.warning(f"Unknown pipeline method: {method_name}")
-                
+
                 results = await pipe.execute()
-                
+
                 # Deserialize results where needed
                 processed_results = []
-                for i, (result, op) in enumerate(zip(results, operations)):
+                for _i, (result, op) in enumerate(zip(results, operations, strict=False)):
                     if op['method'] == 'get' and result:
                         processed_results.append(self._deserialize(result))
                     else:
                         processed_results.append(result)
-                
+
                 self._metrics['pipeline_operations'] += 1
                 return processed_results
-                
+
         except Exception as e:
             logger.error(f"Async pipeline execution failed: {e}")
             raise
-        
+
     # Sync methods
-    
-    def get(self, key: str) -> Optional[Any]:
+
+    def get(self, key: str) -> Any | None:
         """Get value from cache (sync)."""
         start_time = time.time()
         full_key = self._build_key(key)
-        
+
         # Check L1 cache first
         if full_key in self._l1_cache:
             self._metrics['l1_hits'] += 1
             return self._l1_cache[full_key]
-            
+
         self._metrics['l1_misses'] += 1
-        
+
         # Check L2 cache
         try:
             @self._with_retry
             def _get():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     return r.get(full_key)
-                    
+
             data = _get()
             if data:
                 self._metrics['l2_hits'] += 1
@@ -545,7 +547,7 @@ class RedisCache:
             else:
                 self._metrics['l2_misses'] += 1
                 return None
-                
+
         except RedisError:
             logger.warning(f"Redis get failed for key: {key}, using L1 only")
             return None
@@ -554,25 +556,25 @@ class RedisCache:
             if duration > self.config.slow_query_threshold:
                 self._metrics['slow_queries'] += 1
                 logger.warning(f"Slow get operation: {duration:.3f}s")
-            
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+
+    def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in cache (sync)."""
         start_time = time.time()
         full_key = self._build_key(key)
         ttl = ttl or self.config.default_ttl
-        
+
         # Set in L1 cache
         self._l1_cache[full_key] = value
-        
+
         # Set in L2 cache
         try:
             @self._with_retry
             def _set():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     return r.setex(full_key, ttl, self._serialize(value))
-                    
+
             return bool(_set())
-            
+
         except RedisError:
             logger.warning(f"Redis set failed for key: {key}, value cached in L1 only")
             return False
@@ -581,32 +583,32 @@ class RedisCache:
             if duration > self.config.slow_query_threshold:
                 self._metrics['slow_queries'] += 1
                 logger.warning(f"Slow set operation: {duration:.3f}s")
-            
+
     def delete(self, key: str) -> bool:
         """Delete value from cache (sync)."""
         full_key = self._build_key(key)
-        
+
         # Delete from L1 cache
         self._l1_cache.pop(full_key, None)
-        
+
         # Delete from L2 cache
         try:
             @self._with_retry
             def _delete():
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     return r.delete(full_key)
-                    
+
             return bool(_delete())
-            
+
         except RedisError:
             logger.warning(f"Redis delete failed for key: {key}")
             return False
-            
-    def mget(self, keys: List[str]) -> Dict[str, Any]:
+
+    def mget(self, keys: list[str]) -> dict[str, Any]:
         """Get multiple values from cache (sync)."""
         result = {}
         l2_keys = []
-        
+
         # Check L1 cache first
         for key in keys:
             full_key = self._build_key(key)
@@ -616,7 +618,7 @@ class RedisCache:
             else:
                 l2_keys.append(key)
                 self._metrics['l1_misses'] += 1
-                
+
         # Check L2 cache for remaining keys
         if l2_keys:
             try:
@@ -625,9 +627,9 @@ class RedisCache:
                     with redis.Redis(connection_pool=self.sync_pool) as r:
                         full_keys = [self._build_key(k) for k in l2_keys]
                         return r.mget(full_keys)
-                        
+
                 values = _mget()
-                for key, value in zip(l2_keys, values):
+                for key, value in zip(l2_keys, values, strict=False):
                     if value:
                         self._metrics['l2_hits'] += 1
                         deserialized = self._deserialize(value)
@@ -635,20 +637,20 @@ class RedisCache:
                         self._l1_cache[self._build_key(key)] = deserialized
                     else:
                         self._metrics['l2_misses'] += 1
-                        
+
             except RedisError:
                 logger.warning("Redis mget failed, partial results from L1 only")
-                
+
         return result
-        
-    def mset(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+
+    def mset(self, mapping: dict[str, Any], ttl: int | None = None) -> bool:
         """Set multiple values in cache (sync)."""
         ttl = ttl or self.config.default_ttl
-        
+
         # Set in L1 cache
         for key, value in mapping.items():
             self._l1_cache[self._build_key(key)] = value
-            
+
         # Set in L2 cache
         try:
             @self._with_retry
@@ -659,24 +661,24 @@ class RedisCache:
                         full_key = self._build_key(key)
                         pipe.setex(full_key, ttl, self._serialize(value))
                     return pipe.execute()
-                    
+
             return all(_mset())
-            
+
         except RedisError:
             logger.warning("Redis mset failed, values cached in L1 only")
             return False
-            
+
     def delete_pattern(self, pattern: str) -> int:
         """Delete keys matching pattern (sync)."""
         full_pattern = self._build_key(pattern)
-        
+
         # Clear matching keys from L1 cache
         l1_cleared = 0
         for key in list(self._l1_cache.keys()):
             if self._match_pattern(key, full_pattern):
                 del self._l1_cache[key]
                 l1_cleared += 1
-                
+
         # Delete from L2 cache
         try:
             @self._with_retry
@@ -686,38 +688,38 @@ class RedisCache:
                     if keys:
                         return r.delete(*keys)
                     return 0
-                    
+
             l2_cleared = _delete_pattern()
             return max(l1_cleared, l2_cleared)
-            
+
         except RedisError:
             logger.warning(f"Redis delete_pattern failed for pattern: {pattern}")
             return l1_cleared
-            
+
     # Async methods
-    
-    async def async_get(self, key: str) -> Optional[Any]:
+
+    async def async_get(self, key: str) -> Any | None:
         """Get value from cache (async)."""
         start_time = time.time()
         full_key = self._build_key(key)
-        
+
         # Check L1 cache first
         if full_key in self._l1_cache:
             self._metrics['l1_hits'] += 1
             return self._l1_cache[full_key]
-            
+
         self._metrics['l1_misses'] += 1
-        
+
         # Check L2 cache
         try:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
-                
+
             async with aioredis.Redis(connection_pool=self.async_pool) as r:
                 data = await r.get(full_key)
-                
+
             self._circuit_breaker.record_success()
-            
+
             if data:
                 self._metrics['l2_hits'] += 1
                 value = self._deserialize(data)
@@ -726,8 +728,8 @@ class RedisCache:
             else:
                 self._metrics['l2_misses'] += 1
                 return None
-                
-        except RedisError as e:
+
+        except RedisError:
             self._circuit_breaker.record_failure()
             self._metrics['errors'] += 1
             logger.warning(f"Redis async_get failed for key: {key}, using L1 only")
@@ -737,28 +739,28 @@ class RedisCache:
             if duration > self.config.slow_query_threshold:
                 self._metrics['slow_queries'] += 1
                 logger.warning(f"Slow async_get operation: {duration:.3f}s")
-            
-    async def async_set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+
+    async def async_set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in cache (async)."""
         start_time = time.time()
         full_key = self._build_key(key)
         ttl = ttl or self.config.default_ttl
-        
+
         # Set in L1 cache
         self._l1_cache[full_key] = value
-        
+
         # Set in L2 cache
         try:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
-                
+
             async with aioredis.Redis(connection_pool=self.async_pool) as r:
                 result = await r.setex(full_key, ttl, self._serialize(value))
-                
+
             self._circuit_breaker.record_success()
             return bool(result)
-            
-        except RedisError as e:
+
+        except RedisError:
             self._circuit_breaker.record_failure()
             self._metrics['errors'] += 1
             logger.warning(f"Redis async_set failed for key: {key}, value cached in L1 only")
@@ -768,34 +770,34 @@ class RedisCache:
             if duration > self.config.slow_query_threshold:
                 self._metrics['slow_queries'] += 1
                 logger.warning(f"Slow async_set operation: {duration:.3f}s")
-            
+
     async def async_delete(self, key: str) -> bool:
         """Delete value from cache (async)."""
         full_key = self._build_key(key)
-        
+
         # Delete from L1 cache
         self._l1_cache.pop(full_key, None)
-        
+
         # Delete from L2 cache
         try:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
-                
+
             async with aioredis.Redis(connection_pool=self.async_pool) as r:
                 result = await r.delete(full_key)
-                
+
             self._circuit_breaker.record_success()
             return bool(result)
-            
-        except RedisError as e:
+
+        except RedisError:
             self._circuit_breaker.record_failure()
             self._metrics['errors'] += 1
             logger.warning(f"Redis async_delete failed for key: {key}")
             return False
-            
+
     # Health and monitoring
-    
-    def health_check(self) -> Dict[str, Any]:
+
+    def health_check(self) -> dict[str, Any]:
         """Perform health check."""
         health = {
             'status': 'healthy',
@@ -807,7 +809,7 @@ class RedisCache:
             'connection_health': self._connection_health.copy(),
             'pool_stats': self._pool_stats.copy()
         }
-        
+
         # Check Redis connection
         try:
             start_time = time.time()
@@ -815,19 +817,19 @@ class RedisCache:
                 r.ping()
             health['redis_connected'] = True
             health['latency_ms'] = (time.time() - start_time) * 1000
-            
+
         except RedisError:
             health['status'] = 'degraded' if self._circuit_breaker.state != 'open' else 'unhealthy'
-        
+
         # Overall health assessment
         if not self._connection_health['is_healthy']:
             health['status'] = 'unhealthy'
         elif self._connection_health['consecutive_failures'] > 0:
             health['status'] = 'degraded'
-            
+
         return health
-        
-    async def async_health_check(self) -> Dict[str, Any]:
+
+    async def async_health_check(self) -> dict[str, Any]:
         """Perform async health check."""
         health = {
             'status': 'healthy',
@@ -839,7 +841,7 @@ class RedisCache:
             'connection_health': self._connection_health.copy(),
             'pool_stats': self._pool_stats.copy()
         }
-        
+
         # Check Redis connection
         try:
             start_time = time.time()
@@ -847,24 +849,24 @@ class RedisCache:
                 await r.ping()
             health['redis_connected'] = True
             health['latency_ms'] = (time.time() - start_time) * 1000
-            
+
         except RedisError:
             health['status'] = 'degraded' if self._circuit_breaker.state != 'open' else 'unhealthy'
-        
+
         # Overall health assessment
         if not self._connection_health['is_healthy']:
             health['status'] = 'unhealthy'
         elif self._connection_health['consecutive_failures'] > 0:
             health['status'] = 'degraded'
-            
+
         return health
-        
-    def get_metrics(self) -> Dict[str, Any]:
+
+    def get_metrics(self) -> dict[str, Any]:
         """Get cache metrics."""
         total_l1 = self._metrics['l1_hits'] + self._metrics['l1_misses']
         total_l2 = self._metrics['l2_hits'] + self._metrics['l2_misses']
         total_health_checks = self._connection_health['total_checks']
-        
+
         return {
             **self._metrics,
             'l1_hit_rate': self._metrics['l1_hits'] / total_l1 if total_l1 > 0 else 0,
@@ -878,31 +880,31 @@ class RedisCache:
                 if total_health_checks > 0 else 1.0
             )
         }
-        
+
     def clear_l1_cache(self):
         """Clear L1 cache."""
         self._l1_cache.clear()
-        
+
     def close(self):
         """Close connection pools."""
         if self._sync_pool:
             self._sync_pool.disconnect()
         if self._async_pool:
             asyncio.create_task(self._async_pool.disconnect())
-            
+
     async def async_close(self):
         """Close connection pools (async)."""
         if self._sync_pool:
             self._sync_pool.disconnect()
         if self._async_pool:
             await self._async_pool.disconnect()
-            
+
     @staticmethod
     def _match_pattern(key: str, pattern: str) -> bool:
         """Check if key matches pattern (simple glob matching)."""
         import fnmatch
         return fnmatch.fnmatch(key, pattern)
-        
+
     @staticmethod
     def generate_cache_key(*args, **kwargs) -> str:
         """Generate a cache key from arguments using SHA-256."""
@@ -915,7 +917,7 @@ class RedisCache:
 
 
 # Global cache instance (can be initialized in app startup)
-_global_cache: Optional[RedisCache] = None
+_global_cache: RedisCache | None = None
 
 
 def get_cache() -> RedisCache:

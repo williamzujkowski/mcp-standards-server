@@ -2,15 +2,15 @@
 
 # Import semantic search mocks
 from .semantic_search_mocks import (
-    MockSentenceTransformer,
-    MockRedisClient,
-    MockNLTKComponents,
-    MockFuzz,
-    MockProcess,
     MockCosineSimilarity,
+    MockFuzz,
     MockNearestNeighbors,
+    MockNLTKComponents,
+    MockProcess,
+    MockRedisClient,
+    MockSentenceTransformer,
     TestDataGenerator,
-    patch_ml_dependencies
+    patch_ml_dependencies,
 )
 
 __all__ = [

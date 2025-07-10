@@ -1,7 +1,7 @@
 """Main entry point for running as module."""
 import asyncio
-import sys
 import logging
+import sys
 
 # Configure logging before importing the server
 logging.basicConfig(
@@ -13,8 +13,8 @@ try:
     from .mcp_server import main
 except ImportError:
     # Fallback for direct execution
-    import sys
     import os
+    import sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from mcp_server import main
 

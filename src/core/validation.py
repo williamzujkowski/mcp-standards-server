@@ -5,14 +5,14 @@ Provides comprehensive validation for tool inputs using JSON Schema and Pydantic
 """
 
 import re
-from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from typing import Any
+
 import jsonschema
 from jsonschema import Draft7Validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.core.errors import ValidationError, ErrorCode, get_secure_error_handler
+from src.core.errors import ErrorCode, ValidationError, get_secure_error_handler
 from src.core.security import get_security_middleware
-
 
 # Common validation patterns
 PATTERNS = {
@@ -31,18 +31,18 @@ MAX_ARRAY_SIZE = 1000
 class ContextModel(BaseModel):
     """Validation model for project context."""
     model_config = ConfigDict(extra="allow")
-    
-    project_type: Optional[str] = Field(None, pattern=r"^[a-z_]+$")
-    language: Optional[str] = Field(None, pattern=r"^[a-z]+$")
-    framework: Optional[str] = Field(None, pattern=r"^[a-z0-9_-]+$")
-    requirements: Optional[List[str]] = Field(None, max_length=100)
-    languages: Optional[List[str]] = Field(None, max_length=50)
-    team_size: Optional[str] = Field(None, pattern=r"^(small|medium|large)$")
-    platform: Optional[List[str]] = Field(None, max_length=10)
-    
+
+    project_type: str | None = Field(None, pattern=r"^[a-z_]+$")
+    language: str | None = Field(None, pattern=r"^[a-z]+$")
+    framework: str | None = Field(None, pattern=r"^[a-z0-9_-]+$")
+    requirements: list[str] | None = Field(None, max_length=100)
+    languages: list[str] | None = Field(None, max_length=50)
+    team_size: str | None = Field(None, pattern=r"^(small|medium|large)$")
+    platform: list[str] | None = Field(None, max_length=10)
+
     @field_validator("requirements", "languages", "platform")
     @classmethod
-    def validate_string_list(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def validate_string_list(cls, v: list[str] | None) -> list[str] | None:
         if v is not None:
             for item in v:
                 if not isinstance(item, str) or len(item) > 100:
@@ -61,7 +61,7 @@ class ValidateAgainstStandardInput(BaseModel):
     code: str = Field(..., min_length=1, max_length=MAX_CODE_SIZE)
     standard: str = Field(..., pattern=PATTERNS["identifier"])
     language: str = Field(..., pattern=PATTERNS["language"])
-    
+
     @field_validator("code")
     @classmethod
     def validate_code_safety(cls, v: str) -> str:
@@ -74,11 +74,11 @@ class ValidateAgainstStandardInput(BaseModel):
             r"globals\s*\(",
             r"locals\s*\("
         ]
-        
+
         for pattern in dangerous_patterns:
             if re.search(pattern, v, re.IGNORECASE):
                 raise ValueError(f"Code contains potentially dangerous pattern: {pattern}")
-                
+
         return v
 
 
@@ -87,8 +87,8 @@ class SearchStandardsInput(BaseModel):
     query: str = Field(..., min_length=1, max_length=MAX_QUERY_LENGTH)
     limit: int = Field(default=10, ge=1, le=100)
     min_relevance: float = Field(default=0.0, ge=0.0, le=1.0)
-    filters: Optional[Dict[str, List[str]]] = None
-    
+    filters: dict[str, list[str]] | None = None
+
     @field_validator("query")
     @classmethod
     def sanitize_query(cls, v: str) -> str:
@@ -104,7 +104,7 @@ class GetStandardDetailsInput(BaseModel):
 
 class ListAvailableStandardsInput(BaseModel):
     """Input validation for list_available_standards."""
-    category: Optional[str] = Field(None, pattern=PATTERNS["category"])
+    category: str | None = Field(None, pattern=PATTERNS["category"])
     limit: int = Field(default=100, ge=1, le=1000)
 
 
@@ -128,20 +128,20 @@ class GetOptimizedStandardInput(BaseModel):
     """Input validation for get_optimized_standard."""
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
     format_type: str = Field(default="condensed", pattern=r"^(full|condensed|reference|summary)$")
-    token_budget: Optional[int] = Field(None, ge=100, le=100000)
-    required_sections: Optional[List[str]] = Field(None, max_length=50)
-    context: Optional[Dict[str, Any]] = None
-    
+    token_budget: int | None = Field(None, ge=100, le=100000)
+    required_sections: list[str] | None = Field(None, max_length=50)
+    context: dict[str, Any] | None = None
+
 
 class AutoOptimizeStandardsInput(BaseModel):
     """Input validation for auto_optimize_standards."""
-    standard_ids: List[str] = Field(..., min_length=1, max_length=MAX_ARRAY_SIZE)
+    standard_ids: list[str] = Field(..., min_length=1, max_length=MAX_ARRAY_SIZE)
     total_token_budget: int = Field(..., ge=1000, le=1000000)
-    context: Optional[Dict[str, Any]] = None
-    
+    context: dict[str, Any] | None = None
+
     @field_validator("standard_ids")
     @classmethod
-    def validate_standard_ids(cls, v: List[str]) -> List[str]:
+    def validate_standard_ids(cls, v: list[str]) -> list[str]:
         for std_id in v:
             if not re.match(PATTERNS["identifier"], std_id):
                 raise ValueError(f"Invalid standard ID: {std_id}")
@@ -151,26 +151,26 @@ class AutoOptimizeStandardsInput(BaseModel):
 class ProgressiveLoadStandardInput(BaseModel):
     """Input validation for progressive_load_standard."""
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
-    initial_sections: List[str] = Field(..., min_length=1, max_length=20)
+    initial_sections: list[str] = Field(..., min_length=1, max_length=20)
     max_depth: int = Field(default=3, ge=1, le=10)
 
 
 class EstimateTokenUsageInput(BaseModel):
     """Input validation for estimate_token_usage."""
-    standard_ids: List[str] = Field(..., min_length=1, max_length=MAX_ARRAY_SIZE)
-    format_types: Optional[List[str]] = None
-    
+    standard_ids: list[str] = Field(..., min_length=1, max_length=MAX_ARRAY_SIZE)
+    format_types: list[str] | None = None
+
     @field_validator("standard_ids")
     @classmethod
-    def validate_standard_ids(cls, v: List[str]) -> List[str]:
+    def validate_standard_ids(cls, v: list[str]) -> list[str]:
         for std_id in v:
             if not re.match(PATTERNS["identifier"], std_id):
                 raise ValueError(f"Invalid standard ID: {std_id}")
         return v
-    
+
     @field_validator("format_types")
     @classmethod
-    def validate_format_types(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def validate_format_types(cls, v: list[str] | None) -> list[str] | None:
         if v is not None:
             valid_formats = {"full", "condensed", "reference", "summary"}
             for fmt in v:
@@ -182,9 +182,9 @@ class EstimateTokenUsageInput(BaseModel):
 class GenerateStandardInput(BaseModel):
     """Input validation for generate_standard."""
     template_name: str = Field(..., pattern=PATTERNS["identifier"])
-    context: Dict[str, Any]
+    context: dict[str, Any]
     title: str = Field(..., min_length=3, max_length=200)
-    domain: Optional[str] = Field(None, pattern=PATTERNS["identifier"])
+    domain: str | None = Field(None, pattern=PATTERNS["identifier"])
 
 
 class ValidateStandardInput(BaseModel):
@@ -195,18 +195,18 @@ class ValidateStandardInput(BaseModel):
 
 class ListTemplatesInput(BaseModel):
     """Input validation for list_templates."""
-    domain: Optional[str] = Field(None, pattern=PATTERNS["identifier"])
+    domain: str | None = Field(None, pattern=PATTERNS["identifier"])
 
 
 class GetCrossReferencesInput(BaseModel):
     """Input validation for get_cross_references."""
-    standard_id: Optional[str] = Field(None, pattern=PATTERNS["identifier"])
-    concept: Optional[str] = Field(None, min_length=1, max_length=200)
+    standard_id: str | None = Field(None, pattern=PATTERNS["identifier"])
+    concept: str | None = Field(None, min_length=1, max_length=200)
     max_depth: int = Field(default=2, ge=1, le=5)
-    
+
     @field_validator("concept")
     @classmethod
-    def sanitize_concept(cls, v: Optional[str]) -> Optional[str]:
+    def sanitize_concept(cls, v: str | None) -> str | None:
         if v:
             # Remove potential injection patterns
             v = re.sub(r'[<>"\';]', '', v)
@@ -218,11 +218,11 @@ class GetStandardsAnalyticsInput(BaseModel):
     """Input validation for get_standards_analytics."""
     metric_type: str = Field(default="usage", pattern=r"^(usage|popularity|gaps)$")
     time_range: str = Field(default="30d", pattern=r"^\d+[dwmyh]$")
-    standard_ids: Optional[List[str]] = Field(None, max_length=100)
-    
+    standard_ids: list[str] | None = Field(None, max_length=100)
+
     @field_validator("standard_ids")
     @classmethod
-    def validate_standard_ids(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def validate_standard_ids(cls, v: list[str] | None) -> list[str] | None:
         if v is not None:
             for std_id in v:
                 if not re.match(PATTERNS["identifier"], std_id):
@@ -234,14 +234,14 @@ class TrackStandardsUsageInput(BaseModel):
     """Input validation for track_standards_usage."""
     standard_id: str = Field(..., pattern=PATTERNS["identifier"])
     usage_type: str = Field(..., pattern=r"^(view|apply|reference)$")
-    section_id: Optional[str] = Field(None, pattern=PATTERNS["identifier"])
-    context: Optional[Dict[str, Any]] = None
+    section_id: str | None = Field(None, pattern=PATTERNS["identifier"])
+    context: dict[str, Any] | None = None
 
 
 class GetRecommendationsInput(BaseModel):
     """Input validation for get_recommendations."""
     analysis_type: str = Field(default="gaps", pattern=r"^(gaps|quality|usage)$")
-    context: Optional[Dict[str, Any]] = None
+    context: dict[str, Any] | None = None
 
 
 # Tool input validators mapping
@@ -271,18 +271,18 @@ TOOL_VALIDATORS = {
 
 class InputValidator:
     """Validates and sanitizes inputs for MCP tools."""
-    
+
     def __init__(self):
         self.validators = TOOL_VALIDATORS
         self.error_handler = get_secure_error_handler()
-        
-    def validate_tool_input(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    def validate_tool_input(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         """
         Validate tool input arguments.
-        
+
         Returns:
             Validated and sanitized arguments
-            
+
         Raises:
             ValidationError: If validation fails
         """
@@ -290,23 +290,23 @@ class InputValidator:
             # Apply security middleware validation first
             security_middleware = get_security_middleware()
             arguments = security_middleware.validate_and_sanitize_request(arguments)
-            
+
             validator_class = self.validators.get(tool_name)
-            
+
             if validator_class is None:
                 # Tool has no input requirements
                 return arguments
-                
+
             # Validate using Pydantic model
             validated = validator_class(**arguments)
             return validated.model_dump()
-            
+
         except ValueError as e:
             # Extract field information from Pydantic error
             error_msg = str(e)
             field_match = re.search(r"validation error for (\w+)", error_msg)
             field = field_match.group(1) if field_match else "unknown"
-            
+
             raise ValidationError(
                 message=error_msg,
                 field=field,
@@ -320,69 +320,69 @@ class InputValidator:
                 field="security",
                 code=ErrorCode.VALIDATION_INVALID_PARAMETERS
             )
-            
-    def validate_against_schema(self, data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[str, Any]:
+
+    def validate_against_schema(self, data: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
         """
         Validate data against a JSON schema.
-        
+
         Returns:
             The validated data
-            
+
         Raises:
             ValidationError: If validation fails
         """
         try:
             validator = Draft7Validator(schema)
             errors = list(validator.iter_errors(data))
-            
+
             if errors:
                 # Format the first error
                 error = errors[0]
                 field = ".".join(str(p) for p in error.path)
-                
+
                 raise ValidationError(
                     message=error.message,
                     field=field or "root",
                     code=ErrorCode.VALIDATION_TYPE_MISMATCH
                 )
-                
+
             return data
-            
+
         except jsonschema.exceptions.SchemaError as e:
             raise ValidationError(
                 message=f"Invalid schema: {str(e)}",
                 field="schema",
                 code=ErrorCode.VALIDATION_INVALID_PARAMETERS
             )
-            
+
     def sanitize_string(self, value: str, max_length: int = 1000) -> str:
         """Sanitize a string input."""
         # Remove null bytes
         value = value.replace('\x00', '')
-        
+
         # Limit length
         if len(value) > max_length:
             value = value[:max_length]
-            
+
         # Remove control characters except newlines and tabs
         value = re.sub(r'[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', value)
-        
+
         return value
-        
+
     def sanitize_identifier(self, value: str) -> str:
         """Sanitize an identifier (alphanumeric + dash/underscore)."""
         # Keep only allowed characters
         value = re.sub(r'[^a-zA-Z0-9_-]', '', value)
-        
+
         # Ensure it starts with a letter
         if value and not value[0].isalpha():
             value = 'id_' + value
-            
+
         return value[:100]  # Limit length
 
 
 # Singleton instance
-_input_validator: Optional[InputValidator] = None
+_input_validator: InputValidator | None = None
 
 
 def get_input_validator() -> InputValidator:

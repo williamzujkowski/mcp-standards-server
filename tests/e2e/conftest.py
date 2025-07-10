@@ -6,13 +6,13 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from contextlib import asynccontextmanager
 
 from tests.e2e.test_data_setup import setup_test_data
 
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 class MCPTestClient:
     """Test client for interacting with MCP server."""
-    
+
     def __init__(self, server_params: StdioServerParameters):
         self.server_params = server_params
-        self.session: Optional[ClientSession] = None
+        self.session: ClientSession | None = None
         self._read = None
         self._write = None
-        
+
     @asynccontextmanager
     async def connect(self):
         """Connect to the MCP server as an async context manager."""
@@ -67,18 +67,18 @@ class MCPTestClient:
                 raise
             else:
                 logger.warning(f"Ignoring asyncio cancellation error during cleanup: {e}")
-                
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+
+    async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Call a tool on the MCP server."""
         if not self.session:
             raise RuntimeError("Not connected to server")
-        
+
         logger.debug(f"Calling tool: {tool_name} with arguments: {arguments}")
-        
+
         try:
             result = await self.session.call_tool(tool_name, arguments)
             logger.debug(f"Raw result from tool {tool_name}: {result}")
-            
+
             # Extract the content from the result
             if hasattr(result, 'content') and result.content:
                 # Parse the JSON content from the first text content
@@ -99,7 +99,7 @@ class MCPTestClient:
             else:
                 logger.warning(f"Tool {tool_name} returned no content")
                 return result
-                
+
         except Exception as e:
             logger.error(f"Error calling tool {tool_name}: {e}", exc_info=True)
             raise
@@ -110,32 +110,32 @@ async def mcp_server(tmp_path_factory):
     """Fixture to start and stop MCP server for tests - session scoped for performance."""
     tmp_path = tmp_path_factory.mktemp("mcp_test_data")
     logger.info(f"Starting MCP server with tmp_path: {tmp_path}")
-    
+
     # Set up test data
     setup_test_data(tmp_path)
-    
+
     # Set up test environment
     env = os.environ.copy()
     env["MCP_STANDARDS_DATA_DIR"] = str(tmp_path)
     env["MCP_CONFIG_PATH"] = str(Path(__file__).parent / "test_config.json")
     env["MCP_DISABLE_SEARCH"] = "true"  # Disable search to avoid heavy deps
     env["PYTHONPATH"] = str(Path(__file__).parent.parent.parent)  # Project root
-    
+
     # Enable coverage in subprocess
     env["COVERAGE_PROCESS_START"] = str(Path(__file__).parent.parent.parent / ".coveragerc")
-    
+
     # Ensure sitecustomize.py is in PYTHONPATH for coverage subprocess
     project_root = Path(__file__).parent.parent.parent
     env["PYTHONPATH"] = f"{project_root}:{env.get('PYTHONPATH', '')}"
-    
+
     # Enable coverage for subprocess
     env["COVERAGE_RUN"] = "true"
-    
+
     # Log environment for debugging
     logger.debug(f"MCP_STANDARDS_DATA_DIR: {env['MCP_STANDARDS_DATA_DIR']}")
     logger.debug(f"MCP_CONFIG_PATH: {env['MCP_CONFIG_PATH']}")
     logger.debug(f"PYTHONPATH: {env['PYTHONPATH']}")
-    
+
     # Server parameters - run directly without coverage subprocess
     # Coverage will be handled by the parent process
     server_params = StdioServerParameters(
@@ -143,7 +143,7 @@ async def mcp_server(tmp_path_factory):
         args=["-m", "src"],
         env=env
     )
-    
+
     # Start server process
     logger.info("Starting server process...")
     logger.debug(f"Command: {server_params.command} {' '.join(server_params.args)}")
@@ -154,12 +154,12 @@ async def mcp_server(tmp_path_factory):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
-    
+
     # Monitor server startup with reduced timeout
     startup_timeout = 3.0
     start_time = time.time()
     server_ready = False
-    
+
     # Try to read initial output to ensure server started
     try:
         while time.time() - start_time < startup_timeout:
@@ -172,28 +172,28 @@ async def mcp_server(tmp_path_factory):
                 logger.error(f"Server stdout: {stdout_data.decode()}")
                 logger.error(f"Server stderr: {stderr_data.decode()}")
                 raise RuntimeError(f"Server failed to start: {stderr_data.decode()}")
-            
+
             # Give server time to initialize
             await asyncio.sleep(0.5)
-            
+
             # After initial delay, assume server is ready
             if time.time() - start_time > 1.0:
                 server_ready = True
                 break
-                
+
     except asyncio.TimeoutError:
         logger.warning("Timeout waiting for server startup confirmation")
         server_ready = True  # Proceed anyway
-    
+
     if not server_ready:
         logger.error("Server failed to start within timeout")
         if process.returncode is None:
             process.terminate()
             await process.wait()
         raise RuntimeError("MCP server failed to start")
-    
+
     logger.info("MCP server started successfully")
-    
+
     try:
         yield server_params
     finally:

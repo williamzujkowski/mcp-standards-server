@@ -4,56 +4,57 @@ Structured error handling for MCP server.
 Provides standardized error codes and error response formatting with security controls.
 """
 
+import logging
 import os
 import re
-import logging
 from enum import Enum
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field
+from typing import Any
+
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
 class ErrorCode(str, Enum):
     """Standardized error codes for MCP operations."""
-    
+
     # Authentication errors (1000-1099)
     AUTH_REQUIRED = "AUTH_001"
     AUTH_INVALID_TOKEN = "AUTH_002"
     AUTH_EXPIRED_TOKEN = "AUTH_003"
     AUTH_INVALID_API_KEY = "AUTH_004"
     AUTH_INSUFFICIENT_PERMISSIONS = "AUTH_005"
-    
+
     # Validation errors (2000-2099)
     VALIDATION_INVALID_PARAMETERS = "VAL_001"
     VALIDATION_MISSING_REQUIRED = "VAL_002"
     VALIDATION_TYPE_MISMATCH = "VAL_003"
     VALIDATION_OUT_OF_RANGE = "VAL_004"
     VALIDATION_PATTERN_MISMATCH = "VAL_005"
-    
+
     # Tool errors (3000-3099)
     TOOL_NOT_FOUND = "TOOL_001"
     TOOL_EXECUTION_FAILED = "TOOL_002"
     TOOL_TIMEOUT = "TOOL_003"
     TOOL_INVALID_RESPONSE = "TOOL_004"
-    
+
     # Resource errors (4000-4099)
     RESOURCE_NOT_FOUND = "RES_001"
     RESOURCE_ACCESS_DENIED = "RES_002"
     RESOURCE_OPERATION_NOT_SUPPORTED = "RES_003"
-    
+
     # System errors (5000-5099)
     SYSTEM_INTERNAL_ERROR = "SYS_001"
     SYSTEM_UNAVAILABLE = "SYS_002"
     SYSTEM_RATE_LIMIT_EXCEEDED = "SYS_003"
     SYSTEM_MAINTENANCE = "SYS_004"
-    
+
     # Standards specific errors (6000-6099)
     STANDARDS_NOT_FOUND = "STD_001"
     STANDARDS_SYNC_FAILED = "STD_002"
     STANDARDS_INVALID_FORMAT = "STD_003"
     STANDARDS_RULE_EVALUATION_FAILED = "STD_004"
-    
+
     # Security errors (7000-7099)
     SECURITY_INVALID_INPUT = "SEC_001"
     SECURITY_INJECTION_DETECTED = "SEC_002"
@@ -67,21 +68,21 @@ class ErrorDetail(BaseModel):
     """Detailed error information."""
     code: ErrorCode
     message: str
-    details: Optional[Dict[str, Any]] = None
-    field: Optional[str] = None
-    suggestion: Optional[str] = None
+    details: dict[str, Any] | None = None
+    field: str | None = None
+    suggestion: str | None = None
 
 
 class MCPError(Exception):
     """Base exception for MCP errors with structured information."""
-    
+
     def __init__(
         self,
         code: ErrorCode,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        field: Optional[str] = None,
-        suggestion: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        field: str | None = None,
+        suggestion: str | None = None
     ):
         super().__init__(message)
         self.error_detail = ErrorDetail(
@@ -91,13 +92,13 @@ class MCPError(Exception):
             field=field,
             suggestion=suggestion
         )
-    
+
     @property
     def code(self) -> ErrorCode:
         """Access the error code for backward compatibility."""
         return self.error_detail.code
-        
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for JSON response."""
         return {
             "error": {
@@ -112,7 +113,7 @@ class MCPError(Exception):
 
 class ValidationError(MCPError):
     """Validation error with field information."""
-    
+
     def __init__(self, message: str, field: str, code: ErrorCode = ErrorCode.VALIDATION_INVALID_PARAMETERS):
         super().__init__(
             code=code,
@@ -124,7 +125,7 @@ class ValidationError(MCPError):
 
 class AuthenticationError(MCPError):
     """Authentication error."""
-    
+
     def __init__(self, message: str = "Authentication required", code: ErrorCode = ErrorCode.AUTH_REQUIRED):
         super().__init__(
             code=code,
@@ -135,8 +136,8 @@ class AuthenticationError(MCPError):
 
 class AuthorizationError(MCPError):
     """Authorization error."""
-    
-    def __init__(self, message: str = "Insufficient permissions", required_scope: Optional[str] = None):
+
+    def __init__(self, message: str = "Insufficient permissions", required_scope: str | None = None):
         super().__init__(
             code=ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS,
             message=message,
@@ -147,7 +148,7 @@ class AuthorizationError(MCPError):
 
 class ToolNotFoundError(MCPError):
     """Tool not found error."""
-    
+
     def __init__(self, tool_name: str):
         super().__init__(
             code=ErrorCode.TOOL_NOT_FOUND,
@@ -159,7 +160,7 @@ class ToolNotFoundError(MCPError):
 
 class ResourceNotFoundError(MCPError):
     """Resource not found error."""
-    
+
     def __init__(self, resource_type: str, resource_id: str):
         super().__init__(
             code=ErrorCode.RESOURCE_NOT_FOUND,
@@ -170,8 +171,8 @@ class ResourceNotFoundError(MCPError):
 
 class RateLimitError(MCPError):
     """Rate limit exceeded error."""
-    
-    def __init__(self, limit: int, window: str, retry_after: Optional[int] = None):
+
+    def __init__(self, limit: int, window: str, retry_after: int | None = None):
         super().__init__(
             code=ErrorCode.SYSTEM_RATE_LIMIT_EXCEEDED,
             message=f"Rate limit exceeded: {limit} requests per {window}",
@@ -186,7 +187,7 @@ class RateLimitError(MCPError):
 
 class SecurityError(MCPError):
     """Security-related error."""
-    
+
     def __init__(self, message: str = "Security validation failed", code: ErrorCode = ErrorCode.SECURITY_INVALID_INPUT):
         super().__init__(
             code=code,
@@ -197,7 +198,7 @@ class SecurityError(MCPError):
 
 class SecureErrorHandler:
     """Handles errors with security-first approach to prevent information leakage."""
-    
+
     def __init__(self, mask_errors: bool = True, log_errors: bool = True):
         self.mask_errors = mask_errors
         self.log_errors = log_errors
@@ -214,55 +215,55 @@ class SecureErrorHandler:
             r':[0-9]+',  # Port numbers
             r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',  # Email addresses
         ]
-        
+
     def sanitize_error_message(self, message: str) -> str:
         """Sanitize error message to remove sensitive information."""
         if not self.mask_errors:
             return message
-            
+
         # Replace sensitive patterns with generic placeholders
         sanitized = message
         for pattern in self.sensitive_patterns:
             sanitized = re.sub(pattern, '[REDACTED]', sanitized, flags=re.IGNORECASE)
-            
+
         # Remove stack traces
         sanitized = re.sub(r'Traceback.*?(?=\n\S|\Z)', '[STACK_TRACE_REDACTED]', sanitized, flags=re.DOTALL)
-        
+
         # Remove SQL error details
         sanitized = re.sub(r'SQL.*?(?=\n|\Z)', '[SQL_REDACTED]', sanitized, flags=re.IGNORECASE)
-        
+
         # Remove file system references
         sanitized = re.sub(r'No such file or directory.*', 'File not found', sanitized)
-        
+
         return sanitized
-    
-    def handle_exception(self, exc: Exception, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+
+    def handle_exception(self, exc: Exception, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Handle an exception and return a safe error response."""
         if self.log_errors:
             logger.error(f"Exception in {context or 'unknown'}: {str(exc)}", exc_info=True)
-            
+
         # Handle known MCP errors
         if isinstance(exc, MCPError):
             error_dict = exc.to_dict()
             if self.mask_errors:
                 error_dict['error']['message'] = self.sanitize_error_message(error_dict['error']['message'])
             return error_dict
-            
+
         # Handle validation errors
-        if hasattr(exc, 'errors') and callable(getattr(exc, 'errors')):
+        if hasattr(exc, 'errors') and callable(exc.errors):
             # Pydantic validation error
             try:
                 return format_validation_errors(exc.errors())
             except Exception:
                 pass
-                
+
         # Handle security-related errors
         if any(keyword in str(exc).lower() for keyword in ['injection', 'malicious', 'dangerous', 'blocked']):
             return SecurityError(
                 message="Security validation failed",
                 code=ErrorCode.SECURITY_INVALID_INPUT
             ).to_dict()
-            
+
         # Handle generic exceptions
         if self.mask_errors:
             # Generic error response
@@ -282,12 +283,12 @@ class SecureErrorHandler:
                     "type": type(exc).__name__
                 }
             }
-    
-    def handle_security_violation(self, violation_type: str, details: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+
+    def handle_security_violation(self, violation_type: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
         """Handle a security violation."""
         if self.log_errors:
             logger.warning(f"Security violation: {violation_type}, details: {details}")
-            
+
         # Map violation types to error codes
         error_code_map = {
             'injection': ErrorCode.SECURITY_INJECTION_DETECTED,
@@ -296,19 +297,19 @@ class SecureErrorHandler:
             'rate_limit': ErrorCode.SECURITY_RATE_LIMIT_EXCEEDED,
             'blocked_operation': ErrorCode.SECURITY_BLOCKED_OPERATION,
         }
-        
+
         code = error_code_map.get(violation_type, ErrorCode.SECURITY_INVALID_INPUT)
-        
+
         return SecurityError(
             message=f"Security violation: {violation_type}",
             code=code
         ).to_dict()
 
 
-def format_validation_errors(errors: list) -> Dict[str, Any]:
+def format_validation_errors(errors: list) -> dict[str, Any]:
     """Format pydantic validation errors to MCP error format."""
     formatted_errors = []
-    
+
     for error in errors:
         field = ".".join(str(loc) for loc in error.get("loc", []))
         formatted_errors.append({
@@ -316,7 +317,7 @@ def format_validation_errors(errors: list) -> Dict[str, Any]:
             "message": error.get("msg", "Validation error"),
             "type": error.get("type", "unknown")
         })
-        
+
     return {
         "error": {
             "code": ErrorCode.VALIDATION_INVALID_PARAMETERS.value,
@@ -327,7 +328,7 @@ def format_validation_errors(errors: list) -> Dict[str, Any]:
 
 
 # Global secure error handler
-_secure_error_handler: Optional[SecureErrorHandler] = None
+_secure_error_handler: SecureErrorHandler | None = None
 
 
 def get_secure_error_handler() -> SecureErrorHandler:

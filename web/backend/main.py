@@ -1,30 +1,29 @@
 """
 FastAPI backend for MCP Standards Server Web UI
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from contextlib import asynccontextmanager
-import asyncio
-from typing import Dict, List, Optional, Any
 import json
 import logging
+import sys
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-import sys
+from typing import Any
+
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from engine_adapter import StandardsEngine
-import logging
 
 logger = logging.getLogger(__name__)
 
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -81,7 +80,7 @@ async def get_all_standards():
     try:
         engine = app.state.engine
         standards = await engine.get_all_standards()
-        
+
         # Organize by category
         by_category = {}
         for standard in standards:
@@ -96,7 +95,7 @@ async def get_all_standards():
                 "priority": standard.priority,
                 "version": standard.version
             })
-        
+
         return {"standards": by_category, "total": len(standards)}
     except Exception as e:
         logger.error(f"Error fetching standards: {e}")
@@ -110,7 +109,7 @@ async def get_standard(standard_id: str):
         standard = await engine.get_standard_by_id(standard_id)
         if not standard:
             raise HTTPException(status_code=404, detail="Standard not found")
-        
+
         return {
             "id": standard.id,
             "title": standard.title,
@@ -133,21 +132,21 @@ async def get_standard(standard_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/search")
-async def search_standards(query: Dict[str, Any]):
+async def search_standards(query: dict[str, Any]):
     """Search standards with filters"""
     try:
         engine = app.state.engine
         search_query = query.get("query", "")
         filters = query.get("filters", {})
         limit = query.get("limit", 20)
-        
+
         results = await engine.search_standards(
             query=search_query,
             category=filters.get("category"),
             tags=filters.get("tags"),
             limit=limit
         )
-        
+
         return {
             "results": [
                 {
@@ -167,17 +166,17 @@ async def search_standards(query: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/analyze")
-async def analyze_project(context: Dict[str, Any]):
+async def analyze_project(context: dict[str, Any]):
     """Analyze a project and get standard recommendations"""
     try:
         engine = app.state.engine
-        
+
         # Create project context from request
         project_context = type('ProjectContext', (), context)()
-        
+
         # Get recommendations
         recommendations = await engine.analyze_project(project_context)
-        
+
         return {
             "recommendations": [
                 {
@@ -223,18 +222,18 @@ async def get_tags():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/export/bulk")
-async def export_bulk_standards(request: Dict[str, Any]):
+async def export_bulk_standards(request: dict[str, Any]):
     """Export multiple standards in various formats"""
     try:
         engine = app.state.engine
         standard_ids = request.get("standards", [])
         format = request.get("format", "json")
-        
+
         if not standard_ids:
             # Export all standards if none specified
             all_standards = await engine.get_all_standards()
             standard_ids = [s.id for s in all_standards]
-        
+
         standards_data = []
         for standard_id in standard_ids:
             standard = await engine.get_standard_by_id(standard_id)
@@ -254,18 +253,18 @@ async def export_bulk_standards(request: Dict[str, Any]):
                     "created_at": standard.created_at,
                     "updated_at": standard.updated_at
                 })
-        
+
         if format == "json":
             export_data = {
                 "exportDate": datetime.now().isoformat(),
                 "totalStandards": len(standards_data),
                 "standards": standards_data
             }
-            
+
             # Save to temporary file
             temp_file = Path(f"/tmp/standards-export-{datetime.now().timestamp()}.json")
             temp_file.write_text(json.dumps(export_data, indent=2))
-            
+
             return FileResponse(
                 path=str(temp_file),
                 filename=f"standards-export-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json",
@@ -287,14 +286,14 @@ async def export_standard(standard_id: str, format: str = "markdown"):
         standard = await engine.get_standard_by_id(standard_id)
         if not standard:
             raise HTTPException(status_code=404, detail="Standard not found")
-        
+
         if format == "markdown":
             content = f"""# {standard.title}
 
-**Category:** {standard.category}  
-**Subcategory:** {standard.subcategory}  
-**Priority:** {standard.priority}  
-**Version:** {standard.version}  
+**Category:** {standard.category}
+**Subcategory:** {standard.subcategory}
+**Priority:** {standard.priority}
+**Version:** {standard.version}
 
 ## Description
 {standard.description}
@@ -314,11 +313,11 @@ async def export_standard(standard_id: str, format: str = "markdown"):
                 content += "```\n"
                 if example.get('description'):
                     content += f"\n{example['description']}\n"
-            
+
             # Save to temporary file
             temp_file = Path(f"/tmp/{standard_id}.md")
             temp_file.write_text(content)
-            
+
             return FileResponse(
                 path=str(temp_file),
                 filename=f"{standard_id}.md",
@@ -341,10 +340,10 @@ async def export_standard(standard_id: str, format: str = "markdown"):
                 "created_at": standard.created_at,
                 "updated_at": standard.updated_at
             }
-            
+
             temp_file = Path(f"/tmp/{standard_id}.json")
             temp_file.write_text(json.dumps(export_data, indent=2))
-            
+
             return FileResponse(
                 path=str(temp_file),
                 filename=f"{standard_id}.json",
@@ -367,7 +366,7 @@ async def websocket_endpoint(websocket: WebSocket):
             # Receive message from client
             data = await websocket.receive_text()
             message = json.loads(data)
-            
+
             # Handle different message types
             if message["type"] == "ping":
                 await manager.send_personal_message(
@@ -384,7 +383,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     }),
                     websocket
                 )
-            
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info("Client disconnected from WebSocket")

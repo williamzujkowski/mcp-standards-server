@@ -1,25 +1,25 @@
 """Tests for TypeScript language analyzer."""
 
-import pytest
-from pathlib import Path
 
+import pytest
+
+from src.analyzers.base import IssueType
 from src.analyzers.typescript_analyzer import TypeScriptAnalyzer
-from src.analyzers.base import Severity, IssueType
 
 
 class TestTypeScriptAnalyzer:
     """Test TypeScript analyzer functionality."""
-    
+
     @pytest.fixture
     def analyzer(self):
         """Create TypeScript analyzer instance."""
         return TypeScriptAnalyzer()
-    
+
     def test_language_properties(self, analyzer):
         """Test language and file extension properties."""
         assert analyzer.language == "typescript"
         assert analyzer.file_extensions == [".ts", ".tsx"]
-    
+
     def test_xss_vulnerabilities(self, analyzer, tmp_path):
         """Test XSS vulnerability detection."""
         test_file = tmp_path / "xss.tsx"
@@ -47,15 +47,15 @@ function unsafeRedirect() {
     window.open(request.params.url);
 }
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         xss_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-79"]
         assert len(xss_issues) >= 4
-        
+
         redirect_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-601"]
         assert len(redirect_issues) >= 2
-    
+
     def test_injection_vulnerabilities(self, analyzer, tmp_path):
         """Test injection vulnerability detection."""
         test_file = tmp_path / "injection.ts"
@@ -65,7 +65,7 @@ import { exec, spawn } from 'child_process';
 async function sqlInjection(userId: string) {
     const query = `SELECT * FROM users WHERE id = ${userId}`;
     await db.query(query);
-    
+
     const deleteQuery = "DELETE FROM users WHERE name = '" + userName + "'";
     await db.execute(deleteQuery);
 }
@@ -75,15 +75,15 @@ function commandInjection(userInput: string) {
     spawn('rm', [`-rf ${userInput}`]);
 }
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         sql_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-89"]
         assert len(sql_issues) >= 2
-        
+
         cmd_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-78"]
         assert len(cmd_issues) >= 2
-    
+
     def test_type_safety_issues(self, analyzer, tmp_path):
         """Test TypeScript type safety issues."""
         test_file = tmp_path / "types.ts"
@@ -111,18 +111,18 @@ function brokenFunction() {
     return notDefined;
 }
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         any_issues = [i for i in result.issues if i.type == IssueType.TYPE_SAFETY and "'any'" in i.message]
         assert len(any_issues) >= 1
-        
+
         assertion_issues = [i for i in result.issues if "assertion" in i.message.lower()]
         assert len(assertion_issues) >= 2
-        
+
         tsignore_issues = [i for i in result.issues if "@ts-ignore" in i.message]
         assert len(tsignore_issues) >= 1
-    
+
     def test_auth_patterns(self, analyzer, tmp_path):
         """Test authentication pattern issues."""
         test_file = tmp_path / "auth.ts"
@@ -150,15 +150,15 @@ router.get('/api/profile', requireAuth, (req, res) => {
     res.json(req.user);
 });
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         storage_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-522"]
         assert len(storage_issues) >= 3
-        
+
         auth_issues = [i for i in result.issues if "authentication" in i.message.lower()]
         assert len(auth_issues) >= 2
-    
+
     def test_sensitive_data_exposure(self, analyzer, tmp_path):
         """Test sensitive data exposure detection."""
         test_file = tmp_path / "secrets.ts"
@@ -172,15 +172,15 @@ console.log("User password:", password);
 console.error("API token:", token);
 console.debug("Secret key:", secretKey);
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         secret_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-798"]
         assert len(secret_issues) >= 4
-        
+
         log_issues = [i for i in result.issues if hasattr(i, 'cwe_id') and i.cwe_id == "CWE-532"]
         assert len(log_issues) >= 3
-    
+
     def test_react_performance(self, analyzer, tmp_path):
         """Test React performance issues."""
         test_file = tmp_path / "react-perf.tsx"
@@ -194,7 +194,7 @@ const ExpensiveComponent = ({ data }) => {
 
 const BadComponent = () => {
     const [count, setCount] = useState(0);
-    
+
     // Inline function in JSX
     return (
         <button onClick={() => setCount(count + 1)}>
@@ -208,13 +208,13 @@ const MissingDeps = () => {
     useEffect(() => {
         fetchData();
     });
-    
+
     // Missing dependency array
     const computed = useMemo(() => expensiveComputation());
-    
+
     // Missing dependency array
     const handler = useCallback((e) => console.log(e));
-    
+
     return <div />;
 };
 
@@ -229,21 +229,21 @@ const LargeList = ({ items }) => {
     );
 };
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         memo_issues = [i for i in result.issues if "React.memo" in i.message]
         assert len(memo_issues) >= 1
-        
+
         inline_issues = [i for i in result.issues if "inline function" in i.message.lower()]
         assert len(inline_issues) >= 1
-        
+
         dep_issues = [i for i in result.issues if "dependency array" in i.message]
         assert len(dep_issues) >= 3
-        
+
         virtual_issues = [i for i in result.issues if "virtualization" in i.message.lower()]
         assert len(virtual_issues) >= 1
-    
+
     def test_javascript_performance(self, analyzer, tmp_path):
         """Test general JavaScript performance issues."""
         test_file = tmp_path / "js-perf.ts"
@@ -251,21 +251,21 @@ const LargeList = ({ items }) => {
 function inefficientArrayOps(items: number[]) {
     // Multiple iterations
     const filtered = items.filter(x => x > 0).map(x => x * 2);
-    
+
     // Inefficient checks
     const hasItems = items.find(x => x > 100).length;
     const isEmpty = items.filter(x => x > 0).length === 0;
-    
+
     // Inefficient clone
     const clone = JSON.parse(JSON.stringify(items));
 }
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         perf_issues = [i for i in result.issues if i.type == IssueType.PERFORMANCE]
         assert len(perf_issues) >= 4
-    
+
     def test_async_patterns(self, analyzer, tmp_path):
         """Test async/await patterns."""
         test_file = tmp_path / "async.ts"
@@ -292,15 +292,15 @@ async function properErrorHandling() {
     }
 }
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         parallel_issues = [i for i in result.issues if "parallel" in i.message.lower()]
         assert len(parallel_issues) >= 1
-        
+
         error_issues = [i for i in result.issues if i.type == IssueType.ERROR_HANDLING]
         assert len(error_issues) >= 1
-    
+
     def test_bundle_size_issues(self, analyzer, tmp_path):
         """Test bundle size optimization issues."""
         test_file = tmp_path / "imports.ts"
@@ -313,12 +313,12 @@ import * as rxjs from 'rxjs';
 import debounce from 'lodash/debounce';
 import { format } from 'date-fns';
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         bundle_issues = [i for i in result.issues if "bundle size" in i.message.lower()]
         assert len(bundle_issues) >= 3
-    
+
     def test_error_handling(self, analyzer, tmp_path):
         """Test error handling patterns."""
         test_file = tmp_path / "errors.ts"
@@ -329,25 +329,25 @@ function badErrorHandling() {
     } catch (e) {
         // Empty catch block
     }
-    
+
     somePromise()
         .then(data => processData(data));
         // Missing .catch()
-    
+
     new Promise((resolve, reject) => {
         doAsyncWork();
     }); // No error handling
 }
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         empty_catch = [i for i in result.issues if "empty catch" in i.message.lower()]
         assert len(empty_catch) >= 1
-        
+
         promise_issues = [i for i in result.issues if "promise" in i.message.lower()]
         assert len(promise_issues) >= 2
-    
+
     def test_modern_features(self, analyzer, tmp_path):
         """Test modern JavaScript feature recommendations."""
         test_file = tmp_path / "old-patterns.ts"
@@ -366,12 +366,12 @@ const merged = Object.assign({}, obj1, obj2);
 
 const args = Array.prototype.slice.call(arguments);
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         modern_issues = [i for i in result.issues if i.type == IssueType.BEST_PRACTICE and "modern" in i.recommendation.lower()]
         assert len(modern_issues) >= 5
-    
+
     def test_testing_patterns(self, analyzer, tmp_path):
         """Test testing pattern detection."""
         # Test file without proper structure
@@ -380,15 +380,15 @@ const args = Array.prototype.slice.call(arguments);
 // Test file but no tests
 console.log("This is supposed to be a test file");
 ''')
-        
+
         result = analyzer.analyze_file(test_file)
-        
+
         test_structure_issues = [i for i in result.issues if "test structure" in i.message.lower()]
         assert len(test_structure_issues) >= 1
-        
+
         assertion_issues = [i for i in result.issues if "assertion" in i.message.lower()]
         assert len(assertion_issues) >= 1
-        
+
         # Non-test file
         module_file = tmp_path / "module.ts"
         module_file.write_text('''
@@ -416,8 +416,8 @@ export const utils = {
     // Utilities
 }
 ''')
-        
+
         result2 = analyzer.analyze_file(module_file)
-        
+
         test_recommendation = [i for i in result2.issues if "test" in i.message.lower() and "adding" in i.message.lower()]
         assert len(test_recommendation) >= 1

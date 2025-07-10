@@ -11,35 +11,26 @@ Tests cover:
 """
 
 import asyncio
-import json
-import os
-import tempfile
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
 
 # These imports are not used in the test file, removing them
 # The tests interact with the MCP server through the client interface
-
 # Import MCPTestClient and fixtures from conftest
-from tests.e2e.conftest import MCPTestClient, mcp_server, mcp_client
-
+from tests.e2e.conftest import MCPTestClient
 
 
 class TestMCPServerStartupShutdown:
     """Test server startup and shutdown scenarios."""
-    
+
     @pytest.mark.asyncio
     async def test_server_starts_successfully(self, mcp_server):
         """Test that MCP server starts without errors."""
         # Server fixture ensures server starts
         assert mcp_server is not None
-        
+
     @pytest.mark.asyncio
     async def test_server_handles_graceful_shutdown(self, mcp_server):
         """Test graceful server shutdown."""
@@ -48,28 +39,28 @@ class TestMCPServerStartupShutdown:
         async with client.connect() as connected_client:
             # Verify connection
             assert connected_client.session is not None
-        
+
         # After context exit, connection should be closed
         assert client.session is None
-        
+
     @pytest.mark.asyncio
     async def test_server_handles_multiple_connections(self, mcp_server):
         """Test server can handle multiple client connections."""
         clients = []
-        
+
         # Create multiple clients
-        for i in range(3):
+        for _i in range(3):
             client = MCPTestClient(mcp_server)
             async with client.connect() as connected_client:
                 clients.append(connected_client)
-                
+
         # All clients should have connected successfully
         assert len(clients) == 3
 
 
 class TestMCPTools:
     """Test all MCP tool implementations."""
-    
+
     @pytest.mark.asyncio
     async def test_get_applicable_standards(self, mcp_client):
         """Test get_applicable_standards tool."""
@@ -85,30 +76,30 @@ class TestMCPTools:
                 }
             }
         )
-        
+
         assert "standards" in result
         assert isinstance(result["standards"], list)
         assert len(result["standards"]) > 0
-        
+
         # Verify returned standards are relevant
         standards = result["standards"]
         assert any("react" in s.lower() for s in standards)
         assert any("javascript" in s.lower() for s in standards)
-        
+
     @pytest.mark.asyncio
     async def test_validate_against_standard(self, mcp_client):
         """Test validate_against_standard tool."""
         # Sample code to validate
         code_content = """
         import React from 'react';
-        
+
         const MyComponent = (props) => {
             return <div>{props.children}</div>;
         };
-        
+
         export default MyComponent;
         """
-        
+
         result = await mcp_client.call_tool(
             "validate_against_standard",
             {
@@ -117,11 +108,11 @@ class TestMCPTools:
                 "language": "javascript"
             }
         )
-        
+
         assert "violations" in result
         assert "passed" in result
         assert isinstance(result["violations"], list)
-        
+
     @pytest.mark.asyncio
     async def test_search_standards(self, mcp_client):
         """Test search_standards tool with semantic search."""
@@ -133,7 +124,7 @@ class TestMCPTools:
                 "limit": 5
             }
         )
-        
+
         # Since search is disabled in tests, we should get either:
         # 1. An empty results list
         # 2. An error indicating search is disabled
@@ -144,7 +135,7 @@ class TestMCPTools:
             assert "results" in result
             assert isinstance(result["results"], list)
             # Don't assert on content since search might be disabled
-            
+
     @pytest.mark.asyncio
     async def test_get_standard_details(self, mcp_client):
         """Test get_standard_details tool."""
@@ -154,13 +145,13 @@ class TestMCPTools:
                 "standard_id": "react-18-patterns"
             }
         )
-        
+
         assert "id" in result
         assert "name" in result
         assert "content" in result
         assert "metadata" in result
         assert result["id"] == "react-18-patterns"
-        
+
     @pytest.mark.asyncio
     async def test_list_available_standards(self, mcp_client):
         """Test list_available_standards tool."""
@@ -170,15 +161,15 @@ class TestMCPTools:
                 "category": "frontend"
             }
         )
-        
+
         assert "standards" in result
         assert isinstance(result["standards"], list)
-        
+
         # Verify filtering by category works
         for standard in result["standards"]:
             assert "tags" in standard
             assert "frontend" in standard["tags"]
-            
+
     @pytest.mark.asyncio
     async def test_suggest_improvements(self, mcp_client):
         """Test suggest_improvements tool."""
@@ -189,7 +180,7 @@ class TestMCPTools:
                 .then(data => console.log(data));
         }
         """
-        
+
         result = await mcp_client.call_tool(
             "suggest_improvements",
             {
@@ -200,11 +191,11 @@ class TestMCPTools:
                 }
             }
         )
-        
+
         assert "suggestions" in result
         assert isinstance(result["suggestions"], list)
         assert len(result["suggestions"]) > 0
-        
+
         # Verify suggestions have expected structure
         for suggestion in result["suggestions"]:
             assert "description" in suggestion
@@ -214,7 +205,7 @@ class TestMCPTools:
 
 class TestStandardsSynchronization:
     """Test standards synchronization workflow."""
-    
+
     @pytest.mark.asyncio
     async def test_sync_standards_workflow(self, mcp_client):
         """Test complete standards synchronization workflow."""
@@ -223,11 +214,11 @@ class TestStandardsSynchronization:
             "get_sync_status",
             {}
         )
-        
+
         assert "last_sync" in status_result
         assert "total_standards" in status_result
         assert "outdated_standards" in status_result
-        
+
         # Trigger sync
         sync_result = await mcp_client.call_tool(
             "sync_standards",
@@ -235,51 +226,51 @@ class TestStandardsSynchronization:
                 "force": False
             }
         )
-        
+
         assert "status" in sync_result
         assert "synced_files" in sync_result
         assert sync_result["status"] in ["success", "partial", "failed"]
-        
+
         # Verify sync updated status
         new_status = await mcp_client.call_tool(
             "get_sync_status",
             {}
         )
-        
+
         # Check sync status - sync might not update last_sync if no files are found
         # Just verify that sync was attempted
         assert sync_result["status"] in ["success", "partial", "failed"]
-        
+
         # If sync found files, last_sync should be updated
         if sync_result.get("synced_files", []):
             assert new_status.get("last_sync") != status_result.get("last_sync")
-        
+
     @pytest.mark.asyncio
     async def test_sync_with_rate_limiting(self, mcp_client):
         """Test sync handles GitHub API rate limits gracefully."""
         with patch("src.core.standards.sync.StandardsSynchronizer.sync") as mock_sync:
             # Simulate rate limit error
             mock_sync.side_effect = Exception("API rate limit exceeded")
-            
+
             result = await mcp_client.call_tool(
                 "sync_standards",
                 {
                     "force": True
                 }
             )
-            
+
             # Since we're mocking the sync method, the result might be different
             # The important thing is that sync was attempted and handled the error
             assert result["status"] in ["failed", "error"]
             # Check either error field or message field for rate limit info
-            error_msg = result.get("error", "") or result.get("message", "")
+            result.get("error", "") or result.get("message", "")
             # The mock might not propagate the exact error message
             assert result["status"] == "failed"  # Just verify it failed
 
 
 class TestRuleEngineIntegration:
     """Test rule engine integration with MCP server."""
-    
+
     @pytest.mark.asyncio
     async def test_rule_evaluation_through_mcp(self, mcp_client):
         """Test rule engine evaluation via MCP tools."""
@@ -300,20 +291,20 @@ class TestRuleEngineIntegration:
                 "platform": ["ios", "android"]
             }
         ]
-        
+
         for context in contexts:
             result = await mcp_client.call_tool(
                 "get_applicable_standards",
                 {"context": context}
             )
-            
+
             assert "standards" in result
             # Standards might be empty if no rules match in test environment
             # Just verify the structure is correct
             assert isinstance(result["standards"], list)
             if result["standards"]:
                 assert "evaluation_path" in result
-            
+
     @pytest.mark.asyncio
     async def test_rule_priority_resolution(self, mcp_client):
         """Test rule priority conflict resolution."""
@@ -325,7 +316,7 @@ class TestRuleEngineIntegration:
             "requirements": ["accessibility", "performance", "security"],
             "team_size": "large"
         }
-        
+
         result = await mcp_client.call_tool(
             "get_applicable_standards",
             {
@@ -333,10 +324,10 @@ class TestRuleEngineIntegration:
                 "include_resolution_details": True
             }
         )
-        
+
         assert "standards" in result
         assert "resolution_details" in result
-        
+
         details = result["resolution_details"]
         assert "matched_rules" in details
         assert "conflicts_resolved" in details
@@ -345,7 +336,7 @@ class TestRuleEngineIntegration:
 
 class TestSemanticSearchFunctionality:
     """Test semantic search integration."""
-    
+
     @pytest.mark.asyncio
     async def test_semantic_search_quality(self, mcp_client):
         """Test semantic search returns relevant results."""
@@ -355,7 +346,7 @@ class TestSemanticSearchFunctionality:
             "Implementing secure authentication in web apps",
             "Accessibility guidelines for mobile applications"
         ]
-        
+
         for query in queries:
             result = await mcp_client.call_tool(
                 "search_standards",
@@ -365,16 +356,16 @@ class TestSemanticSearchFunctionality:
                     "min_relevance": 0.7
                 }
             )
-            
+
             # Handle case where search is disabled
             if "error" in result:
                 assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
                 continue
-                
+
             assert "results" in result
             assert isinstance(result["results"], list)
             # Don't assert on relevance scores if search is disabled
-                
+
     @pytest.mark.asyncio
     async def test_search_with_filters(self, mcp_client):
         """Test semantic search with category filters."""
@@ -389,19 +380,19 @@ class TestSemanticSearchFunctionality:
                 "limit": 10
             }
         )
-        
+
         # Handle case where search is disabled
         if "error" in result:
             assert "search" in result["error"].lower() or "disabled" in result["error"].lower()
             return
-            
+
         assert "results" in result
         assert isinstance(result["results"], list)
 
 
 class TestErrorHandling:
     """Test error handling scenarios."""
-    
+
     @pytest.mark.asyncio
     async def test_invalid_tool_name(self, mcp_client):
         """Test handling of invalid tool names."""
@@ -411,11 +402,11 @@ class TestErrorHandling:
                 {}
             )
             # If we get here, check if result indicates an error
-            assert False, f"Expected error but got result: {result}"
+            raise AssertionError(f"Expected error but got result: {result}")
         except Exception as e:
             # This is expected - verify it's the right kind of error
             assert "unknown tool" in str(e).lower() or "not found" in str(e).lower()
-        
+
     @pytest.mark.asyncio
     async def test_invalid_parameters(self, mcp_client):
         """Test handling of invalid tool parameters."""
@@ -433,7 +424,7 @@ class TestErrorHandling:
             # This is also acceptable - could be validation error or JSON decode error
             error_msg = str(e).lower()
             assert any(x in error_msg for x in ["required parameter", "context", "expecting value", "json"])
-        
+
     @pytest.mark.asyncio
     async def test_malformed_context(self, mcp_client):
         """Test handling of malformed context data."""
@@ -447,13 +438,13 @@ class TestErrorHandling:
                 }
             }
         )
-        
+
         # Should return empty or default standards
         assert "standards" in result
         # The system might not generate warnings for invalid types
         # Just verify it handled the malformed context gracefully
         assert isinstance(result["standards"], list)
-        
+
     @pytest.mark.asyncio
     async def test_server_timeout_handling(self, mcp_client):
         """Test handling of server timeout scenarios."""
@@ -465,41 +456,41 @@ class TestErrorHandling:
                 "force_refresh": True  # This might take time
             }
         )
-        
+
         # Just verify the operation completes
         assert "references" in result or "status" in result
 
 
 class TestConcurrentRequests:
     """Test concurrent request handling."""
-    
+
     @pytest.mark.asyncio
     async def test_concurrent_tool_calls(self, mcp_client):
         """Test server handles concurrent tool calls correctly."""
         # Create multiple concurrent requests
         tasks = []
-        
+
         for i in range(10):
             context = {
                 "project_type": "web_application",
                 "framework": "react",
                 "request_id": f"test_{i}"
             }
-            
+
             task = mcp_client.call_tool(
                 "get_applicable_standards",
                 {"context": context}
             )
             tasks.append(task)
-        
+
         # Execute all requests concurrently
         results = await asyncio.gather(*tasks)
-        
+
         # Verify all requests completed successfully
         assert len(results) == 10
         for result in results:
             assert "standards" in result
-            
+
     @pytest.mark.asyncio
     async def test_concurrent_search_requests(self, mcp_client):
         """Test concurrent semantic search requests."""
@@ -510,7 +501,7 @@ class TestConcurrentRequests:
             "Mobile app accessibility",
             "Database optimization techniques"
         ]
-        
+
         tasks = [
             mcp_client.call_tool(
                 "search_standards",
@@ -518,9 +509,9 @@ class TestConcurrentRequests:
             )
             for query in queries
         ]
-        
+
         results = await asyncio.gather(*tasks)
-        
+
         assert len(results) == len(queries)
         for result in results:
             # Handle case where search is disabled
@@ -532,7 +523,7 @@ class TestConcurrentRequests:
 
 class TestCachingBehavior:
     """Test caching functionality."""
-    
+
     @pytest.mark.asyncio
     async def test_standards_caching(self, mcp_client):
         """Test that standards are cached after first access."""
@@ -542,44 +533,44 @@ class TestCachingBehavior:
             "get_standard_details",
             {"standard_id": "react-18-patterns"}
         )
-        first_call_time = time.time() - start_time
-        
+        time.time() - start_time
+
         # Second call - should be cached
         start_time = time.time()
         result2 = await mcp_client.call_tool(
             "get_standard_details",
             {"standard_id": "react-18-patterns"}
         )
-        second_call_time = time.time() - start_time
-        
+        time.time() - start_time
+
         # Both calls might be fast in test environment
         # Just verify results are consistent
         assert result1 == result2
         # Verify caching is working by checking that results are identical
         assert result1["id"] == result2["id"]
         assert result1["content"] == result2["content"]
-        
+
     @pytest.mark.asyncio
     async def test_cache_invalidation(self, mcp_client):
         """Test cache invalidation after sync."""
         # Get initial data
-        result1 = await mcp_client.call_tool(
+        await mcp_client.call_tool(
             "get_standard_details",
             {"standard_id": "python-testing"}
         )
-        
+
         # Force sync
         await mcp_client.call_tool(
             "sync_standards",
             {"force": True}
         )
-        
+
         # Get data again - should be refreshed
         result2 = await mcp_client.call_tool(
             "get_standard_details",
             {"standard_id": "python-testing"}
         )
-        
+
         # Cache invalidation might not add metadata in current implementation
         # Just verify that sync was successful and data is still accessible
         assert result2["id"] == "python-testing"

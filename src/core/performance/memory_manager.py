@@ -13,23 +13,20 @@ This module provides comprehensive memory management including:
 import asyncio
 import gc
 import logging
-import psutil
-import resource
 import sys
-import time
 import threading
-import weakref
-from typing import Dict, List, Optional, Any, Callable, Union, Set, Tuple
-from dataclasses import dataclass, field
-from collections import defaultdict, deque
-from datetime import datetime, timedelta
-from contextlib import contextmanager
-from concurrent.futures import ThreadPoolExecutor
+import time
 import tracemalloc
+import weakref
+from collections import defaultdict, deque
+from collections.abc import Callable
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
-import numpy as np
-from pympler import tracker, muppy, summary
-from memory_profiler import profile
+import psutil
+from pympler import muppy, summary, tracker
 
 logger = logging.getLogger(__name__)
 
@@ -37,37 +34,37 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MemoryConfig:
     """Configuration for memory management."""
-    
+
     # Memory limits (in MB)
     max_memory_usage: int = 1024
     warning_threshold: int = 768
     critical_threshold: int = 896
-    
+
     # Monitoring settings
     monitoring_interval: float = 30.0  # seconds
     enable_detailed_tracking: bool = True
     enable_leak_detection: bool = True
     enable_gc_optimization: bool = True
-    
+
     # GC settings
     gc_threshold_0: int = 1000
     gc_threshold_1: int = 15
     gc_threshold_2: int = 15
     force_gc_interval: int = 300  # seconds
-    
+
     # Memory optimization
     enable_memory_mapping: bool = True
     enable_object_pooling: bool = True
-    pool_sizes: Dict[str, int] = field(default_factory=lambda: {
+    pool_sizes: dict[str, int] = field(default_factory=lambda: {
         'small_objects': 1000,
         'medium_objects': 500,
         'large_objects': 100
     })
-    
+
     # Cleanup settings
     cleanup_interval: int = 60  # seconds
     weak_ref_cleanup_interval: int = 120  # seconds
-    
+
     # Profiling settings
     enable_profiling: bool = False
     profiling_interval: int = 600  # seconds
@@ -77,31 +74,31 @@ class MemoryConfig:
 @dataclass
 class MemoryStats:
     """Memory statistics."""
-    
+
     # Current memory usage
     current_usage_mb: float = 0.0
     peak_usage_mb: float = 0.0
     available_mb: float = 0.0
-    
+
     # Process memory
     rss_mb: float = 0.0  # Resident Set Size
     vms_mb: float = 0.0  # Virtual Memory Size
-    
+
     # GC statistics
-    gc_counts: Tuple[int, int, int] = (0, 0, 0)
+    gc_counts: tuple[int, int, int] = (0, 0, 0)
     gc_collections: int = 0
     gc_collected: int = 0
     gc_uncollectable: int = 0
-    
+
     # Memory tracking
     tracked_objects: int = 0
     leaked_objects: int = 0
-    
+
     # Performance metrics
     cleanup_operations: int = 0
-    last_cleanup: Optional[datetime] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
+    last_cleanup: datetime | None = None
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             'current_usage_mb': self.current_usage_mb,
@@ -122,49 +119,49 @@ class MemoryStats:
 
 class MemoryEfficientDict:
     """Memory-efficient dictionary implementation."""
-    
+
     def __init__(self, initial_size: int = 1000):
         self._data = {}
         self._access_times = {}
         self._access_counts = defaultdict(int)
         self._max_size = initial_size
         self._eviction_count = 0
-    
+
     def __getitem__(self, key):
         """Get item and update access statistics."""
         self._access_times[key] = time.time()
         self._access_counts[key] += 1
         return self._data[key]
-    
+
     def __setitem__(self, key, value):
         """Set item with automatic eviction."""
         if len(self._data) >= self._max_size and key not in self._data:
             self._evict_lru()
-        
+
         self._data[key] = value
         self._access_times[key] = time.time()
         self._access_counts[key] += 1
-    
+
     def __delitem__(self, key):
         """Delete item and cleanup metadata."""
         del self._data[key]
         self._access_times.pop(key, None)
         self._access_counts.pop(key, None)
-    
+
     def __contains__(self, key):
         """Check if key exists."""
         return key in self._data
-    
+
     def __len__(self):
         """Get number of items."""
         return len(self._data)
-    
+
     def get(self, key, default=None):
         """Get with default value."""
         if key in self._data:
             return self[key]
         return default
-    
+
     def pop(self, key, default=None):
         """Pop item."""
         if key in self._data:
@@ -172,38 +169,38 @@ class MemoryEfficientDict:
             del self[key]
             return value
         return default
-    
+
     def keys(self):
         """Get keys."""
         return self._data.keys()
-    
+
     def values(self):
         """Get values."""
         return self._data.values()
-    
+
     def items(self):
         """Get items."""
         return self._data.items()
-    
+
     def clear(self):
         """Clear all data."""
         self._data.clear()
         self._access_times.clear()
         self._access_counts.clear()
-    
+
     def _evict_lru(self):
         """Evict least recently used item."""
         if not self._access_times:
             return
-        
+
         # Find LRU key
         lru_key = min(self._access_times.keys(), key=lambda k: self._access_times[k])
-        
+
         # Remove it
         del self[lru_key]
         self._eviction_count += 1
-    
-    def get_stats(self) -> Dict[str, Any]:
+
+    def get_stats(self) -> dict[str, Any]:
         """Get dictionary statistics."""
         return {
             'size': len(self._data),
@@ -216,13 +213,13 @@ class MemoryEfficientDict:
 
 class MemoryEfficientList:
     """Memory-efficient list implementation with automatic cleanup."""
-    
+
     def __init__(self, max_size: int = 10000):
         self._data = []
         self._max_size = max_size
         self._total_additions = 0
         self._eviction_count = 0
-    
+
     def append(self, item):
         """Append item with automatic size management."""
         if len(self._data) >= self._max_size:
@@ -230,32 +227,32 @@ class MemoryEfficientList:
             evict_count = max(1, self._max_size // 10)
             self._data = self._data[evict_count:]
             self._eviction_count += evict_count
-        
+
         self._data.append(item)
         self._total_additions += 1
-    
+
     def extend(self, items):
         """Extend with multiple items."""
         for item in items:
             self.append(item)
-    
+
     def __getitem__(self, index):
         """Get item by index."""
         return self._data[index]
-    
+
     def __len__(self):
         """Get list length."""
         return len(self._data)
-    
+
     def __iter__(self):
         """Iterate over items."""
         return iter(self._data)
-    
+
     def clear(self):
         """Clear all items."""
         self._data.clear()
-    
-    def get_stats(self) -> Dict[str, Any]:
+
+    def get_stats(self) -> dict[str, Any]:
         """Get list statistics."""
         return {
             'size': len(self._data),
@@ -267,7 +264,7 @@ class MemoryEfficientList:
 
 class ObjectPool:
     """Object pool for reusing expensive objects."""
-    
+
     def __init__(self, factory: Callable, max_size: int = 100):
         self._factory = factory
         self._pool = []
@@ -275,7 +272,7 @@ class ObjectPool:
         self._created_count = 0
         self._reused_count = 0
         self._lock = threading.Lock()
-    
+
     def get(self):
         """Get object from pool or create new one."""
         with self._lock:
@@ -287,7 +284,7 @@ class ObjectPool:
                 obj = self._factory()
                 self._created_count += 1
                 return obj
-    
+
     def put(self, obj):
         """Return object to pool."""
         with self._lock:
@@ -296,13 +293,13 @@ class ObjectPool:
                 if hasattr(obj, 'reset'):
                     obj.reset()
                 self._pool.append(obj)
-    
+
     def clear(self):
         """Clear pool."""
         with self._lock:
             self._pool.clear()
-    
-    def get_stats(self) -> Dict[str, Any]:
+
+    def get_stats(self) -> dict[str, Any]:
         """Get pool statistics."""
         return {
             'pool_size': len(self._pool),
@@ -318,24 +315,24 @@ class ObjectPool:
 
 class MemoryTracker:
     """Advanced memory tracking and leak detection."""
-    
+
     def __init__(self, config: MemoryConfig):
         self.config = config
         self.tracked_objects = weakref.WeakSet()
         self.object_counts = defaultdict(int)
         self.allocation_history = deque(maxlen=1000)
         self.leak_suspects = []
-        
+
         # Memory profiling
         self.profiler = None
         if config.enable_profiling:
             self.profiler = tracker.SummaryTracker()
-    
+
     def track_object(self, obj, category: str = "unknown"):
         """Track an object for memory monitoring."""
         self.tracked_objects.add(obj)
         self.object_counts[category] += 1
-        
+
         # Record allocation
         self.allocation_history.append({
             'timestamp': time.time(),
@@ -343,23 +340,23 @@ class MemoryTracker:
             'object_id': id(obj),
             'size': sys.getsizeof(obj)
         })
-    
+
     def untrack_object(self, obj, category: str = "unknown"):
         """Untrack an object."""
         self.tracked_objects.discard(obj)
         self.object_counts[category] = max(0, self.object_counts[category] - 1)
-    
-    def detect_leaks(self) -> List[Dict[str, Any]]:
+
+    def detect_leaks(self) -> list[dict[str, Any]]:
         """Detect potential memory leaks."""
         if not self.config.enable_leak_detection:
             return []
-        
+
         leaks = []
-        
+
         # Check for objects that haven't been garbage collected
         current_time = time.time()
         old_threshold = current_time - 3600  # 1 hour
-        
+
         for allocation in self.allocation_history:
             if allocation['timestamp'] < old_threshold:
                 # Check if object still exists
@@ -372,11 +369,11 @@ class MemoryTracker:
                             'size': allocation['size']
                         })
                         break
-        
+
         self.leak_suspects = leaks
         return leaks
-    
-    def get_object_summary(self) -> Dict[str, Any]:
+
+    def get_object_summary(self) -> dict[str, Any]:
         """Get summary of tracked objects."""
         return {
             'total_tracked': len(self.tracked_objects),
@@ -384,16 +381,16 @@ class MemoryTracker:
             'recent_allocations': len(self.allocation_history),
             'leak_suspects': len(self.leak_suspects)
         }
-    
-    def get_memory_profile(self) -> Optional[Dict[str, Any]]:
+
+    def get_memory_profile(self) -> dict[str, Any] | None:
         """Get memory profile snapshot."""
         if not self.profiler:
             return None
-        
+
         try:
             all_objects = muppy.get_objects()
             sum_objects = summary.summarize(all_objects)
-            
+
             # Get top memory consumers
             top_consumers = []
             for item in sum_objects[:self.config.profile_top_n]:
@@ -402,7 +399,7 @@ class MemoryTracker:
                     'count': item[1],
                     'size': item[2]
                 })
-            
+
             return {
                 'timestamp': time.time(),
                 'total_objects': len(all_objects),
@@ -415,41 +412,41 @@ class MemoryTracker:
 
 class MemoryManager:
     """Comprehensive memory management system."""
-    
-    def __init__(self, config: Optional[MemoryConfig] = None):
+
+    def __init__(self, config: MemoryConfig | None = None):
         self.config = config or MemoryConfig()
         self.stats = MemoryStats()
         self.tracker = MemoryTracker(self.config)
-        
+
         # Object pools
         self.object_pools = {}
         if self.config.enable_object_pooling:
             self._setup_object_pools()
-        
+
         # Memory-efficient data structures
         self.efficient_dicts = {}
         self.efficient_lists = {}
-        
+
         # Monitoring
         self.monitor_task = None
         self.cleanup_task = None
         self.profiling_task = None
-        
+
         # Alerts
         self.alert_callbacks = []
         self.last_alert_time = 0
-        
+
         # GC optimization
         if self.config.enable_gc_optimization:
             self._optimize_gc()
-        
+
         # Tracemalloc for detailed tracking
         if self.config.enable_detailed_tracking:
             tracemalloc.start()
-        
+
         # Shutdown event
         self.shutdown_event = asyncio.Event()
-    
+
     def _setup_object_pools(self):
         """Setup object pools for common types."""
         # Example pools - can be customized based on usage patterns
@@ -457,17 +454,17 @@ class MemoryManager:
             lambda: [],
             self.config.pool_sizes.get('small_objects', 1000)
         )
-        
+
         self.object_pools['dict'] = ObjectPool(
             lambda: {},
             self.config.pool_sizes.get('medium_objects', 500)
         )
-        
+
         self.object_pools['set'] = ObjectPool(
             lambda: set(),
             self.config.pool_sizes.get('small_objects', 1000)
         )
-    
+
     def _optimize_gc(self):
         """Optimize garbage collection settings."""
         gc.set_threshold(
@@ -475,29 +472,29 @@ class MemoryManager:
             self.config.gc_threshold_1,
             self.config.gc_threshold_2
         )
-        
+
         # Enable gc debugging if in development
         if logger.isEnabledFor(logging.DEBUG):
             gc.set_debug(gc.DEBUG_STATS)
-    
+
     async def start(self):
         """Start memory management tasks."""
         # Start monitoring task
         self.monitor_task = asyncio.create_task(self._monitor_memory())
-        
+
         # Start cleanup task
         self.cleanup_task = asyncio.create_task(self._cleanup_worker())
-        
+
         # Start profiling task if enabled
         if self.config.enable_profiling:
             self.profiling_task = asyncio.create_task(self._profiling_worker())
-        
+
         logger.info("Memory manager started")
-    
+
     async def stop(self):
         """Stop memory management tasks."""
         self.shutdown_event.set()
-        
+
         # Stop tasks
         if self.monitor_task:
             self.monitor_task.cancel()
@@ -505,14 +502,14 @@ class MemoryManager:
             self.cleanup_task.cancel()
         if self.profiling_task:
             self.profiling_task.cancel()
-        
+
         # Wait for tasks to complete
         tasks = [t for t in [self.monitor_task, self.cleanup_task, self.profiling_task] if t]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         logger.info("Memory manager stopped")
-    
+
     async def _monitor_memory(self):
         """Monitor memory usage continuously."""
         while not self.shutdown_event.is_set():
@@ -525,23 +522,23 @@ class MemoryManager:
             except Exception as e:
                 logger.error(f"Error in memory monitoring: {e}")
                 await asyncio.sleep(self.config.monitoring_interval)
-    
+
     async def _update_memory_stats(self):
         """Update memory statistics."""
         # Get process memory info
         process = psutil.Process()
         memory_info = process.memory_info()
-        
+
         # Update stats
         self.stats.current_usage_mb = memory_info.rss / 1024 / 1024
         self.stats.peak_usage_mb = max(self.stats.peak_usage_mb, self.stats.current_usage_mb)
         self.stats.rss_mb = memory_info.rss / 1024 / 1024
         self.stats.vms_mb = memory_info.vms / 1024 / 1024
-        
+
         # Get system memory info
         system_memory = psutil.virtual_memory()
         self.stats.available_mb = system_memory.available / 1024 / 1024
-        
+
         # Get GC stats
         gc_stats = gc.get_stats()
         if gc_stats:
@@ -549,21 +546,21 @@ class MemoryManager:
             self.stats.gc_collections = sum(stat['collections'] for stat in gc_stats)
             self.stats.gc_collected = sum(stat['collected'] for stat in gc_stats)
             self.stats.gc_uncollectable = sum(stat['uncollectable'] for stat in gc_stats)
-        
+
         # Update tracked objects count
         self.stats.tracked_objects = len(self.tracker.tracked_objects)
-    
+
     async def _check_memory_thresholds(self):
         """Check memory thresholds and trigger alerts."""
         current_usage = self.stats.current_usage_mb
         current_time = time.time()
-        
+
         # Check thresholds
         if current_usage > self.config.critical_threshold:
             await self._handle_critical_memory()
         elif current_usage > self.config.warning_threshold:
             await self._handle_warning_memory()
-        
+
         # Rate-limited alerts
         if current_time - self.last_alert_time > 300:  # 5 minutes
             if current_usage > self.config.warning_threshold:
@@ -572,21 +569,21 @@ class MemoryManager:
                     'threshold_mb': self.config.warning_threshold
                 })
                 self.last_alert_time = current_time
-    
+
     async def _handle_warning_memory(self):
         """Handle warning memory usage."""
         logger.warning(f"Memory usage warning: {self.stats.current_usage_mb:.1f}MB")
-        
+
         # Trigger cleanup
         await self._perform_cleanup()
-    
+
     async def _handle_critical_memory(self):
         """Handle critical memory usage."""
         logger.critical(f"Critical memory usage: {self.stats.current_usage_mb:.1f}MB")
-        
+
         # Aggressive cleanup
         await self._perform_aggressive_cleanup()
-    
+
     async def _cleanup_worker(self):
         """Worker task for periodic cleanup."""
         while not self.shutdown_event.is_set():
@@ -598,51 +595,51 @@ class MemoryManager:
             except Exception as e:
                 logger.error(f"Error in cleanup worker: {e}")
                 await asyncio.sleep(self.config.cleanup_interval)
-    
+
     async def _perform_cleanup(self):
         """Perform regular memory cleanup."""
         start_time = time.time()
-        
+
         # Force garbage collection
         collected = gc.collect()
-        
+
         # Clean up weak references
         self._cleanup_weak_references()
-        
+
         # Detect leaks
         leaks = self.tracker.detect_leaks()
         if leaks:
             logger.warning(f"Detected {len(leaks)} potential memory leaks")
-        
+
         # Update stats
         self.stats.cleanup_operations += 1
         self.stats.last_cleanup = datetime.now()
         self.stats.leaked_objects = len(leaks)
-        
+
         cleanup_time = time.time() - start_time
         logger.debug(f"Cleanup completed in {cleanup_time:.3f}s, collected {collected} objects")
-    
+
     async def _perform_aggressive_cleanup(self):
         """Perform aggressive memory cleanup."""
         logger.info("Performing aggressive memory cleanup...")
-        
+
         # Clear all object pools
         for pool in self.object_pools.values():
             pool.clear()
-        
+
         # Clear efficient data structures
         for data_dict in self.efficient_dicts.values():
             data_dict.clear()
-        
+
         for data_list in self.efficient_lists.values():
             data_list.clear()
-        
+
         # Multiple GC passes
         for _ in range(3):
             gc.collect()
-        
+
         logger.info("Aggressive cleanup completed")
-    
+
     def _cleanup_weak_references(self):
         """Clean up dead weak references."""
         # Clean up tracked objects
@@ -650,10 +647,10 @@ class MemoryManager:
         for obj_ref in self.tracker.tracked_objects:
             if obj_ref() is None:
                 dead_refs.append(obj_ref)
-        
+
         for ref in dead_refs:
             self.tracker.tracked_objects.discard(ref)
-    
+
     async def _profiling_worker(self):
         """Worker task for memory profiling."""
         while not self.shutdown_event.is_set():
@@ -661,15 +658,15 @@ class MemoryManager:
                 profile = self.tracker.get_memory_profile()
                 if profile:
                     logger.info(f"Memory profile: {profile['total_objects']} objects")
-                
+
                 await asyncio.sleep(self.config.profiling_interval)
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Error in profiling worker: {e}")
                 await asyncio.sleep(self.config.profiling_interval)
-    
-    async def _trigger_alert(self, alert_type: str, data: Dict[str, Any]):
+
+    async def _trigger_alert(self, alert_type: str, data: dict[str, Any]):
         """Trigger memory alert."""
         for callback in self.alert_callbacks:
             try:
@@ -679,83 +676,83 @@ class MemoryManager:
                     callback(alert_type, data)
             except Exception as e:
                 logger.error(f"Error in alert callback: {e}")
-    
+
     # Public API
-    
+
     def track_object(self, obj, category: str = "unknown"):
         """Track an object for memory monitoring."""
         self.tracker.track_object(obj, category)
-    
+
     def untrack_object(self, obj, category: str = "unknown"):
         """Untrack an object."""
         self.tracker.untrack_object(obj, category)
-    
+
     def get_object_from_pool(self, pool_name: str):
         """Get object from pool."""
         if pool_name in self.object_pools:
             return self.object_pools[pool_name].get()
         return None
-    
+
     def return_object_to_pool(self, pool_name: str, obj):
         """Return object to pool."""
         if pool_name in self.object_pools:
             self.object_pools[pool_name].put(obj)
-    
+
     def create_efficient_dict(self, name: str, size: int = 1000) -> MemoryEfficientDict:
         """Create a memory-efficient dictionary."""
         efficient_dict = MemoryEfficientDict(size)
         self.efficient_dicts[name] = efficient_dict
         return efficient_dict
-    
+
     def create_efficient_list(self, name: str, size: int = 10000) -> MemoryEfficientList:
         """Create a memory-efficient list."""
         efficient_list = MemoryEfficientList(size)
         self.efficient_lists[name] = efficient_list
         return efficient_list
-    
+
     def add_alert_callback(self, callback: Callable):
         """Add memory alert callback."""
         self.alert_callbacks.append(callback)
-    
+
     def remove_alert_callback(self, callback: Callable):
         """Remove memory alert callback."""
         if callback in self.alert_callbacks:
             self.alert_callbacks.remove(callback)
-    
+
     @contextmanager
     def memory_context(self, name: str):
         """Context manager for tracking memory usage."""
         if self.config.enable_detailed_tracking:
             snapshot_before = tracemalloc.take_snapshot()
-        
+
         start_time = time.time()
         start_memory = self.stats.current_usage_mb
-        
+
         try:
             yield
         finally:
             end_time = time.time()
             end_memory = self.stats.current_usage_mb
-            
+
             memory_diff = end_memory - start_memory
             time_diff = end_time - start_time
-            
+
             logger.debug(f"Memory context '{name}': {memory_diff:.1f}MB in {time_diff:.3f}s")
-            
+
             if self.config.enable_detailed_tracking:
                 snapshot_after = tracemalloc.take_snapshot()
                 top_stats = snapshot_after.compare_to(snapshot_before, 'lineno')
-                
+
                 for stat in top_stats[:5]:
                     logger.debug(f"  {stat}")
-    
-    def get_memory_stats(self) -> Dict[str, Any]:
+
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get comprehensive memory statistics."""
         return {
             'memory_stats': self.stats.to_dict(),
             'object_summary': self.tracker.get_object_summary(),
             'pool_stats': {
-                name: pool.get_stats() 
+                name: pool.get_stats()
                 for name, pool in self.object_pools.items()
             },
             'efficient_structures': {
@@ -769,22 +766,22 @@ class MemoryManager:
                 }
             }
         }
-    
-    def get_memory_profile(self) -> Optional[Dict[str, Any]]:
+
+    def get_memory_profile(self) -> dict[str, Any] | None:
         """Get detailed memory profile."""
         return self.tracker.get_memory_profile()
-    
+
     async def force_cleanup(self):
         """Force immediate cleanup."""
         await self._perform_cleanup()
-    
+
     async def force_aggressive_cleanup(self):
         """Force aggressive cleanup."""
         await self._perform_aggressive_cleanup()
 
 
 # Global memory manager instance
-_global_memory_manager: Optional[MemoryManager] = None
+_global_memory_manager: MemoryManager | None = None
 
 
 def get_memory_manager() -> MemoryManager:
@@ -795,7 +792,7 @@ def get_memory_manager() -> MemoryManager:
     return _global_memory_manager
 
 
-async def initialize_memory_manager(config: Optional[MemoryConfig] = None) -> MemoryManager:
+async def initialize_memory_manager(config: MemoryConfig | None = None) -> MemoryManager:
     """Initialize and start global memory manager."""
     global _global_memory_manager
     _global_memory_manager = MemoryManager(config)

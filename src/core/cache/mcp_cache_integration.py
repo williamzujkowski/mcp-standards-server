@@ -5,26 +5,26 @@ Provides seamless integration of caching with the MCP server.
 """
 
 import logging
-from typing import Any, Dict, Optional, List
 from functools import wraps
+from typing import Any
 
-from .mcp_cache import MCPCache, ToolCacheConfig, CacheStrategy
-from .redis_client import RedisCache, CacheConfig
+from .mcp_cache import CacheStrategy, MCPCache, ToolCacheConfig
+from .redis_client import CacheConfig, RedisCache
 
 logger = logging.getLogger(__name__)
 
 
 class MCPCacheMiddleware:
     """Middleware to integrate caching with MCP server."""
-    
+
     def __init__(
         self,
-        cache: Optional[MCPCache] = None,
-        redis_config: Optional[CacheConfig] = None,
-        custom_tool_configs: Optional[Dict[str, ToolCacheConfig]] = None
+        cache: MCPCache | None = None,
+        redis_config: CacheConfig | None = None,
+        custom_tool_configs: dict[str, ToolCacheConfig] | None = None
     ):
         """Initialize cache middleware.
-        
+
         Args:
             cache: Pre-configured MCPCache instance
             redis_config: Redis configuration (if cache not provided)
@@ -38,18 +38,18 @@ class MCPCacheMiddleware:
                 redis_cache=redis_cache,
                 custom_configs=custom_tool_configs
             )
-    
+
     def wrap_tool_executor(self, executor_func):
         """Wrap the tool executor function with caching logic.
-        
+
         Args:
             executor_func: Original _execute_tool function
-            
+
         Returns:
             Wrapped function with caching
         """
         @wraps(executor_func)
-        async def wrapped_executor(self_ref, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        async def wrapped_executor(self_ref, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             # Try to get from cache first
             cached_response = await self.cache.get(tool_name, arguments)
             if cached_response is not None:
@@ -58,28 +58,28 @@ class MCPCacheMiddleware:
                 if isinstance(cached_response, dict):
                     cached_response["_cache_hit"] = True
                 return cached_response
-            
+
             # Execute the tool
             logger.debug(f"Cache miss for tool: {tool_name}, executing...")
             response = await executor_func(self_ref, tool_name, arguments)
-            
+
             # Cache the response
             await self.cache.set(tool_name, arguments, response)
-            
+
             # Add cache metadata
             if isinstance(response, dict):
                 response["_cache_hit"] = False
-            
+
             return response
-        
+
         return wrapped_executor
-    
-    async def warm_standard_caches(self, mcp_server) -> Dict[str, int]:
+
+    async def warm_standard_caches(self, mcp_server) -> dict[str, int]:
         """Warm caches for commonly used standards.
-        
+
         Args:
             mcp_server: MCPStandardsServer instance
-            
+
         Returns:
             Dictionary of warmed cache counts by tool
         """
@@ -103,22 +103,22 @@ class MCPCacheMiddleware:
                 {"standard_id": "python-coding-standards"}
             ]
         }
-        
+
         # Create executor function
-        async def executor(tool_name: str, args: Dict[str, Any]) -> Any:
+        async def executor(tool_name: str, args: dict[str, Any]) -> Any:
             return await mcp_server._execute_tool(tool_name, args)
-        
+
         # Update warm configurations in cache
         for tool_name, args_list in warm_configs.items():
             if tool_name in self.cache.tool_configs:
                 self.cache.tool_configs[tool_name].warm_args = args_list
-        
+
         # Perform warming
         return await self.cache.warm_cache(executor)
-    
-    def get_cache_stats_tool(self) -> Dict[str, Any]:
+
+    def get_cache_stats_tool(self) -> dict[str, Any]:
         """Get a tool definition for cache statistics.
-        
+
         Returns:
             Tool definition that can be added to MCP server
         """
@@ -136,23 +136,23 @@ class MCPCacheMiddleware:
                 }
             }
         }
-    
-    async def handle_cache_stats(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def handle_cache_stats(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle cache statistics tool call."""
         metrics = self.cache.get_metrics()
-        
+
         if not arguments.get("include_redis", True):
             metrics.pop("redis_metrics", None)
-        
+
         # Add health status
         health = await self.cache.health_check()
         metrics["health"] = health
-        
+
         return metrics
-    
-    def get_cache_management_tools(self) -> List[Dict[str, Any]]:
+
+    def get_cache_management_tools(self) -> list[dict[str, Any]]:
         """Get tool definitions for cache management.
-        
+
         Returns:
             List of tool definitions for cache management
         """
@@ -227,15 +227,15 @@ class MCPCacheMiddleware:
                 }
             }
         ]
-    
+
     async def handle_cache_management(
         self,
         tool_name: str,
-        arguments: Dict[str, Any],
+        arguments: dict[str, Any],
         mcp_server=None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle cache management tool calls."""
-        
+
         if tool_name == "cache_invalidate":
             success = await self.cache.invalidate(
                 arguments["tool_name"],
@@ -246,12 +246,12 @@ class MCPCacheMiddleware:
                 "tool": arguments["tool_name"],
                 "message": "Cache invalidated" if success else "Invalidation failed"
             }
-        
+
         elif tool_name == "cache_warm":
             if mcp_server:
-                async def executor(tool: str, args: Dict[str, Any]) -> Any:
+                async def executor(tool: str, args: dict[str, Any]) -> Any:
                     return await mcp_server._execute_tool(tool, args)
-                
+
                 results = await self.cache.warm_cache(
                     executor,
                     arguments.get("tools")
@@ -265,7 +265,7 @@ class MCPCacheMiddleware:
                     "success": False,
                     "error": "MCP server instance required for warming"
                 }
-        
+
         elif tool_name == "cache_clear_all":
             if arguments.get("confirm", False):
                 count = await self.cache.clear_all()
@@ -278,18 +278,18 @@ class MCPCacheMiddleware:
                     "success": False,
                     "error": "Confirmation required to clear all caches"
                 }
-        
+
         elif tool_name == "cache_configure":
             tool = arguments["tool_name"]
             strategy_str = arguments.get("strategy")
             ttl = arguments.get("ttl_seconds")
-            
+
             if strategy_str:
                 strategy = CacheStrategy(strategy_str)
                 self.cache.configure_tool(tool, strategy=strategy, ttl_seconds=ttl)
             elif ttl is not None:
                 self.cache.configure_tool(tool, ttl_seconds=ttl)
-            
+
             # Return current configuration
             config = self.cache.tool_configs.get(tool)
             if config:
@@ -304,7 +304,7 @@ class MCPCacheMiddleware:
                     "success": False,
                     "error": f"Tool {tool} not found in cache configuration"
                 }
-        
+
         else:
             return {
                 "success": False,
@@ -312,13 +312,13 @@ class MCPCacheMiddleware:
             }
 
 
-def integrate_cache_with_mcp_server(mcp_server, cache_config: Optional[Dict[str, Any]] = None):
+def integrate_cache_with_mcp_server(mcp_server, cache_config: dict[str, Any] | None = None):
     """Integrate caching with an MCP server instance.
-    
+
     Args:
         mcp_server: MCPStandardsServer instance
         cache_config: Optional cache configuration
-        
+
     This function:
     1. Creates cache middleware
     2. Wraps the tool executor
@@ -329,7 +329,7 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: Optional[Dict[str,
     redis_config = None
     if cache_config and "redis" in cache_config:
         redis_config = CacheConfig(**cache_config["redis"])
-    
+
     # Create custom tool configs if provided
     custom_configs = None
     if cache_config and "tools" in cache_config:
@@ -344,41 +344,41 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: Optional[Dict[str,
                     compress_threshold=tool_cfg.get("compress_threshold", 1024),
                     warm_on_startup=tool_cfg.get("warm_on_startup", False)
                 )
-    
+
     # Create middleware
     middleware = MCPCacheMiddleware(
         redis_config=redis_config,
         custom_tool_configs=custom_configs
     )
-    
+
     # Store original executor
     original_executor = mcp_server._execute_tool
-    
+
     # Create bound wrapper
-    async def cached_executor(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def cached_executor(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         wrapped = middleware.wrap_tool_executor(original_executor)
         return await wrapped(mcp_server, tool_name, arguments)
-    
+
     # Replace executor
     mcp_server._execute_tool = cached_executor
-    
+
     # Add cache management tools to the tools list
     if hasattr(mcp_server.server, '_tools'):
         # Add cache stats tool
         mcp_server.server._tools.append(middleware.get_cache_stats_tool())
-        
+
         # Add management tools
         for tool in middleware.get_cache_management_tools():
             mcp_server.server._tools.append(tool)
-    
+
     # Store middleware reference
     mcp_server._cache_middleware = middleware
-    
+
     # Add cache tool handlers
     original_call_tool = mcp_server.server.call_tool
-    
+
     @mcp_server.server.call_tool()
-    async def enhanced_call_tool(name: str, arguments: Dict[str, Any], **kwargs):
+    async def enhanced_call_tool(name: str, arguments: dict[str, Any], **kwargs):
         # Handle cache-specific tools
         if name == "get_cache_stats":
             return await middleware.handle_cache_stats(arguments)
@@ -387,12 +387,12 @@ def integrate_cache_with_mcp_server(mcp_server, cache_config: Optional[Dict[str,
         else:
             # Delegate to original handler
             return await original_call_tool(name, arguments, **kwargs)
-    
+
     # Warm cache if configured
     if cache_config and cache_config.get("warm_on_startup", False):
         import asyncio
         asyncio.create_task(middleware.warm_standard_caches(mcp_server))
-    
+
     logger.info("Cache integration completed successfully")
-    
+
     return middleware

@@ -10,82 +10,81 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent, CallToolResult, InitializeRequest
+from mcp.types import TextContent, Tool
 from pydantic import ValidationError as PydanticValidationError
 
+# Import authentication, validation and error handling modules
+from .core.auth import AuthConfig, get_auth_manager
+from .core.errors import (
+    AuthenticationError,
+    AuthorizationError,
+    ErrorCode,
+    MCPError,
+    RateLimitError,
+    ToolNotFoundError,
+    ValidationError,
+)
+
+# Import metrics module
+from .core.metrics import get_mcp_metrics
+
+# Import privacy filtering
+from .core.privacy import PrivacyConfig, get_privacy_filter
+from .core.standards.analytics import StandardsAnalytics
+from .core.standards.cross_referencer import CrossReferencer
 from .core.standards.rule_engine import RuleEngine
 from .core.standards.sync import StandardsSynchronizer
 from .core.standards.token_optimizer import (
-    TokenOptimizer,
-    TokenBudget,
-    StandardFormat,
-    ModelType,
     DynamicLoader,
-    create_token_optimizer
+    ModelType,
+    StandardFormat,
+    TokenBudget,
+    create_token_optimizer,
 )
-from .core.standards.cross_referencer import CrossReferencer
-from .core.standards.analytics import StandardsAnalytics
-from .generators import StandardsGenerator
-
-# Import authentication, validation and error handling modules
-from .core.auth import get_auth_manager, AuthConfig
-# Import metrics module
-from .core.metrics import get_mcp_metrics, MCPMetrics
 from .core.validation import get_input_validator
-from .core.errors import (
-    MCPError,
-    AuthenticationError,
-    AuthorizationError,
-    ToolNotFoundError,
-    ValidationError,
-    ErrorCode,
-    RateLimitError
-)
-# Import privacy filtering
-from .core.privacy import get_privacy_filter, PrivacyConfig
-
+from .generators import StandardsGenerator
 
 logger = logging.getLogger(__name__)
 
 
 class MCPStandardsServer:
     """MCP server for standards management."""
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.server = Server("mcp-standards-server")
-        
+
         # Initialize metrics collector
         self.metrics = get_mcp_metrics()
         self._active_connections = 0
-        
+
         # Initialize auth manager
         auth_config = AuthConfig(**self.config.get("auth", {}))
         self.auth_manager = get_auth_manager()
         self.auth_manager.config = auth_config
-        
+
         # Initialize input validator
         self.input_validator = get_input_validator()
-        
+
         # Initialize privacy filter
         privacy_config = PrivacyConfig(**self.config.get("privacy", {}))
         self.privacy_filter = get_privacy_filter()
         self.privacy_filter.config = privacy_config
-        
+
         # Initialize rate limiting (simple in-memory implementation)
-        self._rate_limit_store: Dict[str, List[float]] = {}
+        self._rate_limit_store: dict[str, list[float]] = {}
         self.rate_limit_window = self.config.get("rate_limit_window", 60)  # seconds
         self.rate_limit_max_requests = self.config.get("rate_limit_max_requests", 100)
-        
+
         # Initialize components
         # Get data directory
         data_dir = Path(os.environ.get("MCP_STANDARDS_DATA_DIR", "data"))
         rules_file = data_dir / "standards" / "meta" / "enhanced-selection-rules.json"
-        
+
         self.rule_engine = RuleEngine(
             Path(self.config.get("rules_file", str(rules_file)))
         )
@@ -94,15 +93,15 @@ class MCPStandardsServer:
             config_path=sync_config_path,
             cache_dir=data_dir / "standards" / "cache"
         )
-        
+
         # Initialize cross-referencer and analytics
         self.cross_referencer = CrossReferencer(data_dir / "standards")
         self.analytics = StandardsAnalytics(data_dir / "standards" / "analytics")
-        
+
         # Initialize standards generator
         templates_dir = Path("templates")
         self.generator = StandardsGenerator(templates_dir)
-        
+
         # Initialize search only if enabled
         self.search = None
         if os.environ.get("MCP_DISABLE_SEARCH") != "true" and self.config.get("search", {}).get("enabled", True):
@@ -113,7 +112,7 @@ class MCPStandardsServer:
                 )
             except ImportError:
                 logger.warning("Semantic search disabled: sentence-transformers not installed")
-        
+
         # Initialize token optimizer
         model_type = ModelType(self.config.get("token_model", "gpt-4"))
         default_budget = self.config.get("default_token_budget", 8000)
@@ -122,15 +121,15 @@ class MCPStandardsServer:
             default_budget=default_budget
         )
         self.dynamic_loader = DynamicLoader(self.token_optimizer)
-        
+
         # Register tools
         self._register_tools()
-        
+
     def _register_tools(self):
         """Register all MCP tools."""
-        
+
         @self.server.list_tools()
-        async def list_tools() -> List[Tool]:
+        async def list_tools() -> list[Tool]:
             """Return list of available tools."""
             return [
                 Tool(
@@ -388,39 +387,39 @@ class MCPStandardsServer:
                     }
                 )
             ]
-        
+
         # Capture self in closure for nested function
         server_instance = self
-        
+
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Dict[str, Any], **kwargs) -> List[TextContent]:
+        async def call_tool(name: str, arguments: dict[str, Any], **kwargs) -> list[TextContent]:
             """Handle tool calls with authentication and validation."""
             logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
-            
+
             # Track request size
             request_size = len(json.dumps(arguments).encode('utf-8'))
             server_instance.metrics.record_request_size(request_size, name)
-            
+
             # Start timing the tool call
             start_time = time.time()
-            
+
             try:
                 # Extract authentication from request context if available
                 headers = kwargs.get("headers", {})
                 auth_type, credential = server_instance.auth_manager.extract_auth_from_headers(headers)
-                
+
                 # Verify authentication if enabled
                 if server_instance.auth_manager.is_enabled():
                     if not credential:
                         server_instance.metrics.record_auth_attempt("none", False)
                         raise AuthenticationError("Authentication required")
-                    
+
                     if auth_type == "bearer":
                         is_valid, payload, error_msg = server_instance.auth_manager.verify_token(credential)
                         server_instance.metrics.record_auth_attempt("bearer", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid token")
-                        
+
                         # Check tool permission
                         if not server_instance.auth_manager.check_permission(payload, "mcp:tools"):
                             raise AuthorizationError(
@@ -432,7 +431,7 @@ class MCPStandardsServer:
                         server_instance.metrics.record_auth_attempt("api_key", is_valid)
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid API key")
-                    
+
                     # Check rate limits
                     user_key = credential if credential else "anonymous"
                     if not server_instance._check_rate_limit(user_key):
@@ -442,7 +441,7 @@ class MCPStandardsServer:
                             window=f"{server_instance.rate_limit_window}s",
                             retry_after=server_instance.rate_limit_window
                         )
-                
+
                 # Validate tool exists
                 if name not in [
                     "get_applicable_standards", "validate_against_standard", "search_standards",
@@ -454,7 +453,7 @@ class MCPStandardsServer:
                     "track_standards_usage", "get_recommendations", "get_metrics_dashboard"
                 ]:
                     raise ToolNotFoundError(name)
-                
+
                 # Validate input arguments
                 try:
                     validated_args = server_instance.input_validator.validate_tool_input(name, arguments)
@@ -470,17 +469,17 @@ class MCPStandardsServer:
                         message=first_error.get("msg", "Validation error"),
                         field=field or "unknown"
                     )
-                
+
                 # Execute tool
                 result = await server_instance._execute_tool(name, validated_args)
-                
+
                 # Log successful execution
                 logger.debug(f"Tool {name} executed successfully")
-                
+
                 # Record successful tool call
                 duration = time.time() - start_time
                 server_instance.metrics.record_tool_call(name, duration, True)
-                
+
                 # Apply privacy filtering if enabled
                 if server_instance.privacy_filter.config.detect_pii:
                     # Generate privacy report for monitoring
@@ -494,18 +493,18 @@ class MCPStandardsServer:
                         # Filter the response
                         filtered_result, _ = server_instance.privacy_filter.filter_dict(result)
                         result = filtered_result
-                
+
                 # Track response size
                 response_text = json.dumps(result, indent=2)
                 response_size = len(response_text.encode('utf-8'))
                 server_instance.metrics.record_response_size(response_size, name)
-                
+
                 # Return successful result
                 return [TextContent(
                     type="text",
                     text=response_text
                 )]
-                
+
             except MCPError as e:
                 # Handle structured errors
                 logger.error(f"MCP error in tool {name}: {e}", exc_info=True)
@@ -529,8 +528,8 @@ class MCPStandardsServer:
                     type="text",
                     text=json.dumps(error.to_dict(), indent=2)
                 )]
-    
-    async def _execute_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _execute_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         """Execute a specific tool with validated arguments."""
         try:
             if name == "get_applicable_standards":
@@ -644,7 +643,7 @@ class MCPStandardsServer:
                 return await self._get_metrics_dashboard()
             else:
                 raise ToolNotFoundError(name)
-                
+
         except MCPError:
             # Re-raise MCP errors
             raise
@@ -655,39 +654,39 @@ class MCPStandardsServer:
                 message=f"Tool execution failed: {str(e)}",
                 details={"tool": name, "error_type": type(e).__name__}
             )
-    
+
     async def _get_applicable_standards(
         self,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         include_resolution_details: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get applicable standards based on project context."""
         result = self.rule_engine.evaluate(context)
-        
+
         response = {
             "standards": result["resolved_standards"],
             "evaluation_path": result.get("evaluation_path", [])
         }
-        
+
         if include_resolution_details:
             response["resolution_details"] = {
                 "matched_rules": result.get("matched_rules", []),
                 "conflicts_resolved": result.get("conflicts_resolved", 0),
                 "final_priority_order": result.get("priority_order", [])
             }
-            
+
         return response
-        
+
     async def _validate_against_standard(
         self,
         code: str,
         standard: str,
-        language: Optional[str] = None
-    ) -> Dict[str, Any]:
+        language: str | None = None
+    ) -> dict[str, Any]:
         """Validate code against a specific standard."""
         # This is a placeholder - actual implementation would analyze code
         violations = []
-        
+
         # Simple validation checks
         if standard == "react-18-patterns" and language == "javascript":
             if "class " in code and "extends React.Component" in code:
@@ -696,31 +695,31 @@ class MCPStandardsServer:
                     "message": "Prefer functional components over class components",
                     "severity": "warning"
                 })
-                
+
         return {
             "standard": standard,
             "passed": len(violations) == 0,
             "violations": violations
         }
-        
+
     async def _search_standards(
         self,
         query: str,
         limit: int = 10,
         min_relevance: float = 0.0,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        filters: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Search standards using semantic search."""
         if self.search is None:
             # Fallback to simple keyword search
             return {"results": [], "warning": "Semantic search is disabled"}
-        
+
         results = self.search.search(
-            query, 
+            query,
             top_k=limit,
             filters=filters
         )
-        
+
         # Filter by minimum relevance and convert to dict format
         filtered_results = []
         for result in results:
@@ -732,21 +731,21 @@ class MCPStandardsServer:
                     "metadata": result.metadata,
                     "highlights": result.highlights
                 })
-        
+
         return {"results": filtered_results}
-        
+
     async def _get_standard_details(
         self,
         standard_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get detailed information about a specific standard."""
         # Load standard from cache or repository
         standard_path = self.synchronizer.cache_dir / f"{standard_id}.json"
-        
+
         if standard_path.exists():
             # Record cache hit
             self.metrics.record_cache_access("get_standard_details", True)
-            with open(standard_path, 'r') as f:
+            with open(standard_path) as f:
                 return json.load(f)
         else:
             # Record cache miss
@@ -756,15 +755,15 @@ class MCPStandardsServer:
                 message=f"Standard '{standard_id}' not found",
                 details={"standard_id": standard_id}
             )
-            
+
     async def _list_available_standards(
         self,
-        category: Optional[str] = None,
+        category: str | None = None,
         limit: int = 100
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """List all available standards."""
         standards = []
-        
+
         # List cached standards
         cache_dir = self.synchronizer.cache_dir
         if not cache_dir.exists():
@@ -773,12 +772,12 @@ class MCPStandardsServer:
                 message="Standards cache directory not found",
                 suggestion="Run sync_standards to populate the cache"
             )
-        
+
         for file_path in cache_dir.glob("*.json"):
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path) as f:
                     standard = json.load(f)
-                    
+
                 if category is None or standard.get("category") == category:
                     standards.append({
                         "id": standard.get("id", file_path.stem),
@@ -795,21 +794,21 @@ class MCPStandardsServer:
             except Exception as e:
                 logger.warning(f"Failed to load standard from {file_path}: {e}")
                 continue
-                
+
         return {"standards": standards[:limit]}
-        
+
     async def _suggest_improvements(
         self,
         code: str,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Suggest improvements based on applicable standards."""
         # Get applicable standards
         standards_result = await self._get_applicable_standards(context)
         applicable_standards = standards_result["standards"]
-        
+
         suggestions = []
-        
+
         # Generate suggestions based on standards
         for standard_id in applicable_standards:
             # This is a placeholder - actual implementation would analyze code
@@ -820,7 +819,7 @@ class MCPStandardsServer:
                         "priority": "high",
                         "standard_reference": standard_id
                     })
-                if "function" in code and not "async" in code:
+                if "function" in code and "async" not in code:
                     suggestions.append({
                         "description": "Consider using async/await for asynchronous operations",
                         "priority": "medium",
@@ -832,13 +831,13 @@ class MCPStandardsServer:
                         "priority": "medium",
                         "standard_reference": standard_id
                     })
-                    
+
         return {"suggestions": suggestions}
-        
+
     async def _sync_standards(
         self,
         force: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Synchronize standards from repository."""
         try:
             result = await self.synchronizer.sync(force=force)
@@ -854,30 +853,30 @@ class MCPStandardsServer:
                 message=f"Standards synchronization failed: {str(e)}",
                 details={"force": force}
             )
-            
+
     async def _get_optimized_standard(
         self,
         standard_id: str,
         format_type: str = "condensed",
-        token_budget: Optional[int] = None,
-        required_sections: Optional[List[str]] = None,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        token_budget: int | None = None,
+        required_sections: list[str] | None = None,
+        context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Get a token-optimized version of a standard."""
         # Load standard
         standard = await self._get_standard_details(standard_id)
-        
+
         # Parse format type
         try:
             format_enum = StandardFormat(format_type)
         except ValueError:
             format_enum = StandardFormat.CONDENSED
-        
+
         # Create budget
         budget = None
         if token_budget:
             budget = TokenBudget(total=token_budget)
-        
+
         # Optimize standard
         content, result = self.token_optimizer.optimize_standard(
             standard,
@@ -886,7 +885,7 @@ class MCPStandardsServer:
             required_sections=required_sections,
             context=context
         )
-        
+
         return {
             "standard_id": standard_id,
             "content": content,
@@ -898,13 +897,13 @@ class MCPStandardsServer:
             "sections_excluded": result.sections_excluded,
             "warnings": result.warnings
         }
-        
+
     async def _auto_optimize_standards(
         self,
-        standard_ids: List[str],
+        standard_ids: list[str],
         total_token_budget: int,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Automatically optimize multiple standards within a token budget."""
         # Estimate token usage for each standard
         standards = []
@@ -915,32 +914,32 @@ class MCPStandardsServer:
             except Exception as e:
                 logger.warning(f"Failed to load standard {std_id}: {e}")
                 continue
-        
+
         # Estimate token distribution
         estimates = self.token_optimizer.estimate_tokens(
             standards,
             format_type=StandardFormat.CONDENSED
         )
-        
+
         # Allocate budget proportionally
         total_original = estimates['total_original']
         results = []
-        
+
         for i, standard in enumerate(standards):
             std_estimate = estimates['standards'][i]
-            
+
             # Calculate proportional budget
             proportion = std_estimate['original_tokens'] / total_original
             allocated_budget = int(total_token_budget * proportion)
-            
+
             # Create budget with some buffer
             budget = TokenBudget(total=allocated_budget)
-            
+
             # Auto-select format
             selected_format = self.token_optimizer.auto_select_format(
                 standard, budget, context
             )
-            
+
             # Optimize
             content, result = self.token_optimizer.optimize_standard(
                 standard,
@@ -948,7 +947,7 @@ class MCPStandardsServer:
                 budget=budget,
                 context=context
             )
-            
+
             results.append({
                 "standard_id": standard['id'],
                 "content": content,
@@ -956,33 +955,33 @@ class MCPStandardsServer:
                 "tokens_used": result.compressed_tokens,
                 "allocated_budget": allocated_budget
             })
-        
+
         total_used = sum(r['tokens_used'] for r in results)
-        
+
         return {
             "results": results,
             "total_tokens_used": total_used,
             "total_budget": total_token_budget,
             "budget_utilization": total_used / total_token_budget if total_token_budget > 0 else 0
         }
-        
+
     async def _progressive_load_standard(
         self,
         standard_id: str,
-        initial_sections: List[str],
+        initial_sections: list[str],
         max_depth: int = 3
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a progressive loading plan for a standard."""
         # Load standard
         standard = await self._get_standard_details(standard_id)
-        
+
         # Generate loading plan
         loading_plan = self.token_optimizer.progressive_load(
             standard,
             initial_sections=initial_sections,
             max_depth=max_depth
         )
-        
+
         # Format plan for response
         formatted_plan = []
         for batch_idx, batch in enumerate(loading_plan):
@@ -995,7 +994,7 @@ class MCPStandardsServer:
                 "batch_total_tokens": sum(tokens for _, tokens in batch)
             }
             formatted_plan.append(formatted_batch)
-        
+
         return {
             "standard_id": standard_id,
             "loading_plan": formatted_plan,
@@ -1005,16 +1004,16 @@ class MCPStandardsServer:
                 batch["batch_total_tokens"] for batch in formatted_plan
             )
         }
-        
+
     async def _estimate_token_usage(
         self,
-        standard_ids: List[str],
-        format_types: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        standard_ids: list[str],
+        format_types: list[str] | None = None
+    ) -> dict[str, Any]:
         """Estimate token usage for standards in different formats."""
         if not format_types:
             format_types = ["full", "condensed", "reference", "summary"]
-        
+
         # Convert to enums
         formats = []
         for fmt in format_types:
@@ -1022,7 +1021,7 @@ class MCPStandardsServer:
                 formats.append(StandardFormat(fmt))
             except ValueError:
                 continue
-        
+
         # Load standards
         standards = []
         for std_id in standard_ids:
@@ -1032,7 +1031,7 @@ class MCPStandardsServer:
             except Exception as e:
                 logger.warning(f"Failed to load standard {std_id}: {e}")
                 continue
-        
+
         # Estimate for each format
         results = {}
         for format_enum in formats:
@@ -1041,7 +1040,7 @@ class MCPStandardsServer:
                 format_type=format_enum
             )
             results[format_enum.value] = estimates
-        
+
         return {
             "estimates": results,
             "recommendations": {
@@ -1050,19 +1049,19 @@ class MCPStandardsServer:
                 "large_budget": "Use 'full' format"
             }
         }
-            
-    async def _get_sync_status(self) -> Dict[str, Any]:
+
+    async def _get_sync_status(self) -> dict[str, Any]:
         """Get current synchronization status."""
         status = self.synchronizer.get_sync_status()
         updates = self.synchronizer.check_updates()
-        
+
         # Get the most recent sync time from all files
         last_sync = None
         if status.get("last_sync_times"):
             sync_times = [t for t in status["last_sync_times"].values() if t]
             if sync_times:
                 last_sync = max(sync_times)
-        
+
         return {
             "last_sync": last_sync,
             "total_standards": status["total_files"],
@@ -1070,14 +1069,14 @@ class MCPStandardsServer:
             "cache_size_mb": status["total_size_mb"],
             "rate_limit": status["rate_limit"]
         }
-        
+
     async def _generate_standard(
         self,
         template_name: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         title: str,
-        domain: Optional[str] = None
-    ) -> Dict[str, Any]:
+        domain: str | None = None
+    ) -> dict[str, Any]:
         """Generate a new standard based on template and context."""
         try:
             result = self.generator.generate_standard(
@@ -1097,26 +1096,26 @@ class MCPStandardsServer:
                 "error": str(e),
                 "template_name": template_name
             }
-    
+
     async def _validate_standard(
         self,
         standard_content: str,
         format: str = "yaml"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validate a standard document for completeness and quality."""
         try:
             from .generators.validator import StandardValidator
             validator = StandardValidator()
-            
+
             # Parse content based on format
             if format.lower() == "yaml":
                 import yaml
                 content = yaml.safe_load(standard_content)
             else:
                 content = json.loads(standard_content)
-            
+
             validation_result = validator.validate(content)
-            
+
             return {
                 "valid": validation_result.is_valid,
                 "errors": validation_result.errors,
@@ -1130,11 +1129,11 @@ class MCPStandardsServer:
                 "valid": False,
                 "error": str(e)
             }
-    
+
     async def _list_templates(
         self,
-        domain: Optional[str] = None
-    ) -> Dict[str, Any]:
+        domain: str | None = None
+    ) -> dict[str, Any]:
         """List available standard templates."""
         try:
             templates = self.generator.list_templates(domain=domain)
@@ -1155,13 +1154,13 @@ class MCPStandardsServer:
                 "error": str(e),
                 "templates": []
             }
-    
+
     async def _get_cross_references(
         self,
-        standard_id: Optional[str] = None,
-        concept: Optional[str] = None,
+        standard_id: str | None = None,
+        concept: str | None = None,
         max_depth: int = 2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get cross-references for a standard or concept."""
         try:
             if standard_id:
@@ -1174,7 +1173,7 @@ class MCPStandardsServer:
                 )
             else:
                 return {"error": "Either standard_id or concept must be provided"}
-            
+
             return {
                 "references": refs,
                 "depth": max_depth,
@@ -1185,11 +1184,11 @@ class MCPStandardsServer:
                 "error": str(e),
                 "references": []
             }
-    
+
     async def _generate_cross_references(
         self,
         force_refresh: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate cross-references between standards."""
         try:
             result = self.cross_referencer.generate_cross_references(
@@ -1207,13 +1206,13 @@ class MCPStandardsServer:
                 "status": "failed",
                 "error": str(e)
             }
-    
+
     async def _get_standards_analytics(
         self,
         metric_type: str = "usage",
         time_range: str = "30d",
-        standard_ids: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        standard_ids: list[str] | None = None
+    ) -> dict[str, Any]:
         """Get analytics and usage statistics for standards."""
         try:
             if metric_type == "usage":
@@ -1232,7 +1231,7 @@ class MCPStandardsServer:
                 )
             else:
                 return {"error": f"Unknown metric type: {metric_type}"}
-            
+
             return {
                 "metric_type": metric_type,
                 "time_range": time_range,
@@ -1243,14 +1242,14 @@ class MCPStandardsServer:
                 "error": str(e),
                 "metric_type": metric_type
             }
-    
+
     async def _track_standards_usage(
         self,
         standard_id: str,
         usage_type: str,
-        section_id: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        section_id: str | None = None,
+        context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Track usage of specific standards or sections."""
         try:
             self.analytics.track_usage(
@@ -1270,12 +1269,12 @@ class MCPStandardsServer:
                 "status": "failed",
                 "error": str(e)
             }
-    
+
     async def _get_recommendations(
         self,
         analysis_type: str = "gaps",
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Get recommendations for standards improvement or gaps."""
         try:
             if analysis_type == "gaps":
@@ -1292,7 +1291,7 @@ class MCPStandardsServer:
                 )
             else:
                 return {"error": f"Unknown analysis type: {analysis_type}"}
-            
+
             return {
                 "analysis_type": analysis_type,
                 "recommendations": recommendations,
@@ -1303,32 +1302,32 @@ class MCPStandardsServer:
                 "error": str(e),
                 "analysis_type": analysis_type
             }
-    
-    async def _get_metrics_dashboard(self) -> Dict[str, Any]:
+
+    async def _get_metrics_dashboard(self) -> dict[str, Any]:
         """Get performance metrics dashboard."""
         return self.metrics.get_dashboard_metrics()
-    
+
     def _get_semantic_search_engine(self):
         """Get semantic search engine instance."""
         return self.search
-    
-    def _validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _validate_input(self, data: dict[str, Any]) -> dict[str, Any]:
         """Validate input data."""
         return self.input_validator.validate(data)
-    
-    def _filter_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _filter_response(self, response: dict[str, Any]) -> dict[str, Any]:
         """Filter response for privacy."""
         return self.privacy_filter.filter(response)
-    
-    async def _cross_reference_standards(self, standard_id: str) -> Dict[str, Any]:
+
+    async def _cross_reference_standards(self, standard_id: str) -> dict[str, Any]:
         """Get cross-references for a standard."""
         return await self.cross_referencer.get_references(standard_id)
-    
-    async def _get_analytics(self) -> Dict[str, Any]:
+
+    async def _get_analytics(self) -> dict[str, Any]:
         """Get analytics data."""
         return await self.analytics.get_analytics()
-    
-    async def _get_compliance_mapping(self, standard_id: str, framework: str = "nist") -> Dict[str, Any]:
+
+    async def _get_compliance_mapping(self, standard_id: str, framework: str = "nist") -> dict[str, Any]:
         """Get compliance mapping for a standard."""
         # This is a placeholder implementation
         return {
@@ -1336,16 +1335,16 @@ class MCPStandardsServer:
             "framework": framework,
             "mappings": []
         }
-    
+
     @property
     def rate_limiter(self):
         """Get rate limiter for backwards compatibility."""
         return self
-    
+
     def _check_rate_limit(self, user_key: str) -> bool:
         """Check if user is within rate limits."""
         now = time.time()
-        
+
         # Clean up old entries
         if user_key in self._rate_limit_store:
             self._rate_limit_store[user_key] = [
@@ -1354,24 +1353,24 @@ class MCPStandardsServer:
             ]
         else:
             self._rate_limit_store[user_key] = []
-        
+
         # Check if limit exceeded
         if len(self._rate_limit_store[user_key]) >= self.rate_limit_max_requests:
             return False
-        
+
         # Add current request
         self._rate_limit_store[user_key].append(now)
         return True
-    
+
     async def run(self):
         """Run the MCP server."""
         # Start metrics export task
         await self.metrics.collector.start_export_task()
-        
+
         # Track connection
         self._active_connections += 1
         self.metrics.update_active_connections(self._active_connections)
-        
+
         try:
             async with stdio_server() as (read_stream, write_stream):
                 init_options = self.server.create_initialization_options()
@@ -1379,7 +1378,7 @@ class MCPStandardsServer:
         finally:
             # Stop metrics export task
             await self.metrics.collector.stop_export_task()
-            
+
             # Update active connections
             self._active_connections = max(0, self._active_connections - 1)
             self.metrics.update_active_connections(self._active_connections)
@@ -1392,14 +1391,14 @@ async def main():
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    
+
     # Load configuration
     config = {}
     config_path = os.environ.get("MCP_CONFIG_PATH", "config.json")
     if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config = json.load(f)
-            
+
     # Create and run server
     server = MCPStandardsServer(config)
     await server.run()

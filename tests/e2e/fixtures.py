@@ -9,10 +9,9 @@ Provides:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
-
 
 # Sample project contexts for testing
 SAMPLE_CONTEXTS = {
@@ -93,11 +92,11 @@ Always use functional components with hooks:
 ```javascript
 const MyComponent = ({ title, children }) => {
     const [count, setCount] = useState(0);
-    
+
     useEffect(() => {
         // Side effects
     }, []);
-    
+
     return (
         <div>
             <h1>{title}</h1>
@@ -251,17 +250,17 @@ MOCK_RULES = [
 
 class MockStandardsRepository:
     """Mock repository for standards data."""
-    
-    def __init__(self, standards: Dict[str, Any] = None):
+
+    def __init__(self, standards: dict[str, Any] = None):
         self.standards = standards or MOCK_STANDARDS.copy()
-        
-    def get_standard(self, standard_id: str) -> Dict[str, Any]:
+
+    def get_standard(self, standard_id: str) -> dict[str, Any]:
         """Get a standard by ID."""
         if standard_id not in self.standards:
             raise ValueError(f"Standard '{standard_id}' not found")
         return self.standards[standard_id].copy()
-        
-    def list_standards(self, category: str = None) -> List[Dict[str, Any]]:
+
+    def list_standards(self, category: str = None) -> list[dict[str, Any]]:
         """List all standards, optionally filtered by category."""
         results = []
         for std in self.standards.values():
@@ -273,25 +272,25 @@ class MockStandardsRepository:
                     "tags": std["tags"]
                 })
         return results
-        
-    def search_standards(self, query: str) -> List[Dict[str, Any]]:
+
+    def search_standards(self, query: str) -> list[dict[str, Any]]:
         """Simple search implementation."""
         query_lower = query.lower()
         results = []
-        
+
         for std in self.standards.values():
             # Search in name, tags, and content
             if (query_lower in std["name"].lower() or
                 any(query_lower in tag for tag in std["tags"]) or
                 query_lower in std["content"].lower()):
                 results.append(std)
-                
+
         return results
 
 
 class TestDataGenerator:
     """Generate test data for various scenarios."""
-    
+
     @staticmethod
     def generate_code_sample(language: str, pattern: str = "basic") -> str:
         """Generate code samples for testing."""
@@ -304,7 +303,7 @@ class TestDataGenerator:
                 """,
                 "react": """
                     import React, { useState } from 'react';
-                    
+
                     const Counter = () => {
                         const [count, setCount] = useState(0);
                         return (
@@ -338,13 +337,13 @@ class TestDataGenerator:
                         def __init__(self, name, email):
                             self.name = name
                             self.email = email
-                            
+
                         def __str__(self):
                             return f"User({self.name}, {self.email})"
                 """,
                 "async": """
                     import asyncio
-                    
+
                     async def fetch_data(url):
                         async with aiohttp.ClientSession() as session:
                             async with session.get(url) as response:
@@ -352,11 +351,11 @@ class TestDataGenerator:
                 """
             }
         }
-        
+
         return samples.get(language, {}).get(pattern, "// No sample available")
-        
+
     @staticmethod
-    def generate_validation_cases() -> List[Dict[str, Any]]:
+    def generate_validation_cases() -> list[dict[str, Any]]:
         """Generate validation test cases."""
         return [
             {
@@ -400,20 +399,20 @@ def temp_standards_dir(tmp_path):
     """Create temporary directory with test standards."""
     standards_dir = tmp_path / "standards"
     standards_dir.mkdir()
-    
+
     # Write mock standards to files
     for standard_id, content in MOCK_STANDARDS.items():
         file_path = standards_dir / f"{standard_id}.json"
         file_path.write_text(json.dumps(content, indent=2))
-        
+
     # Write rules file
     rules_file = standards_dir / "rules.json"
     rules_file.write_text(json.dumps(MOCK_RULES, indent=2))
-    
+
     return standards_dir
 
 
-def create_test_mcp_config(data_dir: Path) -> Dict[str, Any]:
+def create_test_mcp_config(data_dir: Path) -> dict[str, Any]:
     """Create test MCP server configuration."""
     return {
         "server": {

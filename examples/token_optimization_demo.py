@@ -7,26 +7,25 @@ This script demonstrates the token optimization capabilities of the MCP Standard
 
 import asyncio
 import json
-from typing import Dict, Any, List
+from typing import Any
 
 from src.core.standards.token_optimizer import (
-    TokenOptimizer,
-    TokenBudget,
-    StandardFormat,
+    DynamicLoader,
     ModelType,
+    StandardFormat,
+    TokenBudget,
     create_token_optimizer,
-    DynamicLoader
 )
 
 
 class TokenOptimizationDemo:
     """Demonstration of token optimization features."""
-    
+
     def __init__(self):
         self.optimizer = create_token_optimizer(ModelType.GPT4, default_budget=8000)
         self.dynamic_loader = DynamicLoader(self.optimizer)
-    
-    def create_sample_standard(self) -> Dict[str, Any]:
+
+    def create_sample_standard(self) -> dict[str, Any]:
         """Create a sample standard for demonstration."""
         return {
             'id': 'demo-standard',
@@ -115,11 +114,11 @@ function useApiData<T>(url: string) {
         const response = await fetch(url, {
           signal: abortController.signal
         });
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setData(data);
       } catch (err) {
@@ -267,67 +266,67 @@ describe('UserProfile', () => {
 - [Testing React Applications](https://testing-library.com/docs/react-testing-library/intro)
 """
         }
-    
+
     async def demo_format_comparison(self):
         """Demonstrate different format outputs."""
         print("=== Format Comparison Demo ===\n")
-        
+
         standard = self.create_sample_standard()
-        formats = [StandardFormat.FULL, StandardFormat.CONDENSED, 
+        formats = [StandardFormat.FULL, StandardFormat.CONDENSED,
                   StandardFormat.REFERENCE, StandardFormat.SUMMARY]
-        
+
         for format_type in formats:
             print(f"\n--- {format_type.value.upper()} FORMAT ---")
-            
+
             content, result = self.optimizer.optimize_standard(
                 standard,
                 format_type=format_type,
                 budget=TokenBudget(total=8000)
             )
-            
+
             print(f"Original tokens: {result.original_tokens}")
             print(f"Compressed tokens: {result.compressed_tokens}")
             print(f"Compression ratio: {result.compression_ratio:.2%}")
             print(f"Sections included: {', '.join(result.sections_included)}")
-            
+
             # Show preview
             preview = content[:500] + "..." if len(content) > 500 else content
             print(f"\nPreview:\n{preview}\n")
             print("-" * 80)
-    
+
     async def demo_budget_constraints(self):
         """Demonstrate behavior under different budgets."""
         print("\n\n=== Budget Constraints Demo ===\n")
-        
+
         standard = self.create_sample_standard()
         budgets = [500, 1000, 2000, 5000]
-        
+
         for budget_size in budgets:
             print(f"\n--- Budget: {budget_size} tokens ---")
-            
+
             budget = TokenBudget(total=budget_size)
             selected_format = self.optimizer.auto_select_format(standard, budget)
-            
+
             content, result = self.optimizer.optimize_standard(
                 standard,
                 format_type=selected_format,
                 budget=budget
             )
-            
+
             print(f"Auto-selected format: {selected_format.value}")
             print(f"Tokens used: {result.compressed_tokens}")
             print(f"Sections included: {len(result.sections_included)}")
             print(f"Sections excluded: {len(result.sections_excluded)}")
-            
+
             if result.warnings:
                 print(f"Warnings: {', '.join(result.warnings)}")
-    
+
     async def demo_context_aware_optimization(self):
         """Demonstrate context-aware optimization."""
         print("\n\n=== Context-Aware Optimization Demo ===\n")
-        
+
         standard = self.create_sample_standard()
-        
+
         contexts = [
             {
                 'name': 'Beginner Developer',
@@ -354,152 +353,152 @@ describe('UserProfile', () => {
                 }
             }
         ]
-        
+
         for ctx in contexts:
             print(f"\n--- Context: {ctx['name']} ---")
-            
+
             content, result = self.optimizer.optimize_standard(
                 standard,
                 format_type=StandardFormat.CUSTOM,
                 budget=TokenBudget(total=3000),
                 context=ctx['context']
             )
-            
+
             print(f"Format used: {result.format_used.value}")
             print(f"Tokens: {result.compressed_tokens}")
             print(f"Focus sections: {[s for s in result.sections_included if any(f in s for f in ctx['context'].get('focus_areas', []))]}")
-    
+
     async def demo_progressive_loading(self):
         """Demonstrate progressive loading."""
         print("\n\n=== Progressive Loading Demo ===\n")
-        
+
         standard = self.create_sample_standard()
-        
+
         # Generate loading plan
         loading_plan = self.optimizer.progressive_load(
             standard,
             initial_sections=['overview'],
             max_depth=3
         )
-        
+
         print("Loading Plan:")
         total_tokens = 0
-        
+
         for i, batch in enumerate(loading_plan):
             batch_tokens = sum(tokens for _, tokens in batch)
             total_tokens += batch_tokens
-            
+
             print(f"\nBatch {i + 1}:")
             for section_id, tokens in batch:
                 print(f"  - {section_id}: {tokens} tokens")
             print(f"  Batch total: {batch_tokens} tokens")
             print(f"  Cumulative: {total_tokens} tokens")
-        
+
         # Simulate dynamic loading
         print("\n\nSimulating Dynamic Loading:")
         budget = TokenBudget(total=2000)
         loaded_tokens = 0
-        
+
         for section_id in ['overview', 'requirements', 'security']:
             content, tokens = self.dynamic_loader.load_section(
                 'demo-standard',
                 section_id,
                 budget
             )
-            
+
             if loaded_tokens + tokens <= budget.available:
                 loaded_tokens += tokens
                 print(f"Loaded {section_id}: {tokens} tokens (total: {loaded_tokens})")
             else:
                 print(f"Cannot load {section_id}: would exceed budget")
                 break
-        
+
         # Get loading suggestions
         context = {
             'recent_queries': ['How to implement security?', 'Performance tips'],
             'user_expertise': 'intermediate'
         }
-        
+
         suggestions = self.dynamic_loader.get_loading_suggestions(
             'demo-standard',
             context
         )
-        
+
         print(f"\nSuggested sections to load next: {suggestions}")
-    
+
     async def demo_compression_techniques(self):
         """Demonstrate individual compression techniques."""
         print("\n\n=== Compression Techniques Demo ===\n")
-        
+
         from src.core.standards.token_optimizer import CompressionTechniques
-        
+
         sample_text = """
         The   application    configuration     requires    careful    attention.
-        
-        
-        
+
+
+
         This documentation provides comprehensive implementation guidelines.
-        
+
         You must always validate user input for security.
         Never store passwords in plain text.
-        
+
         ```python
         # This is a comment
         def configure_application():
             # Another comment
-            
-            
+
+
             config = load_configuration()
-            
+
             return config
         ```
         """
-        
+
         techniques = CompressionTechniques()
-        
+
         print("Original text:")
         print(f"Length: {len(sample_text)} chars")
         print(f"Tokens: {self.optimizer.token_counter.count_tokens(sample_text)}")
-        
+
         # Test each technique
         print("\n1. Remove Redundancy:")
         cleaned = techniques.remove_redundancy(sample_text)
         print(f"Length: {len(cleaned)} chars")
         print(f"Tokens: {self.optimizer.token_counter.count_tokens(cleaned)}")
-        
+
         print("\n2. Use Abbreviations:")
         abbreviated = techniques.use_abbreviations(cleaned)
         print(f"Length: {len(abbreviated)} chars")
         print(f"Tokens: {self.optimizer.token_counter.count_tokens(abbreviated)}")
         print(f"Sample: {abbreviated[:100]}...")
-        
+
         print("\n3. Compress Code:")
         code_compressed = techniques.compress_code_examples(sample_text)
         print(f"Length: {len(code_compressed)} chars")
         print(f"Tokens: {self.optimizer.token_counter.count_tokens(code_compressed)}")
-        
+
         print("\n4. Extract Essential:")
         essential = techniques.extract_essential_only(sample_text)
         print(f"Length: {len(essential)} chars")
         print(f"Tokens: {self.optimizer.token_counter.count_tokens(essential)}")
         print(f"Content:\n{essential}")
-    
+
     async def run_all_demos(self):
         """Run all demonstration scenarios."""
         print("MCP Standards Server - Token Optimization Demo")
         print("=" * 80)
-        
+
         await self.demo_format_comparison()
         await self.demo_budget_constraints()
         await self.demo_context_aware_optimization()
         await self.demo_progressive_loading()
         await self.demo_compression_techniques()
-        
+
         print("\n\nDemo completed!")
-        
+
         # Show cache statistics
         stats = self.optimizer.get_compression_stats()
-        print(f"\nCache Statistics:")
+        print("\nCache Statistics:")
         print(f"- Cache size: {stats['cache_size']} entries")
         if 'average_compression_ratio' in stats:
             print(f"- Average compression: {stats['average_compression_ratio']:.2%}")

@@ -1,21 +1,20 @@
 """Python code analyzer implementation."""
 
 import ast
-from typing import List, Dict, Any, Optional
-from pathlib import Path
+from typing import Any
 
-from .base import BaseAnalyzer, AnalyzerResult, Issue, IssueType, Severity
+from .base import AnalyzerResult, BaseAnalyzer, Issue, IssueType, Severity
 
 
 class PythonAnalyzer(BaseAnalyzer):
     """Python-specific code analyzer."""
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.language = "python"
         self.file_extensions = [".py"]
-    
-    def analyze_code(self, code: str, file_path: Optional[str] = None) -> AnalyzerResult:
+
+    def analyze_code(self, code: str, file_path: str | None = None) -> AnalyzerResult:
         """Analyze Python code for issues."""
         issues = []
         metrics = {
@@ -24,7 +23,7 @@ class PythonAnalyzer(BaseAnalyzer):
             "functions": 0,
             "classes": 0
         }
-        
+
         try:
             tree = ast.parse(code)
             issues.extend(self._analyze_ast(tree, file_path or ""))
@@ -38,7 +37,7 @@ class PythonAnalyzer(BaseAnalyzer):
                 line_number=e.lineno or 1,
                 column_number=e.offset or 1
             ))
-        
+
         return AnalyzerResult(
             issues=issues,
             metrics=metrics,
@@ -46,11 +45,11 @@ class PythonAnalyzer(BaseAnalyzer):
             analyzed_files=1 if file_path else 0,
             language=self.language
         )
-    
-    def _analyze_ast(self, tree: ast.AST, file_path: str) -> List[Issue]:
+
+    def _analyze_ast(self, tree: ast.AST, file_path: str) -> list[Issue]:
         """Analyze AST for issues."""
         issues = []
-        
+
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 # Check for class-based React components
@@ -63,21 +62,21 @@ class PythonAnalyzer(BaseAnalyzer):
                         line_number=node.lineno,
                         column_number=node.col_offset
                     ))
-        
+
         return issues
-    
-    def _calculate_metrics(self, tree: ast.AST) -> Dict[str, Any]:
+
+    def _calculate_metrics(self, tree: ast.AST) -> dict[str, Any]:
         """Calculate code metrics."""
         metrics = {
             "functions": 0,
             "classes": 0,
             "complexity": 1
         }
-        
+
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 metrics["functions"] += 1
             elif isinstance(node, ast.ClassDef):
                 metrics["classes"] += 1
-        
+
         return metrics

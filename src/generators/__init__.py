@@ -9,12 +9,12 @@ and quality assurance features.
 from .base import StandardsGenerator
 from .engine import TemplateEngine
 from .metadata import MetadataSchema, StandardMetadata
-from .validator import StandardsValidator
 from .quality_assurance import QualityAssuranceSystem
+from .validator import StandardsValidator
 
 __all__ = [
     "StandardsGenerator",
-    "TemplateEngine", 
+    "TemplateEngine",
     "MetadataSchema",
     "StandardMetadata",
     "StandardsValidator",

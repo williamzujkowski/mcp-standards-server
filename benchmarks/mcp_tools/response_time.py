@@ -2,21 +2,22 @@
 
 import asyncio
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 from src.mcp_server import MCPStandardsServer
+
 from ..framework import BaseBenchmark
 
 
 class MCPResponseTimeBenchmark(BaseBenchmark):
     """Benchmark response times for all MCP tools."""
-    
+
     def __init__(self, iterations: int = 100):
         super().__init__("MCP Response Time", iterations)
         self.server: MCPStandardsServer = None
         self.test_scenarios = self._create_test_scenarios()
-        
-    def _create_test_scenarios(self) -> List[Dict[str, Any]]:
+
+    def _create_test_scenarios(self) -> list[dict[str, Any]]:
         """Create test scenarios for each MCP tool."""
         return [
             # get_applicable_standards
@@ -62,7 +63,7 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 "args": {
                     "code": """
                     import React from 'react';
-                    
+
                     class MyComponent extends React.Component {
                         render() {
                             return <div>Hello World</div>;
@@ -112,7 +113,7 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 "args": {}
             }
         ]
-    
+
     async def setup(self):
         """Setup MCP server."""
         config = {
@@ -121,10 +122,10 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
             "default_token_budget": 8000
         }
         self.server = MCPStandardsServer(config)
-        
+
         # Ensure some standards exist
         await self._ensure_test_standards()
-    
+
     async def _ensure_test_standards(self):
         """Ensure test standards exist in cache."""
         # Create minimal test standards
@@ -152,42 +153,42 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
                 }
             }
         ]
-        
+
         cache_dir = self.server.synchronizer.cache_dir
         cache_dir.mkdir(parents=True, exist_ok=True)
-        
+
         for standard in test_standards:
             filepath = cache_dir / f"{standard['id']}.json"
             with open(filepath, 'w') as f:
                 json.dump(standard, f)
-    
-    async def run_single_iteration(self) -> Dict[str, Any]:
+
+    async def run_single_iteration(self) -> dict[str, Any]:
         """Run a single iteration testing all tools."""
         results = {}
-        
+
         for scenario in self.test_scenarios:
             tool_name = scenario["tool"]
             args = scenario["args"]
-            
+
             # Get the actual method
             method_name = f"_{tool_name}"
             method = getattr(self.server, method_name, None)
-            
+
             if method:
                 try:
                     # Time the tool execution
                     start = asyncio.get_event_loop().time()
-                    result = await method(**args)
+                    await method(**args)
                     end = asyncio.get_event_loop().time()
-                    
+
                     elapsed = end - start
                     results[tool_name] = elapsed
-                    
+
                 except Exception as e:
                     results[f"{tool_name}_error"] = str(e)
-        
+
         return results
-    
+
     async def teardown(self):
         """Cleanup after benchmark."""
         # No specific cleanup needed
@@ -196,24 +197,24 @@ class MCPResponseTimeBenchmark(BaseBenchmark):
 
 class MCPToolSpecificBenchmark(BaseBenchmark):
     """Benchmark a specific MCP tool with various input sizes."""
-    
+
     def __init__(self, tool_name: str, iterations: int = 50):
         super().__init__(f"MCP {tool_name} Benchmark", iterations)
         self.tool_name = tool_name
         self.server: MCPStandardsServer = None
         self.test_cases = []
-        
+
     async def setup(self):
         """Setup MCP server and test cases."""
         self.server = MCPStandardsServer({
             "search": {"enabled": True},
             "token_model": "gpt-4"
         })
-        
+
         # Generate tool-specific test cases
         self.test_cases = self._generate_test_cases()
-    
-    def _generate_test_cases(self) -> List[Dict[str, Any]]:
+
+    def _generate_test_cases(self) -> list[dict[str, Any]]:
         """Generate test cases based on tool name."""
         if self.tool_name == "search_standards":
             return [
@@ -245,31 +246,31 @@ class MCPToolSpecificBenchmark(BaseBenchmark):
             ]
         else:
             return [{"default": True}]
-    
-    async def run_single_iteration(self) -> Dict[str, Any]:
+
+    async def run_single_iteration(self) -> dict[str, Any]:
         """Run benchmark for different input sizes."""
         results = {}
-        
+
         method_name = f"_{self.tool_name}"
         method = getattr(self.server, method_name, None)
-        
+
         if not method:
             return {"error": f"Tool {self.tool_name} not found"}
-        
+
         for i, test_case in enumerate(self.test_cases):
             try:
                 start = asyncio.get_event_loop().time()
                 await method(**test_case)
                 end = asyncio.get_event_loop().time()
-                
+
                 results[f"case_{i}_time"] = end - start
                 results[f"case_{i}_size"] = len(str(test_case))
-                
+
             except Exception as e:
                 results[f"case_{i}_error"] = str(e)
-        
+
         return results
-    
+
     async def teardown(self):
         """Cleanup."""
         pass

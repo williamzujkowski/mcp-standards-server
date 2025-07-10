@@ -2,8 +2,8 @@
 """Helper script to run E2E tests with proper coverage setup."""
 
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 # Setup paths

@@ -5,40 +5,38 @@ Validation framework for generated standards documents.
 """
 
 import re
-from typing import Dict, Any, List, Optional
-from pathlib import Path
+from dataclasses import dataclass
+from typing import Any
 
 from .metadata import StandardMetadata
-from dataclasses import dataclass
-from typing import Union
 
 
 @dataclass
 class ValidationResult:
     """Result of standard validation."""
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
-    quality_metrics: Dict[str, float]
+    errors: list[str]
+    warnings: list[str]
+    quality_metrics: dict[str, float]
     completeness_score: float
-    suggestions: List[str]
+    suggestions: list[str]
 
 
 class StandardValidator:
     """Validator for individual standards (compatible with MCP server)."""
-    
+
     def __init__(self):
         """Initialize the validator."""
         self.nist_controls = self._load_nist_controls()
         self.compliance_frameworks = self._load_compliance_frameworks()
-    
-    def validate(self, content: Union[Dict[str, Any], str]) -> ValidationResult:
+
+    def validate(self, content: dict[str, Any] | str) -> ValidationResult:
         """
         Validate a standard content.
-        
+
         Args:
             content: Standard content as dict or string
-            
+
         Returns:
             ValidationResult object
         """
@@ -46,7 +44,7 @@ class StandardValidator:
         warnings = []
         suggestions = []
         quality_metrics = {}
-        
+
         # Parse content if it's a string
         if isinstance(content, str):
             try:
@@ -61,35 +59,35 @@ class StandardValidator:
                     completeness_score=0.0,
                     suggestions=[]
                 )
-        
+
         # Required fields validation
         required_fields = ['title', 'description', 'domain']
         for field in required_fields:
             if not content.get(field):
                 errors.append(f"Missing required field: {field}")
-        
+
         # Quality metrics calculation
         quality_metrics['completeness'] = self._calculate_completeness(content)
         quality_metrics['clarity'] = self._calculate_clarity(content)
         quality_metrics['actionability'] = self._calculate_actionability(content)
-        
+
         # Calculate overall completeness score
         completeness_score = quality_metrics['completeness']
-        
+
         # Generate suggestions
         if quality_metrics['completeness'] < 0.8:
             suggestions.append("Add more comprehensive documentation")
         if quality_metrics['actionability'] < 0.6:
             suggestions.append("Include more practical examples and implementation guides")
-        
+
         # Check for warnings
         if not content.get('created_date'):
             warnings.append("Missing creation date")
         if not content.get('author'):
             warnings.append("Missing author information")
-        
+
         is_valid = len(errors) == 0
-        
+
         return ValidationResult(
             is_valid=is_valid,
             errors=errors,
@@ -98,29 +96,29 @@ class StandardValidator:
             completeness_score=completeness_score,
             suggestions=suggestions
         )
-    
-    def _calculate_completeness(self, content: Dict[str, Any]) -> float:
+
+    def _calculate_completeness(self, content: dict[str, Any]) -> float:
         """Calculate completeness score."""
         required = ['title', 'description', 'domain', 'author']
         optional = ['examples', 'implementation_guides', 'code_examples', 'guidelines']
-        
+
         score = 0.0
         for field in required:
             if content.get(field):
                 score += 0.6 / len(required)
-        
+
         for field in optional:
             if content.get(field):
                 score += 0.4 / len(optional)
-        
+
         return min(score, 1.0)
-    
-    def _calculate_clarity(self, content: Dict[str, Any]) -> float:
+
+    def _calculate_clarity(self, content: dict[str, Any]) -> float:
         """Calculate clarity score based on description quality."""
         description = content.get('description', '')
         if not description:
             return 0.0
-        
+
         # Simple heuristic based on length and structure
         if len(description) < 50:
             return 0.3
@@ -128,8 +126,8 @@ class StandardValidator:
             return 0.7
         else:
             return 1.0
-    
-    def _calculate_actionability(self, content: Dict[str, Any]) -> float:
+
+    def _calculate_actionability(self, content: dict[str, Any]) -> float:
         """Calculate actionability score."""
         score = 0.0
         if content.get('examples'):
@@ -138,19 +136,19 @@ class StandardValidator:
             score += 0.4
         if content.get('code_examples'):
             score += 0.3
-        
+
         return min(score, 1.0)
 
 
 class StandardsValidator:
     """Validator for standards documents."""
-    
+
     def __init__(self):
         """Initialize the validator."""
         self.nist_controls = self._load_nist_controls()
         self.compliance_frameworks = self._load_compliance_frameworks()
-        
-    def _load_nist_controls(self) -> List[str]:
+
+    def _load_nist_controls(self) -> list[str]:
         """Load NIST control IDs."""
         # Common NIST SP 800-53 controls
         return [
@@ -171,22 +169,22 @@ class StandardsValidator:
             "SC-1", "SC-2", "SC-3", "SC-4", "SC-5", "SC-6", "SC-7", "SC-8",
             "SI-1", "SI-2", "SI-3", "SI-4", "SI-5", "SI-6", "SI-7", "SI-8"
         ]
-    
-    def _load_compliance_frameworks(self) -> List[str]:
+
+    def _load_compliance_frameworks(self) -> list[str]:
         """Load compliance framework names."""
         return [
             "NIST", "ISO-27001", "SOC2", "PCI-DSS", "HIPAA", "GDPR",
             "CCPA", "FedRAMP", "FISMA", "COSO", "COBIT", "ITIL"
         ]
-    
-    def validate_standard(self, content: str, metadata: StandardMetadata) -> Dict[str, Any]:
+
+    def validate_standard(self, content: str, metadata: StandardMetadata) -> dict[str, Any]:
         """
         Validate a generated standard document.
-        
+
         Args:
             content: The standard document content
             metadata: Standard metadata
-            
+
         Returns:
             Validation results
         """
@@ -196,14 +194,14 @@ class StandardsValidator:
             "warnings": [],
             "checks": {}
         }
-        
+
         # Validate metadata
         metadata_validation = metadata.validate()
         if not metadata_validation["valid"]:
             results["valid"] = False
             results["errors"].extend(metadata_validation["errors"])
         results["warnings"].extend(metadata_validation["warnings"])
-        
+
         # Validate content structure
         structure_check = self._validate_structure(content)
         results["checks"]["structure"] = structure_check
@@ -211,51 +209,51 @@ class StandardsValidator:
             results["valid"] = False
             results["errors"].extend(structure_check["errors"])
         results["warnings"].extend(structure_check["warnings"])
-        
+
         # Validate NIST controls
         nist_check = self._validate_nist_controls(content, metadata)
         results["checks"]["nist_controls"] = nist_check
         if not nist_check["valid"]:
             results["warnings"].extend(nist_check["warnings"])
-        
+
         # Validate compliance frameworks
         compliance_check = self._validate_compliance_frameworks(content, metadata)
         results["checks"]["compliance"] = compliance_check
         if not compliance_check["valid"]:
             results["warnings"].extend(compliance_check["warnings"])
-        
+
         # Validate cross-references
         xref_check = self._validate_cross_references(content)
         results["checks"]["cross_references"] = xref_check
         if not xref_check["valid"]:
             results["warnings"].extend(xref_check["warnings"])
-        
+
         # Validate completeness
         completeness_check = self._validate_completeness(content, metadata)
         results["checks"]["completeness"] = completeness_check
         if not completeness_check["valid"]:
             results["warnings"].extend(completeness_check["warnings"])
-        
+
         return results
-    
-    def _validate_structure(self, content: str) -> Dict[str, Any]:
+
+    def _validate_structure(self, content: str) -> dict[str, Any]:
         """Validate document structure."""
         errors = []
         warnings = []
-        
+
         # Check for required sections
         required_sections = [
             "# ",  # Title
             "## Purpose",
-            "## Scope", 
+            "## Scope",
             "## Implementation",
             "## Compliance"
         ]
-        
+
         for section in required_sections:
             if section not in content:
                 errors.append(f"Missing required section: {section.strip('#').strip()}")
-        
+
         # Check for proper heading hierarchy
         headings = re.findall(r'^(#+)\s+(.+)$', content, re.MULTILINE)
         for i, (level, title) in enumerate(headings):
@@ -266,103 +264,103 @@ class StandardsValidator:
                 curr_level = len(level)
                 if curr_level > prev_level + 1:
                     warnings.append(f"Heading hierarchy skip detected at: {title}")
-        
+
         # Check for proper markdown formatting
         if content.count('```') % 2 != 0:
             errors.append("Unmatched code blocks detected")
-        
+
         return {
             "valid": len(errors) == 0,
             "errors": errors,
             "warnings": warnings
         }
-    
-    def _validate_nist_controls(self, content: str, metadata: StandardMetadata) -> Dict[str, Any]:
+
+    def _validate_nist_controls(self, content: str, metadata: StandardMetadata) -> dict[str, Any]:
         """Validate NIST controls integration."""
         warnings = []
-        
+
         # Check if NIST controls in metadata are referenced in content
         for control in metadata.nist_controls:
             if control not in self.nist_controls:
                 warnings.append(f"Unknown NIST control: {control}")
             elif control not in content:
                 warnings.append(f"NIST control {control} in metadata but not referenced in content")
-        
+
         # Check for NIST controls mentioned in content but not in metadata
         mentioned_controls = re.findall(r'NIST[- ]([A-Z]{2}-\d+)', content)
         for control in mentioned_controls:
             if control not in metadata.nist_controls:
                 warnings.append(f"NIST control {control} mentioned in content but not in metadata")
-        
+
         return {
             "valid": True,
             "warnings": warnings
         }
-    
-    def _validate_compliance_frameworks(self, content: str, metadata: StandardMetadata) -> Dict[str, Any]:
+
+    def _validate_compliance_frameworks(self, content: str, metadata: StandardMetadata) -> dict[str, Any]:
         """Validate compliance framework integration."""
         warnings = []
-        
+
         # Check if compliance frameworks in metadata are referenced in content
         for framework in metadata.compliance_frameworks:
             if framework not in self.compliance_frameworks:
                 warnings.append(f"Unknown compliance framework: {framework}")
             elif framework not in content:
                 warnings.append(f"Compliance framework {framework} in metadata but not referenced in content")
-        
+
         return {
             "valid": True,
             "warnings": warnings
         }
-    
-    def _validate_cross_references(self, content: str) -> Dict[str, Any]:
+
+    def _validate_cross_references(self, content: str) -> dict[str, Any]:
         """Validate cross-references within the document."""
         warnings = []
-        
+
         # Find all internal references
         internal_refs = re.findall(r'\[([^\]]+)\]\(#([^)]+)\)', content)
-        
+
         # Find all heading anchors
         headings = re.findall(r'^#+\s+(.+)$', content, re.MULTILINE)
         heading_anchors = [self._heading_to_anchor(h) for h in headings]
-        
+
         # Check if all internal references point to valid anchors
         for ref_text, anchor in internal_refs:
             if anchor not in heading_anchors:
                 warnings.append(f"Broken internal reference: {ref_text} -> #{anchor}")
-        
+
         return {
             "valid": True,
             "warnings": warnings
         }
-    
+
     def _heading_to_anchor(self, heading: str) -> str:
         """Convert heading to anchor."""
         # Simple anchor conversion (lowercase, replace spaces with hyphens)
         return re.sub(r'[^a-z0-9-]', '', heading.lower().replace(' ', '-'))
-    
-    def _validate_completeness(self, content: str, metadata: StandardMetadata) -> Dict[str, Any]:
+
+    def _validate_completeness(self, content: str, metadata: StandardMetadata) -> dict[str, Any]:
         """Validate document completeness."""
         warnings = []
-        
+
         # Check for placeholder content
         placeholders = ['TODO', 'TBD', 'FIXME', '{{', '}}']
         for placeholder in placeholders:
             if placeholder in content:
                 warnings.append(f"Placeholder content detected: {placeholder}")
-        
+
         # Check for minimum content length
         if len(content) < 1000:
             warnings.append("Document content is very short")
-        
+
         # Check for examples if technical standard
         if metadata.type == "technical" and "```" not in content:
             warnings.append("Technical standard should include code examples")
-        
+
         # Check for implementation guide references
         if metadata.implementation_guides and "implementation" not in content.lower():
             warnings.append("Implementation guides specified but not referenced in content")
-        
+
         return {
             "valid": True,
             "warnings": warnings

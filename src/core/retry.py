@@ -5,16 +5,16 @@ Provides resilient connection handling with configurable retry strategies.
 """
 
 import asyncio
+import logging
 import random
 import time
-from typing import Any, Callable, Optional, TypeVar, Union
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-import logging
+from typing import TypeVar
 
-from src.core.errors import MCPError, ErrorCode
+from src.core.errors import ErrorCode, MCPError
 from src.core.metrics import get_mcp_metrics
-
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ class RetryConfig:
     jitter: bool = True
     jitter_factor: float = 0.1
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL
-    retry_on: Optional[tuple] = None  # Exception types to retry on
-    
+    retry_on: tuple | None = None  # Exception types to retry on
+
     def __post_init__(self):
         """Set default retry exceptions if not provided."""
         if self.retry_on is None:
@@ -53,19 +53,19 @@ class RetryConfig:
 
 class RetryManager:
     """Manages retry logic for operations."""
-    
-    def __init__(self, config: Optional[RetryConfig] = None):
+
+    def __init__(self, config: RetryConfig | None = None):
         """Initialize retry manager with configuration."""
         self.config = config or RetryConfig()
         self.metrics = get_mcp_metrics()
-        
+
     def calculate_delay(self, attempt: int) -> float:
         """
         Calculate delay for the next retry attempt.
-        
+
         Args:
             attempt: Current attempt number (0-based)
-            
+
         Returns:
             Delay in seconds
         """
@@ -75,18 +75,18 @@ class RetryManager:
             delay = self.config.initial_delay * (attempt + 1)
         else:  # EXPONENTIAL
             delay = self.config.initial_delay * (self.config.exponential_base ** attempt)
-            
+
         # Apply max delay cap
         delay = min(delay, self.config.max_delay)
-        
+
         # Add jitter if enabled
         if self.config.jitter:
             jitter_range = delay * self.config.jitter_factor
             jitter = random.uniform(-jitter_range, jitter_range)
             delay += jitter
-            
+
         return max(0, delay)  # Ensure non-negative
-        
+
     async def retry_async(
         self,
         func: Callable[..., T],
@@ -96,21 +96,21 @@ class RetryManager:
     ) -> T:
         """
         Retry an async operation with exponential backoff.
-        
+
         Args:
             func: Async function to retry
             args: Positional arguments for func
             operation_name: Name for logging/metrics
             kwargs: Keyword arguments for func
-            
+
         Returns:
             Result from successful function call
-            
+
         Raises:
             Last exception if all retries fail
         """
         last_exception = None
-        
+
         for attempt in range(self.config.max_retries + 1):
             try:
                 # Record attempt
@@ -118,10 +118,10 @@ class RetryManager:
                     "mcp_retry_attempts_total",
                     labels={"operation": operation_name, "attempt": str(attempt)}
                 )
-                
+
                 # Call the function
                 result = await func(*args, **kwargs)
-                
+
                 # Success - record and return
                 if attempt > 0:
                     logger.info(f"Operation '{operation_name}' succeeded after {attempt} retries")
@@ -129,12 +129,12 @@ class RetryManager:
                         "mcp_retry_success_total",
                         labels={"operation": operation_name, "attempts": str(attempt)}
                     )
-                    
+
                 return result
-                
+
             except self.config.retry_on as e:
                 last_exception = e
-                
+
                 if attempt >= self.config.max_retries:
                     # No more retries
                     logger.error(
@@ -145,27 +145,27 @@ class RetryManager:
                         labels={"operation": operation_name, "error": type(e).__name__}
                     )
                     raise
-                    
+
                 # Calculate delay
                 delay = self.calculate_delay(attempt)
-                
+
                 logger.warning(
                     f"Operation '{operation_name}' failed (attempt {attempt + 1}/"
                     f"{self.config.max_retries + 1}): {e}. Retrying in {delay:.2f}s..."
                 )
-                
+
                 # Wait before retry
                 await asyncio.sleep(delay)
-                
+
             except Exception as e:
                 # Non-retryable exception
                 logger.error(f"Operation '{operation_name}' failed with non-retryable error: {e}")
                 raise
-                
+
         # Should not reach here, but just in case
         if last_exception:
             raise last_exception
-            
+
     def retry_sync(
         self,
         func: Callable[..., T],
@@ -175,21 +175,21 @@ class RetryManager:
     ) -> T:
         """
         Retry a sync operation with exponential backoff.
-        
+
         Args:
             func: Sync function to retry
             args: Positional arguments for func
             operation_name: Name for logging/metrics
             kwargs: Keyword arguments for func
-            
+
         Returns:
             Result from successful function call
-            
+
         Raises:
             Last exception if all retries fail
         """
         last_exception = None
-        
+
         for attempt in range(self.config.max_retries + 1):
             try:
                 # Record attempt
@@ -197,10 +197,10 @@ class RetryManager:
                     "mcp_retry_attempts_total",
                     labels={"operation": operation_name, "attempt": str(attempt)}
                 )
-                
+
                 # Call the function
                 result = func(*args, **kwargs)
-                
+
                 # Success - record and return
                 if attempt > 0:
                     logger.info(f"Operation '{operation_name}' succeeded after {attempt} retries")
@@ -208,12 +208,12 @@ class RetryManager:
                         "mcp_retry_success_total",
                         labels={"operation": operation_name, "attempts": str(attempt)}
                     )
-                    
+
                 return result
-                
+
             except self.config.retry_on as e:
                 last_exception = e
-                
+
                 if attempt >= self.config.max_retries:
                     # No more retries
                     logger.error(
@@ -224,23 +224,23 @@ class RetryManager:
                         labels={"operation": operation_name, "error": type(e).__name__}
                     )
                     raise
-                    
+
                 # Calculate delay
                 delay = self.calculate_delay(attempt)
-                
+
                 logger.warning(
                     f"Operation '{operation_name}' failed (attempt {attempt + 1}/"
                     f"{self.config.max_retries + 1}): {e}. Retrying in {delay:.2f}s..."
                 )
-                
+
                 # Wait before retry
                 time.sleep(delay)
-                
+
             except Exception as e:
                 # Non-retryable exception
                 logger.error(f"Operation '{operation_name}' failed with non-retryable error: {e}")
                 raise
-                
+
         # Should not reach here, but just in case
         if last_exception:
             raise last_exception
@@ -250,11 +250,11 @@ def with_retry(
     max_retries: int = 3,
     initial_delay: float = 1.0,
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL,
-    operation_name: Optional[str] = None
+    operation_name: str | None = None
 ):
     """
     Decorator to add retry logic to functions.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
         initial_delay: Initial delay in seconds
@@ -268,7 +268,7 @@ def with_retry(
             strategy=strategy
         )
         retry_manager = RetryManager(config)
-        
+
         if asyncio.iscoroutinefunction(func):
             async def wrapper(*args, **kwargs):
                 name = operation_name or func.__name__
@@ -277,17 +277,17 @@ def with_retry(
             def wrapper(*args, **kwargs):
                 name = operation_name or func.__name__
                 return retry_manager.retry_sync(func, *args, operation_name=name, **kwargs)
-                
+
         wrapper.__name__ = func.__name__
         wrapper.__doc__ = func.__doc__
         return wrapper
-        
+
     return decorator
 
 
 class CircuitBreaker:
     """Circuit breaker pattern for preventing cascading failures."""
-    
+
     def __init__(
         self,
         failure_threshold: int = 5,
@@ -296,7 +296,7 @@ class CircuitBreaker:
     ):
         """
         Initialize circuit breaker.
-        
+
         Args:
             failure_threshold: Number of failures before opening circuit
             recovery_timeout: Time in seconds before attempting recovery
@@ -305,11 +305,11 @@ class CircuitBreaker:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.expected_exception = expected_exception
-        
+
         self._failure_count = 0
         self._last_failure_time = None
         self._state = "closed"  # closed, open, half-open
-        
+
     @property
     def state(self) -> str:
         """Get current circuit breaker state."""
@@ -318,19 +318,19 @@ class CircuitBreaker:
             if time.time() - self._last_failure_time >= self.recovery_timeout:
                 self._state = "half-open"
         return self._state
-        
+
     def call(self, func: Callable[..., T], *args, **kwargs) -> T:
         """
         Call function through circuit breaker.
-        
+
         Args:
             func: Function to call
             args: Positional arguments
             kwargs: Keyword arguments
-            
+
         Returns:
             Function result
-            
+
         Raises:
             Exception from function or CircuitOpenError
         """
@@ -340,16 +340,16 @@ class CircuitBreaker:
                 message="Circuit breaker is open - service temporarily unavailable",
                 details={"recovery_time": self._last_failure_time + self.recovery_timeout}
             )
-            
+
         try:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-            
-        except self.expected_exception as e:
+
+        except self.expected_exception:
             self._on_failure()
             raise
-            
+
     async def call_async(self, func: Callable[..., T], *args, **kwargs) -> T:
         """Async version of call."""
         if self.state == "open":
@@ -358,34 +358,34 @@ class CircuitBreaker:
                 message="Circuit breaker is open - service temporarily unavailable",
                 details={"recovery_time": self._last_failure_time + self.recovery_timeout}
             )
-            
+
         try:
             result = await func(*args, **kwargs)
             self._on_success()
             return result
-            
-        except self.expected_exception as e:
+
+        except self.expected_exception:
             self._on_failure()
             raise
-            
+
     def _on_success(self):
         """Handle successful call."""
         if self._state == "half-open":
             self._state = "closed"
         self._failure_count = 0
-        
+
     def _on_failure(self):
         """Handle failed call."""
         self._failure_count += 1
         self._last_failure_time = time.time()
-        
+
         if self._failure_count >= self.failure_threshold:
             self._state = "open"
             logger.warning(f"Circuit breaker opened after {self._failure_count} failures")
 
 
 # Global retry manager instance
-_default_retry_manager: Optional[RetryManager] = None
+_default_retry_manager: RetryManager | None = None
 
 
 def get_retry_manager() -> RetryManager:

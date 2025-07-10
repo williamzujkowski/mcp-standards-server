@@ -4,57 +4,54 @@ Metadata Schema and Validation
 Schema definitions and validation for standards metadata.
 """
 
-from typing import Dict, Any, List, Optional, Union
-from datetime import datetime
 from dataclasses import dataclass, field
-import json
-import yaml
-from pathlib import Path
+from datetime import datetime
+from typing import Any
 
 
 @dataclass
 class StandardMetadata:
     """Standard metadata model with validation."""
-    
+
     # Required fields
     title: str
     version: str
     domain: str
     type: str
-    
+
     # Optional fields
     description: str = ""
     author: str = ""
-    created_date: Optional[datetime] = None
-    updated_date: Optional[datetime] = None
-    tags: List[str] = field(default_factory=list)
-    nist_controls: List[str] = field(default_factory=list)
-    compliance_frameworks: List[str] = field(default_factory=list)
+    created_date: datetime | None = None
+    updated_date: datetime | None = None
+    tags: list[str] = field(default_factory=list)
+    nist_controls: list[str] = field(default_factory=list)
+    compliance_frameworks: list[str] = field(default_factory=list)
     risk_level: str = "moderate"
     maturity_level: str = "developing"
-    
+
     # Technical fields
-    implementation_guides: List[str] = field(default_factory=list)
-    code_examples: List[str] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
-    
+    implementation_guides: list[str] = field(default_factory=list)
+    code_examples: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+
     # Validation fields
     review_status: str = "draft"
-    reviewers: List[str] = field(default_factory=list)
-    approval_date: Optional[datetime] = None
-    
+    reviewers: list[str] = field(default_factory=list)
+    approval_date: datetime | None = None
+
     # Custom fields
-    custom_fields: Dict[str, Any] = field(default_factory=dict)
-    
+    custom_fields: dict[str, Any] = field(default_factory=dict)
+
     def __post_init__(self):
         """Post-initialization processing."""
         if self.created_date is None:
             self.created_date = datetime.now()
         if self.updated_date is None:
             self.updated_date = datetime.now()
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'StandardMetadata':
+    def from_dict(cls, data: dict[str, Any]) -> 'StandardMetadata':
         """Create StandardMetadata from dictionary."""
         # Handle datetime fields
         if 'created_date' in data and isinstance(data['created_date'], str):
@@ -63,7 +60,7 @@ class StandardMetadata:
             data['updated_date'] = datetime.fromisoformat(data['updated_date'])
         if 'approval_date' in data and isinstance(data['approval_date'], str):
             data['approval_date'] = datetime.fromisoformat(data['approval_date'])
-        
+
         # Extract known fields
         known_fields = {
             'title', 'version', 'domain', 'type', 'description', 'author',
@@ -72,13 +69,13 @@ class StandardMetadata:
             'implementation_guides', 'code_examples', 'dependencies',
             'review_status', 'reviewers', 'approval_date'
         }
-        
+
         standard_data = {k: v for k, v in data.items() if k in known_fields}
         custom_fields = {k: v for k, v in data.items() if k not in known_fields}
-        
+
         return cls(custom_fields=custom_fields, **standard_data)
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = {
             'title': self.title,
@@ -101,17 +98,17 @@ class StandardMetadata:
             'reviewers': self.reviewers,
             'approval_date': self.approval_date.isoformat() if self.approval_date else None,
         }
-        
+
         # Add custom fields
         result.update(self.custom_fields)
-        
+
         return result
-    
-    def validate(self) -> Dict[str, Any]:
+
+    def validate(self) -> dict[str, Any]:
         """Validate metadata fields."""
         errors = []
         warnings = []
-        
+
         # Required field validation
         if not self.title:
             errors.append("Title is required")
@@ -121,20 +118,20 @@ class StandardMetadata:
             errors.append("Domain is required")
         if not self.type:
             errors.append("Type is required")
-        
+
         # Format validation
         if self.version and not self._is_valid_version(self.version):
             errors.append("Version must follow semantic versioning (e.g., 1.0.0)")
-        
+
         if self.risk_level not in ['low', 'moderate', 'high']:
             errors.append("Risk level must be 'low', 'moderate', or 'high'")
-        
+
         if self.maturity_level not in ['planning', 'developing', 'testing', 'production', 'deprecated']:
             errors.append("Maturity level must be one of: planning, developing, testing, production, deprecated")
-        
+
         if self.review_status not in ['draft', 'review', 'approved', 'rejected']:
             errors.append("Review status must be one of: draft, review, approved, rejected")
-        
+
         # Warning validation
         if not self.description:
             warnings.append("Description is recommended")
@@ -142,19 +139,19 @@ class StandardMetadata:
             warnings.append("Author is recommended")
         if not self.nist_controls:
             warnings.append("NIST controls mapping is recommended")
-        
+
         return {
             "valid": len(errors) == 0,
             "errors": errors,
             "warnings": warnings
         }
-    
+
     def _is_valid_version(self, version: str) -> bool:
         """Check if version follows semantic versioning."""
         parts = version.split('.')
         if len(parts) != 3:
             return False
-        
+
         try:
             [int(part) for part in parts]
             return True
@@ -164,7 +161,7 @@ class StandardMetadata:
 
 class MetadataSchema:
     """Schema definitions for different types of standards."""
-    
+
     BASE_SCHEMA = {
         "type": "object",
         "properties": {
@@ -191,7 +188,7 @@ class MetadataSchema:
         "required": ["title", "version", "domain", "type"],
         "additionalProperties": True
     }
-    
+
     TECHNICAL_SCHEMA = {
         **BASE_SCHEMA,
         "properties": {
@@ -204,7 +201,7 @@ class MetadataSchema:
             "security_requirements": {"type": "object"}
         }
     }
-    
+
     COMPLIANCE_SCHEMA = {
         **BASE_SCHEMA,
         "properties": {
@@ -215,7 +212,7 @@ class MetadataSchema:
             "compliance_metrics": {"type": "object"}
         }
     }
-    
+
     PROCESS_SCHEMA = {
         **BASE_SCHEMA,
         "properties": {
@@ -226,7 +223,7 @@ class MetadataSchema:
             "success_criteria": {"type": "array", "items": {"type": "string"}}
         }
     }
-    
+
     ARCHITECTURE_SCHEMA = {
         **BASE_SCHEMA,
         "properties": {
@@ -238,9 +235,9 @@ class MetadataSchema:
             "availability_requirements": {"type": "object"}
         }
     }
-    
+
     @classmethod
-    def get_schema(cls, standard_type: str) -> Dict[str, Any]:
+    def get_schema(cls, standard_type: str) -> dict[str, Any]:
         """Get schema for a specific standard type."""
         schema_map = {
             "technical": cls.TECHNICAL_SCHEMA,
@@ -248,11 +245,11 @@ class MetadataSchema:
             "process": cls.PROCESS_SCHEMA,
             "architecture": cls.ARCHITECTURE_SCHEMA
         }
-        
+
         return schema_map.get(standard_type, cls.BASE_SCHEMA)
-    
+
     @classmethod
-    def validate_against_schema(cls, data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_against_schema(cls, data: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
         """Validate data against schema."""
         try:
             import jsonschema
@@ -263,18 +260,18 @@ class MetadataSchema:
             return cls._basic_validation(data, schema)
         except jsonschema.ValidationError as e:
             return {"valid": False, "errors": [str(e)]}
-    
+
     @classmethod
-    def _basic_validation(cls, data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[str, Any]:
+    def _basic_validation(cls, data: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
         """Basic validation without jsonschema."""
         errors = []
-        
+
         # Check required fields
         required = schema.get("required", [])
         for field in required:
             if field not in data:
                 errors.append(f"Required field '{field}' is missing")
-        
+
         # Check field types
         properties = schema.get("properties", {})
         for field, value in data.items():
@@ -282,14 +279,14 @@ class MetadataSchema:
                 field_schema = properties[field]
                 if not cls._validate_field_type(value, field_schema):
                     errors.append(f"Field '{field}' has invalid type")
-        
+
         return {"valid": len(errors) == 0, "errors": errors}
-    
+
     @classmethod
-    def _validate_field_type(cls, value: Any, field_schema: Dict[str, Any]) -> bool:
+    def _validate_field_type(cls, value: Any, field_schema: dict[str, Any]) -> bool:
         """Validate field type."""
         expected_type = field_schema.get("type")
-        
+
         if expected_type == "string":
             return isinstance(value, str)
         elif expected_type == "array":
@@ -299,8 +296,8 @@ class MetadataSchema:
         elif expected_type == "integer":
             return isinstance(value, int)
         elif expected_type == "number":
-            return isinstance(value, (int, float))
+            return isinstance(value, int | float)
         elif expected_type == "boolean":
             return isinstance(value, bool)
-        
+
         return True

@@ -111,10 +111,10 @@ class PIIDetector:
     def detect(self, text: str) -> list[PIIMatch]:
         """
         Detect PII in text.
-        
+
         Args:
             text: Text to scan for PII
-            
+
         Returns:
             List of PII matches found
         """
@@ -195,7 +195,6 @@ class PIIDetector:
 
         # Simple heuristic: Capitalized words that might be names
         # This is a simplified approach - in production, use NLP libraries
-        name_pattern = r'\b[A-Z][a-z]+ [A-Z][a-z]+\b'
 
         # Common name prefixes
         prefixes = ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."]
@@ -261,10 +260,10 @@ class PrivacyFilter:
     def filter_text(self, text: str) -> tuple[str, list[PIIMatch]]:
         """
         Filter PII from text.
-        
+
         Args:
             text: Text to filter
-            
+
         Returns:
             Tuple of (filtered_text, matches)
         """
@@ -285,10 +284,10 @@ class PrivacyFilter:
     def filter_dict(self, data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, list[PIIMatch]]]:
         """
         Filter PII from dictionary recursively.
-        
+
         Args:
             data: Dictionary to filter
-            
+
         Returns:
             Tuple of (filtered_dict, matches_by_path)
         """

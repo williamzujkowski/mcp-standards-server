@@ -5,12 +5,11 @@ Tests the async server functionality including WebSocket handling,
 message routing, and connection management.
 """
 
-import pytest
-import asyncio
 import json
 import sys
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import Dict, Any
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 
 # Mock aioredis to avoid import errors in Python 3.12
 sys.modules['aioredis'] = MagicMock()
@@ -20,7 +19,7 @@ from src.core.mcp.async_server import AsyncMCPServer, MCPSession
 
 class TestAsyncMCPServer:
     """Test cases for Async MCP Server."""
-    
+
     @pytest.fixture
     def config(self):
         """Create test configuration."""
@@ -34,84 +33,84 @@ class TestAsyncMCPServer:
                 "enabled": False
             }
         }
-    
+
     @pytest.fixture
     def server(self, config):
         """Create async server instance."""
-        with patch('src.core.mcp.async_server.MCPStandardsServer') as mock_mcp_server:
+        with patch('src.core.mcp.async_server.MCPStandardsServer'):
             server = AsyncMCPServer(config)
             return server
-    
+
     def test_server_initialization(self, config):
         """Test server initialization."""
         with patch('src.core.mcp.async_server.MCPStandardsServer'):
             server = AsyncMCPServer(config)
-            
+
             assert server.config == config
             assert server.host == "localhost"
             assert server.port == 3000
             assert server.sessions == {}
             assert server.running is False
             assert hasattr(server, 'mcp_server')
-    
+
     async def test_start_server(self, server):
         """Test server startup."""
         with patch('asyncio.create_server') as mock_create_server:
             mock_server = AsyncMock()
             mock_create_server.return_value = mock_server
-            
+
             await server.start()
-            
+
             assert server.running is True
             mock_create_server.assert_called_once()
-    
+
     async def test_stop_server(self, server):
         """Test server shutdown."""
         # Mock server state
         server.running = True
         server.server = AsyncMock()
-        
+
         # Add mock sessions
         mock_session = Mock(spec=MCPSession)
         mock_session.close = AsyncMock()
         server.sessions = {"session1": mock_session}
-        
+
         await server.stop()
-        
+
         assert server.running is False
         mock_session.close.assert_called_once()
         assert len(server.sessions) == 0
-    
+
     async def test_handle_client_connection(self, server):
         """Test handling new client connections."""
         # Mock reader and writer
         mock_reader = AsyncMock()
         mock_writer = AsyncMock()
         mock_writer.get_extra_info = Mock(return_value=("127.0.0.1", 12345))
-        
+
         # Mock session creation
         with patch.object(server, '_create_session') as mock_create_session:
             mock_session = Mock(spec=MCPSession)
             mock_session.handle = AsyncMock()
             mock_create_session.return_value = mock_session
-            
+
             await server._handle_client(mock_reader, mock_writer)
-            
+
             mock_create_session.assert_called_once()
             mock_session.handle.assert_called_once()
-    
+
     def test_create_session(self, server):
         """Test session creation."""
         mock_reader = Mock()
         mock_writer = Mock()
         mock_writer.get_extra_info = Mock(return_value=("127.0.0.1", 12345))
-        
+
         session = server._create_session(mock_reader, mock_writer)
-        
+
         assert isinstance(session, MCPSession)
         assert session.id in server.sessions
         assert server.sessions[session.id] == session
-    
+
     async def test_remove_session(self, server):
         """Test session removal."""
         # Create mock session
@@ -119,11 +118,11 @@ class TestAsyncMCPServer:
         mock_session = Mock(spec=MCPSession)
         mock_session.id = session_id
         server.sessions[session_id] = mock_session
-        
+
         await server._remove_session(session_id)
-        
+
         assert session_id not in server.sessions
-    
+
     async def test_broadcast_message(self, server):
         """Test broadcasting message to all sessions."""
         # Create mock sessions
@@ -131,26 +130,26 @@ class TestAsyncMCPServer:
         mock_session1.send_message = AsyncMock()
         mock_session2 = Mock(spec=MCPSession)
         mock_session2.send_message = AsyncMock()
-        
+
         server.sessions = {
             "session1": mock_session1,
             "session2": mock_session2
         }
-        
+
         message = {"type": "broadcast", "data": "test"}
         await server.broadcast_message(message)
-        
+
         mock_session1.send_message.assert_called_once_with(message)
         mock_session2.send_message.assert_called_once_with(message)
-    
+
     async def test_get_server_stats(self, server):
         """Test getting server statistics."""
         # Mock sessions
         server.sessions = {"s1": Mock(), "s2": Mock()}
         server.running = True
-        
+
         stats = server.get_stats()
-        
+
         assert stats["running"] is True
         assert stats["active_connections"] == 2
         assert "uptime" in stats
@@ -159,7 +158,7 @@ class TestAsyncMCPServer:
 
 class TestMCPSession:
     """Test cases for MCP Session."""
-    
+
     @pytest.fixture
     def mock_server(self):
         """Create mock server."""
@@ -167,14 +166,14 @@ class TestMCPSession:
         server.mcp_server = Mock()
         server.config = {"message_timeout": 60}
         return server
-    
+
     @pytest.fixture
     def mock_reader(self):
         """Create mock reader."""
         reader = AsyncMock()
         reader.read = AsyncMock()
         return reader
-    
+
     @pytest.fixture
     def mock_writer(self):
         """Create mock writer."""
@@ -183,23 +182,23 @@ class TestMCPSession:
         writer.drain = AsyncMock()
         writer.get_extra_info = Mock(return_value=("127.0.0.1", 12345))
         return writer
-    
+
     @pytest.fixture
     def session(self, mock_server, mock_reader, mock_writer):
         """Create session instance."""
         return MCPSession("test-session", mock_server, mock_reader, mock_writer)
-    
+
     def test_session_initialization(self, mock_server, mock_reader, mock_writer):
         """Test session initialization."""
         session = MCPSession("test-id", mock_server, mock_reader, mock_writer)
-        
+
         assert session.id == "test-id"
         assert session.server == mock_server
         assert session.reader == mock_reader
         assert session.writer == mock_writer
         assert session.authenticated is False
         assert session.client_info["address"] == ("127.0.0.1", 12345)
-    
+
     async def test_handle_session(self, session):
         """Test session message handling loop."""
         # Mock message reading
@@ -209,24 +208,24 @@ class TestMCPSession:
             b''  # EOF
         ]
         session.reader.readline = AsyncMock(side_effect=messages)
-        
+
         with patch.object(session, '_process_message') as mock_process:
             mock_process.return_value = AsyncMock()
-            
+
             await session.handle()
-            
+
             assert mock_process.call_count == 2
-    
+
     async def test_send_message(self, session):
         """Test sending message to client."""
         message = {"type": "response", "data": "test"}
-        
+
         await session.send_message(message)
-        
+
         expected_data = json.dumps(message).encode() + b'\n'
         session.writer.write.assert_called_once_with(expected_data)
         session.writer.drain.assert_called_once()
-    
+
     async def test_process_hello_message(self, session):
         """Test processing hello message."""
         message = {
@@ -234,16 +233,16 @@ class TestMCPSession:
             "version": "1.0",
             "capabilities": ["tools", "resources"]
         }
-        
+
         with patch.object(session, 'send_message') as mock_send:
             await session._process_message(message)
-            
+
             # Should send hello response
             mock_send.assert_called_once()
             response = mock_send.call_args[0][0]
             assert response["type"] == "hello"
             assert "version" in response
-    
+
     async def test_process_request_message(self, session):
         """Test processing request message."""
         message = {
@@ -255,78 +254,78 @@ class TestMCPSession:
                 "requirements": ["testing"]
             }
         }
-        
+
         # Mock tool execution
         session.server.mcp_server._get_applicable_standards = AsyncMock(
             return_value={"standards": []}
         )
-        
+
         with patch.object(session, 'send_message') as mock_send:
             await session._process_message(message)
-            
+
             # Should send response
             mock_send.assert_called_once()
             response = mock_send.call_args[0][0]
             assert response["type"] == "response"
             assert response["id"] == "req-123"
-    
+
     async def test_process_invalid_message(self, session):
         """Test processing invalid message."""
         message = {"invalid": "message"}
-        
+
         with patch.object(session, 'send_message') as mock_send:
             await session._process_message(message)
-            
+
             # Should send error response
             mock_send.assert_called_once()
             response = mock_send.call_args[0][0]
             assert response["type"] == "error"
-    
+
     async def test_close_session(self, session):
         """Test closing session."""
         session.server._remove_session = AsyncMock()
-        
+
         await session.close()
-        
+
         session.writer.close.assert_called_once()
         session.server._remove_session.assert_called_once_with("test-session")
-    
+
     async def test_authentication(self, session):
         """Test session authentication."""
         # Enable auth in server config
         session.server.config["auth"] = {"enabled": True}
-        
+
         # Test unauthenticated request
         message = {
             "type": "request",
             "id": "req-123",
             "method": "get_applicable_standards"
         }
-        
+
         with patch.object(session, 'send_message') as mock_send:
             await session._process_message(message)
-            
+
             # Should send error for unauthenticated request
             response = mock_send.call_args[0][0]
             assert response["type"] == "error"
             assert "authentication" in response["error"].lower()
-    
+
     async def test_heartbeat(self, session):
         """Test heartbeat handling."""
         message = {"type": "ping"}
-        
+
         with patch.object(session, 'send_message') as mock_send:
             await session._process_message(message)
-            
+
             # Should send pong response
             mock_send.assert_called_once()
             response = mock_send.call_args[0][0]
             assert response["type"] == "pong"
-    
+
     def test_get_session_info(self, session):
         """Test getting session information."""
         info = session.get_info()
-        
+
         assert info["id"] == "test-session"
         assert info["authenticated"] is False
         assert info["client_info"]["address"] == ("127.0.0.1", 12345)

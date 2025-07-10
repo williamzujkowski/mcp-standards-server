@@ -1,15 +1,15 @@
 """
 Authentication and authorization for the web UI
 """
+import os
 from datetime import datetime, timedelta
-from typing import Optional
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError as JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel
-import os
 
 # Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
@@ -27,13 +27,13 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    username: str | None = None
 
 class User(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
 
 class UserInDB(User):
     hashed_password: str
@@ -68,7 +68,7 @@ def authenticate_user(fake_db, username: str, password: str):
         return False
     return user
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta

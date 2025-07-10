@@ -4,26 +4,26 @@ Integration module for connecting semantic search with MCP standards server.
 
 import json
 import logging
-from typing import List, Dict, Any, Optional
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
-from .semantic_search import create_search_engine, SemanticSearch
 from .rule_engine import RuleEngine
+from .semantic_search import SemanticSearch, create_search_engine
 
 logger = logging.getLogger(__name__)
 
 
 class StandardsSearchIntegration:
     """Integrates semantic search with the MCP standards system."""
-    
-    def __init__(self, 
+
+    def __init__(self,
                  standards_dir: Path,
-                 search_engine: Optional[SemanticSearch] = None,
+                 search_engine: SemanticSearch | None = None,
                  enable_analytics: bool = True):
         """
         Initialize the search integration.
-        
+
         Args:
             standards_dir: Directory containing standards files
             search_engine: Optional pre-configured search engine
@@ -35,38 +35,38 @@ class StandardsSearchIntegration:
         )
         self.rule_engine = RuleEngine()
         self._indexed_standards = set()
-        
+
     def index_all_standards(self, force_reindex: bool = False):
         """
         Index all standards documents for searching.
-        
+
         Args:
             force_reindex: Whether to force re-indexing of all documents
         """
         logger.info(f"Indexing standards from {self.standards_dir}")
-        
+
         documents = []
-        
+
         # Find all standards files
         for standards_file in self.standards_dir.rglob("*.yaml"):
             if force_reindex or standards_file.name not in self._indexed_standards:
                 try:
                     # Load standard
-                    with open(standards_file, 'r') as f:
+                    with open(standards_file) as f:
                         import yaml
                         standard_data = yaml.safe_load(f)
-                    
+
                     # Extract searchable content
                     doc_id = f"std:{standards_file.stem}"
                     content = self._extract_searchable_content(standard_data)
                     metadata = self._extract_metadata(standard_data, standards_file)
-                    
+
                     documents.append((doc_id, content, metadata))
                     self._indexed_standards.add(standards_file.name)
-                    
+
                 except Exception as e:
                     logger.error(f"Failed to index {standards_file}: {e}")
-        
+
         # Also index markdown documentation
         for md_file in self.standards_dir.rglob("*.md"):
             if force_reindex or md_file.name not in self._indexed_standards:
@@ -78,13 +78,13 @@ class StandardsSearchIntegration:
                         "file": str(md_file.relative_to(self.standards_dir)),
                         "modified": datetime.fromtimestamp(md_file.stat().st_mtime).isoformat()
                     }
-                    
+
                     documents.append((doc_id, content, metadata))
                     self._indexed_standards.add(md_file.name)
-                    
+
                 except Exception as e:
                     logger.error(f"Failed to index {md_file}: {e}")
-        
+
         # Batch index all documents
         if documents:
             logger.info(f"Indexing {len(documents)} documents")
@@ -92,23 +92,23 @@ class StandardsSearchIntegration:
             logger.info("Indexing complete")
         else:
             logger.info("No new documents to index")
-    
+
     def search_standards(self,
                         query: str,
-                        category: Optional[str] = None,
-                        tags: Optional[List[str]] = None,
+                        category: str | None = None,
+                        tags: list[str] | None = None,
                         top_k: int = 10,
-                        **kwargs) -> List[Dict[str, Any]]:
+                        **kwargs) -> list[dict[str, Any]]:
         """
         Search for standards matching the query.
-        
+
         Args:
             query: Search query
             category: Optional category filter
             tags: Optional tag filters
             top_k: Number of results to return
             **kwargs: Additional search parameters
-            
+
         Returns:
             List of matching standards with metadata
         """
@@ -118,7 +118,7 @@ class StandardsSearchIntegration:
             filters["category"] = category
         if tags:
             filters["tags"] = tags
-        
+
         # Perform search
         results = self.search_engine.search(
             query=query,
@@ -126,7 +126,7 @@ class StandardsSearchIntegration:
             filters=filters,
             **kwargs
         )
-        
+
         # Convert to standard format
         standards_results = []
         for result in results:
@@ -138,34 +138,34 @@ class StandardsSearchIntegration:
                 "highlights": result.highlights,
                 "explanation": result.explanation
             }
-            
+
             # Load full standard if needed
             if result.id.startswith("std:"):
                 standard_name = result.id[4:]  # Remove 'std:' prefix
                 full_standard = self._load_standard(standard_name)
                 if full_standard:
                     standard["full_data"] = full_standard
-            
+
             standards_results.append(standard)
-        
+
         return standards_results
-    
+
     def find_applicable_standards(self,
-                                 context: Dict[str, Any],
-                                 max_results: int = 5) -> List[Dict[str, Any]]:
+                                 context: dict[str, Any],
+                                 max_results: int = 5) -> list[dict[str, Any]]:
         """
         Find standards applicable to a given context using semantic search.
-        
+
         Args:
             context: Context dictionary with project information
             max_results: Maximum number of standards to return
-            
+
         Returns:
             List of applicable standards
         """
         # Build search query from context
         query_parts = []
-        
+
         if "language" in context:
             query_parts.append(context["language"])
         if "framework" in context:
@@ -174,14 +174,14 @@ class StandardsSearchIntegration:
             query_parts.append(context["project_type"])
         if "requirements" in context:
             query_parts.extend(context["requirements"])
-        
+
         query = " ".join(query_parts)
-        
+
         # Add specific filters based on context
         filters = {}
         if "category" in context:
             filters["category"] = context["category"]
-        
+
         # Search for applicable standards
         results = self.search_standards(
             query=query,
@@ -189,25 +189,25 @@ class StandardsSearchIntegration:
             top_k=max_results,
             rerank=True  # Use re-ranking for better relevance
         )
-        
+
         # Filter by applicability rules
         applicable = []
         for result in results:
             if self._is_applicable(result, context):
                 applicable.append(result)
-        
+
         return applicable[:max_results]
-    
+
     def get_similar_standards(self,
                             standard_id: str,
-                            top_k: int = 5) -> List[Dict[str, Any]]:
+                            top_k: int = 5) -> list[dict[str, Any]]:
         """
         Find standards similar to a given standard.
-        
+
         Args:
             standard_id: ID of the reference standard
             top_k: Number of similar standards to return
-            
+
         Returns:
             List of similar standards
         """
@@ -220,36 +220,36 @@ class StandardsSearchIntegration:
             standard_data = self._load_standard(standard_name)
             if not standard_data:
                 return []
-            
+
             reference_content = self._extract_searchable_content(standard_data)
-        
+
         # Search using the reference content as query
         results = self.search_standards(
             query=reference_content,
             top_k=top_k + 1  # +1 to exclude self
         )
-        
+
         # Remove the reference standard from results
         similar = [r for r in results if r["id"] != standard_id]
-        
+
         return similar[:top_k]
-    
-    def _extract_searchable_content(self, standard_data: Dict[str, Any]) -> str:
+
+    def _extract_searchable_content(self, standard_data: dict[str, Any]) -> str:
         """Extract searchable text content from standard data."""
         content_parts = []
-        
+
         # Add title and description
         if "title" in standard_data:
             content_parts.append(f"Title: {standard_data['title']}")
         if "description" in standard_data:
             content_parts.append(f"Description: {standard_data['description']}")
-        
+
         # Add metadata fields
         if "category" in standard_data:
             content_parts.append(f"Category: {standard_data['category']}")
         if "tags" in standard_data:
             content_parts.append(f"Tags: {', '.join(standard_data['tags'])}")
-        
+
         # Add rules and guidelines
         if "rules" in standard_data:
             for rule in standard_data["rules"]:
@@ -257,7 +257,7 @@ class StandardsSearchIntegration:
                     content_parts.append(f"Rule: {rule['name']}")
                 if "description" in rule:
                     content_parts.append(rule["description"])
-        
+
         # Add examples
         if "examples" in standard_data:
             content_parts.append("Examples:")
@@ -266,74 +266,74 @@ class StandardsSearchIntegration:
                     content_parts.append(example["code"])
                 elif isinstance(example, str):
                     content_parts.append(example)
-        
+
         return "\n\n".join(content_parts)
-    
-    def _extract_metadata(self, standard_data: Dict[str, Any], file_path: Path) -> Dict[str, Any]:
+
+    def _extract_metadata(self, standard_data: dict[str, Any], file_path: Path) -> dict[str, Any]:
         """Extract metadata from standard data."""
         metadata = {
             "file": str(file_path.relative_to(self.standards_dir)),
             "modified": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
         }
-        
+
         # Copy relevant fields
         for field in ["category", "tags", "version", "language", "framework", "type"]:
             if field in standard_data:
                 metadata[field] = standard_data[field]
-        
+
         return metadata
-    
-    def _load_standard(self, standard_name: str) -> Optional[Dict[str, Any]]:
+
+    def _load_standard(self, standard_name: str) -> dict[str, Any] | None:
         """Load a standard by name."""
         standard_file = self.standards_dir / f"{standard_name}.yaml"
         if not standard_file.exists():
             # Try with .yml extension
             standard_file = self.standards_dir / f"{standard_name}.yml"
-        
+
         if standard_file.exists():
             try:
-                with open(standard_file, 'r') as f:
+                with open(standard_file) as f:
                     import yaml
                     return yaml.safe_load(f)
             except Exception as e:
                 logger.error(f"Failed to load standard {standard_name}: {e}")
-        
+
         return None
-    
-    def _is_applicable(self, standard: Dict[str, Any], context: Dict[str, Any]) -> bool:
+
+    def _is_applicable(self, standard: dict[str, Any], context: dict[str, Any]) -> bool:
         """Check if a standard is applicable to the given context."""
         metadata = standard.get("metadata", {})
-        
+
         # Check language compatibility
         if "language" in metadata and "language" in context:
             if metadata["language"] != context["language"]:
                 return False
-        
+
         # Check framework compatibility
         if "framework" in metadata and "framework" in context:
             if metadata["framework"] != context["framework"]:
                 return False
-        
+
         # Check version requirements
         if "min_version" in metadata and "version" in context:
             try:
                 from packaging import version
                 if version.parse(context["version"]) < version.parse(metadata["min_version"]):
                     return False
-            except:
+            except Exception:
                 pass
-        
+
         # Use rule engine for complex applicability rules
         if "full_data" in standard and "applicability_rules" in standard["full_data"]:
             rules = standard["full_data"]["applicability_rules"]
             return self.rule_engine.evaluate_rules(rules, context)
-        
+
         return True
-    
-    def get_search_analytics(self) -> Dict[str, Any]:
+
+    def get_search_analytics(self) -> dict[str, Any]:
         """Get search analytics report."""
         return self.search_engine.get_analytics_report()
-    
+
     def export_search_index(self, output_path: Path):
         """Export the search index for backup or analysis."""
         index_data = {
@@ -342,23 +342,23 @@ class StandardsSearchIntegration:
             "indexed_files": list(self._indexed_standards),
             "export_date": datetime.now().isoformat()
         }
-        
+
         with open(output_path, 'w') as f:
             json.dump(index_data, f, indent=2)
-        
+
         logger.info(f"Exported search index to {output_path}")
-    
+
     def import_search_index(self, input_path: Path):
         """Import a previously exported search index."""
-        with open(input_path, 'r') as f:
+        with open(input_path) as f:
             index_data = json.load(f)
-        
+
         # Re-index documents
         documents = []
         for doc_id, content in index_data["documents"].items():
             metadata = index_data["metadata"].get(doc_id, {})
             documents.append((doc_id, content, metadata))
-        
+
         if documents:
             self.search_engine.index_documents_batch(documents)
             self._indexed_standards.update(index_data.get("indexed_files", []))
