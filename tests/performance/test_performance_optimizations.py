@@ -273,7 +273,7 @@ class TestVectorIndexCaching:
             memory_cache_ttl=300,
             enable_compression=True,
             warming_batch_size=10,
-            enable_cache_warming=False,  # Disable for testing
+            warming_strategies=[],  # Disable warming strategies for testing
         )
 
     @pytest.fixture

@@ -398,7 +398,14 @@ class MemoryManager:
 
     def register_object(self, obj):
         """Register an object for memory tracking."""
-        self.weak_references.add(obj)
+        # Skip numpy arrays as they are not weakly referenceable
+        if isinstance(obj, np.ndarray):
+            return
+        try:
+            self.weak_references.add(obj)
+        except TypeError:
+            # Object doesn't support weak references, skip it
+            pass
 
     async def _memory_monitor(self):
         """Monitor memory usage and perform cleanup."""

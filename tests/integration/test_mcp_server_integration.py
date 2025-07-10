@@ -26,9 +26,10 @@ class TestMCPServerIntegration:
                 "algorithm": "HS256",
             },
             "privacy": {
-                "enabled": True,
-                "pii_patterns": ["email", "phone", "ssn"],
-                "anonymize_logs": True,
+                "detect_pii": True,
+                "redact_pii": True,
+                "hash_pii": False,
+                "min_confidence": 0.8,
             },
             "rate_limit_window": 60,
             "rate_limit_max_requests": 100,
