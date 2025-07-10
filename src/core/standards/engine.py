@@ -9,6 +9,7 @@ from typing import Any
 from .models import Requirement, Standard, StandardMetadata
 from .rule_engine import RuleEngine
 from .semantic_search import SemanticSearch, create_search_engine
+from .async_semantic_search import AsyncSemanticSearch
 from .sync import StandardsSynchronizer
 from .token_optimizer import TokenOptimizer
 
@@ -53,7 +54,7 @@ class StandardsEngine:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # Components
-        self.semantic_search: SemanticSearch | None = None
+        self.semantic_search: SemanticSearch | AsyncSemanticSearch | None = None
         self.rule_engine: RuleEngine | None = None
         self.token_optimizer: TokenOptimizer | None = None
         self.sync: StandardsSynchronizer | None = None
@@ -62,7 +63,7 @@ class StandardsEngine:
         self._standards_cache: dict[str, Standard] = {}
         self._initialized = False
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the engine and all components."""
         if self._initialized:
             return
@@ -96,7 +97,7 @@ class StandardsEngine:
         self._initialized = True
         logger.info("StandardsEngine initialized successfully")
 
-    async def _load_standards(self):
+    async def _load_standards(self) -> None:
         """Load standards from local storage."""
         try:
             if self.sync:

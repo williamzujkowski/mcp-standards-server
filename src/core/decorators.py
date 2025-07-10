@@ -41,7 +41,7 @@ def with_error_handling(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 return func(*args, **kwargs)
             except MCPError:
@@ -81,7 +81,7 @@ def with_error_handling(
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
                     return await func(*args, **kwargs)
                 except MCPError:
@@ -114,9 +114,9 @@ def with_error_handling(
 
                     return default_return
 
-            return async_wrapper
+            return async_wrapper  # type: ignore[return-value]
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator
 
@@ -142,7 +142,7 @@ def with_logging(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time = time.time()
 
             # Log function call
@@ -160,7 +160,7 @@ def with_logging(
                 duration = time.time() - start_time
                 log_data = {"function": func.__name__, "status": "success"}
                 if log_duration:
-                    log_data["duration"] = duration
+                    log_data["duration"] = duration  # type: ignore[assignment]
                 if log_result:
                     log_data["result"] = str(result)[:200]
 
@@ -185,7 +185,7 @@ def with_logging(
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 start_time = time.time()
 
                 log_data = {"function": func.__name__, "func_module": func.__module__}
@@ -201,7 +201,7 @@ def with_logging(
                     duration = time.time() - start_time
                     log_data = {"function": func.__name__, "status": "success"}
                     if log_duration:
-                        log_data["duration"] = duration
+                        log_data["duration"] = duration  # type: ignore[assignment]
                     if log_result:
                         log_data["result"] = str(result)[:200]
 
@@ -221,9 +221,9 @@ def with_logging(
                     )
                     raise
 
-            return async_wrapper
+            return async_wrapper  # type: ignore[return-value]
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator
 
@@ -251,7 +251,7 @@ def with_metrics(
         name = metric_name or f"{func.__module__}.{func.__name__}"
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time = time.time()
             metrics = get_mcp_metrics()
 
@@ -298,7 +298,7 @@ def with_metrics(
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 start_time = time.time()
                 metrics = get_mcp_metrics()
 
@@ -337,9 +337,9 @@ def with_metrics(
 
                     raise
 
-            return async_wrapper
+            return async_wrapper  # type: ignore[return-value]
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator
 
@@ -357,7 +357,7 @@ def with_context(**context_kwargs) -> Callable[[F], F]:
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             with ContextFilter.context(**context_kwargs):
                 return func(*args, **kwargs)
 
@@ -365,13 +365,13 @@ def with_context(**context_kwargs) -> Callable[[F], F]:
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 with ContextFilter.context(**context_kwargs):
                     return await func(*args, **kwargs)
 
-            return async_wrapper
+            return async_wrapper  # type: ignore[return-value]
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator
 
@@ -393,7 +393,7 @@ def deprecated(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             message = f"Function {func.__name__} is deprecated: {reason}"
             if version:
                 message += f" (deprecated in version {version})"
@@ -417,7 +417,7 @@ def deprecated(
         if asyncio.iscoroutinefunction(func):
 
             @functools.wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 message = f"Function {func.__name__} is deprecated: {reason}"
                 if version:
                     message += f" (deprecated in version {version})"

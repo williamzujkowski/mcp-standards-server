@@ -125,19 +125,19 @@ class MemoryEfficientDict:
     """Memory-efficient dictionary implementation."""
 
     def __init__(self, initial_size: int = 1000):
-        self._data = {}
-        self._access_times = {}
-        self._access_counts = defaultdict(int)
+        self._data: dict[Any, Any] = {}
+        self._access_times: dict[Any, float] = {}
+        self._access_counts: dict[Any, int] = defaultdict(int)
         self._max_size = initial_size
         self._eviction_count = 0
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         """Get item and update access statistics."""
         self._access_times[key] = time.time()
         self._access_counts[key] += 1
         return self._data[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Any, value: Any) -> None:
         """Set item with automatic eviction."""
         if len(self._data) >= self._max_size and key not in self._data:
             self._evict_lru()
@@ -146,27 +146,27 @@ class MemoryEfficientDict:
         self._access_times[key] = time.time()
         self._access_counts[key] += 1
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Any) -> None:
         """Delete item and cleanup metadata."""
         del self._data[key]
         self._access_times.pop(key, None)
         self._access_counts.pop(key, None)
 
-    def __contains__(self, key):
+    def __contains__(self, key: Any) -> bool:
         """Check if key exists."""
         return key in self._data
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get number of items."""
         return len(self._data)
 
-    def get(self, key, default=None):
+    def get(self, key: Any, default: Any = None) -> Any:
         """Get with default value."""
         if key in self._data:
             return self[key]
         return default
 
-    def pop(self, key, default=None):
+    def pop(self, key: Any, default: Any = None) -> Any:
         """Pop item."""
         if key in self._data:
             value = self._data[key]
@@ -174,25 +174,25 @@ class MemoryEfficientDict:
             return value
         return default
 
-    def keys(self):
+    def keys(self) -> Any:
         """Get keys."""
         return self._data.keys()
 
-    def values(self):
+    def values(self) -> Any:
         """Get values."""
         return self._data.values()
 
-    def items(self):
+    def items(self) -> Any:
         """Get items."""
         return self._data.items()
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all data."""
         self._data.clear()
         self._access_times.clear()
         self._access_counts.clear()
 
-    def _evict_lru(self):
+    def _evict_lru(self) -> None:
         """Evict least recently used item."""
         if not self._access_times:
             return
@@ -219,12 +219,12 @@ class MemoryEfficientList:
     """Memory-efficient list implementation with automatic cleanup."""
 
     def __init__(self, max_size: int = 10000):
-        self._data = []
+        self._data: list[Any] = []
         self._max_size = max_size
         self._total_additions = 0
         self._eviction_count = 0
 
-    def append(self, item):
+    def append(self, item: Any) -> None:
         """Append item with automatic size management."""
         if len(self._data) >= self._max_size:
             # Remove oldest 10% of items
@@ -235,24 +235,24 @@ class MemoryEfficientList:
         self._data.append(item)
         self._total_additions += 1
 
-    def extend(self, items):
+    def extend(self, items: list[Any]) -> None:
         """Extend with multiple items."""
         for item in items:
             self.append(item)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Any:
         """Get item by index."""
         return self._data[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get list length."""
         return len(self._data)
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         """Iterate over items."""
         return iter(self._data)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all items."""
         self._data.clear()
 
@@ -271,13 +271,13 @@ class ObjectPool:
 
     def __init__(self, factory: Callable, max_size: int = 100):
         self._factory = factory
-        self._pool = []
+        self._pool: list[Any] = []
         self._max_size = max_size
         self._created_count = 0
         self._reused_count = 0
         self._lock = threading.Lock()
 
-    def get(self):
+    def get(self) -> Any:
         """Get object from pool or create new one."""
         with self._lock:
             if self._pool:
@@ -289,7 +289,7 @@ class ObjectPool:
                 self._created_count += 1
                 return obj
 
-    def put(self, obj):
+    def put(self, obj: Any) -> None:
         """Return object to pool."""
         with self._lock:
             if len(self._pool) < self._max_size:
@@ -298,7 +298,7 @@ class ObjectPool:
                     obj.reset()
                 self._pool.append(obj)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear pool."""
         with self._lock:
             self._pool.clear()
@@ -323,17 +323,17 @@ class MemoryTracker:
 
     def __init__(self, config: MemoryConfig):
         self.config = config
-        self.tracked_objects = weakref.WeakSet()
-        self.object_counts = defaultdict(int)
-        self.allocation_history = deque(maxlen=1000)
-        self.leak_suspects = []
+        self.tracked_objects: weakref.WeakSet[Any] = weakref.WeakSet()
+        self.object_counts: dict[str, int] = defaultdict(int)
+        self.allocation_history: deque[dict[str, Any]] = deque(maxlen=1000)
+        self.leak_suspects: list[dict[str, Any]] = []
 
         # Memory profiling
         self.profiler = None
         if config.enable_profiling:
             self.profiler = tracker.SummaryTracker()
 
-    def track_object(self, obj, category: str = "unknown"):
+    def track_object(self, obj: Any, category: str = "unknown") -> None:
         """Track an object for memory monitoring."""
         self.tracked_objects.add(obj)
         self.object_counts[category] += 1

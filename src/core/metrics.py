@@ -113,13 +113,13 @@ class MetricsCollector:
         key = self._make_key(name, labels)
         self._histograms[key].append(MetricPoint(time.time(), value, labels or {}))
 
-    def timer(self, name: str, labels: dict[str, str] | None = None):
+    def timer(self, name: str, labels: dict[str, str] | None = None) -> "TimerContext":
         """Context manager for timing operations."""
         return TimerContext(self, name, labels)
 
     def record_duration(
         self, name: str, duration: float, labels: dict[str, str] | None = None
-    ):
+    ) -> None:
         """Record a duration measurement."""
         key = self._make_key(name, labels)
         self._timers[key].append(MetricPoint(time.time(), duration, labels or {}))
@@ -190,7 +190,7 @@ class MetricsCollector:
 
     def get_all_metrics(self) -> dict[str, Any]:
         """Get all metrics as a dictionary."""
-        metrics = {
+        metrics: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "counters": {},
             "gauges": {},
@@ -273,16 +273,16 @@ class MetricsCollector:
 
         return "\n".join(lines)
 
-    def add_export_handler(self, handler: Callable):
+    def add_export_handler(self, handler: Callable) -> None:
         """Add a handler for metric exports."""
         self._export_handlers.append(handler)
 
-    async def start_export_task(self):
+    async def start_export_task(self) -> None:
         """Start background metric export task."""
         if self._export_task is None:
             self._export_task = asyncio.create_task(self._export_loop())
 
-    async def stop_export_task(self):
+    async def stop_export_task(self) -> None:
         """Stop background metric export task."""
         if self._export_task:
             self._export_task.cancel()
@@ -292,7 +292,7 @@ class MetricsCollector:
                 pass
             self._export_task = None
 
-    async def _export_loop(self):
+    async def _export_loop(self) -> None:
         """Background task to export metrics periodically."""
         while True:
             try:
@@ -350,13 +350,13 @@ class TimerContext:
         self.collector = collector
         self.name = name
         self.labels = labels
-        self.start_time = None
+        self.start_time: float | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> "TimerContext":
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.start_time:
             duration = time.time() - self.start_time
             self.collector.record_duration(self.name, duration, self.labels)
@@ -391,7 +391,7 @@ class MCPMetrics:
         duration: float,
         success: bool,
         error_type: str | None = None,
-    ):
+    ) -> None:
         """Record metrics for a tool call."""
         labels = {"tool": tool_name, "success": str(success).lower()}
 
@@ -402,7 +402,7 @@ class MCPMetrics:
             error_labels = {"tool": tool_name, "error_type": error_type}
             self.collector.increment(self.TOOL_CALL_ERRORS, labels=error_labels)
 
-    def record_auth_attempt(self, auth_type: str, success: bool):
+    def record_auth_attempt(self, auth_type: str, success: bool) -> None:
         """Record authentication attempt."""
         labels = {"type": auth_type, "success": str(success).lower()}
         self.collector.increment(self.AUTH_ATTEMPTS, labels=labels)
@@ -410,12 +410,12 @@ class MCPMetrics:
         if not success:
             self.collector.increment(self.AUTH_FAILURES, labels={"type": auth_type})
 
-    def record_rate_limit_hit(self, identifier: str, tier: str):
+    def record_rate_limit_hit(self, identifier: str, tier: str) -> None:
         """Record rate limit hit."""
         labels = {"tier": tier}
         self.collector.increment(self.RATE_LIMIT_HITS, labels=labels)
 
-    def record_cache_access(self, tool_name: str, hit: bool):
+    def record_cache_access(self, tool_name: str, hit: bool) -> None:
         """Record cache access."""
         labels = {"tool": tool_name}
         if hit:
@@ -423,23 +423,23 @@ class MCPMetrics:
         else:
             self.collector.increment(self.CACHE_MISSES, labels=labels)
 
-    def update_active_connections(self, count: int):
+    def update_active_connections(self, count: int) -> None:
         """Update active connections gauge."""
         self.collector.gauge(self.ACTIVE_CONNECTIONS, count)
 
-    def record_request_size(self, size: int, tool_name: str):
+    def record_request_size(self, size: int, tool_name: str) -> None:
         """Record request size."""
         labels = {"tool": tool_name}
         self.collector.histogram(self.REQUEST_SIZE, size, labels=labels)
 
-    def record_response_size(self, size: int, tool_name: str):
+    def record_response_size(self, size: int, tool_name: str) -> None:
         """Record response size."""
         labels = {"tool": tool_name}
         self.collector.histogram(self.RESPONSE_SIZE, size, labels=labels)
 
     def record_error(
         self, error_type: str, error_code: str, function: str | None = None
-    ):
+    ) -> None:
         """Record an error occurrence."""
         labels = {"error_type": error_type, "error_code": error_code}
         if function:
@@ -448,7 +448,7 @@ class MCPMetrics:
 
     def record_http_request(
         self, method: str, path: str, status: int, duration: float, error: bool = False
-    ):
+    ) -> None:
         """Record HTTP request metrics."""
         labels = {
             "method": method,
@@ -467,7 +467,7 @@ class MCPMetrics:
         success: bool,
         error_type: str | None = None,
         labels: dict[str, str] | None = None,
-    ):
+    ) -> None:
         """Record operation metrics."""
         operation_labels = {"operation": operation, "success": str(success).lower()}
         if error_type:
@@ -479,7 +479,7 @@ class MCPMetrics:
 
     def record_duration(
         self, metric: str, duration: float, labels: dict[str, str] | None = None
-    ):
+    ) -> None:
         """Record duration metric."""
         self.collector.record_duration(metric, duration, labels=labels)
 

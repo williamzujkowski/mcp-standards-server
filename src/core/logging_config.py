@@ -67,8 +67,8 @@ class ErrorTrackingHandler(logging.Handler):
 
     def __init__(self) -> None:
         super().__init__()
-        self.error_counts = {}
-        self.last_errors = []
+        self.error_counts: dict[str, int] = {}
+        self.last_errors: list[dict[str, Any]] = []
         self.max_last_errors = 100
 
     def emit(self, record: logging.LogRecord) -> None:
@@ -123,7 +123,7 @@ class StructuredFormatter(logging.Formatter):
         record.hostname = os.getenv("HOSTNAME", "localhost")
 
         # Add error details if present
-        if record.exc_info:
+        if record.exc_info and record.exc_info[0] is not None:
             record.exception_type = record.exc_info[0].__name__
             record.exception_message = str(record.exc_info[1])
             record.traceback = self.formatException(record.exc_info)
@@ -270,10 +270,10 @@ def setup_logging(config: LoggingConfig | None = None) -> ErrorTrackingHandler:
         },
     )
 
-    return error_handler
+    return error_handler  # type: ignore[return-value]
 
 
-def configure_module_loggers():
+def configure_module_loggers() -> None:
     """Configure logging levels for specific modules."""
     # Reduce noise from third-party libraries
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -312,7 +312,7 @@ def get_error_handler() -> ErrorTrackingHandler | None:
 
 
 def init_logging(
-    level: str = "INFO", format: str = "json", log_file: str | None = None, **kwargs
+    level: str = "INFO", format: str = "json", log_file: str | None = None, **kwargs: Any
 ) -> ErrorTrackingHandler:
     """
     Initialize logging with environment-aware configuration.

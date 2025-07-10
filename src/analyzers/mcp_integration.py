@@ -89,7 +89,7 @@ class AnalyzerMCPTools:
                 extension = path.suffix
                 for lang in AnalyzerPlugin.list_languages():
                     analyzer = AnalyzerPlugin.get_analyzer(lang)
-                    if extension in analyzer.file_extensions:
+                    if analyzer and extension in analyzer.file_extensions:
                         language = lang
                         break
 
@@ -176,8 +176,9 @@ class AnalyzerMCPTools:
                 # Analyze all supported languages
                 for lang in AnalyzerPlugin.list_languages():
                     analyzer = AnalyzerPlugin.get_analyzer(lang)
-                    results = analyzer.analyze_directory(path)
-                    all_results.extend(results)
+                    if analyzer:
+                        results = analyzer.analyze_directory(path)
+                        all_results.extend(results)
 
             # Format summary
             output = _format_directory_analysis(all_results)
@@ -200,7 +201,8 @@ class AnalyzerMCPTools:
         output = "Available Language Analyzers:\n\n"
         for lang in sorted(languages):
             analyzer = AnalyzerPlugin.get_analyzer(lang)
-            output += f"- **{lang}**: {', '.join(analyzer.file_extensions)}\n"
+            if analyzer:
+                output += f"- **{lang}**: {', '.join(analyzer.file_extensions)}\n"
 
         return ToolResult(content=[{"type": "text", "text": output}])
 

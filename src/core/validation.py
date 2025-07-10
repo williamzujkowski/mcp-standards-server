@@ -325,7 +325,7 @@ class InputValidator:
 
             # Validate using Pydantic model
             validated = validator_class(**arguments)
-            return validated.model_dump()
+            return validated.model_dump()  # type: ignore[no-any-return]
 
         except ValueError as e:
             # Extract field information from Pydantic error

@@ -110,9 +110,9 @@ class SyncResult:
 class GitHubRateLimiter:
     """Handle GitHub API rate limiting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.remaining = 60  # Default for unauthenticated requests
-        self.reset_time = None
+        self.reset_time: datetime | None = None
         self.limit = 60
 
     def update_from_headers(self, headers: dict[str, str]) -> None:
@@ -137,7 +137,7 @@ class GitHubRateLimiter:
         """Calculate wait time in seconds."""
         if self.reset_time and self.should_wait():
             wait = (self.reset_time - datetime.now()).total_seconds()
-            return max(0, wait + 1)  # Add 1 second buffer
+            return float(max(0, wait + 1))  # Add 1 second buffer
         return 0
 
 
@@ -815,7 +815,8 @@ class StandardsSynchronizer:
                     self.rate_limiter.update_from_headers(dict(response.headers))
 
                     if response.status == 200:
-                        return await response.read()
+                        content = await response.read()
+                        return bytes(content)
                     elif response.status == 429:
                         # Rate limited
                         wait_time = self.rate_limiter.wait_time()

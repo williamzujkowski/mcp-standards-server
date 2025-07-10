@@ -44,7 +44,7 @@ class SecurityConfig:
     log_security_events: bool = True
 
     # Content security
-    allowed_content_types: list[str] = None
+    allowed_content_types: list[str] | None = None
 
     def __post_init__(self) -> None:
         if self.allowed_content_types is None:
@@ -351,11 +351,11 @@ def security_middleware(
             # Validate and sanitize inputs
             try:
                 # Find dictionary arguments that might be request data
-                for i, arg in enumerate(args):
+                args_list = list(args)
+                for i, arg in enumerate(args_list):
                     if isinstance(arg, dict | list | str):
-                        args = list(args)
-                        args[i] = middleware.validate_and_sanitize_request(arg)
-                        args = tuple(args)
+                        args_list[i] = middleware.validate_and_sanitize_request(arg)
+                args = tuple(args_list)
 
                 for key, value in kwargs.items():
                     if isinstance(value, dict | list | str):

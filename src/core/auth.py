@@ -45,8 +45,9 @@ class AuthManager:
         if os.getenv("MCP_AUTH_ENABLED", "false").lower() == "true":
             self.config.enabled = True
 
-        if os.getenv("MCP_JWT_SECRET"):
-            self.config.secret_key = os.getenv("MCP_JWT_SECRET")
+        jwt_secret = os.getenv("MCP_JWT_SECRET")
+        if jwt_secret:
+            self.config.secret_key = jwt_secret
         elif self.config.enabled and not self.config.secret_key:
             # Generate a random secret key if auth is enabled but no key provided
             import secrets
@@ -82,7 +83,7 @@ class AuthManager:
             algorithm=self.config.algorithm,
         )
 
-        return token
+        return str(token)
 
     def verify_token(self, token: str) -> tuple[bool, TokenPayload | None, str | None]:
         """

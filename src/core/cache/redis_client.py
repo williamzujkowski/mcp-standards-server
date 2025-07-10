@@ -89,15 +89,15 @@ class CircuitBreaker:
         self.threshold = threshold
         self.timeout = timeout
         self.failure_count = 0
-        self.last_failure_time = 0
+        self.last_failure_time: float = 0
         self.state = "closed"  # closed, open, half-open
 
-    def record_success(self):
+    def record_success(self) -> None:
         """Record successful operation."""
         self.failure_count = 0
         self.state = "closed"
 
-    def record_failure(self):
+    def record_failure(self) -> None:
         """Record failed operation."""
         self.failure_count += 1
         self.last_failure_time = time.time()
@@ -146,7 +146,7 @@ class RedisCache:
         }
 
         # Health monitoring
-        self._health_check_task = None
+        self._health_check_task: threading.Thread | None = None
         self._connection_health = {
             "is_healthy": True,
             "last_check": None,
@@ -156,7 +156,7 @@ class RedisCache:
         }
 
         # Pipeline support
-        self._pipeline_queue = []
+        self._pipeline_queue: list[tuple[str, Any]] = []
         self._pipeline_lock = threading.Lock()
 
         # Connection pool monitoring
@@ -167,11 +167,11 @@ class RedisCache:
             "pool_exhaustion_count": 0,
         }
 
-    def _get_json_encoder(self):
+    def _get_json_encoder(self) -> type[json.JSONEncoder]:
         """Get JSON encoder that handles common Python types."""
 
         class ExtendedJSONEncoder(json.JSONEncoder):
-            def default(self, obj):
+            def default(self, obj: Any) -> Any:
                 if isinstance(obj, set | frozenset):
                     return {"__type__": "set", "values": list(obj)}
                 elif isinstance(obj, bytes):
@@ -184,7 +184,7 @@ class RedisCache:
 
         return ExtendedJSONEncoder
 
-    def _json_object_hook(self, obj):
+    def _json_object_hook(self, obj: Any) -> Any:
         """JSON decoder hook to reconstruct special types."""
         if isinstance(obj, dict) and "__type__" in obj:
             type_name = obj["__type__"]
@@ -273,9 +273,9 @@ class RedisCache:
             import zlib
 
             data = zlib.compress(data)
-            return b"Z" + serializer.encode() + data
+            return b"Z" + serializer.encode("utf-8") + data
         else:
-            return b"U" + serializer.encode() + data
+            return b"U" + serializer.encode("utf-8") + data
 
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value from storage with security checks."""
@@ -321,7 +321,7 @@ class RedisCache:
         """Decorator for retry logic."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             last_error = None
             delay = self.config.retry_delay
 
@@ -346,7 +346,10 @@ class RedisCache:
             logger.error(
                 f"Redis operation failed after {self.config.max_retries} retries: {last_error}"
             )
-            raise last_error
+            if last_error:
+                raise last_error
+            else:
+                raise RedisConnectionError("Operation failed with unknown error")
 
         return wrapper
 
@@ -355,7 +358,7 @@ class RedisCache:
 
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(self, *args, **kwargs):
+            def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
                 start_time = time.time()
                 try:
                     result = func(self, *args, **kwargs)
@@ -367,7 +370,7 @@ class RedisCache:
                         logger.warning(f"Slow {operation} operation: {duration:.3f}s")
 
             @wraps(func)
-            async def async_wrapper(self, *args, **kwargs):
+            async def async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
                 start_time = time.time()
                 try:
                     result = await func(self, *args, **kwargs)
@@ -382,7 +385,7 @@ class RedisCache:
 
         return decorator
 
-    def _start_health_monitoring(self):
+    def _start_health_monitoring(self) -> None:
         """Start health monitoring task."""
         if self._health_check_task is None:
             self._health_check_task = threading.Thread(
@@ -390,7 +393,7 @@ class RedisCache:
             )
             self._health_check_task.start()
 
-    def _health_monitor_worker(self):
+    def _health_monitor_worker(self) -> None:
         """Health monitoring worker thread."""
         while True:
             try:
@@ -400,7 +403,7 @@ class RedisCache:
                 logger.error(f"Health monitoring error: {e}")
                 time.sleep(self.config.health_check_interval)
 
-    def _perform_health_check(self):
+    def _perform_health_check(self) -> None:
         """Perform health check on connections."""
         time.time()
 
@@ -412,7 +415,7 @@ class RedisCache:
             # Update health status
             self._connection_health["is_healthy"] = True
             self._connection_health["consecutive_failures"] = 0
-            self._connection_health["last_check"] = datetime.now().isoformat()
+            self._connection_health["last_check"] = datetime.now().isoformat()  # type: ignore[assignment]
             self._connection_health["total_checks"] += 1
 
             # Update pool stats
@@ -427,7 +430,7 @@ class RedisCache:
 
             logger.warning(f"Health check failed: {e}")
 
-    def _update_pool_stats(self):
+    def _update_pool_stats(self) -> None:
         """Update connection pool statistics."""
         try:
             if self._sync_pool:
@@ -561,7 +564,7 @@ class RedisCache:
         try:
 
             @self._with_retry
-            def _get():
+            def _get() -> Any:
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     return r.get(full_key)
 
@@ -597,7 +600,7 @@ class RedisCache:
         try:
 
             @self._with_retry
-            def _set():
+            def _set() -> Any:
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     return r.setex(full_key, ttl, self._serialize(value))
 
@@ -623,7 +626,7 @@ class RedisCache:
         try:
 
             @self._with_retry
-            def _delete():
+            def _delete() -> Any:
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     return r.delete(full_key)
 
@@ -653,7 +656,7 @@ class RedisCache:
             try:
 
                 @self._with_retry
-                def _mget():
+                def _mget() -> Any:
                     with redis.Redis(connection_pool=self.sync_pool) as r:
                         full_keys = [self._build_key(k) for k in l2_keys]
                         return r.mget(full_keys)
@@ -685,7 +688,7 @@ class RedisCache:
         try:
 
             @self._with_retry
-            def _mset():
+            def _mset() -> Any:
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     pipe = r.pipeline()
                     for key, value in mapping.items():

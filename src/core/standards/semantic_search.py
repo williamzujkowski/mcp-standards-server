@@ -88,7 +88,7 @@ class SearchAnalytics:
 class QueryPreprocessor:
     """Handles query preprocessing including synonyms, stemming, and expansion."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.stemmer = PorterStemmer()
         self.stopwords = set(nltk.corpus.stopwords.words("english"))
 
@@ -112,7 +112,7 @@ class QueryPreprocessor:
         }
 
         # Build reverse synonym mapping
-        self.reverse_synonyms = {}
+        self.reverse_synonyms: dict[str, list[str]] = {}
         for key, values in self.synonyms.items():
             for value in values:
                 if value not in self.reverse_synonyms:
@@ -149,7 +149,7 @@ class QueryPreprocessor:
 
     def _extract_boolean_operators(self, query: str) -> dict[str, list[str]]:
         """Extract AND, OR, NOT operators from query."""
-        operators = {"AND": [], "OR": [], "NOT": []}
+        operators: dict[str, list[Any]] = {"AND": [], "OR": [], "NOT": []}
 
         # Match patterns like "term1 AND term2"
         and_pattern = r"(\w+)\s+AND\s+(\w+)"
@@ -205,7 +205,7 @@ class EmbeddingCache:
         self.cache_dir.mkdir(exist_ok=True)
 
         # In-memory cache with TTL
-        self.memory_cache = {}
+        self.memory_cache: dict[str, tuple[Any, datetime]] = {}
         self.cache_ttl = timedelta(hours=24)
 
         # Redis cache for distributed systems (optional)
@@ -221,10 +221,11 @@ class EmbeddingCache:
     def _serialize_embedding(self, embedding: np.ndarray) -> bytes:
         """Serialize numpy array to bytes safely."""
         # Convert to base64-encoded string for safe storage
-        return (
+        serialized_str = (
             base64.b64encode(embedding.tobytes()).decode("ascii")
             + f'|{embedding.dtype}|{"x".join(map(str, embedding.shape))}'
         )
+        return serialized_str.encode("utf-8")
 
     def _deserialize_embedding(self, data: str | bytes) -> np.ndarray:
         """Deserialize bytes to numpy array safely."""
@@ -345,7 +346,7 @@ class EmbeddingCache:
 
         return None
 
-    def _cache_embedding(self, cache_key: str, embedding: np.ndarray):
+    def _cache_embedding(self, cache_key: str, embedding: np.ndarray) -> None:
         """Cache embedding in multiple layers."""
         # Memory cache
         self.memory_cache[cache_key] = (datetime.now(), embedding)
@@ -368,7 +369,7 @@ class EmbeddingCache:
         except Exception:
             pass
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear all caches."""
         self.memory_cache.clear()
 
@@ -393,14 +394,14 @@ class FuzzyMatcher:
 
     def __init__(self, threshold: int = 80):
         self.threshold = threshold
-        self.known_terms = set()
+        self.known_terms: set[str] = set()
 
-    def add_known_terms(self, terms: list[str]):
+    def add_known_terms(self, terms: list[str]) -> None:
         """Add terms to the known terms set."""
         self.known_terms.update(terms)
 
     def find_matches(
-        self, query: str, candidates: list[str] = None
+        self, query: str, candidates: list[str] | None = None
     ) -> list[tuple[str, int]]:
         """Find fuzzy matches for a query."""
         if candidates is None:
@@ -448,20 +449,20 @@ class SemanticSearch:
         self.analytics = SearchAnalytics() if enable_analytics else None
 
         # Document store (in production, this would be a vector database)
-        self.documents = {}
-        self.document_embeddings = {}
-        self.document_metadata = {}
+        self.documents: dict[str, str] = {}
+        self.document_embeddings: dict[str, np.ndarray] = {}
+        self.document_metadata: dict[str, dict[str, Any]] = {}
 
         # Query result cache
-        self.result_cache = {}
+        self.result_cache: dict[str, tuple[datetime, list[SearchResult]]] = {}
         self.result_cache_ttl = timedelta(minutes=30)
 
         # Thread pool for parallel processing
         self.executor = ThreadPoolExecutor(max_workers=4)
 
     def index_document(
-        self, doc_id: str, content: str, metadata: dict[str, Any] = None
-    ):
+        self, doc_id: str, content: str, metadata: dict[str, Any] | None = None
+    ) -> None:
         """Index a document for searching."""
         # Store document
         self.documents[doc_id] = content

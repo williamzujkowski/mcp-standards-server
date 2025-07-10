@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class CachedSemanticSearch:
     """Semantic search with caching integration."""
 
-    def __init__(self, semantic_search, cache: RedisCache | None = None):
+    def __init__(self, semantic_search: Any, cache: RedisCache | None = None) -> None:
         self.semantic_search = semantic_search
         self.cache = cache or get_cache()
 
@@ -31,13 +31,13 @@ class CachedSemanticSearch:
         threshold: float = 0.7,
         filters: dict[str, Any] | None = None,
         use_cache: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """Search standards with caching."""
         results = await self.semantic_search.search(
             query=query, k=k, threshold=threshold, filters=filters, **kwargs
         )
-        return results
+        return results  # type: ignore[no-any-return]
 
     @cache_result(
         prefix="search:similar",
@@ -50,10 +50,10 @@ class CachedSemanticSearch:
         results = await self.semantic_search.find_similar(
             standard_id=standard_id, k=k, threshold=threshold
         )
-        return results
+        return results  # type: ignore[no-any-return]
 
     @invalidate_cache(prefix="search")
-    async def reindex(self):
+    async def reindex(self) -> None:
         """Reindex and invalidate search cache."""
         await self.semantic_search.reindex()
 
@@ -61,7 +61,7 @@ class CachedSemanticSearch:
 class CachedStandardsEngine:
     """Standards engine with caching integration."""
 
-    def __init__(self, engine, cache: RedisCache | None = None):
+    def __init__(self, engine: Any, cache: RedisCache | None = None) -> None:
         self.engine = engine
         self.cache = cache or get_cache()
 

@@ -42,7 +42,7 @@ class RetryConfig:
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL
     retry_on: tuple | None = None  # Exception types to retry on
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Set default retry exceptions if not provided."""
         if self.retry_on is None:
             self.retry_on = (
@@ -118,7 +118,7 @@ class RetryManager:
                 )
 
                 # Call the function
-                result = await func(*args, **kwargs)
+                result = await func(*args, **kwargs)  # type: ignore[misc]
 
                 # Success - record and return
                 if attempt > 0:
@@ -130,9 +130,9 @@ class RetryManager:
                         labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
-                return result
+                return result  # type: ignore[no-any-return]
 
-            except self.config.retry_on as e:
+            except self.config.retry_on as e:  # type: ignore[misc]
                 last_exception = e
 
                 if attempt >= self.config.max_retries:
@@ -167,6 +167,8 @@ class RetryManager:
         # Should not reach here, but just in case
         if last_exception:
             raise last_exception
+        else:
+            raise RuntimeError(f"Operation '{operation_name}' failed without exception")
 
     def retry_sync(
         self, func: Callable[..., T], *args, operation_name: str = "operation", **kwargs
@@ -209,9 +211,9 @@ class RetryManager:
                         labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
-                return result
+                return result  # type: ignore[no-any-return]
 
-            except self.config.retry_on as e:
+            except self.config.retry_on as e:  # type: ignore[misc]
                 last_exception = e
 
                 if attempt >= self.config.max_retries:
@@ -246,6 +248,8 @@ class RetryManager:
         # Should not reach here, but just in case
         if last_exception:
             raise last_exception
+        else:
+            raise RuntimeError(f"Operation '{operation_name}' failed without exception")
 
 
 def with_retry(
@@ -264,7 +268,7 @@ def with_retry(
         operation_name: Name for logging (defaults to function name)
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         config = RetryConfig(
             max_retries=max_retries, initial_delay=initial_delay, strategy=strategy
         )
@@ -272,7 +276,7 @@ def with_retry(
 
         if asyncio.iscoroutinefunction(func):
 
-            async def wrapper(*args, **kwargs):
+            async def wrapper(*args: Any, **kwargs: Any) -> Any:
                 name = operation_name or func.__name__
                 return await retry_manager.retry_async(
                     func, *args, operation_name=name, **kwargs
@@ -280,7 +284,7 @@ def with_retry(
 
         else:
 
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
                 name = operation_name or func.__name__
                 return retry_manager.retry_sync(
                     func, *args, operation_name=name, **kwargs

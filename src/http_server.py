@@ -31,11 +31,11 @@ class HTTPServer:
         self.setup_routes()
         self.setup_middleware()
 
-    def setup_middleware(self):
+    def setup_middleware(self) -> None:
         """Setup middleware for error handling, logging, and CORS."""
 
         @web.middleware
-        async def cors_middleware(request: Request, handler):
+        async def cors_middleware(request: Request, handler: Any) -> Any:
             """Add CORS headers."""
             response = await handler(request)
             response.headers["Access-Control-Allow-Origin"] = "*"
@@ -51,7 +51,7 @@ class HTTPServer:
         # Add CORS middleware
         self.app.middlewares.append(cors_middleware)
 
-    def setup_routes(self):
+    def setup_routes(self) -> None:
         """Setup HTTP routes."""
         # Health check endpoints
         self.app.router.add_get("/health", self.health_check)
@@ -298,7 +298,7 @@ class HTTPServer:
         """Handle OPTIONS requests for CORS."""
         return web.Response(status=200)
 
-    async def start(self):
+    async def start(self) -> web.AppRunner:
         """Start the HTTP server."""
         runner = web.AppRunner(self.app)
         await runner.setup()
@@ -309,13 +309,13 @@ class HTTPServer:
         logger.info(f"HTTP server started on http://{self.host}:{self.port}")
         return runner
 
-    async def stop(self, runner):
+    async def stop(self, runner: web.AppRunner) -> None:
         """Stop the HTTP server."""
         await runner.cleanup()
         logger.info("HTTP server stopped")
 
 
-async def start_http_server(host: str = None, port: int = None) -> web.AppRunner:
+async def start_http_server(host: str | None = None, port: int | None = None) -> web.AppRunner:
     """Start the HTTP server with environment variable support."""
     host = host or os.environ.get("HTTP_HOST", "127.0.0.1")
     port = port or int(os.environ.get("HTTP_PORT", "8080"))

@@ -25,10 +25,10 @@ class CombinedServer:
 
     def __init__(self, mcp_config: dict | None = None):
         self.mcp_config = mcp_config or {}
-        self.mcp_server = None
-        self.http_runner = None
+        self.mcp_server: MCPStandardsServer | None = None
+        self.http_runner: Any | None = None
         self.running = False
-        self.start_time = None
+        self.start_time: float | None = None
 
         # Initialize logging
         init_logging()
@@ -36,10 +36,10 @@ class CombinedServer:
         # Setup signal handlers
         self.setup_signal_handlers()
 
-    def setup_signal_handlers(self):
+    def setup_signal_handlers(self) -> None:
         """Setup graceful shutdown signal handlers."""
 
-        def signal_handler(signum, frame):
+        def signal_handler(signum: int, frame: Any) -> None:
             logger.info(f"Received signal {signum}, starting graceful shutdown...")
             self.running = False
 
@@ -48,7 +48,7 @@ class CombinedServer:
 
     @with_error_handling(error_code=ErrorCode.SYSTEM_INTERNAL_ERROR)
     @with_logging(level=logging.INFO)
-    async def start_http_server(self):
+    async def start_http_server(self) -> None:
         """Start the HTTP server for health checks and monitoring."""
         http_host = os.environ.get("HTTP_HOST", "127.0.0.1")
         http_port = int(os.environ.get("HTTP_PORT", "8080"))
@@ -58,20 +58,21 @@ class CombinedServer:
 
     @with_error_handling(error_code=ErrorCode.SYSTEM_INTERNAL_ERROR)
     @with_logging(level=logging.INFO)
-    async def start_mcp_server(self):
+    async def start_mcp_server(self) -> None:
         """Start the MCP server."""
         try:
             self.mcp_server = MCPStandardsServer(self.mcp_config)
             logger.info("MCP server initialized")
 
             # Run MCP server in background
-            await self.mcp_server.run()
+            if self.mcp_server:
+                await self.mcp_server.run()
 
         except Exception as e:
             logger.error(f"Failed to start MCP server: {e}")
             raise
 
-    async def run(self):
+    async def run(self) -> None:
         """Run both servers with proper coordination."""
         self.running = True
 
@@ -98,7 +99,7 @@ class CombinedServer:
         finally:
             await self.shutdown()
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Gracefully shutdown both servers."""
         logger.info("Starting graceful shutdown...")
 
@@ -114,7 +115,7 @@ class CombinedServer:
         logger.info("Shutdown complete")
 
 
-async def main():
+async def main() -> None:
     """Main entry point."""
     # Setup logging
     log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
