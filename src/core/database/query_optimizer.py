@@ -230,9 +230,7 @@ class QueryCache:
         """Invalidate cache entries matching pattern."""
         try:
             # Invalidate Redis cache
-            self.redis_cache.delete_pattern(
-                f"{self.config.cache_key_prefix}:{pattern}"
-            )
+            self.redis_cache.delete_pattern(f"{self.config.cache_key_prefix}:{pattern}")
 
             # Clear local cache
             with self.local_cache_lock:

@@ -193,14 +193,14 @@ class MetricCollector:
                 name=str(metric_kwargs["name"]),
                 documentation=str(metric_kwargs["documentation"]),
                 labelnames=cast(list[str], metric_kwargs["labelnames"]),
-                registry=cast(CollectorRegistry, metric_kwargs["registry"])
+                registry=cast(CollectorRegistry, metric_kwargs["registry"]),
             )
         elif definition.type == MetricType.GAUGE:
             metric = Gauge(
                 name=str(metric_kwargs["name"]),
                 documentation=str(metric_kwargs["documentation"]),
                 labelnames=cast(list[str], metric_kwargs["labelnames"]),
-                registry=cast(CollectorRegistry, metric_kwargs["registry"])
+                registry=cast(CollectorRegistry, metric_kwargs["registry"]),
             )
         elif definition.type == MetricType.HISTOGRAM:
             if definition.buckets:
@@ -210,7 +210,9 @@ class MetricCollector:
                 documentation=str(metric_kwargs["documentation"]),
                 labelnames=cast(list[str], metric_kwargs["labelnames"]),
                 registry=cast(CollectorRegistry, metric_kwargs["registry"]),
-                buckets=cast(list[float], metric_kwargs.get("buckets", Histogram.DEFAULT_BUCKETS))
+                buckets=cast(
+                    list[float], metric_kwargs.get("buckets", Histogram.DEFAULT_BUCKETS)
+                ),
             )
         elif definition.type == MetricType.SUMMARY:
             if definition.quantiles:
@@ -219,7 +221,7 @@ class MetricCollector:
                 name=str(metric_kwargs["name"]),
                 documentation=str(metric_kwargs["documentation"]),
                 labelnames=cast(list[str], metric_kwargs["labelnames"]),
-                registry=cast(CollectorRegistry, metric_kwargs["registry"])
+                registry=cast(CollectorRegistry, metric_kwargs["registry"]),
             )
         else:
             return
@@ -848,7 +850,12 @@ class TimingContext:
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
         if self.start_time:
             duration = time.time() - self.start_time
             self.monitor.record_metric(self.metric_name, duration, self.labels)
@@ -961,7 +968,9 @@ def record_metric(
     monitor.record_metric(name, value, labels)
 
 
-def time_operation(metric_name: str, labels: dict[str, str] | None = None) -> TimingContext:
+def time_operation(
+    metric_name: str, labels: dict[str, str] | None = None
+) -> TimingContext:
     """Time an operation using global monitor."""
     monitor = get_performance_monitor()
     return monitor.time_operation(metric_name, labels)

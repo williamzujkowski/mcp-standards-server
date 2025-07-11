@@ -462,7 +462,9 @@ class TestSemanticSearchCrossComponent:
                     results = await engine.search_async(f"standard {i}", top_k=5)
                     assert len(results) >= 0
                 else:
-                    raise TypeError("Expected AsyncSemanticSearch instance for async test")
+                    raise TypeError(
+                        "Expected AsyncSemanticSearch instance for async test"
+                    )
 
         async def mcp_component():
             """Simulate MCP server queries."""
@@ -471,7 +473,9 @@ class TestSemanticSearchCrossComponent:
                     results = await engine.search_async(f"api {i}", top_k=5)
                     assert len(results) >= 0
                 else:
-                    raise TypeError("Expected AsyncSemanticSearch instance for async test")
+                    raise TypeError(
+                        "Expected AsyncSemanticSearch instance for async test"
+                    )
 
         async def analytics_component():
             """Simulate analytics queries."""
@@ -480,7 +484,9 @@ class TestSemanticSearchCrossComponent:
                     results = await engine.search_async(f"security {i}", top_k=5)
                     assert len(results) >= 0
                 else:
-                    raise TypeError("Expected AsyncSemanticSearch instance for async test")
+                    raise TypeError(
+                        "Expected AsyncSemanticSearch instance for async test"
+                    )
 
         # Run all components concurrently
         await asyncio.gather(
@@ -561,7 +567,9 @@ class TestSemanticSearchErrorRecovery:
         if isinstance(engine, SemanticSearch):
             results = engine.search("Content")
             assert len(results) > 0
-            assert all("doc-5" not in r.id for r in results)  # Failed doc not in results
+            assert all(
+                "doc-5" not in r.id for r in results
+            )  # Failed doc not in results
             engine.close()
         else:
             raise TypeError("Expected SemanticSearch instance for sync test")
@@ -649,7 +657,9 @@ class TestSemanticSearchPerformanceIntegration:
                     times.append(elapsed)
 
                 avg_time = sum(times) / len(times)
-                print(f"{pattern_name}: {avg_time*1000:.2f}ms avg, {len(results)} results")
+                print(
+                    f"{pattern_name}: {avg_time*1000:.2f}ms avg, {len(results)} results"
+                )
             else:
                 raise TypeError("Expected SemanticSearch instance for sync test")
 

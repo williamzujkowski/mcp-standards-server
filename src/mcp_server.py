@@ -640,7 +640,16 @@ class MCPStandardsServer:
                 except PydanticValidationError as e:
                     # Convert Pydantic validation errors to our format
                     errors = e.errors()
-                    first_error = errors[0] if errors else {"type": "", "loc": (), "msg": "Validation error", "input": None}
+                    first_error = (
+                        errors[0]
+                        if errors
+                        else {
+                            "type": "",
+                            "loc": (),
+                            "msg": "Validation error",
+                            "input": None,
+                        }
+                    )
                     field = ".".join(str(loc) for loc in first_error.get("loc", []))
                     raise ValidationError(
                         message=first_error.get("msg", "Validation error"),
@@ -1425,7 +1434,9 @@ class MCPStandardsServer:
         filtered_response, _ = self.privacy_filter.filter_dict(response)
         return filtered_response
 
-    async def _cross_reference_standards(self, standard_id: str) -> list[dict[str, Any]]:
+    async def _cross_reference_standards(
+        self, standard_id: str
+    ) -> list[dict[str, Any]]:
         """Get cross-references for a standard."""
         return self.cross_referencer.get_references_for_standard(standard_id)
 

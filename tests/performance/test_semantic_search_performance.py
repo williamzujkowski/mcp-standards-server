@@ -331,7 +331,9 @@ class TestSemanticSearchThroughput:
                     if isinstance(engine, SemanticSearch):
                         engine.search(query, top_k=5)
                     else:
-                        raise TypeError("Expected SemanticSearch instance for sync test")
+                        raise TypeError(
+                            "Expected SemanticSearch instance for sync test"
+                        )
                     elapsed = time.perf_counter() - start
                     times.append(elapsed)
                 return times
@@ -755,7 +757,9 @@ class TestSemanticSearchStressTest:
                     if isinstance(engine, SemanticSearch):
                         engine.search(query, top_k=10)
                     else:
-                        raise TypeError("Expected SemanticSearch instance for sync test")
+                        raise TypeError(
+                            "Expected SemanticSearch instance for sync test"
+                        )
                     op_elapsed = time.perf_counter() - op_start
 
                     metrics.record_operation(op_elapsed)
@@ -819,7 +823,8 @@ class TestSemanticSearchStressTest:
             with ThreadPoolExecutor(max_workers=burst_size) as executor:
                 if isinstance(engine, SemanticSearch):
                     futures = [
-                        executor.submit(engine.search, query, top_k=5) for query in queries
+                        executor.submit(engine.search, query, top_k=5)
+                        for query in queries
                     ]
                 else:
                     raise TypeError("Expected SemanticSearch instance for sync test")

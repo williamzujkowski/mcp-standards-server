@@ -273,7 +273,7 @@ class MockStandardsRepository:
             name = std.get("name", "")
             content = std.get("content", "")
             tags = std.get("tags", [])
-            
+
             if (
                 (isinstance(name, str) and query_lower in name.lower())
                 or any(query_lower in tag for tag in tags)

@@ -257,8 +257,12 @@ def cache_result(
         # Add cache control methods
         wrapper = async_wrapper if is_async else sync_wrapper
         # Use setattr to avoid mypy union-attr errors
-        setattr(wrapper, 'cache_key_config', key_config)
-        setattr(wrapper, 'invalidate', functools.partial(invalidate_for_function, func, key_config))
+        setattr(wrapper, "cache_key_config", key_config)  # noqa: B010
+        setattr(  # noqa: B010
+            wrapper,
+            "invalidate",
+            functools.partial(invalidate_for_function, func, key_config),
+        )
 
         return wrapper
 
@@ -417,7 +421,12 @@ class CacheManager:
     async def __aenter__(self) -> "CacheManager":
         return self
 
-    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
         # Execute any pending batch operations
         if self.batch_sets:
             # Use individual async_set calls since async_mset doesn't exist
@@ -427,7 +436,12 @@ class CacheManager:
     def __enter__(self) -> "CacheManager":
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
         # Execute any pending batch operations
         if self.batch_sets:
             self.cache.mset(self.batch_sets)

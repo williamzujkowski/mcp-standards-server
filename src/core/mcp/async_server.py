@@ -982,7 +982,9 @@ class AsyncMCPServer:
         return {"error": f"Tool not found: {tool_name}"}
 
     @web.middleware
-    async def _cors_middleware(self, request: web.Request, handler: Any) -> web.Response:
+    async def _cors_middleware(
+        self, request: web.Request, handler: Any
+    ) -> web.Response:
         """CORS middleware."""
         response = await handler(request)
 
@@ -1075,7 +1077,9 @@ class AsyncMCPServer:
 
 # Factory function
 async def create_async_mcp_server(
-    config: ServerConfig | None = None, standards_engine: Any = None, auto_start: bool = True
+    config: ServerConfig | None = None,
+    standards_engine: Any = None,
+    auto_start: bool = True,
 ) -> AsyncMCPServer:
     """Create and optionally start an async MCP server."""
     server = AsyncMCPServer(config, standards_engine)

@@ -241,7 +241,6 @@ class BatchProcessor:
                     future.set_exception(e)
 
 
-
 class MemoryManager:
     """Manages memory usage and cleanup for the search engine."""
 
@@ -429,8 +428,14 @@ class AsyncSemanticSearch:
         loop = asyncio.get_event_loop()
 
         def load_model() -> SentenceTransformer:
-            cache_folder = str(self.config.model_cache_dir) if self.config.model_cache_dir else None
-            return SentenceTransformer(self.config.model_name, cache_folder=cache_folder)
+            cache_folder = (
+                str(self.config.model_cache_dir)
+                if self.config.model_cache_dir
+                else None
+            )
+            return SentenceTransformer(
+                self.config.model_name, cache_folder=cache_folder
+            )
 
         # Load the model asynchronously
         self.embedding_model = await loop.run_in_executor(None, load_model)
@@ -784,7 +789,9 @@ class AsyncSemanticSearch:
                 "cache_operations": self.performance_metrics["cache_operations"],
             },
             "memory": self.memory_manager.get_stats() if self.memory_manager else {},
-            "vector_cache": self.vector_cache.get_access_stats() if self.vector_cache else {},
+            "vector_cache": (
+                self.vector_cache.get_access_stats() if self.vector_cache else {}
+            ),
             "redis_cache": self.redis_cache.get_metrics() if self.redis_cache else {},
             "analytics": {
                 "query_count": self.analytics.query_count,

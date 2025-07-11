@@ -727,11 +727,15 @@ class MemoryManager:
         self.efficient_lists[name] = efficient_list
         return efficient_list
 
-    def add_alert_callback(self, callback: Callable[[str, dict[str, Any]], None]) -> None:
+    def add_alert_callback(
+        self, callback: Callable[[str, dict[str, Any]], None]
+    ) -> None:
         """Add memory alert callback."""
         self.alert_callbacks.append(callback)
 
-    def remove_alert_callback(self, callback: Callable[[str, dict[str, Any]], None]) -> None:
+    def remove_alert_callback(
+        self, callback: Callable[[str, dict[str, Any]], None]
+    ) -> None:
         """Remove memory alert callback."""
         if callback in self.alert_callbacks:
             self.alert_callbacks.remove(callback)

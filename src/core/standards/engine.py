@@ -206,13 +206,20 @@ class StandardsEngine:
                     # AsyncSemanticSearch expects optional metadata
                     # Convert documents to the expected type
                     async_documents: list[tuple[str, str, dict[str, Any] | None]] = [
-                        (doc_id, content, metadata)  # metadata is already dict[str, Any]
+                        (
+                            doc_id,
+                            content,
+                            metadata,
+                        )  # metadata is already dict[str, Any]
                         for doc_id, content, metadata in documents
                     ]
                     # Note: This is a sync context but AsyncSemanticSearch has async methods
                     # This should not happen given async_mode=False, but handle for type safety
                     import asyncio
-                    asyncio.run(self.semantic_search.index_documents_batch(async_documents))
+
+                    asyncio.run(
+                        self.semantic_search.index_documents_batch(async_documents)
+                    )
                 else:
                     # SemanticSearch expects non-optional metadata
                     self.semantic_search.index_documents_batch(documents)
@@ -321,6 +328,7 @@ class StandardsEngine:
                 # Note: This is a sync context but AsyncSemanticSearch has async methods
                 # This should not happen given async_mode=False, but handle for type safety
                 import asyncio
+
                 asyncio.run(self.semantic_search.index_documents_batch(async_documents))
             else:
                 # SemanticSearch expects non-optional metadata
@@ -357,7 +365,7 @@ class StandardsEngine:
         # Enrich results with full standard objects
         enriched_results = []
         # Ensure results is iterable (not a coroutine)
-        if hasattr(results, '__iter__'):
+        if hasattr(results, "__iter__"):
             for result in results:
                 # Handle SearchResult dataclass or dict
                 if hasattr(result, "id"):

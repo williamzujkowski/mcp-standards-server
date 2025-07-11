@@ -555,7 +555,10 @@ class MockNearestNeighbors:
         return self
 
     def kneighbors(
-        self, X: np.ndarray, n_neighbors: int | None = None, return_distance: bool = True
+        self,
+        X: np.ndarray,
+        n_neighbors: int | None = None,
+        return_distance: bool = True,
     ):
         """Find k nearest neighbors."""
         if not self.fitted:

@@ -74,7 +74,9 @@ class HealthChecker:
         self.checks[name] = check_func
         logger.info(f"Registered health check: {name}")
 
-    async def _run_check(self, name: str, check_func: Callable[[], Any]) -> HealthCheckResult:
+    async def _run_check(
+        self, name: str, check_func: Callable[[], Any]
+    ) -> HealthCheckResult:
         """Run a single health check with timing and error handling."""
         start_time = time.time()
 

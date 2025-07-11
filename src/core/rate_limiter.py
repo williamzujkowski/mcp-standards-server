@@ -32,7 +32,9 @@ class RateLimiter:
         self.redis_prefix = redis_prefix
         self.redis_client = get_redis_client()
 
-    def check_rate_limit(self, identifier: str) -> tuple[bool, dict[str, int | str] | None]:
+    def check_rate_limit(
+        self, identifier: str
+    ) -> tuple[bool, dict[str, int | str] | None]:
         """
         Check if a request is allowed under rate limit.
 

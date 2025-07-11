@@ -73,6 +73,7 @@ try:
 except ImportError:
     # Create a placeholder module if import fails
     from types import ModuleType
+
     src.core.standards.semantic_search = ModuleType("semantic_search")
 
 

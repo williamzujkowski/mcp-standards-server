@@ -267,8 +267,10 @@ def mock_ml_dependencies():
     # Patch the imports
     from types import ModuleType
     from typing import cast
-    
-    sys.modules["sentence_transformers"] = cast(ModuleType, MockSentenceTransformersModule())
+
+    sys.modules["sentence_transformers"] = cast(
+        ModuleType, MockSentenceTransformersModule()
+    )
     sys.modules["sklearn"] = cast(ModuleType, MockSklearnModule())
     sys.modules["sklearn.neighbors"] = cast(ModuleType, MockNeighborsModule())
     sys.modules["sklearn.metrics"] = cast(ModuleType, MockMetricsModule())
@@ -278,7 +280,7 @@ def mock_ml_dependencies():
     # sys.modules['nltk.stem'] = MockNLTKStemModule()
     # sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
     sys.modules["fuzzywuzzy"] = cast(ModuleType, MockFuzzyWuzzyModule())
-    
+
     # Create mock redis module
     redis_module = type(sys)("redis")
     redis_module.Redis = MockRedisClient
@@ -288,13 +290,15 @@ def mock_ml_dependencies():
     # Apply patches at module level
     import sentence_transformers
 
-    setattr(sentence_transformers, "SentenceTransformer", MockSentenceTransformer)
+    setattr(  # noqa: B010
+        sentence_transformers, "SentenceTransformer", MockSentenceTransformer
+    )
 
     # Apply Redis patch if available
     try:
         import redis
 
-        setattr(redis, "Redis", MockRedisClient)
+        setattr(redis, "Redis", MockRedisClient)  # noqa: B010
     except ImportError:
         pass
 

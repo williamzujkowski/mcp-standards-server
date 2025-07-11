@@ -963,8 +963,7 @@ class RedisCache:
             "connection_health": self._connection_health.copy(),
             "pool_stats": self._pool_stats.copy(),
             "health_check_success_rate": (
-                (total_health_checks - failed_checks)
-                / total_health_checks
+                (total_health_checks - failed_checks) / total_health_checks
                 if total_health_checks > 0
                 else 1.0
             ),
