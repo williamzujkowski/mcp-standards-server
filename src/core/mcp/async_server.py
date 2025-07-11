@@ -828,10 +828,10 @@ class AsyncMCPServer:
                     try:
                         data = json.loads(msg.data)
                         result = await self._process_request(data, connection_id)
-                        await ws.send_text(json.dumps(result))
+                        await ws.send_str(json.dumps(result))
                     except Exception as e:
                         logger.error(f"Error processing WebSocket message: {e}")
-                        await ws.send_text(
+                        await ws.send_str(
                             json.dumps({"error": "Processing error", "message": str(e)})
                         )
                 elif msg.type == WSMsgType.ERROR:
@@ -929,7 +929,7 @@ class AsyncMCPServer:
                 record_metric(
                     "mcp_request_errors",
                     1,
-                    {"method": method, "error_type": type(e).__name__},
+                    {"method": method or "unknown", "error_type": type(e).__name__},
                 )
 
                 # Handle error

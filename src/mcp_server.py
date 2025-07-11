@@ -640,7 +640,7 @@ class MCPStandardsServer:
                 except PydanticValidationError as e:
                     # Convert Pydantic validation errors to our format
                     errors = e.errors()
-                    first_error = errors[0] if errors else {}
+                    first_error = errors[0] if errors else {"type": "", "loc": (), "msg": "Validation error", "input": None}
                     field = ".".join(str(loc) for loc in first_error.get("loc", []))
                     raise ValidationError(
                         message=first_error.get("msg", "Validation error"),

@@ -204,7 +204,11 @@ class StandardsEngine:
                 # Handle both SemanticSearch and AsyncSemanticSearch
                 if isinstance(self.semantic_search, AsyncSemanticSearch):
                     # AsyncSemanticSearch expects optional metadata
-                    async_documents: list[tuple[str, str, dict[str, Any] | None]] = documents
+                    # Convert documents to the expected type
+                    async_documents: list[tuple[str, str, dict[str, Any] | None]] = [
+                        (doc_id, content, metadata)  # metadata is already dict[str, Any]
+                        for doc_id, content, metadata in documents
+                    ]
                     # Note: This is a sync context but AsyncSemanticSearch has async methods
                     # This should not happen given async_mode=False, but handle for type safety
                     import asyncio
@@ -309,7 +313,11 @@ class StandardsEngine:
             # Handle both SemanticSearch and AsyncSemanticSearch
             if isinstance(self.semantic_search, AsyncSemanticSearch):
                 # AsyncSemanticSearch expects optional metadata
-                async_documents: list[tuple[str, str, dict[str, Any] | None]] = documents
+                # Convert documents to the expected type
+                async_documents: list[tuple[str, str, dict[str, Any] | None]] = [
+                    (doc_id, content, metadata)  # metadata is already dict[str, Any]
+                    for doc_id, content, metadata in documents
+                ]
                 # Note: This is a sync context but AsyncSemanticSearch has async methods
                 # This should not happen given async_mode=False, but handle for type safety
                 import asyncio

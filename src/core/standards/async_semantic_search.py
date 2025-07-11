@@ -345,7 +345,7 @@ class AsyncSemanticSearch:
         self.analytics = SearchAnalytics()
 
         # Core components
-        self.embedding_model = None
+        self.embedding_model: SentenceTransformer | None = None
         self.batch_processor = BatchProcessor(self.config)
         self.redis_cache: RedisCache | None = None
         self.vector_cache: VectorIndexCache | None = None
@@ -432,11 +432,8 @@ class AsyncSemanticSearch:
             cache_folder = str(self.config.model_cache_dir) if self.config.model_cache_dir else None
             return SentenceTransformer(self.config.model_name, cache_folder=cache_folder)
 
-        # Type casting to satisfy mypy
-        self.embedding_model = cast(
-            SentenceTransformer,
-            await loop.run_in_executor(None, load_model)
-        )
+        # Load the model asynchronously
+        self.embedding_model = await loop.run_in_executor(None, load_model)
 
         self.initialized = True
         logger.info("AsyncSemanticSearch initialized successfully")
@@ -670,7 +667,7 @@ class AsyncSemanticSearch:
                 f"embedding:{cache_key}", embedding.tolist(), ttl=3600
             )
 
-        return cast(np.ndarray, embedding)
+        return embedding
 
     async def _get_embeddings_batch_async(self, texts: list[str]) -> list[np.ndarray]:
         """Get embeddings for multiple texts asynchronously."""

@@ -70,7 +70,7 @@ def generate_cache_key(
 
     for param_name, param_value in bound_args.arguments.items():
         # Skip excluded arguments
-        if param_name in config.exclude_args:
+        if config.exclude_args and param_name in config.exclude_args:
             continue
 
         # Skip self/cls if not included
@@ -257,8 +257,8 @@ def cache_result(
         # Add cache control methods
         wrapper = async_wrapper if is_async else sync_wrapper
         # Use setattr to avoid mypy union-attr errors
-        wrapper.cache_key_config = key_config
-        wrapper.invalidate = functools.partial(invalidate_for_function, func, key_config)
+        setattr(wrapper, 'cache_key_config', key_config)
+        setattr(wrapper, 'invalidate', functools.partial(invalidate_for_function, func, key_config))
 
         return wrapper
 

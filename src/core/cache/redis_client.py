@@ -415,7 +415,7 @@ class RedisCache:
             # Update health status
             self._connection_health["is_healthy"] = True
             self._connection_health["consecutive_failures"] = 0
-            self._connection_health["last_check"] = datetime.now().isoformat()  # type: ignore[assignment]
+            self._connection_health["last_check"] = datetime.now().isoformat()
             self._connection_health["total_checks"] = (
                 self._connection_health.get("total_checks", 0) + 1
             )
