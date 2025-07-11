@@ -30,7 +30,7 @@ services:
     environment:
       - ALLOW_RESET=TRUE
     healthcheck:
-      test: [CMD, curl, -f, "http://localhost:8000/api/v1/heartbeat"]
+      test: [CMD, curl, -f, http://localhost:8000/api/v1/heartbeat]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -64,7 +64,7 @@ services:
       chromadb:
         condition: service_healthy
     healthcheck:
-      test: [CMD, curl, -f, "http://localhost:8080/health"]
+      test: [CMD, curl, -f, http://localhost:8080/health]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -83,12 +83,12 @@ services:
       - ./monitoring/prometheus/rules:/etc/prometheus/rules
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+      - --storage.tsdb.retention.time=200h
+      - --web.enable-lifecycle
     restart: unless-stopped
     networks:
       - mcp-network
@@ -122,9 +122,9 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
     restart: unless-stopped
     networks:
       - mcp-network
