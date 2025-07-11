@@ -251,26 +251,9 @@ def mock_ml_dependencies():
         neighbors = MockNeighborsModule()
         metrics = MockMetricsModule()
 
-    # Mock NLTK components
-    class MockNLTKStemModule:
-        PorterStemmer = MockPorterStemmer
-
-    class MockNLTKTokenizeModule:
-        word_tokenize = MockNLTKComponents.word_tokenize
-        sent_tokenize = MockNLTKComponents.sent_tokenize
-
-    class MockNLTKCorpusModule:
-        stopwords = MockStopwords()
-
-    # Mock NLTK download function
+    # Mock NLTK download function - this is the main issue with timeouts
     def mock_nltk_download(*args, **kwargs):
-        return True  # Always succeed
-
-    class MockNLTKModule:
-        download = staticmethod(mock_nltk_download)
-        stem = MockNLTKStemModule()
-        tokenize = MockNLTKTokenizeModule()
-        corpus = MockNLTKCorpusModule()
+        return True  # Always succeed, don't download anything
 
     # Mock fuzzywuzzy
     class MockFuzzyWuzzyModule:
@@ -295,10 +278,6 @@ def mock_ml_dependencies():
         "sklearn.neighbors": MockNeighborsModule(),
         "sklearn.metrics": MockMetricsModule(),
         "sklearn.metrics.pairwise": MockPairwiseModule(),
-        "nltk": MockNLTKModule(),
-        "nltk.stem": MockNLTKStemModule(),
-        "nltk.tokenize": MockNLTKTokenizeModule(),
-        "nltk.corpus": MockNLTKCorpusModule(),
         "fuzzywuzzy": MockFuzzyWuzzyModule(),
         "huggingface_hub": MockHuggingFaceHub(),
     }
@@ -330,10 +309,15 @@ def mock_ml_dependencies():
     except ImportError:
         pass
 
+    # Patch NLTK download function if NLTK is available
     try:
         import nltk
+        # Store original for restoration
+        original_modules["nltk.download"] = getattr(nltk, "download", None)
+        # Replace with mock
         nltk.download = mock_nltk_download
     except ImportError:
+        # If NLTK isn't installed, create minimal mock only if needed
         pass
 
     # Mock requests to prevent any HTTP calls

@@ -1106,6 +1106,21 @@ class AsyncMCPServer:
             except Exception:
                 pass  # Session already closed or error
 
+    async def _handle_client(self, reader: Any, writer: Any) -> None:
+        """Handle a new client connection."""
+        try:
+            # Create and handle session
+            session = self._create_session(reader, writer)
+            await session.handle()
+        except Exception as e:
+            logger.error(f"Error handling client connection: {e}")
+            if writer and not writer.is_closing():
+                writer.close()
+                try:
+                    await writer.wait_closed()
+                except Exception:
+                    pass  # Ignore cleanup errors
+
     async def broadcast_message(self, message: dict[str, Any]) -> None:
         """Broadcast a message to all active sessions."""
         tasks = []

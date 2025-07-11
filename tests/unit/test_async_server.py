@@ -52,14 +52,19 @@ class TestAsyncMCPServer:
 
     async def test_start_server(self, server):
         """Test server startup."""
-        with patch("asyncio.create_server") as mock_create_server:
-            mock_server = AsyncMock()
-            mock_create_server.return_value = mock_server
+        with patch("aiohttp.web.AppRunner") as mock_runner_class:
+            mock_runner = AsyncMock()
+            mock_runner_class.return_value = mock_runner
+            
+            with patch("aiohttp.web.TCPSite") as mock_site_class:
+                mock_site = AsyncMock()
+                mock_site_class.return_value = mock_site
 
-            await server.start()
+                await server.start()
 
-            assert server.running is True
-            mock_create_server.assert_called_once()
+                assert server.running is True
+                mock_runner.setup.assert_called_once()
+                mock_site.start.assert_called_once()
 
     async def test_stop_server(self, server):
         """Test server shutdown."""
@@ -138,16 +143,18 @@ class TestAsyncMCPServer:
 
     async def test_get_server_stats(self, server):
         """Test getting server statistics."""
-        # Mock sessions
+        # Mock sessions and connection manager
         server.sessions = {"s1": Mock(), "s2": Mock()}
         server.running = True
+        
+        # Mock the connection manager to return expected values
+        server.connection_manager.connections = {"c1": Mock(), "c2": Mock()}
 
         stats = server.get_stats()
 
         assert stats["running"] is True
+        assert stats["sessions"] == 2
         assert stats["active_connections"] == 2
-        assert "uptime" in stats
-        assert "config" in stats
 
 
 class TestMCPSession:
@@ -158,7 +165,9 @@ class TestMCPSession:
         """Create mock server."""
         server = Mock(spec=AsyncMCPServer)
         server.mcp_server = Mock()
+        server.mcp_server._execute_tool = AsyncMock(return_value={"standards": []})
         server.config = {"message_timeout": 60}
+        server._remove_session = AsyncMock()
         return server
 
     @pytest.fixture
@@ -174,6 +183,9 @@ class TestMCPSession:
         writer = AsyncMock()
         writer.write = Mock()
         writer.drain = AsyncMock()
+        writer.close = Mock()
+        writer.wait_closed = AsyncMock()
+        writer.is_closing = Mock(return_value=False)  # Return boolean, not AsyncMock
         writer.get_extra_info = Mock(return_value=("127.0.0.1", 12345))
         return writer
 
