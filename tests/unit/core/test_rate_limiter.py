@@ -40,18 +40,23 @@ class TestRateLimiter:
 
     def test_allow_request_under_limit(self, rate_limiter, mock_redis):
         """Test allowing request when under limit."""
-        mock_redis.zcard.return_value = 5  # 5 requests so far
+        # Mock previous request times (5 requests in the past 30 seconds)
+        current_time = int(time.time())
+        previous_requests = [current_time - i for i in range(5, 30, 5)]  # 5 requests within window
+        mock_redis.get.return_value = previous_requests
 
         is_allowed, limit_info = rate_limiter.check_rate_limit("test_user")
 
         assert is_allowed
-        assert limit_info["remaining"] == 4  # 10 - 5 - 1
+        assert limit_info["remaining"] == 4  # 10 - 6 (5 previous + 1 current)
         assert limit_info["limit"] == 10
 
     def test_block_request_at_limit(self, rate_limiter, mock_redis):
         """Test blocking request when at limit."""
-        mock_redis.zcard.return_value = 10  # Already at limit
-        mock_redis.zrange.return_value = [(b"req1", time.time() - 30)]
+        # Mock 10 requests already in the current window
+        current_time = int(time.time())
+        previous_requests = [current_time - i for i in range(1, 11)]  # 10 recent requests
+        mock_redis.get.return_value = previous_requests
 
         is_allowed, limit_info = rate_limiter.check_rate_limit("test_user")
 
@@ -61,13 +66,21 @@ class TestRateLimiter:
 
     def test_cleanup_old_entries(self, rate_limiter, mock_redis):
         """Test that old entries are cleaned up."""
-        rate_limiter.check_rate_limit("test_user")
+        # Mock some old and new requests
+        current_time = int(time.time())
+        old_requests = [current_time - 120, current_time - 100]  # Old (outside 60s window)
+        new_requests = [current_time - 30, current_time - 10]  # Recent
+        all_requests = old_requests + new_requests
+        mock_redis.get.return_value = all_requests
 
-        # Verify cleanup was called
-        mock_redis.zremrangebyscore.assert_called_once()
-        args = mock_redis.zremrangebyscore.call_args[0]
-        assert args[0] == "mcp:ratelimit:test_user"
-        assert args[1] == 0
+        is_allowed, limit_info = rate_limiter.check_rate_limit("test_user")
+
+        # Verify set was called with cleaned data (only new requests + current)
+        assert mock_redis.set.called
+        saved_data = mock_redis.set.call_args[0][1]
+        # Should have 3 items: 2 new + 1 current
+        assert len(saved_data) == 3
+        assert all(t >= current_time - 60 for t in saved_data)
 
     def test_no_redis_allows_all(self):
         """Test that missing Redis allows all requests."""
@@ -81,7 +94,7 @@ class TestRateLimiter:
 
     def test_redis_error_allows_request(self, rate_limiter, mock_redis):
         """Test that Redis errors don't block requests."""
-        mock_redis.zcard.side_effect = Exception("Redis connection error")
+        mock_redis.get.side_effect = Exception("Redis connection error")
 
         is_allowed, limit_info = rate_limiter.check_rate_limit("test_user")
 
@@ -102,11 +115,9 @@ class TestMultiTierRateLimiter:
     def mock_redis(self):
         """Create mock Redis client."""
         mock = Mock()
-        mock.zremrangebyscore = Mock(return_value=0)
-        mock.zcard = Mock(return_value=0)
-        mock.zadd = Mock(return_value=1)
-        mock.expire = Mock(return_value=True)
-        mock.zrange = Mock(return_value=[])
+        # Set up for the actual implementation which uses get/set
+        mock.get = Mock(return_value=[])  # Empty list by default
+        mock.set = Mock(return_value=True)
         mock.delete = Mock(return_value=1)
         return mock
 
@@ -122,7 +133,7 @@ class TestMultiTierRateLimiter:
 
     def test_all_tiers_pass(self, multi_limiter, mock_redis):
         """Test when all rate limit tiers pass."""
-        mock_redis.zcard.return_value = 0  # No requests yet
+        mock_redis.get.return_value = []  # No requests yet
 
         is_allowed, limit_info = multi_limiter.check_all_limits("test_user")
 
@@ -134,14 +145,20 @@ class TestMultiTierRateLimiter:
     def test_minute_tier_blocks(self, multi_limiter, mock_redis):
         """Test when minute tier blocks request."""
 
-        # Make minute tier fail
-        def zcard_side_effect(key):
+        # Make minute tier fail by returning more than 100 requests in the current window
+        def get_side_effect(key):
             if "minute" in key:
-                return 100  # Over minute limit
-            return 0
+                current_time = int(time.time())
+                # Generate 105 requests within the 60-second window (need more than 100 to exceed limit)
+                requests = []
+                for i in range(105):
+                    # Distribute across 60 seconds but with some overlap
+                    time_offset = (i % 60)  # This will create multiple requests per second
+                    requests.append(current_time - time_offset)
+                return requests
+            return []
 
-        mock_redis.zcard.side_effect = zcard_side_effect
-        mock_redis.zrange.return_value = [(b"req1", time.time() - 30)]
+        mock_redis.get.side_effect = get_side_effect
 
         is_allowed, limit_info = multi_limiter.check_all_limits("test_user")
 
@@ -207,9 +224,9 @@ class TestAdaptiveRateLimiter:
         adaptive_limiter.update_reputation("test_user", is_good_request=True)
 
         # Should update reputation upward
-        mock_redis.setex.assert_called_once()
-        args = mock_redis.setex.call_args[0]
-        new_reputation = float(args[2])
+        mock_redis.set.assert_called()
+        args = mock_redis.set.call_args[0]
+        new_reputation = float(args[1])  # Second argument is the value
         assert new_reputation > 0.5
 
     def test_update_reputation_bad_request(self, adaptive_limiter, mock_redis):
@@ -219,9 +236,9 @@ class TestAdaptiveRateLimiter:
         adaptive_limiter.update_reputation("test_user", is_good_request=False)
 
         # Should update reputation downward
-        mock_redis.setex.assert_called_once()
-        args = mock_redis.setex.call_args[0]
-        new_reputation = float(args[2])
+        mock_redis.set.assert_called()
+        args = mock_redis.set.call_args[0]
+        new_reputation = float(args[1])  # Second argument is the value
         assert new_reputation < 0.5
 
     def test_singleton_instance(self):
