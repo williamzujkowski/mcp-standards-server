@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 @web.middleware
 async def error_handling_middleware(
-    request: web.Request, handler: Callable[[web.Request], Awaitable[web.StreamResponse]]
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.StreamResponse]],
 ) -> web.StreamResponse:
     """
     Middleware for handling errors in HTTP requests.
