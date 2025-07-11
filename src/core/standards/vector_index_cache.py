@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import faiss
 import numpy as np
@@ -130,7 +130,7 @@ class VectorIndexBuilder:
 
     def __init__(self, config: VectorIndexConfig) -> None:
         self.config = config
-        self.pca_model: Optional[PCA] = None
+        self.pca_model: PCA | None = None
         self.executor = ThreadPoolExecutor(max_workers=config.max_workers)
 
     def build_index(

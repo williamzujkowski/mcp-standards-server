@@ -20,7 +20,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Type, cast
+from typing import Any, cast
 
 import numpy as np
 import psutil
@@ -719,7 +719,7 @@ class PerformanceMonitor:
 
     def time_operation(
         self, metric_name: str, labels: dict[str, str] | None = None
-    ) -> TimingContext:
+    ) -> "TimingContext":
         """Context manager for timing operations."""
         return TimingContext(self, metric_name, labels)
 
@@ -848,7 +848,7 @@ class TimingContext:
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type: Type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         if self.start_time:
             duration = time.time() - self.start_time
             self.monitor.record_metric(self.metric_name, duration, self.labels)

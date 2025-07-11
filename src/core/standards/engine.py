@@ -4,10 +4,10 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from .async_semantic_search import AsyncSemanticSearch
-from .models import Priority, Requirement, Standard, StandardMetadata
+from .models import Requirement, Standard, StandardMetadata
 from .rule_engine import RuleEngine
 from .semantic_search import SemanticSearch, create_search_engine
 from .sync import StandardsSynchronizer
@@ -181,7 +181,7 @@ class StandardsEngine:
 
             # Index in semantic search if available
             if self.semantic_search:
-                documents = []
+                documents: list[tuple[str, str, dict[str, Any]]] = []
                 for standard in self._standards_cache.values():
                     # Format: (id, content, metadata)
                     documents.append(
@@ -201,8 +201,17 @@ class StandardsEngine:
                     )
 
                 # Synchronous indexing with proper type casting
-                typed_documents = cast(list[tuple[str, str, dict[str, Any]]], documents)
-                self.semantic_search.index_documents_batch(typed_documents)
+                # Handle both SemanticSearch and AsyncSemanticSearch
+                if isinstance(self.semantic_search, AsyncSemanticSearch):
+                    # AsyncSemanticSearch expects optional metadata
+                    async_documents: list[tuple[str, str, dict[str, Any] | None]] = documents
+                    # Note: This is a sync context but AsyncSemanticSearch has async methods
+                    # This should not happen given async_mode=False, but handle for type safety
+                    import asyncio
+                    asyncio.run(self.semantic_search.index_documents_batch(async_documents))
+                else:
+                    # SemanticSearch expects non-optional metadata
+                    self.semantic_search.index_documents_batch(documents)
 
         except Exception as e:
             logger.error(f"Error loading standards: {e}")
@@ -281,7 +290,7 @@ class StandardsEngine:
         # Re-index in semantic search
         if self.semantic_search:
             # Format: (id, content, metadata)
-            documents = [
+            documents: list[tuple[str, str, dict[str, Any]]] = [
                 (
                     standard.id,
                     f"{standard.title}\n{standard.description}",
@@ -297,8 +306,17 @@ class StandardsEngine:
                 )
             ]
             # Synchronous indexing with proper type casting
-            typed_documents = cast(list[tuple[str, str, dict[str, Any]]], documents)
-            self.semantic_search.index_documents_batch(typed_documents)
+            # Handle both SemanticSearch and AsyncSemanticSearch
+            if isinstance(self.semantic_search, AsyncSemanticSearch):
+                # AsyncSemanticSearch expects optional metadata
+                async_documents: list[tuple[str, str, dict[str, Any] | None]] = documents
+                # Note: This is a sync context but AsyncSemanticSearch has async methods
+                # This should not happen given async_mode=False, but handle for type safety
+                import asyncio
+                asyncio.run(self.semantic_search.index_documents_batch(async_documents))
+            else:
+                # SemanticSearch expects non-optional metadata
+                self.semantic_search.index_documents_batch(documents)
 
         return standard
 
@@ -346,7 +364,7 @@ class StandardsEngine:
                     metadata = result.get("metadata", {})
                 else:
                     continue
-                    
+
                 standard = self._standards_cache.get(result_id)
                 if standard:
                     enriched_results.append(

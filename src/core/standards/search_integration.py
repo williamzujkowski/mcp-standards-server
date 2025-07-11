@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from .rule_engine import RuleEngine
-from .semantic_search import AsyncSemanticSearch, SemanticSearch, create_search_engine
+from .semantic_search import SemanticSearch, create_search_engine
 
 logger = logging.getLogger(__name__)
 

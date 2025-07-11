@@ -19,11 +19,11 @@ import time
 import tracemalloc
 import weakref
 from collections import defaultdict, deque
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Generator
+from typing import Any
 
 import psutil
 from pympler import muppy, summary, tracker

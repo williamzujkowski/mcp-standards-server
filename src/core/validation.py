@@ -5,7 +5,7 @@ Provides comprehensive validation for tool inputs using JSON Schema and Pydantic
 """
 
 import re
-from typing import Any, Type, cast
+from typing import Any, cast
 
 import jsonschema
 from jsonschema import Draft7Validator

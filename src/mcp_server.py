@@ -1435,7 +1435,7 @@ class MCPStandardsServer:
         usage_metrics = self.analytics.get_usage_metrics()
         popularity_metrics = self.analytics.get_popularity_metrics()
         quality_recommendations = self.analytics.get_quality_recommendations()
-        
+
         return {
             "usage_metrics": usage_metrics,
             "popularity_metrics": popularity_metrics,

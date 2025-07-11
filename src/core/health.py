@@ -8,10 +8,11 @@ system metrics, and service status information.
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 import aiohttp
 import psutil
@@ -51,7 +52,7 @@ class HealthChecker:
     """Comprehensive health checker for the MCP Standards Server."""
 
     def __init__(self) -> None:
-        self.checks: dict[str, callable] = {}
+        self.checks: dict[str, Callable[[], Any]] = {}
         self.cache: dict[str, HealthCheckResult] = {}
         self.cache_ttl = 30  # seconds
         self.startup_time = datetime.now()
@@ -68,7 +69,7 @@ class HealthChecker:
         self.register_check("chromadb_connection", self._check_chromadb_connection)
         self.register_check("standards_loaded", self._check_standards_loaded)
 
-    def register_check(self, name: str, check_func: callable) -> None:
+    def register_check(self, name: str, check_func: Callable[[], Any]) -> None:
         """Register a new health check."""
         self.checks[name] = check_func
         logger.info(f"Registered health check: {name}")

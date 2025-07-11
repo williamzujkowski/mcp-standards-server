@@ -18,11 +18,10 @@ import weakref
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import aiohttp
 import numpy as np
-from cachetools import TTLCache
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -242,138 +241,6 @@ class BatchProcessor:
                     future.set_exception(e)
 
 
-class VectorIndexCache:
-    """Manages vector index caching with warming strategies."""
-
-    def __init__(self, config: AsyncSearchConfig, redis_cache: RedisCache) -> None:
-        self.config = config
-        self.redis_cache = redis_cache
-        self.local_cache: TTLCache[str, Any] = TTLCache(
-            maxsize=config.vector_cache_size, ttl=config.vector_cache_ttl
-        )
-        self.warming_queue: asyncio.Queue[Any] = asyncio.Queue()
-        self.warming_task: asyncio.Task[None] | None = None
-        self.index_stats = {"cache_hits": 0, "cache_misses": 0, "warming_operations": 0}
-
-    async def start_warming(self) -> None:
-        """Start cache warming task."""
-        if self.config.enable_cache_warming:
-            self.warming_task = asyncio.create_task(self._warming_worker())
-
-    async def stop_warming(self) -> None:
-        """Stop cache warming task."""
-        if self.warming_task:
-            self.warming_task.cancel()
-            try:
-                await self.warming_task
-            except asyncio.CancelledError:
-                pass
-
-    async def get_vector_index(self, index_id: str) -> dict[str, Any] | None:
-        """Get vector index from cache."""
-        # Check local cache first
-        if index_id in self.local_cache:
-            self.index_stats["cache_hits"] += 1
-            return cast(dict[str, Any], self.local_cache[index_id])
-
-        # Check Redis cache
-        cached = None
-        if self.redis_cache is not None:
-            cached = await self.redis_cache.async_get(f"vector_index:{index_id}")
-        if cached:
-            self.index_stats["cache_hits"] += 1
-            self.local_cache[index_id] = cached
-            return cast(dict[str, Any], cached)
-
-        self.index_stats["cache_misses"] += 1
-        return None
-
-    async def set_vector_index(self, index_id: str, index_data: dict[str, Any]) -> None:
-        """Set vector index in cache."""
-        # Store in local cache
-        self.local_cache[index_id] = index_data
-
-        # Store in Redis cache
-        if self.redis_cache is not None:
-            await self.redis_cache.async_set(
-                f"vector_index:{index_id}", index_data, ttl=self.config.vector_cache_ttl
-            )
-
-    async def warm_cache(self, index_ids: list[str]) -> None:
-        """Warm cache with specific index IDs."""
-        for index_id in index_ids:
-            await self.warming_queue.put(index_id)
-
-    async def _warming_worker(self) -> None:
-        """Worker task for cache warming."""
-        while True:
-            try:
-                # Process warming requests
-                index_ids = []
-
-                # Collect batch of warming requests
-                try:
-                    index_id = await asyncio.wait_for(
-                        self.warming_queue.get(), timeout=1.0
-                    )
-                    index_ids.append(index_id)
-
-                    # Collect additional items
-                    while len(index_ids) < self.config.warming_batch_size:
-                        try:
-                            index_id = await asyncio.wait_for(
-                                self.warming_queue.get(), timeout=0.01
-                            )
-                            index_ids.append(index_id)
-                        except asyncio.TimeoutError:
-                            break
-
-                except asyncio.TimeoutError:
-                    continue
-
-                # Process warming batch
-                if index_ids:
-                    await self._warm_batch(index_ids)
-
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in cache warming: {e}")
-                await asyncio.sleep(1.0)
-
-    async def _warm_batch(self, index_ids: list[str]) -> None:
-        """Warm a batch of vector indices."""
-        # Simulate vector index loading/generation
-        # In a real implementation, this would load from storage or generate indices
-        for index_id in index_ids:
-            if index_id not in self.local_cache:
-                # Generate mock index data
-                index_data = {
-                    "id": index_id,
-                    "vectors": np.random.rand(100, 384).astype(np.float32).tolist(),
-                    "metadata": {"created_at": datetime.now().isoformat()},
-                    "size": 100,
-                }
-
-                await self.set_vector_index(index_id, index_data)
-                self.index_stats["warming_operations"] += 1
-
-    def get_stats(self) -> dict[str, Any]:
-        """Get caching statistics."""
-        total_requests = (
-            self.index_stats["cache_hits"] + self.index_stats["cache_misses"]
-        )
-        hit_rate = (
-            self.index_stats["cache_hits"] / total_requests if total_requests > 0 else 0
-        )
-
-        return {
-            **self.index_stats,
-            "hit_rate": hit_rate,
-            "local_cache_size": len(self.local_cache),
-            "warming_queue_size": self.warming_queue.qsize(),
-        }
-
 
 class MemoryManager:
     """Manages memory usage and cleanup for the search engine."""
@@ -480,8 +347,8 @@ class AsyncSemanticSearch:
         # Core components
         self.embedding_model = None
         self.batch_processor = BatchProcessor(self.config)
-        self.redis_cache: Optional[RedisCache] = None
-        self.vector_cache: Optional[VectorIndexCache] = None
+        self.redis_cache: RedisCache | None = None
+        self.vector_cache: VectorIndexCache | None = None
         self.memory_manager = MemoryManager(self.config)
 
         # Document storage
@@ -522,7 +389,7 @@ class AsyncSemanticSearch:
 
         # Initialize vector index cache with proper config
         from .vector_index_cache import VectorIndexConfig
-        
+
         vector_config = VectorIndexConfig(
             memory_cache_size=self.config.vector_cache_size,
             memory_cache_ttl=self.config.vector_cache_ttl,
@@ -560,11 +427,11 @@ class AsyncSemanticSearch:
 
         # Initialize embedding model (in thread pool to avoid blocking)
         loop = asyncio.get_event_loop()
-        
+
         def load_model() -> SentenceTransformer:
             cache_folder = str(self.config.model_cache_dir) if self.config.model_cache_dir else None
             return SentenceTransformer(self.config.model_name, cache_folder=cache_folder)
-        
+
         # Type casting to satisfy mypy
         self.embedding_model = cast(
             SentenceTransformer,
@@ -775,7 +642,9 @@ class AsyncSemanticSearch:
                 processed_results.append([])
             else:
                 # result is already a list of SearchResult objects
-                processed_results.append(result)
+                # Type assertion: if not Exception, must be list[SearchResult]
+                search_results = cast(list[SearchResult], result)
+                processed_results.append(search_results)
 
         return processed_results
 

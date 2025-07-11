@@ -21,7 +21,7 @@ import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from aiohttp import WSMsgType, web
 from aiohttp.web_ws import WebSocketResponse
@@ -672,9 +672,9 @@ class AsyncMCPServer:
         self.error_handler = get_secure_error_handler()
 
         # HTTP app
-        self.app: Optional[web.Application] = None
-        self.runner: Optional[web.AppRunner] = None
-        self.site: Optional[web.TCPSite] = None
+        self.app: web.Application | None = None
+        self.runner: web.AppRunner | None = None
+        self.site: web.TCPSite | None = None
 
         # Tasks
         self.metrics_task: asyncio.Task[None] | None = None
