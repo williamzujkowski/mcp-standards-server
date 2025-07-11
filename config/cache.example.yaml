@@ -13,26 +13,26 @@ redis:
   max_connections: 50
   max_connections_per_process: 10
   socket_keepalive: true
-  
+
   # Retry settings
   max_retries: 3
   retry_delay: 0.1
   retry_backoff: 2.0
-  
+
   # Default cache settings
   default_ttl: 300  # 5 minutes
-  key_prefix: "mcp"
+  key_prefix: mcp
   enable_compression: true
   compression_threshold: 1024  # bytes
-  
+
   # L1 cache settings (in-memory)
   l1_max_size: 1000
   l1_ttl: 30  # seconds
-  
+
   # Circuit breaker settings
   circuit_breaker_threshold: 5
   circuit_breaker_timeout: 30
-  
+
   # Monitoring
   enable_metrics: true
   slow_query_threshold: 0.1  # seconds
@@ -50,8 +50,8 @@ tools:
     compress_threshold: 512
     warm_on_startup: true
     warm_args:
-      - standard_id: "secure-api-design"
-      - standard_id: "react-best-practices"
+      - standard_id: secure-api-design
+      - standard_id: react-best-practices
       - standard_id: "python-coding-standards"
     
   list_available_standards:
