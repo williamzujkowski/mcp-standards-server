@@ -356,7 +356,7 @@ class TokenOptimizer:
         budget = budget or self.default_budget
 
         # Check cache
-        cache_key = self._get_cache_key(standard, format_type, required_sections)
+        cache_key = self._get_cache_key(standard, format_type, required_sections, context)
         if cache_key in self._format_cache:
             cached_time, cached_content, cached_result = self._format_cache[cache_key]
             if time.time() - cached_time < self._cache_ttl:
@@ -824,6 +824,23 @@ class TokenOptimizer:
             to_load = next_batch - loaded
             depth += 1
 
+        # If we only have the initial sections and no expansion occurred,
+        # add a fallback batch with high-priority sections
+        if len(loading_plan) == 1 and len(loaded) == len(initial_sections):
+            high_priority_sections = [
+                s for s in sections 
+                if s.id not in loaded and s.priority >= 7
+            ]
+            if high_priority_sections:
+                # Sort by priority and take up to 3 additional sections
+                high_priority_sections.sort(key=lambda s: s.priority, reverse=True)
+                fallback_batch = [
+                    (section.id, section.token_count) 
+                    for section in high_priority_sections[:3]
+                ]
+                if fallback_batch:
+                    loading_plan.append(fallback_batch)
+
         # Return the loading plan with batches preserved
         return loading_plan
 
@@ -936,6 +953,7 @@ class TokenOptimizer:
         standard: dict[str, Any],
         format_type: StandardFormat,
         required_sections: list[str] | None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """Generate cache key for formatted content."""
         key_parts = [
@@ -943,6 +961,13 @@ class TokenOptimizer:
             format_type.value,
             ",".join(sorted(required_sections)) if required_sections else "all",
         ]
+        
+        # Include context for CUSTOM format to avoid cache collisions
+        if format_type == StandardFormat.CUSTOM and context:
+            context_key = []
+            for key in sorted(context.keys()):
+                context_key.append(f"{key}:{context[key]}")
+            key_parts.append("ctx:" + "|".join(context_key))
 
         key_string = "|".join(key_parts)
         # Use SHA-256 with application-specific salt

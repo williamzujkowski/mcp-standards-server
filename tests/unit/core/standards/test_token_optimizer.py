@@ -496,14 +496,19 @@ class TestIntegrationScenarios:
     @pytest.fixture
     def large_standard(self):
         """Create a large standard for testing."""
+        # Generate sections with realistic names that match our regex patterns
+        section_names = [
+            "Overview", "Requirements", "Implementation", "Examples", 
+            "Best Practices", "Security", "Performance", "Testing",
+            "References", "Troubleshooting"
+        ]
+        
         sections = []
+        for i, section_name in enumerate(section_names):
+            # Create substantial content without repeating headers
+            base_content = f"""## {section_name}
 
-        # Generate multiple sections
-        for i in range(10):
-            content = (
-                f"""## Section {i}
-
-This is section {i} with detailed information about various aspects.
+This is the {section_name.lower()} section with detailed information about various aspects.
 It contains multiple paragraphs of text to simulate a real standard document.
 
 Key points:
@@ -512,17 +517,37 @@ Key points:
 - Point 3: Examples and explanations
 
 ```python
-# Code example {i}
-def example_{i}():
-    return "Example implementation"
+# Code example for {section_name.lower()}
+def example_{section_name.lower().replace(' ', '_')}():
+    return "Example implementation for {section_name.lower()}"
 ```
 
 Best practices for this section include following all guidelines carefully.
-"""
-                * 3
-            )  # Repeat to make it larger
+This section provides comprehensive coverage of {section_name.lower()} concerns.
 
-            sections.append(content)
+### Detailed Guidelines
+
+Here are more detailed guidelines for implementing {section_name.lower()} properly:
+- Guideline A: Follow industry standards and best practices
+- Guideline B: Ensure thorough testing and validation
+- Guideline C: Document all implementation decisions
+
+### Advanced Considerations  
+
+When working with {section_name.lower()}, consider these advanced aspects:
+- Performance implications and optimization strategies
+- Security considerations and potential vulnerabilities  
+- Scalability requirements and future extensibility
+- Integration with existing systems and workflows
+
+### Common Pitfalls
+
+Avoid these common mistakes when implementing {section_name.lower()}:
+- Pitfall 1: Insufficient error handling and edge case coverage
+- Pitfall 2: Poor documentation and lack of clear examples
+- Pitfall 3: Ignoring performance and security implications
+"""
+            sections.append(base_content)
 
         return {"id": "large-test-standard", "content": "\n\n".join(sections)}
 
@@ -602,14 +627,19 @@ Best practices for this section include following all guidelines carefully.
         total_tokens_used = 0
         loaded_content = []
 
-        for section_id, estimated_tokens in loading_plan:
-            if total_tokens_used + estimated_tokens <= budget.available:
-                content, actual_tokens = loader.load_section(
-                    "large-test-standard", section_id, budget
-                )
-                loaded_content.append(content)
-                total_tokens_used += actual_tokens
-            else:
+        # Iterate through batches, then through items in each batch
+        for batch in loading_plan:
+            for section_id, estimated_tokens in batch:
+                if total_tokens_used + estimated_tokens <= budget.available:
+                    content, actual_tokens = loader.load_section(
+                        "large-test-standard", section_id, budget
+                    )
+                    loaded_content.append(content)
+                    total_tokens_used += actual_tokens
+                else:
+                    break
+            # If we exceeded budget in this batch, stop loading entirely
+            if total_tokens_used + estimated_tokens > budget.available:
                 break
 
         # Verify progressive loading worked
