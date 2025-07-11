@@ -1,100 +1,100 @@
 version: 2
 updates:
   # Python dependencies
-  - package-ecosystem: "pip"
-    directory: "/"
+  - package-ecosystem: pip
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
+      interval: weekly
+      day: monday
+      time: '03:00'
     open-pull-requests-limit: 10
     reviewers:
-      - "@maintainers"
+      - '@maintainers'
     labels:
-      - "dependencies"
-      - "python"
+      - dependencies
+      - python
     groups:
       development-dependencies:
         patterns:
-          - "pytest*"
-          - "black"
-          - "ruff"
-          - "mypy"
-          - "coverage*"
+          - pytest*
+          - black
+          - ruff
+          - mypy
+          - coverage*
         update-types:
-          - "minor"
-          - "patch"
+          - minor
+          - patch
       core-dependencies:
         patterns:
-          - "pydantic"
-          - "redis"
-          - "aiohttp"
-          - "mcp"
+          - pydantic
+          - redis
+          - aiohttp
+          - mcp
         update-types:
-          - "minor"
-          - "patch"
+          - minor
+          - patch
     ignore:
       # Don't update major versions automatically
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   
   # Frontend dependencies (if applicable)
-  - package-ecosystem: "npm"
-    directory: "/web/frontend"
+  - package-ecosystem: npm
+    directory: /web/frontend
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
+      interval: weekly
+      day: monday
+      time: '03:00'
     open-pull-requests-limit: 10
     reviewers:
-      - "@maintainers"
+      - '@maintainers'
     labels:
-      - "dependencies"
-      - "javascript"
+      - dependencies
+      - javascript
     groups:
       react-dependencies:
         patterns:
-          - "react*"
-          - "@types/react*"
+          - react*
+          - '@types/react*'
       development-dependencies:
         patterns:
-          - "eslint*"
-          - "prettier*"
-          - "@testing-library/*"
+          - eslint*
+          - prettier*
+          - '@testing-library/*'
         update-types:
-          - "minor"
-          - "patch"
+          - minor
+          - patch
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   
   # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
+      interval: weekly
+      day: monday
+      time: '03:00'
     reviewers:
-      - "@maintainers"
+      - '@maintainers'
     labels:
-      - "dependencies"
-      - "ci"
+      - dependencies
+      - ci
     groups:
       actions:
         patterns:
-          - "actions/*"
-          - "docker/*"
+          - actions/*
+          - docker/*
   
   # Docker base images
-  - package-ecosystem: "docker"
-    directory: "/"
+  - package-ecosystem: docker
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
+      interval: weekly
+      day: monday
+      time: '03:00'
     reviewers:
-      - "@maintainers"
+      - '@maintainers'
     labels:
-      - "dependencies"
-      - "docker"
+      - dependencies
+      - docker
