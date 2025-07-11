@@ -9,7 +9,7 @@ import logging
 import time
 import traceback
 from collections.abc import Awaitable, Callable
-from typing import Any, cast
+from typing import Any
 
 from aiohttp import web
 
@@ -70,7 +70,7 @@ async def error_handling_middleware(
             duration=duration,
         )
 
-        return cast(web.StreamResponse, response)
+        return response
 
     except web.HTTPException as e:
         # Handle aiohttp HTTP exceptions
@@ -198,7 +198,7 @@ async def request_logging_middleware(
         },
     )
 
-    return cast(web.StreamResponse, response)
+    return response
 
 
 class WebSocketErrorHandler:
