@@ -166,17 +166,14 @@ review_stages:
     duration_days: 5
     required_reviewers: 2
     reviewer_roles: [maintainer, domain_expert]
-    
   editorial:
     duration_days: 3
     required_reviewers: 1
     reviewer_roles: [editorial, maintainer]
-    
   community:
     duration_days: 7
     required_reviewers: 3
     reviewer_roles: [community, domain_expert, maintainer]
-    
   final:
     duration_days: 2
     required_reviewers: 1
@@ -185,9 +182,7 @@ review_stages:
 # Notification Configuration
 notifications:
   webhook_url: ${REVIEW_WEBHOOK_URL}  # Set via environment variable
-  
   reminder_hours: 24  # Send reminder 24 hours before due
-  
   channels:
     - type: github
       enabled: true
@@ -205,13 +200,12 @@ quality_gates:
     - examples
     - security
     - compliance
-  
   breaking_change_keywords:
-    - "BREAKING:"
-    - "deprecated"
-    - "removed"
-    - "no longer supported"
-    - "incompatible"
+    - BREAKING:
+    - deprecated
+    - removed
+    - no longer supported
+    - incompatible
 
 # Domain Mapping
 domain_mapping:
@@ -221,56 +215,48 @@ domain_mapping:
     - grpc
     - microservices
     - integration
-    
   security:
     - authentication
     - authorization
     - encryption
     - compliance
     - privacy
-    
   cloud-native:
     - kubernetes
     - docker
     - microservices
     - devops
     - observability
-    
   data-engineering:
     - pipelines
     - databases
     - analytics
     - governance
     - streaming
-    
   ai-ml:
     - machine-learning
     - artificial-intelligence
     - data-science
     - mlops
     - modeling
-    
   frontend:
     - react
     - vue
     - angular
     - mobile
     - ui-ux
-    
   blockchain:
     - web3
     - smart-contracts
     - defi
     - nft
     - cryptocurrency
-    
   gaming:
     - game-development
     - ar-vr
     - graphics
     - physics
     - multiplayer
-    
   iot:
     - edge-computing
     - embedded

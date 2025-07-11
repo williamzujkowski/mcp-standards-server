@@ -5,7 +5,9 @@ category: "Development"
 domain: "Engineering"
 description: "Standardizes the code review process to ensure quality, security, and knowledge sharing"
 
-scope: "All code changes to production systems, including application code, infrastructure as code, and configuration changes"
+scope: |
+  All code changes to production systems, including application code,
+  infrastructure as code, and configuration changes
 
 workflow:
   steps:

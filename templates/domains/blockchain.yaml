@@ -1,5 +1,7 @@
 name: "Blockchain/Web3 Standard Template"
-description: "Template for blockchain and Web3 standards with smart contract security, DeFi protocols, and dApp development"
+description: |
+  Template for blockchain and Web3 standards with smart contract security,
+  DeFi protocols, and dApp development
 version: "1.0.0"
 author: "MCP Standards Team"
 category: "domain-specific"

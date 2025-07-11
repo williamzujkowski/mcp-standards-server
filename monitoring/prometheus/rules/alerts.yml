@@ -21,7 +21,9 @@ groups:
           service: mcp-standards-server
         annotations:
           summary: "High error rate detected"
-          description: "Error rate is above 5% (current: {{ $value | humanizePercentage }}) for instance {{ $labels.instance }}"
+          description: |
+            Error rate is above 5% (current: {{ $value | humanizePercentage }})
+            for instance {{ $labels.instance }}
       
       # Performance alerts
       - alert: HighResponseTime
@@ -32,7 +34,9 @@ groups:
           service: mcp-standards-server
         annotations:
           summary: "High response time detected"
-          description: "95th percentile response time is above 2 seconds (current: {{ $value }}s) for instance {{ $labels.instance }}"
+          description: |
+            95th percentile response time is above 2 seconds (current: {{ $value }}s)
+            for instance {{ $labels.instance }}
       
       - alert: HighCPUUsage
         expr: rate(process_cpu_seconds_total{job="mcp-standards-server"}[5m]) * 100 > 80
@@ -66,14 +70,18 @@ groups:
           description: "Redis instance {{ $labels.instance }} has been down for more than 5 minutes."
       
       - alert: RedisCacheMissRateHigh
-        expr: rate(app_cache_misses_total[5m]) / (rate(app_cache_hits_total[5m]) + rate(app_cache_misses_total[5m])) > 0.5
+        expr: |
+          rate(app_cache_misses_total[5m]) /
+          (rate(app_cache_hits_total[5m]) + rate(app_cache_misses_total[5m])) > 0.5
         for: 10m
         labels:
           severity: warning
           service: mcp-standards-server
         annotations:
           summary: "High cache miss rate"
-          description: "Cache miss rate is above 50% (current: {{ $value | humanizePercentage }}) for instance {{ $labels.instance }}"
+          description: |
+            Cache miss rate is above 50% (current: {{ $value | humanizePercentage }})
+            for instance {{ $labels.instance }}
       
       # MCP specific alerts
       - alert: MCPToolErrorsHigh
@@ -84,7 +92,9 @@ groups:
           service: mcp-standards-server
         annotations:
           summary: "High MCP tool error rate"
-          description: "MCP tool error rate is above 10% (current: {{ $value | humanizePercentage }}) for tool {{ $labels.tool }}"
+          description: |
+            MCP tool error rate is above 10% (current: {{ $value | humanizePercentage }})
+            for tool {{ $labels.tool }}
       
       - alert: StandardsSyncFailed
         expr: increase(standards_sync_failures_total[1h]) > 3

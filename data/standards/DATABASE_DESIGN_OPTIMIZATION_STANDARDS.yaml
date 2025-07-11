@@ -31,7 +31,9 @@ standards:
                       order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                       customer_id UUID NOT NULL REFERENCES customers(customer_id),
                       order_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                      status VARCHAR(50) NOT NULL CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'))
+                      status VARCHAR(50) NOT NULL CHECK (
+                          status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')
+                      )
                   );
             nist_mappings:
               - "SC-8: Transmission Confidentiality and Integrity"
