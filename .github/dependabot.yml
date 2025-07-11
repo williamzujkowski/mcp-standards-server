@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: '03:00'
+      time: 03:00
     open-pull-requests-limit: 10
     reviewers:
       - '@maintainers'
@@ -35,16 +35,16 @@ updates:
           - patch
     ignore:
       # Don't update major versions automatically
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-  
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
   # Frontend dependencies (if applicable)
   - package-ecosystem: npm
     directory: /web/frontend
     schedule:
       interval: weekly
       day: monday
-      time: '03:00'
+      time: 03:00
     open-pull-requests-limit: 10
     reviewers:
       - '@maintainers'
@@ -65,16 +65,16 @@ updates:
           - minor
           - patch
     ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-  
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
   # GitHub Actions
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
       day: monday
-      time: '03:00'
+      time: 03:00
     reviewers:
       - '@maintainers'
     labels:
@@ -85,14 +85,14 @@ updates:
         patterns:
           - actions/*
           - docker/*
-  
+
   # Docker base images
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
       day: monday
-      time: '03:00'
+      time: 03:00
     reviewers:
       - '@maintainers'
     labels:
