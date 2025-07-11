@@ -1,12 +1,12 @@
-name: "Base Standard Template"
-description: "Base template for all standards with common sections and structure"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "base"
+name: Base Standard Template
+description: Base template for all standards with common sections and structure
+version: 1.0.0
+author: MCP Standards Team
+category: base
 tags:
-  - "base"
-  - "foundation"
-  - "template"
+  - base
+  - foundation
+  - template
 extends: null
 required_variables:
   - title

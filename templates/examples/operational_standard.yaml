@@ -1,161 +1,161 @@
 # Example Operational Standard using the new template
-title: "Production Monitoring and Alerting Standard"
-version: "1.0.0"
-category: "Operations"
-domain: "Infrastructure"
-status: "active"
-description: "Defines monitoring, alerting, and incident response standards for production systems"
+title: Production Monitoring and Alerting Standard
+version: 1.0.0
+category: Operations
+domain: Infrastructure
+status: active
+description: Defines monitoring, alerting, and incident response standards for production systems
 
 objectives:
-  - "Ensure 99.9% service availability"
-  - "Detect and respond to incidents within 5 minutes"
-  - "Maintain comprehensive observability across all systems"
-  - "Enable proactive issue detection and resolution"
+  - Ensure 99.9% service availability
+  - Detect and respond to incidents within 5 minutes
+  - Maintain comprehensive observability across all systems
+  - Enable proactive issue detection and resolution
 
 requirements:
-  - name: "Monitoring Coverage"
-    description: "All production services must have monitoring coverage"
-    priority: "P0"
-    validation_criteria: "100% of services have basic metrics collection"
-  - name: "Alert Configuration"
-    description: "Critical alerts must be configured for all services"
-    priority: "P0"
-    validation_criteria: "All P0/P1 scenarios have corresponding alerts"
+  - name: Monitoring Coverage
+    description: All production services must have monitoring coverage
+    priority: P0
+    validation_criteria: 100% of services have basic metrics collection
+  - name: Alert Configuration
+    description: Critical alerts must be configured for all services
+    priority: P0
+    validation_criteria: All P0/P1 scenarios have corresponding alerts
 
 service_levels:
-  - name: "API Response Time"
-    target: "< 200ms p95"
-    measurement: "95th percentile over 5 minute window"
-    window: "Rolling 5 minutes"
-  - name: "Error Rate"
-    target: "< 0.1%"
-    measurement: "Failed requests / Total requests"
-    window: "Rolling 1 hour"
+  - name: API Response Time
+    target: < 200ms p95
+    measurement: 95th percentile over 5 minute window
+    window: Rolling 5 minutes
+  - name: Error Rate
+    target: < 0.1%
+    measurement: Failed requests / Total requests
+    window: Rolling 1 hour
 
 monitoring:
-  strategy: "Multi-layer monitoring with infrastructure, application, and business metrics"
+  strategy: Multi-layer monitoring with infrastructure, application, and business metrics
   metrics:
-    - name: "CPU Utilization"
-      type: "Infrastructure"
-      threshold: "> 80%"
-      collection_method: "CloudWatch Agent"
-    - name: "Memory Usage"
-      type: "Infrastructure"
-      threshold: "> 90%"
-      collection_method: "CloudWatch Agent"
-    - name: "API Latency"
-      type: "Application"
-      threshold: "> 500ms p95"
-      collection_method: "APM Tool"
-    - name: "Error Rate"
-      type: "Application"
-      threshold: "> 1%"
-      collection_method: "Log Analytics"
+    - name: CPU Utilization
+      type: Infrastructure
+      threshold: > 80%
+      collection_method: CloudWatch Agent
+    - name: Memory Usage
+      type: Infrastructure
+      threshold: > 90%
+      collection_method: CloudWatch Agent
+    - name: API Latency
+      type: Application
+      threshold: > 500ms p95
+      collection_method: APM Tool
+    - name: Error Rate
+      type: Application
+      threshold: > 1%
+      collection_method: Log Analytics
   alerts:
-    - name: "High CPU Usage"
-      condition: "CPU > 80% for 5 minutes"
-      severity: "Warning"
-      channels: ["slack-ops", "pagerduty"]
-      runbook_link: "https://wiki.company.com/runbooks/high-cpu"
-    - name: "Service Down"
-      condition: "Health check fails 3 times in 1 minute"
-      severity: "Critical"
-      channels: ["pagerduty", "slack-critical"]
-      runbook_link: "https://wiki.company.com/runbooks/service-down"
+    - name: High CPU Usage
+      condition: CPU > 80% for 5 minutes
+      severity: Warning
+      channels: [slack-ops, pagerduty]
+      runbook_link: https://wiki.company.com/runbooks/high-cpu
+    - name: Service Down
+      condition: Health check fails 3 times in 1 minute
+      severity: Critical
+      channels: [pagerduty, slack-critical]
+      runbook_link: https://wiki.company.com/runbooks/service-down
 
 incident_response:
   procedures:
-    - severity: "Critical"
-      detection: "Automated alerts or customer reports"
-      triage: "On-call engineer assesses impact and scope"
-      response: "Follow runbook, engage necessary teams"
-      resolution: "Apply fix, verify resolution, update status page"
-      postmortem: "Required within 48 hours"
-    - severity: "High"
-      detection: "Monitoring alerts or internal reports"
-      triage: "Team lead reviews and assigns"
-      response: "Follow standard procedures"
-      resolution: "Apply fix and monitor"
-      postmortem: "Required if customer impact"
+    - severity: Critical
+      detection: Automated alerts or customer reports
+      triage: On-call engineer assesses impact and scope
+      response: Follow runbook, engage necessary teams
+      resolution: Apply fix, verify resolution, update status page
+      postmortem: Required within 48 hours
+    - severity: High
+      detection: Monitoring alerts or internal reports
+      triage: Team lead reviews and assigns
+      response: Follow standard procedures
+      resolution: Apply fix and monitor
+      postmortem: Required if customer impact
   escalation:
     - level: 1
-      criteria: "No response within 15 minutes"
-      contacts: ["on-call-secondary"]
-      response_time: "5 minutes"
+      criteria: No response within 15 minutes
+      contacts: [on-call-secondary]
+      response_time: 5 minutes
     - level: 2
-      criteria: "No resolution within 1 hour"
-      contacts: ["engineering-manager", "director"]
-      response_time: "10 minutes"
+      criteria: No resolution within 1 hour
+      contacts: [engineering-manager, director]
+      response_time: 10 minutes
 
 runbooks:
-  - title: "High CPU Usage Investigation"
-    purpose: "Diagnose and resolve high CPU usage"
-    trigger: "CPU usage > 80% sustained"
+  - title: High CPU Usage Investigation
+    purpose: Diagnose and resolve high CPU usage
+    trigger: CPU usage > 80% sustained
     steps:
-      - action: "Check top processes"
-        command: "top -bn1 | head -20"
-        validation: "Identify process consuming most CPU"
-      - action: "Check application logs"
-        command: "tail -f /var/log/application/*.log | grep ERROR"
-        validation: "Look for error patterns"
-      - action: "Scale horizontally if needed"
-        command: "kubectl scale deployment app --replicas=5"
-        validation: "Verify new pods are running"
+      - action: Check top processes
+        command: top -bn1 | head -20
+        validation: Identify process consuming most CPU
+      - action: Check application logs
+        command: tail -f /var/log/application/*.log | grep ERROR
+        validation: Look for error patterns
+      - action: Scale horizontally if needed
+        command: kubectl scale deployment app --replicas=5
+        validation: Verify new pods are running
 
 automation:
   tasks:
-    - name: "Log Rotation"
-      schedule: "0 2 * * *"
-      tool: "logrotate"
-      script_location: "/etc/logrotate.d/application"
-    - name: "Metric Collection"
-      schedule: "*/1 * * * *"
-      tool: "CloudWatch Agent"
-      script_location: "/opt/aws/amazon-cloudwatch-agent/etc/config.json"
+    - name: Log Rotation
+      schedule: 0 2 * * *
+      tool: logrotate
+      script_location: /etc/logrotate.d/application
+    - name: Metric Collection
+      schedule: */1 * * * *
+      tool: CloudWatch Agent
+      script_location: /opt/aws/amazon-cloudwatch-agent/etc/config.json
   pipelines:
-    - name: "Alert Testing"
-      trigger: "Weekly"
-      stages: ["Generate Test Alerts", "Verify Delivery", "Update Documentation"]
+    - name: Alert Testing
+      trigger: Weekly
+      stages: [Generate Test Alerts, Verify Delivery, Update Documentation]
 
 tools:
-  - name: "Datadog"
-    version: "latest"
-    purpose: "Application Performance Monitoring"
-    config_location: "/etc/datadog-agent/datadog.yaml"
-  - name: "PagerDuty"
-    version: "v2"
-    purpose: "Incident Management and Alerting"
-    config_location: "https://company.pagerduty.com"
+  - name: Datadog
+    version: latest
+    purpose: Application Performance Monitoring
+    config_location: /etc/datadog-agent/datadog.yaml
+  - name: PagerDuty
+    version: v2
+    purpose: Incident Management and Alerting
+    config_location: https://company.pagerduty.com
 
 compliance:
   requirements:
-    - standard: "SOC 2"
-      requirement: "Continuous monitoring of security events"
-      evidence_type: "Alert history and response logs"
-      audit_frequency: "Annual"
-    - standard: "ISO 27001"
-      requirement: "Incident management procedures"
-      evidence_type: "Incident reports and post-mortems"
-      audit_frequency: "Annual"
-  audit_events: ["Alert triggered", "Alert acknowledged", "Incident created", "Incident resolved"]
-  retention_period: "7 years"
-  storage_location: "S3://audit-logs/monitoring/"
+    - standard: SOC 2
+      requirement: Continuous monitoring of security events
+      evidence_type: Alert history and response logs
+      audit_frequency: Annual
+    - standard: ISO 27001
+      requirement: Incident management procedures
+      evidence_type: Incident reports and post-mortems
+      audit_frequency: Annual
+  audit_events: [Alert triggered, Alert acknowledged, Incident created, Incident resolved]
+  retention_period: 7 years
+  storage_location: S3://audit-logs/monitoring/
 
 benchmarks:
-  - name: "Alert Response Time"
-    target: "< 5 minutes"
-    current: "3.2 minutes"
-    measurement_method: "Average time from alert to acknowledgment"
-  - name: "MTTR (Mean Time To Resolve)"
-    target: "< 30 minutes"
-    current: "28 minutes"
-    measurement_method: "Average incident resolution time"
+  - name: Alert Response Time
+    target: < 5 minutes
+    current: 3.2 minutes
+    measurement_method: Average time from alert to acknowledgment
+  - name: MTTR (Mean Time To Resolve)
+    target: < 30 minutes
+    current: 28 minutes
+    measurement_method: Average incident resolution time
 
 references:
-  - title: "Google SRE Book"
-    url: "https://sre.google/sre-book/"
-  - title: "AWS Well-Architected Framework - Operational Excellence"
-    url: "https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/"
+  - title: Google SRE Book
+    url: https://sre.google/sre-book/
+  - title: AWS Well-Architected Framework - Operational Excellence
+    url: https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/
 
-last_updated: "2024-01-15"
-maintainer: "Platform Team"
+last_updated: 2024-01-15
+maintainer: Platform Team

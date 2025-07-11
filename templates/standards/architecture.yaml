@@ -1,14 +1,14 @@
-name: "Architecture Pattern Standard Template"
-description: "Template for architecture standards with design patterns, scalability, and system design guidelines"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "architecture"
+name: Architecture Pattern Standard Template
+description: Template for architecture standards with design patterns, scalability, and system design guidelines
+version: 1.0.0
+author: MCP Standards Team
+category: architecture
 tags:
-  - "architecture"
-  - "design"
-  - "patterns"
-  - "scalability"
-extends: "standards/base.j2"
+  - architecture
+  - design
+  - patterns
+  - scalability
+extends: standards/base.j2
 required_variables:
   - title
   - version

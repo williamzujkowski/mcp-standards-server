@@ -1,14 +1,14 @@
-name: "Compliance Standard Template"
-description: "Template for compliance-focused standards with regulatory requirements, controls, and audit procedures"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "compliance"
+name: Compliance Standard Template
+description: Template for compliance-focused standards with regulatory requirements, controls, and audit procedures
+version: 1.0.0
+author: MCP Standards Team
+category: compliance
 tags:
-  - "compliance"
-  - "audit"
-  - "regulatory"
-  - "controls"
-extends: "standards/base.j2"
+  - compliance
+  - audit
+  - regulatory
+  - controls
+extends: standards/base.j2
 required_variables:
   - title
   - version

@@ -1,16 +1,16 @@
-name: "IoT/Edge Standard Template"
-description: "Template for IoT and edge computing standards with device management, connectivity, and edge processing"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "domain-specific"
-domain: "iot"
+name: IoT/Edge Standard Template
+description: Template for IoT and edge computing standards with device management, connectivity, and edge processing
+version: 1.0.0
+author: MCP Standards Team
+category: domain-specific
+domain: iot
 tags:
-  - "iot"
-  - "edge-computing"
-  - "connectivity"
-  - "devices"
-  - "sensors"
-extends: "standards/technical.j2"
+  - iot
+  - edge-computing
+  - connectivity
+  - devices
+  - sensors
+extends: standards/technical.j2
 required_variables:
   - title
   - version

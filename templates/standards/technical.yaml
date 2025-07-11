@@ -1,14 +1,14 @@
-name: "Technical Implementation Standard Template"
-description: "Template for technical standards with implementation details, code examples, and architecture guidance"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "technical"
+name: Technical Implementation Standard Template
+description: Template for technical standards with implementation details, code examples, and architecture guidance
+version: 1.0.0
+author: MCP Standards Team
+category: technical
 tags:
-  - "technical"
-  - "implementation"
-  - "development"
-  - "architecture"
-extends: "standards/base.j2"
+  - technical
+  - implementation
+  - development
+  - architecture
+extends: standards/base.j2
 required_variables:
   - title
   - version

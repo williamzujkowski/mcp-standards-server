@@ -1,16 +1,16 @@
-name: "AI/ML Standard Template"
-description: "Template for AI/ML standards with model lifecycle, MLOps, and ethical AI practices"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "domain-specific"
-domain: "ai_ml"
+name: AI/ML Standard Template
+description: Template for AI/ML standards with model lifecycle, MLOps, and ethical AI practices
+version: 1.0.0
+author: MCP Standards Team
+category: domain-specific
+domain: ai_ml
 tags:
-  - "ai"
-  - "machine-learning"
-  - "mlops"
-  - "ethics"
-  - "model-lifecycle"
-extends: "standards/technical.j2"
+  - ai
+  - machine-learning
+  - mlops
+  - ethics
+  - model-lifecycle
+extends: standards/technical.j2
 required_variables:
   - title
   - version

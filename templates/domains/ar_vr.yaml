@@ -1,17 +1,17 @@
-name: "AR/VR Standard Template"
-description: "Template for AR/VR standards with immersive experience design and platform-specific optimizations"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "domain-specific"
-domain: "ar_vr"
+name: AR/VR Standard Template
+description: Template for AR/VR standards with immersive experience design and platform-specific optimizations
+version: 1.0.0
+author: MCP Standards Team
+category: domain-specific
+domain: ar_vr
 tags:
-  - "ar"
-  - "vr"
-  - "immersive"
-  - "xr"
-  - "spatial-computing"
-  - "3d"
-extends: "standards/technical.j2"
+  - ar
+  - vr
+  - immersive
+  - xr
+  - spatial-computing
+  - 3d
+extends: standards/technical.j2
 required_variables:
   - title
   - version

@@ -1,18 +1,18 @@
-name: "Gaming Standard Template"
+name: Gaming Standard Template
 description: |
   Template for gaming standards with performance optimization,
   multiplayer systems, and player experience design
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "domain-specific"
-domain: "gaming"
+version: 1.0.0
+author: MCP Standards Team
+category: domain-specific
+domain: gaming
 tags:
-  - "gaming"
-  - "performance"
-  - "multiplayer"
-  - "game-engine"
-  - "player-experience"
-extends: "standards/technical.j2"
+  - gaming
+  - performance
+  - multiplayer
+  - game-engine
+  - player-experience
+extends: standards/technical.j2
 required_variables:
   - title
   - version

@@ -1,14 +1,14 @@
-name: "Process Methodology Standard Template"
-description: "Template for process-focused standards with workflow definitions, roles, and performance metrics"
-version: "1.0.0"
-author: "MCP Standards Team"
-category: "process"
+name: Process Methodology Standard Template
+description: Template for process-focused standards with workflow definitions, roles, and performance metrics
+version: 1.0.0
+author: MCP Standards Team
+category: process
 tags:
-  - "process"
-  - "methodology"
-  - "workflow"
-  - "procedures"
-extends: "standards/base.j2"
+  - process
+  - methodology
+  - workflow
+  - procedures
+extends: standards/base.j2
 required_variables:
   - title
   - version
