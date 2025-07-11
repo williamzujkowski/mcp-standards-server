@@ -2,100 +2,100 @@ approval_date: null
 author: MCP Standards Team
 code_examples: []
 communication_protocols:
-- mqtt
-- coap
-- lorawan
-- zigbee
-- wifi
-- bluetooth
-- cellular
-- ethernet
+  - mqtt
+  - coap
+  - lorawan
+  - zigbee
+  - wifi
+  - bluetooth
+  - cellular
+  - ethernet
 compliance_frameworks:
-- GDPR
-- CCPA
-- HIPAA
-- FCC
-- CE
-- FCC Part 15
-- IEC 62443
+  - GDPR
+  - CCPA
+  - HIPAA
+  - FCC
+  - CE
+  - FCC Part 15
+  - IEC 62443
 created_date: '2025-07-07T23:25:58.065037'
 dependencies:
-- security_standards
-- cloud_native_standards
-- data_engineering_standards
+  - security_standards
+  - cloud_native_standards
+  - data_engineering_standards
 description: Comprehensive standards for IoT devices, edge computing, and distributed
   sensor networks
 device_types:
-- sensors
-- actuators
-- gateways
-- edge_controllers
-- industrial_devices
-- consumer_devices
+  - sensors
+  - actuators
+  - gateways
+  - edge_controllers
+  - industrial_devices
+  - consumer_devices
 domain: iot
 edge_platforms:
-- aws_iot_greengrass
-- azure_iot_edge
-- google_cloud_iot
-- kubernetes_edge
-- docker_edge
+  - aws_iot_greengrass
+  - azure_iot_edge
+  - google_cloud_iot
+  - kubernetes_edge
+  - docker_edge
 implementation_guides:
-- device_onboarding
-- edge_deployment
-- data_pipeline_setup
-- remote_management
+  - device_onboarding
+  - edge_deployment
+  - data_pipeline_setup
+  - remote_management
 maturity_level: production
 monitoring_requirements:
-- device_health
-- network_connectivity
-- data_quality
-- security_events
+  - device_health
+  - network_connectivity
+  - data_quality
+  - security_events
 nist_controls:
-- AC-1
-- AC-6
-- AU-2
-- AU-12
-- CM-2
-- CM-8
-- IA-2
-- IA-4
-- RA-3
-- RA-5
-- SA-3
-- SA-8
-- SC-7
-- SC-8
-- SC-12
-- SC-13
-- SI-3
-- SI-4
+  - AC-1
+  - AC-6
+  - AU-2
+  - AU-12
+  - CM-2
+  - CM-8
+  - IA-2
+  - IA-4
+  - RA-3
+  - RA-5
+  - SA-3
+  - SA-8
+  - SC-7
+  - SC-8
+  - SC-12
+  - SC-13
+  - SI-3
+  - SI-4
 power_management:
-- battery_optimization
-- sleep_modes
-- energy_harvesting
-- power_scheduling
+  - battery_optimization
+  - sleep_modes
+  - energy_harvesting
+  - power_scheduling
 review_status: draft
 reviewers: []
 risk_level: high
 scalability_patterns:
-- device_discovery
-- auto_provisioning
-- load_balancing
-- data_aggregation
+  - device_discovery
+  - auto_provisioning
+  - load_balancing
+  - data_aggregation
 security_requirements:
-- device_authentication
-- data_encryption
-- secure_boot
-- firmware_updates
-- certificate_management
+  - device_authentication
+  - data_encryption
+  - secure_boot
+  - firmware_updates
+  - certificate_management
 tags:
-- iot
-- edge-computing
-- sensors
-- embedded
-- industrial-iot
-- smart-devices
-- connectivity
+  - iot
+  - edge-computing
+  - sensors
+  - embedded
+  - industrial-iot
+  - smart-devices
+  - connectivity
 title: IoT/Edge Computing Standards
 type: technical
 updated_date: '2025-07-07T23:25:58.065043'
