@@ -166,7 +166,7 @@ async def error_handling_middleware(
 
 @web.middleware
 async def request_logging_middleware(
-    request: web.Request, handler: Callable
+    request: web.Request, handler: Callable[[web.Request], Awaitable[web.Response]]
 ) -> web.Response:
     """
     Middleware for logging all requests and responses.
