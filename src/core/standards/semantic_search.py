@@ -1195,10 +1195,10 @@ class AsyncSemanticSearch:
         """Perform search asynchronously."""
         import asyncio
         import functools
-        
+
         # Use partial to properly handle keyword arguments
         search_func = functools.partial(self.search_engine.search, query, **kwargs)
-        
+
         # Use current event loop instead of self.loop for better compatibility
         loop = asyncio.get_running_loop()
         future = loop.run_in_executor(None, search_func)
@@ -1209,7 +1209,7 @@ class AsyncSemanticSearch:
     ) -> None:
         """Index documents asynchronously."""
         import asyncio
-        
+
         # Use current event loop instead of self.loop for better compatibility
         loop = asyncio.get_running_loop()
         future = loop.run_in_executor(

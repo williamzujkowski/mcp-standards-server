@@ -55,7 +55,7 @@ class TestAsyncMCPServer:
         with patch("aiohttp.web.AppRunner") as mock_runner_class:
             mock_runner = AsyncMock()
             mock_runner_class.return_value = mock_runner
-            
+
             with patch("aiohttp.web.TCPSite") as mock_site_class:
                 mock_site = AsyncMock()
                 mock_site_class.return_value = mock_site
@@ -146,7 +146,7 @@ class TestAsyncMCPServer:
         # Mock sessions and connection manager
         server.sessions = {"s1": Mock(), "s2": Mock()}
         server.running = True
-        
+
         # Mock the connection manager to return expected values
         server.connection_manager.connections = {"c1": Mock(), "c2": Mock()}
 

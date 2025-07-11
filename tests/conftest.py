@@ -222,11 +222,8 @@ def mock_ml_dependencies():
         MockCosineSimilarity,
         MockFuzz,
         MockNearestNeighbors,
-        MockNLTKComponents,
-        MockPorterStemmer,
         MockProcess,
         MockRedisClient,
-        MockStopwords,
     )
 
     # Store original modules for cleanup
@@ -316,6 +313,22 @@ def mock_ml_dependencies():
         original_modules["nltk.download"] = getattr(nltk, "download", None)
         # Replace with mock
         nltk.download = mock_nltk_download
+        
+        # Mock nltk.corpus.stopwords to prevent LookupError
+        from tests.mocks.semantic_search_mocks import MockStopwords
+        
+        # Create a mock corpus module with proper stopwords attribute
+        class MockCorpus:
+            class stopwords:
+                @staticmethod
+                def words(language="english"):
+                    return MockStopwords.words(language)
+        
+        # Patch nltk.corpus if it exists
+        if hasattr(nltk, 'corpus'):
+            original_modules["nltk.corpus"] = nltk.corpus
+            nltk.corpus = MockCorpus()
+            
     except ImportError:
         # If NLTK isn't installed, create minimal mock only if needed
         pass

@@ -41,6 +41,10 @@ class MockSentenceTransformer:
         self._should_fail = False
         self._failure_message = ""
 
+    def get_sentence_embedding_dimension(self) -> int:
+        """Get sentence embedding dimension - matches SentenceTransformer API."""
+        return self.embedding_dim
+
     def _get_embedding_dim(self, model_name: str) -> int:
         """Get embedding dimension based on model name."""
         dims = {
