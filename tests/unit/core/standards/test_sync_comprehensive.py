@@ -39,6 +39,26 @@ class TestErrorHandling:
         """Create synchronizer with temporary directories."""
         config_path = temp_dir / "sync_config.yaml"
         cache_dir = temp_dir / "cache"
+        
+        # Create a default config to ensure consistent behavior
+        config = {
+            "repository": {
+                "owner": "test",
+                "repo": "standards",
+                "branch": "main",
+                "path": "standards",
+            },
+            "sync": {
+                "file_patterns": ["*.md", "*.yaml", "*.yml", "*.json"],
+                "exclude_patterns": ["*test*", "*draft*"],
+                "max_file_size": 1048576,
+            },
+        }
+        
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
+            
         return StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
 
     @pytest.mark.asyncio
@@ -72,7 +92,7 @@ class TestErrorHandling:
     async def test_disk_full_error(self, synchronizer):
         """Test handling of disk full errors during file write."""
         file_info = {
-            "path": "docs/standards/test.md",
+            "path": "standards/test.md",
             "sha": "abc123",
             "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
             "size": 1000,
@@ -92,7 +112,7 @@ class TestErrorHandling:
     async def test_permission_denied_error(self, synchronizer):
         """Test handling of permission errors."""
         file_info = {
-            "path": "docs/standards/test.md",
+            "path": "standards/test.md",
             "sha": "abc123",
             "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
         }
@@ -213,7 +233,7 @@ class TestEdgeCases:
         """Test handling of deeply nested directory structures."""
         deep_path = "/".join(["dir"] * 20) + "/file.md"
         file_info = {
-            "path": f"docs/standards/{deep_path}",
+            "path": f"standards/{deep_path}",
             "name": "file.md",
             "size": 100,
         }
@@ -226,9 +246,9 @@ class TestEdgeCases:
         """Test concurrent file sync operations."""
         files = [
             {
-                "path": f"docs/standards/file{i}.md",
+                "path": f"standards/file{i}.md",
                 "sha": f"sha{i}",
-                "download_url": f"https://raw.githubusercontent.com/test/repo/main/file{i}.md",
+                "download_url": f"https://raw.githubusercontent.com/test/repo/main/standards/file{i}.md",
                 "size": 100,
             }
             for i in range(10)
@@ -456,12 +476,11 @@ class TestPartialSync:
     @pytest.mark.asyncio
     async def test_partial_sync_recovery(self, synchronizer):
         """Test recovery from partial sync."""
-        repo_path = synchronizer.config["repository"]["path"]
         files = [
             {
-                "path": f"{repo_path}/file{i}.md",
+                "path": f"standards/file{i}.md",
                 "sha": f"sha{i}",
-                "download_url": f"url{i}",
+                "download_url": f"https://raw.githubusercontent.com/test/repo/main/standards/file{i}.md",
                 "size": 100,
             }
             for i in range(10)
@@ -499,12 +518,11 @@ class TestPartialSync:
         """Test resuming sync after previous failure."""
         # First sync - partial failure
         # Use paths relative to the repository path
-        repo_path = synchronizer.config["repository"]["path"]
         files_batch1 = [
             {
-                "path": f"{repo_path}/file{i}.md",
+                "path": f"standards/file{i}.md",
                 "sha": f"sha{i}",
-                "download_url": f"url{i}",
+                "download_url": f"https://raw.githubusercontent.com/test/repo/main/standards/file{i}.md",
                 "size": 100,
             }
             for i in range(5)
@@ -512,7 +530,7 @@ class TestPartialSync:
 
         # Add some existing metadata (simulating previous partial sync)
         for i in range(3):
-            file_path = f"{repo_path}/file{i}.md"
+            file_path = f"standards/file{i}.md"
             synchronizer.file_metadata[file_path] = FileMetadata(
                 path=file_path,
                 sha=f"sha{i}",
@@ -551,12 +569,11 @@ class TestPartialSync:
                 return None
             return b"content"
 
-        repo_path = synchronizer.config["repository"]["path"]
         files = [
             {
-                "path": f"{repo_path}/file{i}.md",
+                "path": f"standards/file{i}.md",
                 "sha": f"sha{i}",
-                "download_url": f"url{i}",
+                "download_url": f"https://raw.githubusercontent.com/test/repo/main/standards/file{i}.md",
                 "size": 100,
             }
             for i in range(9)
@@ -695,7 +712,7 @@ class TestSecurityValidation:
                 "download_url": "https://evil.com/shadow",
             },
             {
-                "path": "docs/standards/../../../../../../tmp/evil",
+                "path": "../../../../../../tmp/evil",
                 "name": "evil",
                 "size": 100,
                 "sha": "malicious3",
@@ -722,7 +739,7 @@ class TestSecurityValidation:
     async def test_content_validation(self, synchronizer):
         """Test content validation and SHA verification."""
         file_info = {
-            "path": "docs/standards/test.md",
+            "path": "standards/test.md",
             "sha": "abc123",
             "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
             "size": 1000,
@@ -861,12 +878,11 @@ class TestPerformanceOptimization:
             download_times.append(time.time() - start)
             return b"content"
 
-        repo_path = synchronizer.config["repository"]["path"]
         files = [
             {
-                "path": f"{repo_path}/file{i}.md",
+                "path": f"standards/file{i}.md",
                 "sha": f"sha{i}",
-                "download_url": f"url{i}",
+                "download_url": f"https://raw.githubusercontent.com/test/repo/main/standards/file{i}.md",
                 "size": 100,
             }
             for i in range(10)
@@ -1029,7 +1045,7 @@ def large_file_list():
     """Generate large list of files for performance testing."""
     return [
         {
-            "path": f"docs/standards/category{i//100}/file{i}.md",
+            "path": f"category{i//100}/file{i}.md",
             "name": f"file{i}.md",
             "sha": f"sha{i}",
             "size": 1000 + (i * 100),
