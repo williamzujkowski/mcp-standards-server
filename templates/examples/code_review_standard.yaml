@@ -210,10 +210,10 @@ escalation:
     - Disagreement on approach
   levels:
     - name: Team Lead
-      contact: "@team-lead"
+      contact: '@team-lead'
       sla: 4 hours
     - name: Engineering Manager
-      contact: "@eng-manager"
+      contact: '@eng-manager'
       sla: 8 hours
 
 common_issues:
