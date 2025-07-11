@@ -1193,16 +1193,26 @@ class AsyncSemanticSearch:
 
     async def search_async(self, query: str, **kwargs: Any) -> list[SearchResult]:
         """Perform search asynchronously."""
-        future = self.loop.run_in_executor(
-            None, self.search_engine.search, query, **kwargs
-        )
+        import asyncio
+        import functools
+        
+        # Use partial to properly handle keyword arguments
+        search_func = functools.partial(self.search_engine.search, query, **kwargs)
+        
+        # Use current event loop instead of self.loop for better compatibility
+        loop = asyncio.get_running_loop()
+        future = loop.run_in_executor(None, search_func)
         return await future
 
     async def index_documents_batch_async(
         self, documents: list[tuple[str, str, dict[str, Any]]]
     ) -> None:
         """Index documents asynchronously."""
-        future = self.loop.run_in_executor(
+        import asyncio
+        
+        # Use current event loop instead of self.loop for better compatibility
+        loop = asyncio.get_running_loop()
+        future = loop.run_in_executor(
             None, self.search_engine.index_documents_batch, documents
         )
         await future
