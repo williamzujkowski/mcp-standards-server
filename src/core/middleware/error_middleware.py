@@ -8,8 +8,8 @@ across all server endpoints.
 import logging
 import time
 import traceback
-from collections.abc import Callable
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 
 from aiohttp import web
 
@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 @web.middleware
 async def error_handling_middleware(
-    request: web.Request, handler: Callable
-) -> web.Response:
+    request: web.Request, handler: Callable[[web.Request], Awaitable[web.StreamResponse]]
+) -> web.StreamResponse:
     """
     Middleware for handling errors in HTTP requests.
 
@@ -69,7 +69,7 @@ async def error_handling_middleware(
             duration=duration,
         )
 
-        return response
+        return cast(web.StreamResponse, response)
 
     except web.HTTPException as e:
         # Handle aiohttp HTTP exceptions
@@ -197,7 +197,7 @@ async def request_logging_middleware(
         },
     )
 
-    return response
+    return cast(web.StreamResponse, response)
 
 
 class WebSocketErrorHandler:
