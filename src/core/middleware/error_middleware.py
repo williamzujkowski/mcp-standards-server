@@ -9,7 +9,7 @@ import logging
 import time
 import traceback
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, cast
 
 from aiohttp import web
 
@@ -302,11 +302,11 @@ def setup_error_handling(app: web.Application) -> None:
         app: aiohttp application instance
     """
     # Add middleware
-    app.middlewares.append(error_handling_middleware)
+    app.middlewares.append(cast(Any, error_handling_middleware))
 
     # Add request logging in development
     if logger.isEnabledFor(logging.DEBUG):
-        app.middlewares.append(request_logging_middleware)
+        app.middlewares.append(cast(Any, request_logging_middleware))
 
     # Note: Error handling is managed by the middleware above
     # No need to add catch-all routes which would conflict
