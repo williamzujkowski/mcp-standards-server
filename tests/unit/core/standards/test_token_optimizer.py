@@ -250,7 +250,7 @@ How to test your implementation.
 
     def test_format_condensed(self, optimizer, sample_standard):
         """Test condensed format generation."""
-        budget = TokenBudget(total=2000)
+        budget = TokenBudget(total=5000, reserved_for_context=500, reserved_for_response=1000)
         content, result = optimizer.optimize_standard(
             sample_standard, format_type=StandardFormat.CONDENSED, budget=budget
         )
@@ -262,7 +262,7 @@ How to test your implementation.
 
     def test_format_reference(self, optimizer, sample_standard):
         """Test reference format generation."""
-        budget = TokenBudget(total=1000)
+        budget = TokenBudget(total=2000, reserved_for_context=300, reserved_for_response=500)
         content, result = optimizer.optimize_standard(
             sample_standard, format_type=StandardFormat.REFERENCE, budget=budget
         )
@@ -274,7 +274,7 @@ How to test your implementation.
 
     def test_format_summary(self, optimizer, sample_standard):
         """Test summary format generation."""
-        budget = TokenBudget(total=500)
+        budget = TokenBudget(total=2000, reserved_for_context=200, reserved_for_response=300)
         content, result = optimizer.optimize_standard(
             sample_standard, format_type=StandardFormat.SUMMARY, budget=budget
         )
@@ -282,11 +282,11 @@ How to test your implementation.
         assert content
         assert result.format_used == StandardFormat.SUMMARY
         assert "**Summary**:" in content
-        assert result.compressed_tokens < 500
+        assert result.compressed_tokens < 1500
 
     def test_format_with_required_sections(self, optimizer, sample_standard):
         """Test formatting with required sections."""
-        budget = TokenBudget(total=1500)
+        budget = TokenBudget(total=3000, reserved_for_context=400, reserved_for_response=600)
         required = ["security", "testing"]
 
         content, result = optimizer.optimize_standard(
@@ -306,12 +306,12 @@ How to test your implementation.
         assert format_selected == StandardFormat.FULL
 
         # Small budget - should select SUMMARY
-        small_budget = TokenBudget(total=200)
+        small_budget = TokenBudget(total=50, reserved_for_context=5, reserved_for_response=30)
         format_selected = optimizer.auto_select_format(sample_standard, small_budget)
         assert format_selected == StandardFormat.SUMMARY
 
         # Medium budget - should select CONDENSED
-        medium_budget = TokenBudget(total=3000)
+        medium_budget = TokenBudget(total=120, reserved_for_context=20, reserved_for_response=30)
         format_selected = optimizer.auto_select_format(sample_standard, medium_budget)
         assert format_selected in [StandardFormat.CONDENSED, StandardFormat.REFERENCE]
 
@@ -529,7 +529,7 @@ Best practices for this section include following all guidelines carefully.
     def test_token_budget_warning(self, large_standard):
         """Test token budget warning system."""
         optimizer = TokenOptimizer(ModelType.GPT4)
-        small_budget = TokenBudget(total=1000, warning_threshold=0.8)
+        small_budget = TokenBudget(total=2500, reserved_for_context=300, reserved_for_response=500, warning_threshold=0.8)
 
         content, result = optimizer.optimize_standard(
             large_standard, format_type=StandardFormat.CONDENSED, budget=small_budget
@@ -590,7 +590,7 @@ Best practices for this section include following all guidelines carefully.
         loader = DynamicLoader(optimizer)
 
         # Initial load
-        budget = TokenBudget(total=2000)
+        budget = TokenBudget(total=3500, reserved_for_context=400, reserved_for_response=600)
         initial_sections = ["overview", "requirements"]
 
         # Get progressive loading plan

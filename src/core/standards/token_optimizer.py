@@ -148,17 +148,25 @@ class CompressionTechniques:
     @staticmethod
     def remove_redundancy(text: str) -> str:
         """Remove redundant information from text."""
-        # Remove multiple spaces
-        text = re.sub(r"\s+", " ", text)
+        # Remove multiple spaces within lines (but not newlines)
+        text = re.sub(r"[ \t]+", " ", text)
 
-        # Remove redundant newlines
+        # Remove redundant newlines (3+ becomes 2)
         text = re.sub(r"\n{3,}", "\n\n", text)
 
-        # Remove trailing spaces
-        lines = [line.rstrip() for line in text.split("\n")]
-        text = "\n".join(lines)
-
-        return text.strip()
+        # Remove trailing spaces from each line while preserving newline structure
+        # Split on \n\n first to preserve paragraph breaks
+        paragraphs = text.split("\n\n")
+        cleaned_paragraphs = []
+        
+        for paragraph in paragraphs:
+            # Clean each paragraph
+            lines = [line.rstrip() for line in paragraph.split("\n")]
+            cleaned_paragraph = "\n".join(line for line in lines if line.strip())
+            if cleaned_paragraph.strip():
+                cleaned_paragraphs.append(cleaned_paragraph)
+        
+        return "\n\n".join(cleaned_paragraphs).strip()
 
     @staticmethod
     def use_abbreviations(text: str) -> str:
@@ -254,20 +262,20 @@ class CompressionTechniques:
         lookup_table = {}
         compressed_text = text
 
-        # Find repeated long phrases (>20 chars appearing 3+ times)
+        # Find repeated phrases (>10 chars appearing 2+ times)
         words = text.split()
         phrase_counts: defaultdict[str, int] = defaultdict(int)
 
         # Count 3-word phrases
         for i in range(len(words) - 2):
             phrase = " ".join(words[i : i + 3])
-            if len(phrase) > 20:
+            if len(phrase) > 10:  # Lowered from 20 to 10
                 phrase_counts[phrase] += 1
 
         # Create lookup entries for frequent phrases
         lookup_id = 1
         for phrase, count in phrase_counts.items():
-            if count >= 3:
+            if count >= 2:  # Lowered from 3 to 2
                 key = f"[L{lookup_id}]"
                 lookup_table[key] = phrase
                 compressed_text = compressed_text.replace(phrase, key)
@@ -385,48 +393,98 @@ class TokenOptimizer:
     ) -> list[StandardSection]:
         """Parse standard into sections."""
         sections = []
+        content = standard.get("content", "")
+        
+        if not content.strip():
+            return sections
 
         # Common section patterns
         section_patterns = [
-            ("overview", r"#{1,3}\s*Overview.*?(?=#{1,3}|\Z)", 8),
-            ("requirements", r"#{1,3}\s*Requirements.*?(?=#{1,3}|\Z)", 9),
-            ("implementation", r"#{1,3}\s*Implementation.*?(?=#{1,3}|\Z)", 7),
-            ("examples", r"#{1,3}\s*Examples?.*?(?=#{1,3}|\Z)", 5),
-            ("best_practices", r"#{1,3}\s*Best Practices.*?(?=#{1,3}|\Z)", 8),
-            ("security", r"#{1,3}\s*Security.*?(?=#{1,3}|\Z)", 9),
-            ("performance", r"#{1,3}\s*Performance.*?(?=#{1,3}|\Z)", 7),
-            ("testing", r"#{1,3}\s*Testing.*?(?=#{1,3}|\Z)", 6),
-            ("references", r"#{1,3}\s*References.*?(?=#{1,3}|\Z)", 3),
+            ("overview", r"#{1,3}\s*Overview.*?(?=\n#{1,3}|\Z)", 8),
+            ("requirements", r"#{1,3}\s*Requirements.*?(?=\n#{1,3}|\Z)", 9),
+            ("implementation", r"#{1,3}\s*Implementation.*?(?=\n#{1,3}|\Z)", 7),
+            ("examples", r"#{1,3}\s*Examples?.*?(?=\n#{1,3}|\Z)", 5),
+            ("best_practices", r"#{1,3}\s*Best Practices.*?(?=\n#{1,3}|\Z)", 8),
+            ("security", r"#{1,3}\s*Security.*?(?=\n#{1,3}|\Z)", 9),
+            ("performance", r"#{1,3}\s*Performance.*?(?=\n#{1,3}|\Z)", 7),
+            ("testing", r"#{1,3}\s*Testing.*?(?=\n#{1,3}|\Z)", 6),
+            ("references", r"#{1,3}\s*References.*?(?=\n#{1,3}|\Z)", 3),
         ]
 
-        content = standard.get("content", "")
+        # Track covered character ranges to avoid duplicates
+        covered_ranges: list[tuple[int, int]] = []
 
         for section_id, pattern, priority in section_patterns:
             matches = re.finditer(pattern, content, re.IGNORECASE | re.DOTALL)
             for match in matches:
+                start, end = match.span()
                 section_content = match.group(0)
-                sections.append(
-                    StandardSection(
-                        id=section_id,
-                        title=section_id.replace("_", " ").title(),
-                        content=section_content,
-                        priority=priority,
-                        token_count=self.token_counter.count_tokens(section_content),
-                    )
+                
+                # Check if this range overlaps with already covered content
+                overlaps = any(
+                    not (end <= r_start or start >= r_end) 
+                    for r_start, r_end in covered_ranges
                 )
+                
+                if not overlaps:
+                    sections.append(
+                        StandardSection(
+                            id=section_id,
+                            title=section_id.replace("_", " ").title(),
+                            content=section_content,
+                            priority=priority,
+                            token_count=self.token_counter.count_tokens(section_content),
+                        )
+                    )
+                    covered_ranges.append((start, end))
 
-        # Add any remaining content as "other"
-        covered_content = "".join(s.content for s in sections)
-        if len(covered_content) < len(content):
-            remaining = content[len(covered_content) :]
-            if remaining.strip():
+        # If no sections were found, treat entire content as one section
+        if not sections:
+            sections.append(
+                StandardSection(
+                    id="content",
+                    title="Standard Content",
+                    content=content,
+                    priority=5,
+                    token_count=self.token_counter.count_tokens(content),
+                )
+            )
+        else:
+            # Add any significant uncovered content as "other"
+            # Sort covered ranges and find gaps
+            covered_ranges.sort()
+            uncovered_parts = []
+            
+            # Check content before first range
+            if covered_ranges and covered_ranges[0][0] > 0:
+                uncovered_content = content[:covered_ranges[0][0]].strip()
+                if len(uncovered_content) > 50:  # Only include substantial content
+                    uncovered_parts.append(uncovered_content)
+            
+            # Check gaps between ranges
+            for i in range(len(covered_ranges) - 1):
+                gap_start = covered_ranges[i][1]
+                gap_end = covered_ranges[i + 1][0]
+                gap_content = content[gap_start:gap_end].strip()
+                if len(gap_content) > 50:  # Only include substantial content
+                    uncovered_parts.append(gap_content)
+            
+            # Check content after last range
+            if covered_ranges and covered_ranges[-1][1] < len(content):
+                uncovered_content = content[covered_ranges[-1][1]:].strip()
+                if len(uncovered_content) > 50:  # Only include substantial content
+                    uncovered_parts.append(uncovered_content)
+            
+            # Add uncovered content as "other" section if any
+            if uncovered_parts:
+                remaining_content = "\n\n".join(uncovered_parts)
                 sections.append(
                     StandardSection(
                         id="other",
                         title="Additional Information",
-                        content=remaining,
+                        content=remaining_content,
                         priority=4,
-                        token_count=self.token_counter.count_tokens(remaining),
+                        token_count=self.token_counter.count_tokens(remaining_content),
                     )
                 )
 
@@ -571,9 +629,9 @@ class TokenOptimizer:
 
             for line in lines:
                 stripped = line.strip()
-                # Headers
+                # Skip headers - we'll use section.title instead
                 if stripped.startswith("#"):
-                    key_points.append(stripped)
+                    continue
                 # Bullet points
                 elif stripped.startswith(("- ", "* ", "• ")):
                     # Compress the bullet point
@@ -715,7 +773,7 @@ class TokenOptimizer:
 
     def progressive_load(
         self, standard: dict[str, Any], initial_sections: list[str], max_depth: int = 3
-    ) -> list[tuple[str, int]]:
+    ) -> list[list[tuple[str, int]]]:
         """Generate progressive loading plan for standard."""
         sections = self._parse_standard_sections(standard)
 
@@ -766,11 +824,8 @@ class TokenOptimizer:
             to_load = next_batch - loaded
             depth += 1
 
-        # Flatten the loading plan
-        flattened_plan: list[tuple[str, int]] = []
-        for batch in loading_plan:
-            flattened_plan.extend(batch)
-        return flattened_plan
+        # Return the loading plan with batches preserved
+        return loading_plan
 
     def estimate_tokens(
         self,
