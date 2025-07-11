@@ -245,7 +245,7 @@ jobs:
       
       - name: Build and push Docker image
         timeout-minutes: 20
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
