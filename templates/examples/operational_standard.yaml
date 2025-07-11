@@ -109,7 +109,7 @@ automation:
       tool: logrotate
       script_location: /etc/logrotate.d/application
     - name: Metric Collection
-      schedule: */1 * * * *
+      schedule: "*/1 * * * *"
       tool: CloudWatch Agent
       script_location: /opt/aws/amazon-cloudwatch-agent/etc/config.json
   pipelines:

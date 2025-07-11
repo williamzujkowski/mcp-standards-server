@@ -187,7 +187,7 @@ automation:
 metrics:
   - name: Review Turnaround Time
     formula: Time from PR open to first review
-    target: '< 4 hours'
+    target: < 4 hours
     measurement_frequency: Weekly
   - name: Review Effectiveness
     formula: Bugs caught in review / Total bugs found
@@ -195,7 +195,7 @@ metrics:
     measurement_frequency: Monthly
   - name: PR Size
     formula: Lines of code changed per PR
-    target: '< 400 lines'
+    target: < 400 lines
     measurement_frequency: Weekly
 
 dashboards:
@@ -210,10 +210,10 @@ escalation:
     - Disagreement on approach
   levels:
     - name: Team Lead
-      contact: @team-lead
+      contact: "@team-lead"
       sla: 4 hours
     - name: Engineering Manager
-      contact: @eng-manager
+      contact: "@eng-manager"
       sla: 8 hours
 
 common_issues:

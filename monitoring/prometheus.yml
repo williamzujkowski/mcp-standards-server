@@ -33,45 +33,45 @@ scrape_configs:
   - job_name: mcp-standards-server
     static_configs:
       - targets: [mcp-server:8080]
-    metrics_path: "/metrics"
+    metrics_path: /metrics
     scrape_interval: 10s
     scrape_timeout: 5s
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: "mcp-server"
+        replacement: mcp-server
 
   # Redis metrics (requires redis_exporter)
-  - job_name: "redis"
+  - job_name: redis
     static_configs:
-      - targets: ["redis-exporter:9121"]
-    metrics_path: "/metrics"
+      - targets: [redis-exporter:9121]
+    metrics_path: /metrics
     scrape_interval: 15s
     scrape_timeout: 5s
 
   # ChromaDB metrics
-  - job_name: "chromadb"
+  - job_name: chromadb
     static_configs:
-      - targets: ["chromadb:8000"]
-    metrics_path: "/metrics"
+      - targets: [chromadb:8000]
+    metrics_path: /metrics
     scrape_interval: 30s
     scrape_timeout: 10s
 
   # Node exporter for system metrics
-  - job_name: "node"
+  - job_name: node
     static_configs:
-      - targets: ["node-exporter:9100"]
+      - targets: [node-exporter:9100]
     relabel_configs:
       - source_labels: [__address__]
-        regex: '([^:]+):.*'
+        regex: ([^:]+):.*
         target_label: hostname
-        replacement: '${1}'
+        replacement: ${1}
 
   # Cadvisor for container metrics
-  - job_name: "cadvisor"
+  - job_name: cadvisor
     static_configs:
-      - targets: ["cadvisor:8080"]
+      - targets: [cadvisor:8080]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: "cadvisor"
+        replacement: cadvisor
