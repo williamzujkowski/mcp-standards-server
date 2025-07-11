@@ -231,12 +231,12 @@ def mock_ml_dependencies():
 
     # Store original modules for cleanup
     original_modules = {}
-    
+
     # Mock sentence-transformers EARLY and COMPLETELY
     class MockSentenceTransformersModule:
         SentenceTransformer = MockSentenceTransformer
         __version__ = "2.0.0"  # Mock version
-        
+
     # Mock sklearn components
     class MockPairwiseModule:
         cosine_similarity = MockCosineSimilarity.cosine_similarity
@@ -281,10 +281,10 @@ def mock_ml_dependencies():
     class MockHuggingFaceHub:
         def snapshot_download(*args, **kwargs):
             return "/tmp/mock_model"
-        
+
         def hf_hub_download(*args, **kwargs):
             return "/tmp/mock_file"
-            
+
         def try_to_load_from_cache(*args, **kwargs):
             return None
 
@@ -342,10 +342,10 @@ def mock_ml_dependencies():
             self.status_code = status_code
             self.text = "mocked response"
             self.content = b"mocked response"
-            
+
         def json(self):
             return {"mocked": True}
-            
+
         def raise_for_status(self):
             if self.status_code >= 400:
                 raise Exception(f"HTTP {self.status_code}")
@@ -361,7 +361,7 @@ def mock_ml_dependencies():
         get = staticmethod(mock_requests_get)
         post = staticmethod(mock_requests_post)
         Session = Mock
-        
+
     if "requests" in sys.modules:
         original_modules["requests"] = sys.modules["requests"]
     sys.modules["requests"] = cast(ModuleType, MockRequestsModule())

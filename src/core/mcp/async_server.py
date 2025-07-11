@@ -762,10 +762,10 @@ class AsyncMCPServer:
         for session in list(self.sessions.values()):
             if hasattr(session, 'close'):
                 session_close_tasks.append(session.close())
-        
+
         if session_close_tasks:
             await asyncio.gather(*session_close_tasks, return_exceptions=True)
-        
+
         # Clear sessions
         self.sessions.clear()
 
@@ -1112,7 +1112,7 @@ class AsyncMCPServer:
         for session in self.sessions.values():
             if hasattr(session, 'send_message'):
                 tasks.append(session.send_message(message))
-        
+
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
