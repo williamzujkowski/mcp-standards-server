@@ -968,22 +968,26 @@ class TestAsyncSemanticSearchComprehensive:
                                             "sklearn.neighbors.NearestNeighbors",
                                             MockNearestNeighbors,
                                         ):
-                                            # Create sync engine first
-                                            sync_engine = create_search_engine(
-                                                async_mode=False
-                                            )
+                                            with patch(
+                                                "sentence_transformers.SentenceTransformer",
+                                                MockSentenceTransformer,
+                                            ):
+                                                # Create sync engine first
+                                                sync_engine = create_search_engine(
+                                                    async_mode=False
+                                                )
 
-                                            # Index test documents synchronously
-                                            documents = TestDataGenerator.generate_standards_corpus(
-                                                20
-                                            )
-                                            sync_engine.index_documents_batch(documents)
+                                                # Index test documents synchronously
+                                                documents = TestDataGenerator.generate_standards_corpus(
+                                                    20
+                                                )
+                                                sync_engine.index_documents_batch(documents)
 
-                                            # Now wrap in async interface
-                                            engine = AsyncSemanticSearch(sync_engine)
+                                                # Now wrap in async interface
+                                                engine = AsyncSemanticSearch(sync_engine)
 
-                                            yield engine
-                                            engine.close()
+                                                yield engine
+                                                engine.close()
 
     @pytest.mark.asyncio
     async def test_async_search_basic(self, async_search_engine):
