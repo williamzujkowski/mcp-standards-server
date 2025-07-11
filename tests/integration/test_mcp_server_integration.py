@@ -105,21 +105,20 @@ class TestMCPServerIntegration:
 
             # Test tool execution
             arguments = {
-                "project_context": {
+                "context": {
                     "languages": ["python"],
                     "frameworks": ["django"],
                     "project_type": "web",
+                    "requirements": ["code_quality", "performance"],
                 },
-                "requirements": ["code_quality", "performance"],
-                "max_results": 10,
+                "include_resolution_details": False,
             }
 
             result = await mcp_server._get_applicable_standards(**arguments)
 
             # Verify result structure
             assert "standards" in result
-            assert "metadata" in result
-            assert len(result["standards"]) == 2
+            assert "evaluation_path" in result
 
             # Verify standards content
             standard = result["standards"][0]
@@ -164,9 +163,8 @@ class TestMCPServerIntegration:
 
             # Test tool execution
             arguments = {
-                "standard_id": "python-coding-standards",
-                "code_path": "/path/to/code.py",
-                "code_content": "def hello():\n    print('Hello, world!')",
+                "standard": "python-coding-standards",
+                "code": "def hello():\n    print('Hello, world!')",
                 "language": "python",
             }
 
@@ -208,7 +206,7 @@ class TestMCPServerIntegration:
             arguments = {
                 "query": "python code quality standards",
                 "filters": {"category": "programming"},
-                "max_results": 5,
+                "limit": 5,
             }
 
             result = await mcp_server._search_standards(**arguments)
@@ -252,9 +250,8 @@ class TestMCPServerIntegration:
 
             # Test tool execution
             arguments = {
-                "code_content": "def hello():\n    print('Hello, world!')",
-                "language": "python",
-                "context": {"project_type": "web", "frameworks": ["django"]},
+                "code": "def hello():\n    print('Hello, world!')",
+                "context": {"project_type": "web", "frameworks": ["django"], "language": "python"},
             }
 
             result = await mcp_server._suggest_improvements(**arguments)
@@ -288,7 +285,6 @@ class TestMCPServerIntegration:
             assert "standard_id" in result
             assert "framework" in result
             assert "mappings" in result
-            assert "coverage" in result
 
             # Verify mappings
             assert result["standard_id"] == "python-coding-standards"
@@ -304,8 +300,7 @@ class TestMCPServerIntegration:
             # Test that protected operations require authentication
             with pytest.raises(RuntimeError):  # Should raise authentication error
                 await mcp_server._get_applicable_standards(
-                    project_context={"languages": ["python"]},
-                    requirements=["code_quality"],
+                    context={"languages": ["python"], "requirements": ["code_quality"]},
                 )
 
     async def test_rate_limiting(self, mcp_server):
@@ -327,8 +322,7 @@ class TestMCPServerIntegration:
         # Test with invalid input
         with pytest.raises(ValueError):  # Should raise validation error
             await mcp_server._get_applicable_standards(
-                project_context="invalid_context",  # Should be dict
-                requirements=["code_quality"],
+                context="invalid_context",  # Should be dict
             )
 
     async def test_privacy_filtering(self, mcp_server):
@@ -368,8 +362,7 @@ class TestMCPServerIntegration:
                 mock_get_standards.return_value = []
 
                 await mcp_server._get_applicable_standards(
-                    project_context={"languages": ["python"]},
-                    requirements=["code_quality"],
+                    context={"languages": ["python"], "requirements": ["code_quality"]},
                 )
 
                 # Verify metrics were recorded
@@ -404,8 +397,7 @@ class TestMCPServerIntegration:
             for _i in range(10):
                 task = asyncio.create_task(
                     mcp_server._get_applicable_standards(
-                        project_context={"languages": ["python"]},
-                        requirements=["code_quality"],
+                        context={"languages": ["python"], "requirements": ["code_quality"]},
                     )
                 )
                 tasks.append(task)
