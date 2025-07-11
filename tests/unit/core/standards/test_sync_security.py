@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
+import yaml
 
 from src.core.standards.sync import (
     FileMetadata,
@@ -59,22 +60,16 @@ class TestPathTraversalPrevention:
             },
         ]
 
-        # Test path resolution
+        # Test that the synchronizer's validation methods reject these paths
         for file_info in malicious_files:
-            try:
-                repo_path = Path(secure_synchronizer.config["repository"]["path"])
-                relative_path = Path(file_info["path"]).relative_to(repo_path)
-                local_path = secure_synchronizer.cache_dir / relative_path
-
-                # Resolve to absolute path and check if it's within cache dir
-                resolved_path = local_path.resolve()
-                cache_dir_resolved = secure_synchronizer.cache_dir.resolve()
-
-                # Path should not escape cache directory
-                assert str(cache_dir_resolved) in str(resolved_path)
-            except ValueError:
-                # relative_to() raises ValueError for paths outside base
-                pass  # This is expected and safe
+            path = file_info["path"]
+            
+            # Test _is_safe_path method
+            assert not secure_synchronizer._is_safe_path(path), f"Path {path} should be rejected as unsafe"
+            
+        # Test that filtering removes these files
+        filtered = secure_synchronizer._filter_files(malicious_files)
+        assert len(filtered) == 0, "Malicious paths were not filtered out"
 
     @pytest.mark.asyncio
     async def test_symlink_prevention(self, secure_synchronizer):
@@ -92,7 +87,7 @@ class TestPathTraversalPrevention:
                 symlink_path.symlink_to(target_dir)
 
                 file_info = {
-                    "path": "docs/standards/malicious_link/secret.txt",
+                    "path": "standards/malicious_link/secret.txt",
                     "sha": "abc123",
                     "download_url": "https://raw.githubusercontent.com/test/repo/main/secret.txt",
                 }
@@ -129,12 +124,12 @@ class TestPathTraversalPrevention:
         """Test path normalization for various formats."""
         test_paths = [
             (
-                "docs/standards//double//slashes//file.md",
-                "docs/standards/double/slashes/file.md",
+                "standards//double//slashes//file.md",
+                "standards/double/slashes/file.md",
             ),
-            ("docs/standards/./current/./file.md", "docs/standards/current/file.md"),
-            ("docs\\standards\\windows\\path.md", "docs/standards/windows/path.md"),
-            ("docs/standards/\x00null\x00byte.md", None),  # Should reject null bytes
+            ("standards/./current/./file.md", "standards/current/file.md"),
+            ("standards\\windows\\path.md", "standards/windows/path.md"),
+            ("standards/\x00null\x00byte.md", None),  # Should reject null bytes
         ]
 
         for input_path, expected in test_paths:
@@ -158,7 +153,27 @@ class TestContentValidation:
         """Create synchronizer for validation testing."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_dir = Path(tmpdir) / "cache"
-            yield StandardsSynchronizer(cache_dir=cache_dir)
+            config_path = Path(tmpdir) / "config.yaml"
+            
+            # Create a config with max_file_size
+            config = {
+                "repository": {
+                    "owner": "test",
+                    "repo": "standards",
+                    "branch": "main",
+                    "path": "standards",
+                },
+                "sync": {
+                    "file_patterns": ["*.md", "*.yaml", "*.yml", "*.json"],
+                    "exclude_patterns": ["*test*", "*draft*"],
+                    "max_file_size": 1048576,  # 1MB
+                },
+            }
+            
+            with open(config_path, "w") as f:
+                yaml.dump(config, f)
+                
+            yield StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
 
     @pytest.mark.asyncio
     async def test_content_hash_verification(self, validation_synchronizer):
@@ -167,7 +182,7 @@ class TestContentValidation:
         expected_hash = hashlib.sha256(content).hexdigest()
 
         file_info = {
-            "path": "docs/standards/test.md",
+            "path": "standards/test.md",
             "sha": "github_sha",
             "download_url": "https://raw.githubusercontent.com/test/repo/main/test.md",
             "size": len(content),
@@ -227,7 +242,7 @@ class TestContentValidation:
 
         for test_file in files_to_test:
             file_info = {
-                "path": f'docs/standards/{test_file["path"]}',
+                "path": f'standards/{test_file["path"]}',
                 "name": test_file["path"],
                 "size": test_file["size"],
                 "sha": "test_sha",
@@ -285,7 +300,7 @@ class TestContentValidation:
 
         for test_file in test_files:
             file_info = {
-                "path": f'docs/standards/{test_file["name"]}',
+                "path": f'standards/{test_file["name"]}',
                 "name": test_file["name"],
                 "size": len(test_file["content"]),
                 "sha": "test_sha",
@@ -316,7 +331,7 @@ class TestContentValidation:
 
         for i, content in enumerate(malicious_contents):
             file_info = {
-                "path": f"docs/standards/test{i}.md",
+                "path": f"standards/test{i}.md",
                 "name": f"test{i}.md",
                 "sha": f"sha{i}",
                 "download_url": f"https://raw.githubusercontent.com/test/repo/main/test{i}.md",
@@ -498,7 +513,7 @@ class TestInputSanitization:
 
         for filename in dangerous_filenames:
             file_info = {
-                "path": f"docs/standards/{filename}",
+                "path": f"standards/{filename}",
                 "name": filename,
                 "size": 100,
             }
@@ -607,7 +622,7 @@ class TestSecureFileOperations:
         content = b"# Important content that must be written atomically"
 
         file_info = {
-            "path": "docs/standards/important.md",
+            "path": "standards/important.md",
             "sha": "abc123",
             "download_url": "https://raw.githubusercontent.com/test/repo/main/important.md",
         }
@@ -664,7 +679,7 @@ class TestSecureFileOperations:
         new_content = b"# New content"
 
         file_info = {
-            "path": "docs/standards/existing.md",
+            "path": "standards/existing.md",
             "sha": "original_sha",
             "download_url": "https://raw.githubusercontent.com/test/repo/main/existing.md",
         }
