@@ -1,5 +1,7 @@
 """Tests for security middleware."""
 
+from typing import Any
+
 import pytest
 
 from src.core.security import (
@@ -132,7 +134,7 @@ class TestInputSanitizer:
     def test_max_depth_validation(self, sanitizer):
         """Test maximum depth validation."""
         # Create deeply nested structure
-        deep_data = {"level1": {"level2": {"level3": {}}}}
+        deep_data: dict[str, dict[str, dict[str, dict[str, Any]]]] = {"level1": {"level2": {"level3": {}}}}
 
         # Should work with default depth
         result = sanitizer.sanitize_dict(deep_data)
@@ -200,7 +202,7 @@ class TestSecurityValidator:
         validator.validate_json_structure(valid_data)
 
         # Too deep structure should fail
-        deep_data = {"level1": {"level2": {"level3": {}}}}
+        deep_data: dict[str, dict[str, dict[str, dict[str, Any]]]] = {"level1": {"level2": {"level3": {}}}}
         config = SecurityConfig(max_json_depth=2)
         validator = SecurityValidator(config)
 

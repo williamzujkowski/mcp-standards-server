@@ -6,10 +6,10 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .rule_engine import RuleEngine
-from .semantic_search import SemanticSearch, create_search_engine
+from .semantic_search import AsyncSemanticSearch, SemanticSearch, create_search_engine
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class StandardsSearchIntegration:
             enable_analytics=enable_analytics
         )
         self.rule_engine = RuleEngine()
-        self._indexed_standards = set()
+        self._indexed_standards: set[str] = set()
 
     def index_all_standards(self, force_reindex: bool = False) -> None:
         """
@@ -93,7 +93,10 @@ class StandardsSearchIntegration:
         # Batch index all documents
         if documents:
             logger.info(f"Indexing {len(documents)} documents")
-            self.search_engine.index_documents_batch(documents)
+            if isinstance(self.search_engine, SemanticSearch):
+                self.search_engine.index_documents_batch(documents)
+            else:
+                raise TypeError("Sync indexing not supported for AsyncSemanticSearch")
             logger.info("Indexing complete")
         else:
             logger.info("No new documents to index")
@@ -104,7 +107,7 @@ class StandardsSearchIntegration:
         category: str | None = None,
         tags: list[str] | None = None,
         top_k: int = 10,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """
         Search for standards matching the query.
@@ -120,16 +123,19 @@ class StandardsSearchIntegration:
             List of matching standards with metadata
         """
         # Build filters
-        filters = {}
+        filters: dict[str, Any] = {}
         if category:
             filters["category"] = category
         if tags:
             filters["tags"] = tags
 
         # Perform search
-        results = self.search_engine.search(
-            query=query, top_k=top_k, filters=filters, **kwargs
-        )
+        if isinstance(self.search_engine, SemanticSearch):
+            results = self.search_engine.search(
+                query=query, top_k=top_k, filters=filters, **kwargs
+            )
+        else:
+            raise TypeError("Sync search not supported for AsyncSemanticSearch")
 
         # Convert to standard format
         standards_results = []
@@ -216,16 +222,19 @@ class StandardsSearchIntegration:
             List of similar standards
         """
         # Get the reference standard content
-        if standard_id in self.search_engine.documents:
-            reference_content = self.search_engine.documents[standard_id]
-        else:
-            # Try to load and index it
-            standard_name = standard_id.replace("std:", "")
-            standard_data = self._load_standard(standard_name)
-            if not standard_data:
-                return []
+        if isinstance(self.search_engine, SemanticSearch):
+            if standard_id in self.search_engine.documents:
+                reference_content = self.search_engine.documents[standard_id]
+            else:
+                # Try to load and index it
+                standard_name = standard_id.replace("std:", "")
+                standard_data = self._load_standard(standard_name)
+                if not standard_data:
+                    return []
 
-            reference_content = self._extract_searchable_content(standard_data)
+                reference_content = self._extract_searchable_content(standard_data)
+        else:
+            raise TypeError("Sync operations not supported for AsyncSemanticSearch")
 
         # Search using the reference content as query
         results = self.search_standards(
@@ -300,7 +309,7 @@ class StandardsSearchIntegration:
                 with open(standard_file) as f:
                     import yaml
 
-                    return yaml.safe_load(f)
+                    return cast(dict[str, Any], yaml.safe_load(f))
             except Exception as e:
                 logger.error(f"Failed to load standard {standard_name}: {e}")
 
@@ -334,23 +343,30 @@ class StandardsSearchIntegration:
 
         # Use rule engine for complex applicability rules
         if "full_data" in standard and "applicability_rules" in standard["full_data"]:
-            rules = standard["full_data"]["applicability_rules"]
-            return self.rule_engine.evaluate_rules(rules, context)
+            # The evaluate method returns a dict with results
+            result = self.rule_engine.evaluate(context)
+            return cast(bool, result.get("matches", True))
 
         return True
 
     def get_search_analytics(self) -> dict[str, Any]:
         """Get search analytics report."""
-        return self.search_engine.get_analytics_report()
+        if isinstance(self.search_engine, SemanticSearch):
+            return self.search_engine.get_analytics_report()
+        else:
+            raise TypeError("Analytics not supported for AsyncSemanticSearch")
 
     def export_search_index(self, output_path: Path) -> None:
         """Export the search index for backup or analysis."""
-        index_data = {
-            "documents": dict(self.search_engine.documents),
-            "metadata": dict(self.search_engine.document_metadata),
-            "indexed_files": list(self._indexed_standards),
-            "export_date": datetime.now().isoformat(),
-        }
+        if isinstance(self.search_engine, SemanticSearch):
+            index_data = {
+                "documents": dict(self.search_engine.documents),
+                "metadata": dict(self.search_engine.document_metadata),
+                "indexed_files": list(self._indexed_standards),
+                "export_date": datetime.now().isoformat(),
+            }
+        else:
+            raise TypeError("Export not supported for AsyncSemanticSearch")
 
         with open(output_path, "w") as f:
             json.dump(index_data, f, indent=2)
@@ -369,9 +385,12 @@ class StandardsSearchIntegration:
             documents.append((doc_id, content, metadata))
 
         if documents:
-            self.search_engine.index_documents_batch(documents)
-            self._indexed_standards.update(index_data.get("indexed_files", []))
-            logger.info(f"Imported {len(documents)} documents from {input_path}")
+            if isinstance(self.search_engine, SemanticSearch):
+                self.search_engine.index_documents_batch(documents)
+                self._indexed_standards.update(index_data.get("indexed_files", []))
+                logger.info(f"Imported {len(documents)} documents from {input_path}")
+            else:
+                raise TypeError("Import not supported for AsyncSemanticSearch")
 
 
 # MCP tool definitions for search functionality

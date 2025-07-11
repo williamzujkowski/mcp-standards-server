@@ -71,7 +71,9 @@ from src.mcp_server import MCPStandardsServer
 try:
     import src.core.standards.semantic_search
 except ImportError:
-    src.core.standards.semantic_search = None
+    # Create a placeholder module if import fails
+    from types import ModuleType
+    src.core.standards.semantic_search = ModuleType("semantic_search")
 
 
 class TestMCPServerInitialization:
@@ -613,6 +615,7 @@ class TestMCPServerErrorHandling:
 
             assert exc_info.value.error_detail.code == ErrorCode.STANDARDS_NOT_FOUND
             assert exc_info.value.error_detail.message == "Standard not found"
+            assert exc_info.value.error_detail.details is not None
             assert exc_info.value.error_detail.details["standard_id"] == "test"
 
 

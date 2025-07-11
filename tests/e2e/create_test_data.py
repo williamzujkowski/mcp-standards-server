@@ -29,14 +29,14 @@ def main():
     if cache_dir.exists():
         files = list(cache_dir.glob("*.json"))
         print(f"\nCreated {len(files)} standard files:")
-        for f in files:
-            print(f"  - {f.name}")
+        for file_path in files:
+            print(f"  - {file_path.name}")
 
     rules_file = tmp_dir / "standards" / "meta" / "enhanced-selection-rules.json"
     if rules_file.exists():
         print(f"\nCreated rules file: {rules_file}")
-        with open(rules_file) as f:
-            rules_data = json.load(f)
+        with open(rules_file) as rule_file:
+            rules_data = json.load(rule_file)
             print(f"  - Contains {len(rules_data['rules'])} rules")
 
     sync_file = tmp_dir / "standards" / "sync_config.yaml"

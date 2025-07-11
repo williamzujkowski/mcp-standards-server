@@ -21,7 +21,7 @@ import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Optional, cast
 
 from aiohttp import WSMsgType, web
 from aiohttp.web_ws import WebSocketResponse
@@ -35,7 +35,7 @@ except (TypeError, ImportError) as e:
         # Mock aioredis for compatibility
         class MockRedis:
             @staticmethod
-            async def from_url(*args, **kwargs) -> None:
+            async def from_url(*args: Any, **kwargs: Any) -> None:
                 return None
 
         aioredis = type(
@@ -212,10 +212,10 @@ class RequestBatcher:
 
     def __init__(self, config: ServerConfig) -> None:
         self.config = config
-        self.batch_queue = asyncio.Queue()
-        self.batch_worker_task = None
+        self.batch_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        self.batch_worker_task: asyncio.Task[None] | None = None
         self.shutdown_event = asyncio.Event()
-        self.pending_requests = {}
+        self.pending_requests: dict[str, asyncio.Future[Any]] = {}
         self.batch_metrics = RequestMetrics()
 
     async def start(self) -> None:
@@ -239,7 +239,7 @@ class RequestBatcher:
             return None
 
         # Create future for result
-        result_future = asyncio.Future()
+        result_future: asyncio.Future[Any] = asyncio.Future()
         request_id = str(uuid.uuid4())
 
         # Add to batch queue
@@ -367,7 +367,7 @@ class ConnectionManager:
         self.connection_lock = threading.Lock()
 
         # Cleanup task
-        self.cleanup_task = None
+        self.cleanup_task: asyncio.Task[None] | None = None
         self.shutdown_event = asyncio.Event()
 
         # Connection limits
@@ -535,7 +535,7 @@ class ConnectionManager:
 class MCPSession:
     """MCP session management for individual client connections."""
 
-    def __init__(self, session_id: str, server, reader, writer) -> None:
+    def __init__(self, session_id: str, server: Any, reader: Any, writer: Any) -> None:
         self.id = session_id
         self.server = server
         self.reader = reader
@@ -651,7 +651,7 @@ class AsyncMCPServer:
     """Async MCP server with enhanced performance."""
 
     def __init__(
-        self, config: ServerConfig | None = None, standards_engine=None
+        self, config: ServerConfig | None = None, standards_engine: Any = None
     ) -> None:
         self.config = config or ServerConfig()
         self.standards_engine = standards_engine
@@ -672,12 +672,12 @@ class AsyncMCPServer:
         self.error_handler = get_secure_error_handler()
 
         # HTTP app
-        self.app = None
-        self.runner = None
-        self.site = None
+        self.app: Optional[web.Application] = None
+        self.runner: Optional[web.AppRunner] = None
+        self.site: Optional[web.TCPSite] = None
 
         # Tasks
-        self.metrics_task = None
+        self.metrics_task: asyncio.Task[None] | None = None
         self.running = False
         self.shutdown_event = asyncio.Event()
 
@@ -700,6 +700,7 @@ class AsyncMCPServer:
 
         # Create HTTP app
         self.app = web.Application()
+        assert self.app is not None
 
         # Add routes
         if self.config.enable_http:
@@ -773,8 +774,9 @@ class AsyncMCPServer:
 
         try:
             # Add connection
+            remote_addr = request.remote or "unknown"
             await self.connection_manager.add_connection(
-                connection_id, request.remote, request.headers.get("User-Agent")
+                connection_id, remote_addr, request.headers.get("User-Agent")
             )
 
             # Read request data
@@ -811,8 +813,9 @@ class AsyncMCPServer:
 
         try:
             # Add connection
+            remote_addr = request.remote or "unknown"
             success = await self.connection_manager.add_connection(
-                connection_id, request.remote, request.headers.get("User-Agent"), ws
+                connection_id, remote_addr, request.headers.get("User-Agent"), ws
             )
 
             if not success:
@@ -916,7 +919,7 @@ class AsyncMCPServer:
                 )
                 record_metric("mcp_request_count", 1, {"method": method})
 
-                return result
+                return cast(dict[str, Any], result)
 
             except Exception as e:
                 # Update error metrics
@@ -979,7 +982,7 @@ class AsyncMCPServer:
         return {"error": f"Tool not found: {tool_name}"}
 
     @web.middleware
-    async def _cors_middleware(self, request: web.Request, handler) -> None:
+    async def _cors_middleware(self, request: web.Request, handler: Any) -> web.Response:
         """CORS middleware."""
         response = await handler(request)
 
@@ -990,7 +993,7 @@ class AsyncMCPServer:
                 "Content-Type, Authorization"
             )
 
-        return response
+        return cast(web.Response, response)
 
     async def _metrics_worker(self) -> None:
         """Worker task for metrics collection."""
@@ -1072,7 +1075,7 @@ class AsyncMCPServer:
 
 # Factory function
 async def create_async_mcp_server(
-    config: ServerConfig | None = None, standards_engine=None, auto_start: bool = True
+    config: ServerConfig | None = None, standards_engine: Any = None, auto_start: bool = True
 ) -> AsyncMCPServer:
     """Create and optionally start an async MCP server."""
     server = AsyncMCPServer(config, standards_engine)

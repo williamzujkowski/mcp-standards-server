@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .async_semantic_search import AsyncSemanticSearch
 from .models import Priority, Requirement, Standard, StandardMetadata
@@ -200,8 +200,9 @@ class StandardsEngine:
                         )
                     )
 
-                # Synchronous indexing
-                self.semantic_search.index_documents_batch(documents)
+                # Synchronous indexing with proper type casting
+                typed_documents = cast(list[tuple[str, str, dict[str, Any]]], documents)
+                self.semantic_search.index_documents_batch(typed_documents)
 
         except Exception as e:
             logger.error(f"Error loading standards: {e}")
@@ -249,20 +250,11 @@ class StandardsEngine:
         if not standard:
             return []
 
-        # Extract requirements from standard rules
+        # Return requirements from standard
         requirements = []
-        for rule in standard.rules:
-            if requirement_ids and rule.id not in requirement_ids:
+        for req in standard.requirements:
+            if requirement_ids and req.id not in requirement_ids:
                 continue
-
-            req = Requirement(
-                id=rule.id,
-                title=rule.title or rule.id,
-                description=rule.description or "",
-                priority=getattr(rule, "priority", Priority.MEDIUM),
-                category=getattr(rule, "category", "general"),
-                tags=getattr(rule, "tags", []),
-            )
             requirements.append(req)
 
         return requirements
@@ -304,8 +296,9 @@ class StandardsEngine:
                     },
                 )
             ]
-            # Synchronous indexing
-            self.semantic_search.index_documents_batch(documents)
+            # Synchronous indexing with proper type casting
+            typed_documents = cast(list[tuple[str, str, dict[str, Any]]], documents)
+            self.semantic_search.index_documents_batch(typed_documents)
 
         return standard
 
@@ -326,7 +319,7 @@ class StandardsEngine:
             return await self._simple_search(query, category, tags, limit)
 
         # Prepare filters
-        filters = {}
+        filters: dict[str, Any] = {}
         if category:
             filters["category"] = category
         if tags:
@@ -337,31 +330,33 @@ class StandardsEngine:
 
         # Enrich results with full standard objects
         enriched_results = []
-        for result in results:
-            # Handle SearchResult dataclass
-            result_id = result.id if hasattr(result, "id") else result.get("id")
-            standard = self._standards_cache.get(result_id)
-            if standard:
-                enriched_results.append(
-                    {
-                        "standard": standard,
-                        "score": (
-                            result.score
-                            if hasattr(result, "score")
-                            else result.get("score", 0.0)
-                        ),
-                        "highlights": (
-                            result.highlights
-                            if hasattr(result, "highlights")
-                            else result.get("highlights", [])
-                        ),
-                        "metadata": (
-                            result.metadata
-                            if hasattr(result, "metadata")
-                            else result.get("metadata", {})
-                        ),
-                    }
-                )
+        # Ensure results is iterable (not a coroutine)
+        if hasattr(results, '__iter__'):
+            for result in results:
+                # Handle SearchResult dataclass or dict
+                if hasattr(result, "id"):
+                    result_id = result.id
+                    score = getattr(result, "score", 0.0)
+                    highlights = getattr(result, "highlights", [])
+                    metadata = getattr(result, "metadata", {})
+                elif isinstance(result, dict):
+                    result_id = result.get("id")
+                    score = result.get("score", 0.0)
+                    highlights = result.get("highlights", [])
+                    metadata = result.get("metadata", {})
+                else:
+                    continue
+                    
+                standard = self._standards_cache.get(result_id)
+                if standard:
+                    enriched_results.append(
+                        {
+                            "standard": standard,
+                            "score": score,
+                            "highlights": highlights,
+                            "metadata": metadata,
+                        }
+                    )
 
         return enriched_results
 
@@ -400,7 +395,7 @@ class StandardsEngine:
                     }
                 )
 
-        results.sort(key=lambda x: x["score"], reverse=True)
+        results.sort(key=lambda x: float(str(x["score"])), reverse=True)
         return results[:limit]
 
     async def get_applicable_standards(

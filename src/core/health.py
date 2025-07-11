@@ -11,7 +11,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 import aiohttp
 import psutil
@@ -73,7 +73,7 @@ class HealthChecker:
         self.checks[name] = check_func
         logger.info(f"Registered health check: {name}")
 
-    async def _run_check(self, name: str, check_func: callable) -> HealthCheckResult:
+    async def _run_check(self, name: str, check_func: Callable[[], Any]) -> HealthCheckResult:
         """Run a single health check with timing and error handling."""
         start_time = time.time()
 
@@ -302,12 +302,12 @@ class HealthChecker:
             test_value = str(time.time())
 
             # Set and get a test value
-            await cache.set(test_key, test_value, ttl=10)
-            retrieved_value = await cache.get(test_key)
+            cache.set(test_key, test_value, ttl=10)
+            retrieved_value = cache.get(test_key)
 
             if retrieved_value == test_value:
                 # Clean up
-                await cache.delete(test_key)
+                cache.delete(test_key)
                 return (
                     HealthStatus.HEALTHY,
                     "Redis connection working",

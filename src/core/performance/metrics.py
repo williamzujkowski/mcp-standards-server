@@ -20,7 +20,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Type, cast
 
 import numpy as np
 import psutil
@@ -157,11 +157,11 @@ class MetricCollector:
         self.alert_callbacks: list[Callable[[str, Any], None]] = []
 
         # Task management
-        self.collection_task = None
+        self.collection_task: asyncio.Task[None] | None = None
         self.shutdown_event = asyncio.Event()
 
         # Redis storage
-        self.redis_cache = None
+        self.redis_cache: RedisCache | None = None
 
         # Thread pool for async operations
         self.executor = ThreadPoolExecutor(max_workers=config.max_workers)
@@ -187,18 +187,40 @@ class MetricCollector:
             "registry": self.prometheus_registry,
         }
 
+        metric: Any
         if definition.type == MetricType.COUNTER:
-            metric = Counter(**metric_kwargs)
+            metric = Counter(
+                name=str(metric_kwargs["name"]),
+                documentation=str(metric_kwargs["documentation"]),
+                labelnames=cast(list[str], metric_kwargs["labelnames"]),
+                registry=cast(CollectorRegistry, metric_kwargs["registry"])
+            )
         elif definition.type == MetricType.GAUGE:
-            metric = Gauge(**metric_kwargs)
+            metric = Gauge(
+                name=str(metric_kwargs["name"]),
+                documentation=str(metric_kwargs["documentation"]),
+                labelnames=cast(list[str], metric_kwargs["labelnames"]),
+                registry=cast(CollectorRegistry, metric_kwargs["registry"])
+            )
         elif definition.type == MetricType.HISTOGRAM:
             if definition.buckets:
                 metric_kwargs["buckets"] = definition.buckets
-            metric = Histogram(**metric_kwargs)
+            metric = Histogram(
+                name=str(metric_kwargs["name"]),
+                documentation=str(metric_kwargs["documentation"]),
+                labelnames=cast(list[str], metric_kwargs["labelnames"]),
+                registry=cast(CollectorRegistry, metric_kwargs["registry"]),
+                buckets=cast(list[float], metric_kwargs.get("buckets", Histogram.DEFAULT_BUCKETS))
+            )
         elif definition.type == MetricType.SUMMARY:
             if definition.quantiles:
                 metric_kwargs["quantiles"] = definition.quantiles
-            metric = Summary(**metric_kwargs)
+            metric = Summary(
+                name=str(metric_kwargs["name"]),
+                documentation=str(metric_kwargs["documentation"]),
+                labelnames=cast(list[str], metric_kwargs["labelnames"]),
+                registry=cast(CollectorRegistry, metric_kwargs["registry"])
+            )
         else:
             return
 
@@ -206,7 +228,7 @@ class MetricCollector:
 
     def record_metric(
         self, name: str, value: float, labels: dict[str, str] | None = None
-    ):
+    ) -> None:
         """Record a metric value."""
         if name not in self.metrics_registry:
             logger.warning(f"Metric {name} not registered")
@@ -253,7 +275,8 @@ class MetricCollector:
                 "labels": metric_value.labels,
             }
 
-            await self.redis_cache.async_set(key, data, ttl=self.config.redis_ttl)
+            if self.redis_cache is not None:
+                await self.redis_cache.async_set(key, data, ttl=self.config.redis_ttl)
         except Exception as e:
             logger.error(f"Failed to store metric in Redis: {e}")
 
@@ -318,10 +341,12 @@ class MetricCollector:
         """Trigger alert callbacks."""
         for callback in self.alert_callbacks:
             try:
+                # Convert alert to string for callback compatibility
+                alert_str = f"{alert.metric_name}: {alert.current_value} (threshold: {alert.threshold})"
                 if asyncio.iscoroutinefunction(callback):
-                    asyncio.create_task(callback(alert))
+                    asyncio.create_task(callback(alert_str, alert))
                 else:
-                    callback(alert)
+                    callback(alert_str, alert)
             except Exception as e:
                 logger.error(f"Error in alert callback: {e}")
 
@@ -459,7 +484,7 @@ class PerformanceMonitor:
     def __init__(self, config: PerformanceConfig | None = None) -> None:
         self.config = config or PerformanceConfig()
         self.collector = MetricCollector(self.config)
-        self.benchmarks = {}
+        self.benchmarks: dict[str, Benchmark] = {}
         self.running = False
 
         # Initialize standard metrics
@@ -680,7 +705,7 @@ class PerformanceMonitor:
 
     def record_metric(
         self, name: str, value: float, labels: dict[str, str] | None = None
-    ):
+    ) -> None:
         """Record a metric value."""
         self.collector.record_metric(name, value, labels)
 
@@ -694,7 +719,7 @@ class PerformanceMonitor:
 
     def time_operation(
         self, metric_name: str, labels: dict[str, str] | None = None
-    ) -> None:
+    ) -> TimingContext:
         """Context manager for timing operations."""
         return TimingContext(self, metric_name, labels)
 
@@ -720,7 +745,7 @@ class PerformanceMonitor:
         current_time = time.time()
         hour_ago = current_time - 3600
 
-        dashboard = {
+        dashboard: dict[str, Any] = {
             "timestamp": current_time,
             "system_metrics": {},
             "application_metrics": {},
@@ -817,13 +842,13 @@ class TimingContext:
         self.monitor = monitor
         self.metric_name = metric_name
         self.labels = labels or {}
-        self.start_time = None
+        self.start_time: float | None = None
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> "TimingContext":
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         if self.start_time:
             duration = time.time() - self.start_time
             self.monitor.record_metric(self.metric_name, duration, self.labels)
@@ -838,7 +863,7 @@ class Benchmark:
         self.name = name
         self.operation = operation
         self.monitor = monitor
-        self.results = []
+        self.results: list[dict[str, Any]] = []
 
     def run(self, iterations: int = 100) -> dict[str, Any]:
         """Run benchmark."""
@@ -936,7 +961,7 @@ def record_metric(
     monitor.record_metric(name, value, labels)
 
 
-def time_operation(metric_name: str, labels: dict[str, str] | None = None) -> None:
+def time_operation(metric_name: str, labels: dict[str, str] | None = None) -> TimingContext:
     """Time an operation using global monitor."""
     monitor = get_performance_monitor()
     return monitor.time_operation(metric_name, labels)

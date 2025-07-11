@@ -27,6 +27,7 @@ class TestPrivacyConfig:
         assert config.min_confidence == 0.8
 
         # Check default PII types
+        assert config.pii_types is not None
         assert PIIType.EMAIL in config.pii_types
         assert PIIType.PHONE in config.pii_types
         assert PIIType.SSN in config.pii_types

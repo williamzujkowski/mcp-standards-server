@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, cast
 
 import faiss
 import numpy as np
@@ -130,7 +130,7 @@ class VectorIndexBuilder:
 
     def __init__(self, config: VectorIndexConfig) -> None:
         self.config = config
-        self.pca_model = None
+        self.pca_model: Optional[PCA] = None
         self.executor = ThreadPoolExecutor(max_workers=config.max_workers)
 
     def build_index(
@@ -184,7 +184,9 @@ class VectorIndexBuilder:
             self.pca_model = PCA(n_components=self.config.pca_components)
             self.pca_model.fit(vectors)
 
-        return self.pca_model.transform(vectors)
+        # After the conditional above, pca_model is guaranteed to be not None
+        assert self.pca_model is not None
+        return cast(np.ndarray, self.pca_model.transform(vectors))
 
     def optimize_index(self, index: faiss.Index, vectors: np.ndarray) -> faiss.Index:
         """Optimize an existing index."""
@@ -209,7 +211,7 @@ class VectorIndexBuilder:
             compressed = zlib.compress(index_data, level=self.config.compression_level)
             return compressed
 
-        return index_data
+        return cast(bytes, index_data)
 
     def decompress_index(self, compressed_data: bytes) -> faiss.Index:
         """Decompress index from storage."""
@@ -294,7 +296,7 @@ class VectorIndexCache:
         self.metrics = VectorIndexMetrics()
 
         # Memory cache
-        self.memory_cache = TTLCache(
+        self.memory_cache: TTLCache[str, Any] = TTLCache(
             maxsize=config.memory_cache_size, ttl=config.memory_cache_ttl
         )
 
@@ -304,7 +306,7 @@ class VectorIndexCache:
             self.disk_cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Access tracking
-        self.access_stats = defaultdict(
+        self.access_stats: dict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "count": 0,
                 "last_access": datetime.now(),
@@ -321,12 +323,12 @@ class VectorIndexCache:
         }
 
         # Warming task
-        self.warming_task = None
-        self.warming_queue = asyncio.Queue()
+        self.warming_task: asyncio.Task[None] | None = None
+        self.warming_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self.shutdown_event = asyncio.Event()
 
         # Weak references for cleanup
-        self.weak_refs = weakref.WeakSet()
+        self.weak_refs: weakref.WeakSet[Any] = weakref.WeakSet()
 
     async def start(self) -> None:
         """Start the cache warming system."""
@@ -350,8 +352,9 @@ class VectorIndexCache:
         time.time()
 
         # Update access stats
-        self.access_stats[index_id]["count"] += 1
-        self.access_stats[index_id]["last_access"] = datetime.now()
+        stats = self.access_stats[index_id]
+        stats["count"] = stats["count"] + 1
+        stats["last_access"] = datetime.now()
 
         # Try memory cache first
         if index_id in self.memory_cache:
@@ -515,7 +518,7 @@ class VectorIndexCache:
     async def warm_cache(self, index_ids: list[str]) -> None:
         """Warm cache with specific indices."""
         for index_id in index_ids:
-            await self.warming_queue.put(index_id)
+            await self.warming_queue.put({"index_id": index_id})
 
     async def _warming_worker(self) -> None:
         """Worker task for cache warming."""
@@ -553,7 +556,7 @@ class VectorIndexCache:
 
     async def _process_warming_queue(self) -> None:
         """Process manual warming requests."""
-        candidates = []
+        candidates: list[dict[str, Any]] = []
 
         # Collect candidates from queue
         while (
@@ -569,7 +572,10 @@ class VectorIndexCache:
                 break
 
         if candidates:
-            await self._warm_candidates(candidates)
+            # Extract index_ids from candidate dicts
+            index_ids = [c["index_id"] for c in candidates if "index_id" in c]
+            if index_ids:
+                await self._warm_candidates(index_ids)
 
     async def _warm_candidates(self, candidates: list[str]) -> None:
         """Warm specific index candidates."""
@@ -630,7 +636,7 @@ class VectorIndexCache:
         if self.redis_cache:
             # Delete all vector index keys
             # This is a simplified approach
-            await self.redis_cache.delete_pattern("vector_index:*")
+            self.redis_cache.delete_pattern("vector_index:*")
 
         # Clear disk cache
         if self.disk_cache_dir and self.disk_cache_dir.exists():

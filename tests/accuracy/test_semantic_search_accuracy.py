@@ -9,6 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pytest
@@ -98,7 +99,7 @@ class RelevanceMetrics:
         if idcg == 0:
             return 0.0
 
-        return dcg / idcg
+        return cast(float, dcg / idcg)
 
     @staticmethod
     def mean_reciprocal_rank(
@@ -972,7 +973,7 @@ def test_accuracy_benchmarks():
         ]
 
         # Run evaluation
-        results = {
+        results: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "queries": len(eval_queries),
             "metrics": defaultdict(list),

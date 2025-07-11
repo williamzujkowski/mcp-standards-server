@@ -10,7 +10,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -56,7 +56,7 @@ class MCPStandardsServer:
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
-        self.server = Server("mcp-standards-server")
+        self.server: Server = Server("mcp-standards-server")
 
         # Initialize metrics collector
         self.metrics = get_mcp_metrics()
@@ -101,7 +101,7 @@ class MCPStandardsServer:
 
         # Initialize standards generator
         templates_dir = Path("templates")
-        self.generator = StandardsGenerator(templates_dir)
+        self.generator = StandardsGenerator(str(templates_dir))
 
         # Initialize search only if enabled
         self.search = None
@@ -540,7 +540,7 @@ class MCPStandardsServer:
 
         @self.server.call_tool()
         async def call_tool(
-            name: str, arguments: dict[str, Any], **kwargs
+            name: str, arguments: dict[str, Any], **kwargs: Any
         ) -> list[TextContent]:
             """Handle tool calls with authentication and validation."""
             logger.info(f"call_tool invoked with name={name}, arguments={arguments}")
@@ -907,7 +907,7 @@ class MCPStandardsServer:
             # Record cache hit
             self.metrics.record_cache_access("get_standard_details", True)
             with open(standard_path) as f:
-                return json.load(f)
+                return cast(dict[str, Any], json.load(f))
         else:
             # Record cache miss
             self.metrics.record_cache_access("get_standard_details", False)
@@ -1140,25 +1140,17 @@ class MCPStandardsServer:
         )
 
         # Format plan for response
-        formatted_plan = []
-        for batch_idx, batch in enumerate(loading_plan):
-            formatted_batch = {
-                "batch": batch_idx + 1,
-                "sections": [
-                    {"id": section_id, "estimated_tokens": tokens}
-                    for section_id, tokens in batch
-                ],
-                "batch_total_tokens": sum(tokens for _, tokens in batch),
-            }
-            formatted_plan.append(formatted_batch)
+        formatted_plan = [
+            {"id": section_id, "estimated_tokens": tokens}
+            for section_id, tokens in loading_plan
+        ]
 
         return {
             "standard_id": standard_id,
             "loading_plan": formatted_plan,
-            "total_batches": len(loading_plan),
-            "total_sections": sum(len(batch) for batch in loading_plan),
+            "total_sections": len(loading_plan),
             "estimated_total_tokens": sum(
-                batch["batch_total_tokens"] for batch in formatted_plan
+                section["estimated_tokens"] for section in formatted_plan
             ),
         }
 
@@ -1282,11 +1274,11 @@ class MCPStandardsServer:
             return {
                 "templates": [
                     {
-                        "name": template.name,
-                        "domain": template.domain,
-                        "description": template.description,
-                        "variables": template.variables,
-                        "features": template.features,
+                        "name": template.get("name", ""),
+                        "domain": template.get("domain", ""),
+                        "description": template.get("description", ""),
+                        "variables": template.get("variables", []),
+                        "features": template.get("features", []),
                     }
                     for template in templates
                 ]
@@ -1420,25 +1412,35 @@ class MCPStandardsServer:
         """Get performance metrics dashboard."""
         return self.metrics.get_dashboard_metrics()
 
-    def _get_semantic_search_engine(self) -> None:
+    def _get_semantic_search_engine(self) -> Any:
         """Get semantic search engine instance."""
         return self.search
 
-    def _validate_input(self, data: dict[str, Any]) -> dict[str, Any]:
+    def _validate_input(self, tool_name: str, data: dict[str, Any]) -> dict[str, Any]:
         """Validate input data."""
-        return self.input_validator.validate(data)
+        return self.input_validator.validate_tool_input(tool_name, data)
 
     def _filter_response(self, response: dict[str, Any]) -> dict[str, Any]:
         """Filter response for privacy."""
-        return self.privacy_filter.filter(response)
+        filtered_response, _ = self.privacy_filter.filter_dict(response)
+        return filtered_response
 
-    async def _cross_reference_standards(self, standard_id: str) -> dict[str, Any]:
+    async def _cross_reference_standards(self, standard_id: str) -> list[dict[str, Any]]:
         """Get cross-references for a standard."""
-        return await self.cross_referencer.get_references(standard_id)
+        return self.cross_referencer.get_references_for_standard(standard_id)
 
     async def _get_analytics(self) -> dict[str, Any]:
         """Get analytics data."""
-        return await self.analytics.get_analytics()
+        # Combine different analytics methods to provide comprehensive data
+        usage_metrics = self.analytics.get_usage_metrics()
+        popularity_metrics = self.analytics.get_popularity_metrics()
+        quality_recommendations = self.analytics.get_quality_recommendations()
+        
+        return {
+            "usage_metrics": usage_metrics,
+            "popularity_metrics": popularity_metrics,
+            "quality_recommendations": quality_recommendations,
+        }
 
     async def _get_compliance_mapping(
         self, standard_id: str, framework: str = "nist"
@@ -1448,7 +1450,7 @@ class MCPStandardsServer:
         return {"standard_id": standard_id, "framework": framework, "mappings": []}
 
     @property
-    def rate_limiter(self) -> None:
+    def rate_limiter(self) -> "MCPStandardsServer":
         """Get rate limiter for backwards compatibility."""
         return self
 

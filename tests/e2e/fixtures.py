@@ -239,7 +239,7 @@ MOCK_RULES = [
 class MockStandardsRepository:
     """Mock repository for standards data."""
 
-    def __init__(self, standards: dict[str, Any] = None):
+    def __init__(self, standards: dict[str, Any] | None = None):
         self.standards = standards or MOCK_STANDARDS.copy()
 
     def get_standard(self, standard_id: str) -> dict[str, Any]:
@@ -248,7 +248,7 @@ class MockStandardsRepository:
             raise ValueError(f"Standard '{standard_id}' not found")
         return self.standards[standard_id].copy()
 
-    def list_standards(self, category: str = None) -> list[dict[str, Any]]:
+    def list_standards(self, category: str | None = None) -> list[dict[str, Any]]:
         """List all standards, optionally filtered by category."""
         results = []
         for std in self.standards.values():
@@ -270,10 +270,14 @@ class MockStandardsRepository:
 
         for std in self.standards.values():
             # Search in name, tags, and content
+            name = std.get("name", "")
+            content = std.get("content", "")
+            tags = std.get("tags", [])
+            
             if (
-                query_lower in std["name"].lower()
-                or any(query_lower in tag for tag in std["tags"])
-                or query_lower in std["content"].lower()
+                (isinstance(name, str) and query_lower in name.lower())
+                or any(query_lower in tag for tag in tags)
+                or (isinstance(content, str) and query_lower in content.lower())
             ):
                 results.append(std)
 

@@ -29,6 +29,8 @@ class MCPTestClient:
         self.session: ClientSession | None = None
         self._read = None
         self._write = None
+        self._session_cm: Any = None
+        self._stdio_cm: Any = None
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -102,8 +104,9 @@ class MCPTestClient:
             # Extract the content from the result
             if hasattr(result, "content") and result.content:
                 # Parse the JSON content from the first text content
-                if result.content[0].text:
-                    text_content = result.content[0].text
+                first_content = result.content[0]
+                if hasattr(first_content, "text") and first_content.text:
+                    text_content = first_content.text
                     logger.debug(f"Text content from tool {tool_name}: {text_content}")
                     try:
                         parsed_result = json.loads(text_content)
@@ -192,8 +195,8 @@ async def mcp_server(tmp_path):
             # Check if process is still running
             if process.returncode is not None:
                 # Process exited, read stderr for error info
-                stderr_data = await process.stderr.read()
-                stdout_data = await process.stdout.read()
+                stderr_data = await process.stderr.read() if process.stderr else b""
+                stdout_data = await process.stdout.read() if process.stdout else b""
                 logger.error(f"Server process exited with code {process.returncode}")
                 logger.error(f"Server stdout: {stdout_data.decode()}")
                 logger.error(f"Server stderr: {stderr_data.decode()}")

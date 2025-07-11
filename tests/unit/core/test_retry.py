@@ -30,6 +30,7 @@ class TestRetryConfig:
         assert config.exponential_base == 2.0
         assert config.jitter is True
         assert config.strategy == RetryStrategy.EXPONENTIAL
+        assert config.retry_on is not None
         assert ConnectionError in config.retry_on
 
     def test_custom_config(self):
@@ -44,6 +45,7 @@ class TestRetryConfig:
         assert config.max_retries == 5
         assert config.initial_delay == 0.5
         assert config.strategy == RetryStrategy.LINEAR
+        assert config.retry_on is not None
         assert ValueError in config.retry_on
         assert KeyError in config.retry_on
 

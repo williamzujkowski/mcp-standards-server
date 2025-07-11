@@ -30,7 +30,7 @@ except (TypeError, ImportError) as e:
         # Mock aioredis for compatibility
         class MockRedis:
             @staticmethod
-            async def from_url(*args, **kwargs) -> None:
+            async def from_url(*args: Any, **kwargs: Any) -> None:
                 return None
 
         aioredis = type(
@@ -136,8 +136,8 @@ class QueryCache:
         self.redis_cache = redis_cache
 
         # Local cache for frequently accessed queries
-        self.local_cache = {}
-        self.local_cache_times = {}
+        self.local_cache: dict[str, Any] = {}
+        self.local_cache_times: dict[str, float] = {}
         self.local_cache_lock = threading.Lock()
 
         # Cache statistics
@@ -204,7 +204,7 @@ class QueryCache:
         params: dict[str, Any] | None = None,
         result: Any = None,
         ttl: int | None = None,
-    ):
+    ) -> None:
         """Cache query result."""
         if not self.config.enable_query_cache or result is None:
             return
@@ -230,7 +230,7 @@ class QueryCache:
         """Invalidate cache entries matching pattern."""
         try:
             # Invalidate Redis cache
-            await self.redis_cache.delete_pattern(
+            self.redis_cache.delete_pattern(
                 f"{self.config.cache_key_prefix}:{pattern}"
             )
 
@@ -262,9 +262,9 @@ class QueryBatcher:
 
     def __init__(self, config: QueryCacheConfig) -> None:
         self.config = config
-        self.batch_queue = asyncio.Queue()
-        self.batch_results = {}
-        self.batch_worker_task = None
+        self.batch_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        self.batch_results: dict[str, Any] = {}
+        self.batch_worker_task: asyncio.Task[None] | None = None
         self.shutdown_event = asyncio.Event()
 
     async def start(self) -> None:
@@ -290,7 +290,7 @@ class QueryBatcher:
             return None
 
         # Create future for result
-        result_future = asyncio.Future()
+        result_future: asyncio.Future[Any] = asyncio.Future()
 
         # Add to batch queue
         await self.batch_queue.put(
@@ -380,18 +380,18 @@ class DatabaseOptimizer:
         self.query_batcher = QueryBatcher(self.config)
 
         # Connection pools (these would be configured per database type)
-        self.connection_pools = {}
+        self.connection_pools: dict[str, Any] = {}
 
         # Prepared statements cache
-        self.prepared_statements = {}
+        self.prepared_statements: dict[str, Any] = {}
         self.prepared_statements_lock = threading.Lock()
 
         # Query analysis
-        self.query_patterns = defaultdict(int)
-        self.slow_queries = deque(maxlen=100)
+        self.query_patterns: defaultdict[str, int] = defaultdict(int)
+        self.slow_queries: deque[dict[str, Any]] = deque(maxlen=100)
 
         # Performance monitoring
-        self.performance_callbacks = []
+        self.performance_callbacks: list[Callable[[dict[str, Any]], None]] = []
 
     async def initialize(self) -> None:
         """Initialize the database optimizer."""
@@ -697,7 +697,7 @@ class DatabaseOptimizer:
                 )
 
         # Check for slow query patterns
-        slow_patterns = {}
+        slow_patterns: dict[str, int] = {}
         for slow_query in self.slow_queries:
             pattern = self._extract_query_pattern(slow_query["query"])
             slow_patterns[pattern] = slow_patterns.get(pattern, 0) + 1
@@ -717,7 +717,7 @@ class DatabaseOptimizer:
 
     async def health_check(self) -> dict[str, Any]:
         """Perform health check on database connections."""
-        health = {
+        health: dict[str, Any] = {
             "status": "healthy",
             "cache_status": "healthy",
             "connection_pools": {},
@@ -783,7 +783,7 @@ async def shutdown_database_optimizer() -> None:
 
 # Convenience functions
 async def execute_query(
-    query: str, params: dict[str, Any] | None = None, **kwargs
+    query: str, params: dict[str, Any] | None = None, **kwargs: Any
 ) -> Any:
     """Execute query using global optimizer."""
     optimizer = get_database_optimizer()

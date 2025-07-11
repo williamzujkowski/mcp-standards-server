@@ -332,6 +332,7 @@ class TestRateLimitingIntegration:
             is_allowed, limit_info = rate_limiter.check_all_limits("suspicious_user")
 
             assert is_allowed is False
+            assert limit_info is not None
             assert limit_info["tier"] == "minute"
 
     def test_rate_limiting_error_handling(self):

@@ -265,30 +265,36 @@ def mock_ml_dependencies():
         process = MockProcess()
 
     # Patch the imports
-    sys.modules["sentence_transformers"] = MockSentenceTransformersModule()
-    sys.modules["sklearn"] = MockSklearnModule()
-    sys.modules["sklearn.neighbors"] = MockNeighborsModule()
-    sys.modules["sklearn.metrics"] = MockMetricsModule()
-    sys.modules["sklearn.metrics.pairwise"] = MockPairwiseModule()
+    from types import ModuleType
+    from typing import cast
+    
+    sys.modules["sentence_transformers"] = cast(ModuleType, MockSentenceTransformersModule())
+    sys.modules["sklearn"] = cast(ModuleType, MockSklearnModule())
+    sys.modules["sklearn.neighbors"] = cast(ModuleType, MockNeighborsModule())
+    sys.modules["sklearn.metrics"] = cast(ModuleType, MockMetricsModule())
+    sys.modules["sklearn.metrics.pairwise"] = cast(ModuleType, MockPairwiseModule())
     # Don't replace NLTK modules globally - this causes import conflicts
     # Let individual tests handle their own mocking
     # sys.modules['nltk.stem'] = MockNLTKStemModule()
     # sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
-    sys.modules["fuzzywuzzy"] = MockFuzzyWuzzyModule()
-    sys.modules["redis"] = type(sys)("redis")
-    sys.modules["redis"].Redis = MockRedisClient
+    sys.modules["fuzzywuzzy"] = cast(ModuleType, MockFuzzyWuzzyModule())
+    
+    # Create mock redis module
+    redis_module = type(sys)("redis")
+    redis_module.Redis = MockRedisClient
+    sys.modules["redis"] = redis_module
 
     # Since this is session-scoped, we can't use monkeypatch
     # Apply patches at module level
     import sentence_transformers
 
-    sentence_transformers.SentenceTransformer = MockSentenceTransformer
+    setattr(sentence_transformers, "SentenceTransformer", MockSentenceTransformer)
 
     # Apply Redis patch if available
     try:
         import redis
 
-        redis.Redis = MockRedisClient
+        setattr(redis, "Redis", MockRedisClient)
     except ImportError:
         pass
 

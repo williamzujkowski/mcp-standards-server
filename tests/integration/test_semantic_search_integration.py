@@ -19,7 +19,11 @@ from src.core.mcp.handlers import StandardsHandler
 from src.core.mcp.server import MCPServer
 from src.core.standards.engine import StandardsEngine
 from src.core.standards.models import Standard, StandardMetadata
-from src.core.standards.semantic_search import SemanticSearch, create_search_engine
+from src.core.standards.semantic_search import (
+    AsyncSemanticSearch,
+    SemanticSearch,
+    create_search_engine,
+)
 from tests.mocks.semantic_search_mocks import (
     MockRedisClient,
     MockSentenceTransformer,
@@ -356,16 +360,28 @@ class TestSemanticSearchCrossComponent:
 
                 # Index documents
                 docs = TestDataGenerator.generate_standards_corpus(20)
-                engine.index_documents_batch(docs)
+                if isinstance(engine, SemanticSearch):
+                    engine.index_documents_batch(docs)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 # First search - populate caches
-                results1 = engine.search("python testing", top_k=5)
+                if isinstance(engine, SemanticSearch):
+                    results1 = engine.search("python testing", top_k=5)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 # Verify Redis cache was used
-                engine._get_result_cache_key("python testing", 5, None)
+                if isinstance(engine, SemanticSearch):
+                    engine._get_result_cache_key("python testing", 5, None)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 # Second search - should hit cache
-                results2 = engine.search("python testing", top_k=5)
+                if isinstance(engine, SemanticSearch):
+                    results2 = engine.search("python testing", top_k=5)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 # Results should be identical
                 assert len(results1) == len(results2)
@@ -373,10 +389,12 @@ class TestSemanticSearchCrossComponent:
                     assert r1.id == r2.id
 
                 # Check analytics
-                report = engine.get_analytics_report()
-                assert report["cache_hit_rate"] > 0
-
-                engine.close()
+                if isinstance(engine, SemanticSearch):
+                    report = engine.get_analytics_report()
+                    assert report["cache_hit_rate"] > 0
+                    engine.close()
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
         finally:
             shutil.rmtree(temp_dir)
 
@@ -395,10 +413,16 @@ class TestSemanticSearchCrossComponent:
                 "category": "api",
                 "timestamp": datetime.now().isoformat(),
             }
-            engine.index_document(doc_id, content, metadata)
+            if isinstance(engine, SemanticSearch):
+                engine.index_document(doc_id, content, metadata)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Search for latest version
-        results = engine.search("API security", top_k=10)
+        if isinstance(engine, SemanticSearch):
+            results = engine.search("API security", top_k=10)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Should find all versions
         version_ids = [r.id for r in results]
@@ -412,7 +436,10 @@ class TestSemanticSearchCrossComponent:
         # Should only find v2.0
         assert all("v2.0" in r.id for r in results)
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @pytest.mark.asyncio
     @patch_ml_dependencies()
@@ -422,26 +449,38 @@ class TestSemanticSearchCrossComponent:
 
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(50)
-        await engine.index_documents_batch_async(docs)
+        if isinstance(engine, AsyncSemanticSearch):
+            await engine.index_documents_batch_async(docs)
+        else:
+            raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
         # Simulate concurrent access from different components
         async def standards_component():
             """Simulate standards engine queries."""
             for i in range(5):
-                results = await engine.search_async(f"standard {i}", top_k=5)
-                assert len(results) >= 0
+                if isinstance(engine, AsyncSemanticSearch):
+                    results = await engine.search_async(f"standard {i}", top_k=5)
+                    assert len(results) >= 0
+                else:
+                    raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
         async def mcp_component():
             """Simulate MCP server queries."""
             for i in range(5):
-                results = await engine.search_async(f"api {i}", top_k=5)
-                assert len(results) >= 0
+                if isinstance(engine, AsyncSemanticSearch):
+                    results = await engine.search_async(f"api {i}", top_k=5)
+                    assert len(results) >= 0
+                else:
+                    raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
         async def analytics_component():
             """Simulate analytics queries."""
             for i in range(5):
-                results = await engine.search_async(f"security {i}", top_k=5)
-                assert len(results) >= 0
+                if isinstance(engine, AsyncSemanticSearch):
+                    results = await engine.search_async(f"security {i}", top_k=5)
+                    assert len(results) >= 0
+                else:
+                    raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
         # Run all components concurrently
         await asyncio.gather(
@@ -449,11 +488,13 @@ class TestSemanticSearchCrossComponent:
         )
 
         # Verify no errors and get final analytics
-        report = engine.search_engine.get_analytics_report()
-        assert report["total_queries"] == 15
-        assert report["failed_queries_count"] == 0
-
-        engine.close()
+        if isinstance(engine, AsyncSemanticSearch):
+            report = engine.search_engine.get_analytics_report()
+            assert report["total_queries"] == 15
+            assert report["failed_queries_count"] == 0
+            engine.close()
+        else:
+            raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
 
 class TestSemanticSearchErrorRecovery:
@@ -491,7 +532,7 @@ class TestSemanticSearchErrorRecovery:
         engine = create_search_engine()
 
         # Create documents where some will fail
-        docs = []
+        docs: list[tuple[str, str | None, dict[str, str]]] = []
         for i in range(10):
             if i == 5:
                 # This will cause an error
@@ -505,7 +546,10 @@ class TestSemanticSearchErrorRecovery:
             try:
                 if content is None:
                     raise ValueError("Invalid content")
-                engine.index_document(doc_id, content, metadata)
+                if isinstance(engine, SemanticSearch):
+                    engine.index_document(doc_id, content, metadata)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
                 success_count += 1
             except Exception:
                 pass
@@ -514,11 +558,13 @@ class TestSemanticSearchErrorRecovery:
         assert success_count == 9
 
         # Search should still work
-        results = engine.search("Content")
-        assert len(results) > 0
-        assert all("doc-5" not in r.id for r in results)  # Failed doc not in results
-
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            results = engine.search("Content")
+            assert len(results) > 0
+            assert all("doc-5" not in r.id for r in results)  # Failed doc not in results
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_cache_corruption_recovery(self, temp_dir):
@@ -526,8 +572,11 @@ class TestSemanticSearchErrorRecovery:
         engine = create_search_engine(cache_dir=temp_dir)
 
         # Index and search to populate cache
-        engine.index_document("test-1", "Test content", {})
-        engine.search("test")
+        if isinstance(engine, SemanticSearch):
+            engine.index_document("test-1", "Test content", {})
+            engine.search("test")
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Corrupt the cache file
         cache_files = list(temp_dir.glob("*.npy"))
@@ -537,13 +586,16 @@ class TestSemanticSearchErrorRecovery:
                 f.write(b"CORRUPTED DATA")
 
         # Clear memory cache to force file read
-        engine.embedding_cache.memory_cache.clear()
+        if isinstance(engine, SemanticSearch):
+            engine.embedding_cache.memory_cache.clear()
 
-        # Should handle corruption gracefully
-        results2 = engine.search("test")
-        assert len(results2) > 0  # Should still return results
+            # Should handle corruption gracefully
+            results2 = engine.search("test")
+            assert len(results2) > 0  # Should still return results
 
-        engine.close()
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
 
 class TestSemanticSearchPerformanceIntegration:
@@ -561,7 +613,10 @@ class TestSemanticSearchPerformanceIntegration:
         # Benchmark batch indexing
         print("Indexing documents...")
         start = time.time()
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
         index_time = time.time() - start
         print(f"Indexed 5000 documents in {index_time:.2f}s")
         print(f"Rate: {5000/index_time:.2f} docs/second")
@@ -582,22 +637,28 @@ class TestSemanticSearchPerformanceIntegration:
             filters = args[0] if args else None
 
             # Warm up cache
-            engine.search(query, filters=filters)
+            if isinstance(engine, SemanticSearch):
+                engine.search(query, filters=filters)
 
-            # Benchmark
-            times = []
-            for _ in range(5):
-                start = time.time()
-                results = engine.search(query, filters=filters, top_k=20)
-                elapsed = time.time() - start
-                times.append(elapsed)
+                # Benchmark
+                times = []
+                for _ in range(5):
+                    start = time.time()
+                    results = engine.search(query, filters=filters, top_k=20)
+                    elapsed = time.time() - start
+                    times.append(elapsed)
 
-            avg_time = sum(times) / len(times)
-            print(f"{pattern_name}: {avg_time*1000:.2f}ms avg, {len(results)} results")
+                avg_time = sum(times) / len(times)
+                print(f"{pattern_name}: {avg_time*1000:.2f}ms avg, {len(results)} results")
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Check memory usage
-        report = engine.get_analytics_report()
-        print(f"\nTotal queries: {report['total_queries']}")
-        print(f"Cache hit rate: {report['cache_hit_rate']:.2%}")
+        if isinstance(engine, SemanticSearch):
+            report = engine.get_analytics_report()
+            print(f"\nTotal queries: {report['total_queries']}")
+            print(f"Cache hit rate: {report['cache_hit_rate']:.2%}")
 
-        engine.close()
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")

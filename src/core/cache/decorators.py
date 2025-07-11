@@ -8,7 +8,7 @@ import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from .redis_client import RedisCache, get_cache
 
@@ -24,7 +24,7 @@ class CacheKeyConfig:
     include_args: bool = True
     include_kwargs: bool = True
     include_self: bool = False
-    exclude_args: set[str] = None
+    exclude_args: set[str] | None = None
     custom_key_func: Callable | None = None
 
     def __post_init__(self) -> None:
@@ -37,7 +37,7 @@ def generate_cache_key(
 ) -> str:
     """Generate cache key from function and arguments."""
     if config.custom_key_func:
-        return config.custom_key_func(func, args, kwargs)
+        return cast(str, config.custom_key_func(func, args, kwargs))
 
     key_parts = [config.prefix, config.version, func.__name__]
 
@@ -173,7 +173,7 @@ def cache_result(
         )
 
         @functools.wraps(func)
-        async def async_wrapper(*args, **kwargs) -> None:
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             # Get cache instance
             cache_instance = cache or get_cache()
 
@@ -214,7 +214,7 @@ def cache_result(
             return result
 
         @functools.wraps(func)
-        def sync_wrapper(*args, **kwargs) -> None:
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             # Get cache instance
             cache_instance = cache or get_cache()
 
@@ -256,10 +256,11 @@ def cache_result(
 
         # Add cache control methods
         wrapper = async_wrapper if is_async else sync_wrapper
-        wrapper.cache_key_config = key_config
-        wrapper.invalidate = functools.partial(
+        # Use setattr to avoid mypy union-attr errors
+        setattr(wrapper, 'cache_key_config', key_config)
+        setattr(wrapper, 'invalidate', functools.partial(
             invalidate_for_function, func, key_config
-        )
+        ))
 
         return wrapper
 
@@ -297,7 +298,7 @@ def invalidate_cache(
         is_async = asyncio.iscoroutinefunction(func)
 
         @functools.wraps(func)
-        async def async_wrapper(*args, **kwargs) -> None:
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             # Execute function first
             result = await func(*args, **kwargs)
 
@@ -334,7 +335,7 @@ def invalidate_cache(
             return result
 
         @functools.wraps(func)
-        def sync_wrapper(*args, **kwargs) -> None:
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             # Execute function first
             result = func(*args, **kwargs)
 
@@ -375,7 +376,7 @@ def invalidate_cache(
     return decorator
 
 
-def cache_key(*args, **kwargs) -> str:
+def cache_key(*args: Any, **kwargs: Any) -> str:
     """
     Generate a cache key from arguments.
 
@@ -387,8 +388,8 @@ def cache_key(*args, **kwargs) -> str:
 
 
 def invalidate_for_function(
-    func: Callable, key_config: CacheKeyConfig, *args, **kwargs
-):
+    func: Callable, key_config: CacheKeyConfig, *args: Any, **kwargs: Any
+) -> None:
     """Invalidate cache for specific function call."""
     cache_instance = get_cache()
 
@@ -412,21 +413,23 @@ class CacheManager:
 
     def __init__(self, cache: RedisCache | None = None) -> None:
         self.cache = cache or get_cache()
-        self.batch_gets = []
-        self.batch_sets = {}
+        self.batch_gets: list[str] = []
+        self.batch_sets: dict[str, Any] = {}
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self) -> "CacheManager":
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         # Execute any pending batch operations
         if self.batch_sets:
-            await self.cache.async_mset(self.batch_sets)
+            # Use individual async_set calls since async_mset doesn't exist
+            for key, value in self.batch_sets.items():
+                await self.cache.async_set(key, value)
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> "CacheManager":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         # Execute any pending batch operations
         if self.batch_sets:
             self.cache.mset(self.batch_sets)
@@ -441,11 +444,19 @@ class CacheManager:
 
     async def mget(self, keys: list[str]) -> dict[str, Any]:
         """Get multiple values."""
-        return await self.cache.async_mget(keys)
+        # Use individual async_get calls since async_mget doesn't exist
+        result = {}
+        for key in keys:
+            value = await self.cache.async_get(key)
+            if value is not None:
+                result[key] = value
+        return result
 
     async def mset(self, mapping: dict[str, Any], ttl: int | None = None) -> None:
         """Set multiple values."""
-        await self.cache.async_mset(mapping, ttl)
+        # Use individual async_set calls since async_mset doesn't exist
+        for key, value in mapping.items():
+            await self.cache.async_set(key, value, ttl)
 
 
 # JSON import moved to top of file

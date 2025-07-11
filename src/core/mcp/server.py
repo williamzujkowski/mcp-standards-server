@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class MCPServer:
     """Model Context Protocol server for standards management."""
 
-    def __init__(self, standards_engine=None) -> None:
+    def __init__(self, standards_engine: Any = None) -> None:
         self.standards_engine = standards_engine
         self.handlers = {}
         self.running = False
@@ -96,6 +96,9 @@ class MCPServer:
         """Call a specific tool."""
         tool_name = params.get("name")
         tool_args = params.get("arguments", {})
+
+        if tool_name is None:
+            return {"error": "Tool name is required"}
 
         try:
             # Validate tool arguments

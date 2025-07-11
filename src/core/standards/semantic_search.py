@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import nltk
 import numpy as np
@@ -205,7 +205,7 @@ class EmbeddingCache:
         self.cache_dir.mkdir(exist_ok=True)
 
         # In-memory cache with TTL
-        self.memory_cache: dict[str, tuple[Any, datetime]] = {}
+        self.memory_cache: dict[str, tuple[datetime, np.ndarray]] = {}
         self.cache_ttl = timedelta(hours=24)
 
         # Redis cache for distributed systems (optional)
@@ -269,7 +269,7 @@ class EmbeddingCache:
             cache_file = self.cache_dir / f"{cache_key}.npy"
             if cache_file.exists():
                 try:
-                    return np.load(cache_file)
+                    return cast(np.ndarray, np.load(cache_file))
                 except Exception:
                     pass
 
@@ -290,7 +290,7 @@ class EmbeddingCache:
             return self.model.encode(texts, convert_to_numpy=True)
 
         # Separate cached and uncached texts
-        embeddings = [None] * len(texts)
+        embeddings: list[np.ndarray | None] = [None] * len(texts)
         uncached_indices = []
         uncached_texts = []
 
@@ -317,7 +317,22 @@ class EmbeddingCache:
                 self._cache_embedding(cache_key, emb)
                 embeddings[idx] = emb
 
-        return np.vstack(embeddings)
+        # Filter out None values and convert to numpy array
+        valid_embeddings: list[np.ndarray] = [
+            emb for emb in embeddings if emb is not None
+        ]
+        if valid_embeddings:
+            return np.vstack(valid_embeddings)
+        else:
+            # Return empty array with proper shape
+            try:
+                dim = self.model.get_sentence_embedding_dimension()
+                if dim is None:
+                    dim = 384  # Default dimension
+                return np.empty((0, dim), dtype=np.float32)
+            except Exception:
+                # Default dimension if model not properly initialized
+                return np.empty((0, 384), dtype=np.float32)
 
     def _get_cached_embedding(self, cache_key: str) -> np.ndarray | None:
         """Try to get embedding from various cache layers."""
@@ -340,7 +355,7 @@ class EmbeddingCache:
         cache_file = self.cache_dir / f"{cache_key}.npy"
         if cache_file.exists():
             try:
-                return np.load(cache_file)
+                return cast(np.ndarray, np.load(cache_file))
             except Exception:
                 pass
 
@@ -840,7 +855,7 @@ class SemanticSearch:
                     # Neither term present - penalize
                     modified_similarities[i] *= 0.3
 
-        return modified_similarities
+        return cast(np.ndarray, modified_similarities)
 
     def _apply_filters(
         self, similarities: np.ndarray, doc_ids: list[str], filters: dict[str, Any]
@@ -864,7 +879,7 @@ class SemanticSearch:
                     if metadata[key] != value:
                         modified_similarities[i] = 0
 
-        return modified_similarities
+        return cast(np.ndarray, modified_similarities)
 
     def _rerank_results(
         self, results: list[SearchResult], search_query: SearchQuery
@@ -1176,7 +1191,7 @@ class AsyncSemanticSearch:
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
-    async def search_async(self, query: str, **kwargs) -> list[SearchResult]:
+    async def search_async(self, query: str, **kwargs: Any) -> list[SearchResult]:
         """Perform search asynchronously."""
         future = self.loop.run_in_executor(
             None, self.search_engine.search, query, **kwargs

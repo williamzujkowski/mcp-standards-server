@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from src.core.errors import ErrorCode, MCPError
 from src.core.metrics import get_mcp_metrics
@@ -134,7 +134,7 @@ class RetryManager:
                         labels={"operation": operation_name, "attempts": str(attempt)},
                     )
 
-                return result
+                return cast(T, result)
             except self.config.retry_on as e:  # type: ignore[misc]
                 last_exception = e
 
@@ -390,7 +390,7 @@ class CircuitBreaker:
         try:
             result = await func(*args, **kwargs)  # type: ignore[misc]
             self._on_success()
-            return result
+            return cast(T, result)
         except Exception as e:
             if isinstance(e, self.expected_exception):
                 self._on_failure()

@@ -602,7 +602,7 @@ class TestDatabaseOptimization:
     @pytest.mark.asyncio
     async def test_batch_execution(self, db_optimizer):
         """Test batch query execution."""
-        queries = [
+        queries: list[tuple[str, dict[str, str]]] = [
             ("SELECT * FROM users", {}),
             ("SELECT * FROM products", {}),
             ("SELECT * FROM orders", {}),

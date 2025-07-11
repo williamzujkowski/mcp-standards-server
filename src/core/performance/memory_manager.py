@@ -23,7 +23,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Generator
 
 import psutil
 from pympler import muppy, summary, tracker
@@ -426,7 +426,7 @@ class MemoryManager:
         self.tracker = MemoryTracker(self.config)
 
         # Object pools
-        self.object_pools: dict[type, Any] = {}
+        self.object_pools: dict[str, Any] = {}
         if self.config.enable_object_pooling:
             self._setup_object_pools()
 
@@ -441,7 +441,7 @@ class MemoryManager:
 
         # Alerts
         self.alert_callbacks: list[Callable[[str], None]] = []
-        self.last_alert_time = 0
+        self.last_alert_time: float = 0
 
         # GC optimization
         if self.config.enable_gc_optimization:
@@ -737,7 +737,7 @@ class MemoryManager:
             self.alert_callbacks.remove(callback)
 
     @contextmanager
-    def memory_context(self, name: str) -> None:
+    def memory_context(self, name: str) -> Generator[None, None, None]:
         """Context manager for tracking memory usage."""
         if self.config.enable_detailed_tracking:
             snapshot_before = tracemalloc.take_snapshot()

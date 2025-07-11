@@ -626,7 +626,7 @@ class TestRateLimitHandling:
         )
 
         # Track rate limit updates
-        rate_limit_history = []
+        rate_limit_history: list[dict[str, int]] = []
 
         async def mock_get_with_headers(url, **kwargs):
             mock_response = AsyncMock()

@@ -5,6 +5,7 @@ Implements token bucket algorithm for rate limiting with Redis backend.
 """
 
 import time
+from typing import Any
 
 from src.core.cache.redis_client import get_redis_client
 
@@ -31,7 +32,7 @@ class RateLimiter:
         self.redis_prefix = redis_prefix
         self.redis_client = get_redis_client()
 
-    def check_rate_limit(self, identifier: str) -> tuple[bool, dict[str, int] | None]:
+    def check_rate_limit(self, identifier: str) -> tuple[bool, dict[str, int | str] | None]:
         """
         Check if a request is allowed under rate limit.
 
@@ -104,7 +105,7 @@ class MultiTierRateLimiter:
             "day": RateLimiter(50000, 86400, f"{redis_prefix}:day"),
         }
 
-    def check_all_limits(self, identifier: str) -> tuple[bool, dict[str, any] | None]:
+    def check_all_limits(self, identifier: str) -> tuple[bool, dict[str, Any] | None]:
         """
         Check all rate limit tiers.
 
@@ -116,8 +117,9 @@ class MultiTierRateLimiter:
 
             if not is_allowed:
                 # Add tier information
-                limit_info["tier"] = tier_name
-                limit_info["window"] = tier_name
+                if limit_info is not None:
+                    limit_info["tier"] = tier_name
+                    limit_info["window"] = tier_name
                 return False, limit_info
 
         # All tiers passed

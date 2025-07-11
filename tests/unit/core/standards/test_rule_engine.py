@@ -4,6 +4,7 @@ Unit tests for the Rule Engine module.
 
 import json
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -308,7 +309,7 @@ class TestRuleEngine:
         with open(rules_file, "w") as f:
             json.dump(rules_data, f)
 
-        return rules_file
+        return cast(Path, rules_file)
 
     def test_load_rules_from_file(self, sample_rules_file):
         """Test loading rules from a JSON file."""

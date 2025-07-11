@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 import msgpack
 import redis
@@ -126,7 +126,7 @@ class RedisCache:
         self.config = config or CacheConfig()
         self._sync_pool: redis.ConnectionPool | None = None
         self._async_pool: aioredis.ConnectionPool | None = None
-        self._l1_cache = TTLCache(
+        self._l1_cache: TTLCache[str, Any] = TTLCache(
             maxsize=self.config.l1_max_size, ttl=self.config.l1_ttl
         )
         self._circuit_breaker = CircuitBreaker(
@@ -147,7 +147,7 @@ class RedisCache:
 
         # Health monitoring
         self._health_check_task: threading.Thread | None = None
-        self._connection_health = {
+        self._connection_health: dict[str, Any] = {
             "is_healthy": True,
             "last_check": None,
             "consecutive_failures": 0,
@@ -273,9 +273,9 @@ class RedisCache:
             import zlib
 
             data = zlib.compress(data)
-            return b"Z" + serializer.encode("utf-8") + data
+            return cast(bytes, b"Z" + serializer.encode("utf-8") + data)
         else:
-            return b"U" + serializer.encode("utf-8") + data
+            return cast(bytes, b"U" + serializer.encode("utf-8") + data)
 
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value from storage with security checks."""
@@ -416,16 +416,24 @@ class RedisCache:
             self._connection_health["is_healthy"] = True
             self._connection_health["consecutive_failures"] = 0
             self._connection_health["last_check"] = datetime.now().isoformat()  # type: ignore[assignment]
-            self._connection_health["total_checks"] += 1
+            self._connection_health["total_checks"] = (
+                self._connection_health.get("total_checks", 0) + 1
+            )
 
             # Update pool stats
             self._update_pool_stats()
 
         except Exception as e:
             self._connection_health["is_healthy"] = False
-            self._connection_health["consecutive_failures"] += 1
-            self._connection_health["failed_checks"] += 1
-            self._connection_health["total_checks"] += 1
+            self._connection_health["consecutive_failures"] = (
+                self._connection_health.get("consecutive_failures", 0) + 1
+            )
+            self._connection_health["failed_checks"] = (
+                self._connection_health.get("failed_checks", 0) + 1
+            )
+            self._connection_health["total_checks"] = (
+                self._connection_health.get("total_checks", 0) + 1
+            )
             self._metrics["connection_errors"] += 1
 
             logger.warning(f"Health check failed: {e}")
@@ -717,15 +725,15 @@ class RedisCache:
         try:
 
             @self._with_retry
-            def _delete_pattern() -> None:
+            def _delete_pattern() -> int:
                 with redis.Redis(connection_pool=self.sync_pool) as r:
                     keys = r.keys(full_pattern)
                     if keys:
-                        return r.delete(*keys)
+                        return cast(int, r.delete(*keys))
                     return 0
 
             l2_cleared = _delete_pattern()
-            return max(l1_cleared, l2_cleared)
+            return cast(int, max(l1_cleared, l2_cleared))
 
         except RedisError:
             logger.warning(f"Redis delete_pattern failed for pattern: {pattern}")
@@ -856,7 +864,7 @@ class RedisCache:
                 if keys:
                     result = await r.delete(*keys)
                     self._circuit_breaker.record_success()
-                    return max(l1_cleared, result)
+                    return max(l1_cleared, cast(int, result))
                 else:
                     self._circuit_breaker.record_success()
                     return l1_cleared
@@ -900,7 +908,7 @@ class RedisCache:
         # Overall health assessment
         if not self._connection_health["is_healthy"]:
             health["status"] = "unhealthy"
-        elif self._connection_health["consecutive_failures"] > 0:
+        elif self._connection_health.get("consecutive_failures", 0) > 0:
             health["status"] = "degraded"
 
         return health
@@ -934,7 +942,7 @@ class RedisCache:
         # Overall health assessment
         if not self._connection_health["is_healthy"]:
             health["status"] = "unhealthy"
-        elif self._connection_health["consecutive_failures"] > 0:
+        elif self._connection_health.get("consecutive_failures", 0) > 0:
             health["status"] = "degraded"
 
         return health
@@ -943,7 +951,8 @@ class RedisCache:
         """Get cache metrics."""
         total_l1 = self._metrics["l1_hits"] + self._metrics["l1_misses"]
         total_l2 = self._metrics["l2_hits"] + self._metrics["l2_misses"]
-        total_health_checks = self._connection_health["total_checks"]
+        total_health_checks = self._connection_health.get("total_checks", 0)
+        failed_checks = self._connection_health.get("failed_checks", 0)
 
         return {
             **self._metrics,
@@ -954,7 +963,7 @@ class RedisCache:
             "connection_health": self._connection_health.copy(),
             "pool_stats": self._pool_stats.copy(),
             "health_check_success_rate": (
-                (total_health_checks - self._connection_health["failed_checks"])
+                (total_health_checks - failed_checks)
                 / total_health_checks
                 if total_health_checks > 0
                 else 1.0
@@ -987,7 +996,7 @@ class RedisCache:
         return fnmatch.fnmatch(key, pattern)
 
     @staticmethod
-    def generate_cache_key(*args, **kwargs) -> str:
+    def generate_cache_key(*args: Any, **kwargs: Any) -> str:
         """Generate a cache key from arguments using SHA-256."""
         key_parts = [str(arg) for arg in args]
         key_parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))

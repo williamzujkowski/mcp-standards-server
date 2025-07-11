@@ -11,6 +11,7 @@ import asyncio
 import gc
 import statistics
 import time
+from typing import Any
 
 import psutil
 import pytest
@@ -51,7 +52,7 @@ class PerformanceMetrics:
         """Record an error occurrence."""
         self.error_count += 1
 
-    def get_summary(self) -> dict[str, float]:
+    def get_summary(self) -> dict[str, Any]:
         """Get performance summary statistics."""
         total_duration = time.time() - self.start_time
 
@@ -314,7 +315,7 @@ class TestMemoryPerformance:
 
         # Perform many operations
         for i in range(50):  # Reduced iterations for faster tests
-            context = SAMPLE_CONTEXTS["react_web_app"].copy()
+            context: dict[str, Any] = SAMPLE_CONTEXTS["react_web_app"].copy()
             context["iteration"] = i
 
             await mcp_client.call_tool("get_applicable_standards", {"context": context})

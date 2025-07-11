@@ -14,13 +14,18 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import psutil
 import pytest
 
-from src.core.standards.semantic_search import create_search_engine
+from src.core.standards.semantic_search import (
+    AsyncSemanticSearch,
+    SemanticSearch,
+    create_search_engine,
+)
 from tests.mocks.semantic_search_mocks import (
     TestDataGenerator,
     patch_ml_dependencies,
@@ -116,14 +121,20 @@ class TestSemanticSearchLatency:
         """Create search engine for testing."""
         engine = create_search_engine(cache_dir=temp_dir)
         yield engine
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_search_latency_percentiles(self, search_engine):
         """Test search latency percentiles."""
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        search_engine.index_documents_batch(docs)
+        if isinstance(search_engine, SemanticSearch):
+            search_engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Generate diverse queries
         queries = [
@@ -143,7 +154,10 @@ class TestSemanticSearchLatency:
         # Perform searches and measure latency
         for query in queries:
             start = time.perf_counter()
-            search_engine.search(query, top_k=10)
+            if isinstance(search_engine, SemanticSearch):
+                search_engine.search(query, top_k=10)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
             elapsed = time.perf_counter() - start
             metrics.record_operation(elapsed)
 
@@ -167,22 +181,28 @@ class TestSemanticSearchLatency:
         """Test latency difference between cold and warm cache."""
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(500)
-        search_engine.index_documents_batch(docs)
+        if isinstance(search_engine, SemanticSearch):
+            search_engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         query = "python api security testing"
 
         # Cold cache search
-        search_engine.result_cache.clear()
-        search_engine.embedding_cache.memory_cache.clear()
+        if isinstance(search_engine, SemanticSearch):
+            search_engine.result_cache.clear()
+            search_engine.embedding_cache.memory_cache.clear()
 
-        cold_start = time.perf_counter()
-        cold_results = search_engine.search(query, top_k=10)
-        cold_latency = time.perf_counter() - cold_start
+            cold_start = time.perf_counter()
+            cold_results = search_engine.search(query, top_k=10)
+            cold_latency = time.perf_counter() - cold_start
 
-        # Warm cache search
-        warm_start = time.perf_counter()
-        warm_results = search_engine.search(query, top_k=10)
-        warm_latency = time.perf_counter() - warm_start
+            # Warm cache search
+            warm_start = time.perf_counter()
+            warm_results = search_engine.search(query, top_k=10)
+            warm_latency = time.perf_counter() - warm_start
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         print(f"\nCold cache latency: {cold_latency*1000:.2f}ms")
         print(f"Warm cache latency: {warm_latency*1000:.2f}ms")
@@ -204,7 +224,12 @@ class TestSemanticSearchLatency:
 
             # Index documents
             docs = TestDataGenerator.generate_standards_corpus(size)
-            engine.index_documents_batch(docs)
+            if isinstance(engine, SemanticSearch):
+                engine.index_documents_batch(docs)
+            else:
+                # AsyncSemanticSearch doesn't have sync index_documents_batch
+                # This test expects sync behavior, so we shouldn't get here
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
             # Measure search latency (average of 10 searches)
             query = "python testing security"
@@ -212,7 +237,10 @@ class TestSemanticSearchLatency:
 
             for _ in range(10):
                 start = time.perf_counter()
-                engine.search(query, top_k=10)
+                if isinstance(engine, SemanticSearch):
+                    engine.search(query, top_k=10)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
                 elapsed = time.perf_counter() - start
                 times.append(elapsed)
 
@@ -221,7 +249,10 @@ class TestSemanticSearchLatency:
 
             print(f"Corpus size: {size:5d}, Avg latency: {avg_latency*1000:.2f}ms")
 
-            engine.close()
+            if isinstance(engine, SemanticSearch):
+                engine.close()
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Check scaling characteristics
         # Latency should not increase linearly with corpus size
@@ -244,7 +275,10 @@ class TestSemanticSearchThroughput:
 
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Generate queries
         queries = [f"query {i % 100}" for i in range(1000)]
@@ -252,7 +286,10 @@ class TestSemanticSearchThroughput:
         # Measure throughput
         start = time.time()
         for query in queries:
-            engine.search(query, top_k=5)
+            if isinstance(engine, SemanticSearch):
+                engine.search(query, top_k=5)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
         elapsed = time.time() - start
 
         throughput = len(queries) / elapsed
@@ -261,7 +298,10 @@ class TestSemanticSearchThroughput:
         # Should handle at least 100 queries/second
         assert throughput > 100
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_concurrent_throughput(self):
@@ -270,7 +310,10 @@ class TestSemanticSearchThroughput:
 
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Test with different thread counts
         thread_counts = [1, 2, 4, 8, 16]
@@ -285,7 +328,10 @@ class TestSemanticSearchThroughput:
                 for i in range(queries_count):
                     query = f"thread {thread_id} query {i}"
                     start = time.perf_counter()
-                    engine.search(query, top_k=5)
+                    if isinstance(engine, SemanticSearch):
+                        engine.search(query, top_k=5)
+                    else:
+                        raise TypeError("Expected SemanticSearch instance for sync test")
                     elapsed = time.perf_counter() - start
                     times.append(elapsed)
                 return times
@@ -316,7 +362,10 @@ class TestSemanticSearchThroughput:
         # Throughput should scale with threads (not linearly due to contention)
         assert results[4]["throughput"] > results[1]["throughput"] * 2
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @pytest.mark.asyncio
     @patch_ml_dependencies()
@@ -326,7 +375,10 @@ class TestSemanticSearchThroughput:
 
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        await engine.index_documents_batch_async(docs)
+        if isinstance(engine, AsyncSemanticSearch):
+            await engine.index_documents_batch_async(docs)
+        else:
+            raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
         # Generate queries
         num_queries = 1000
@@ -339,8 +391,11 @@ class TestSemanticSearchThroughput:
         batch_size = 100
         for i in range(0, num_queries, batch_size):
             batch = queries[i : i + batch_size]
-            tasks = [engine.search_async(q, top_k=5) for q in batch]
-            await asyncio.gather(*tasks)
+            if isinstance(engine, AsyncSemanticSearch):
+                tasks = [engine.search_async(q, top_k=5) for q in batch]
+                await asyncio.gather(*tasks)
+            else:
+                raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
         elapsed = time.time() - start
         throughput = num_queries / elapsed
@@ -350,7 +405,10 @@ class TestSemanticSearchThroughput:
         # Async should achieve high throughput
         assert throughput > 200
 
-        engine.close()
+        if isinstance(engine, AsyncSemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected AsyncSemanticSearch instance for async test")
 
 
 class TestSemanticSearchMemory:
@@ -377,7 +435,10 @@ class TestSemanticSearchMemory:
             gc.collect()
             before = process.memory_info().rss / 1024 / 1024
 
-            engine.index_documents_batch(docs)
+            if isinstance(engine, SemanticSearch):
+                engine.index_documents_batch(docs)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
             gc.collect()
             after = process.memory_info().rss / 1024 / 1024
@@ -394,7 +455,10 @@ class TestSemanticSearchMemory:
         # Should use less than 500MB for ~1600 documents
         assert total_memory_used < 500
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_memory_leak_detection(self):
@@ -404,7 +468,10 @@ class TestSemanticSearchMemory:
 
         # Index initial documents
         docs = TestDataGenerator.generate_standards_corpus(500)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Get baseline after initial setup
         gc.collect()
@@ -417,7 +484,10 @@ class TestSemanticSearchMemory:
             # Perform 100 searches
             for i in range(100):
                 query = f"test query {i % 20}"
-                results = engine.search(query, top_k=10)
+                if isinstance(engine, SemanticSearch):
+                    results = engine.search(query, top_k=10)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 # Simulate result processing
                 for result in results:
@@ -426,7 +496,10 @@ class TestSemanticSearchMemory:
 
             # Index new documents
             new_docs = TestDataGenerator.generate_standards_corpus(10)
-            engine.index_documents_batch(new_docs)
+            if isinstance(engine, SemanticSearch):
+                engine.index_documents_batch(new_docs)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
             # Clear caches periodically
             if iteration % 3 == 0:
@@ -449,7 +522,10 @@ class TestSemanticSearchMemory:
         # Memory growth should be minimal
         assert avg_growth_per_iteration < 5  # Less than 5MB per iteration
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_cache_memory_management(self, temp_dir):
@@ -458,27 +534,39 @@ class TestSemanticSearchMemory:
         engine = create_search_engine(cache_dir=temp_dir)
 
         # Configure cache limits
-        engine.result_cache_ttl = timedelta(seconds=30)
-        engine.embedding_cache.cache_ttl = timedelta(minutes=5)
+        if isinstance(engine, SemanticSearch):
+            engine.result_cache_ttl = timedelta(seconds=30)
+            engine.embedding_cache.cache_ttl = timedelta(minutes=5)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         process = psutil.Process()
 
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Fill caches
         queries = [f"cache test {i}" for i in range(100)]
         for query in queries:
-            engine.search(query, top_k=10)
+            if isinstance(engine, SemanticSearch):
+                engine.search(query, top_k=10)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Check memory with full caches
         gc.collect()
         full_cache_memory = process.memory_info().rss / 1024 / 1024
 
         # Clear caches
-        engine.result_cache.clear()
-        engine.embedding_cache.clear_cache()
+        if isinstance(engine, SemanticSearch):
+            engine.result_cache.clear()
+            engine.embedding_cache.clear_cache()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Check memory after clearing
         gc.collect()
@@ -492,7 +580,10 @@ class TestSemanticSearchMemory:
         # Should free significant memory
         assert memory_freed > 10  # At least 10MB freed
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
 
 class TestSemanticSearchScalability:
@@ -513,7 +604,10 @@ class TestSemanticSearchScalability:
 
             # Time indexing
             start = time.time()
-            engine.index_documents_batch(docs)
+            if isinstance(engine, SemanticSearch):
+                engine.index_documents_batch(docs)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
             elapsed = time.time() - start
 
             indexing_times.append(elapsed)
@@ -529,7 +623,10 @@ class TestSemanticSearchScalability:
         print(f"\nTime scaling: {time_ratio:.2f}x for {size_ratio}x size increase")
         assert time_ratio < size_ratio * 0.8
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_search_quality_at_scale(self):
@@ -573,7 +670,10 @@ class TestSemanticSearchScalability:
             docs.extend(noise_docs)
 
             # Index all documents
-            engine.index_documents_batch(docs)
+            if isinstance(engine, SemanticSearch):
+                engine.index_documents_batch(docs)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
             # Search for target documents
             searches = [
@@ -586,7 +686,10 @@ class TestSemanticSearchScalability:
             hits_at_5 = 0
 
             for query, expected_id in searches:
-                results = engine.search(query, top_k=5)
+                if isinstance(engine, SemanticSearch):
+                    results = engine.search(query, top_k=5)
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 if results and results[0].id == expected_id:
                     hits_at_1 += 1
@@ -599,7 +702,10 @@ class TestSemanticSearchScalability:
                 "precision_at_5": hits_at_5 / len(searches),
             }
 
-            engine.close()
+            if isinstance(engine, SemanticSearch):
+                engine.close()
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Print results
         print("\nSearch quality at different scales:")
@@ -624,7 +730,10 @@ class TestSemanticSearchStressTest:
 
         # Index moderate corpus
         docs = TestDataGenerator.generate_standards_corpus(2000)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Simulate high load for extended period
         duration_seconds = 30
@@ -643,7 +752,10 @@ class TestSemanticSearchStressTest:
                     query = f"load test query {query_count % 100}"
 
                     op_start = time.perf_counter()
-                    engine.search(query, top_k=10)
+                    if isinstance(engine, SemanticSearch):
+                        engine.search(query, top_k=10)
+                    else:
+                        raise TypeError("Expected SemanticSearch instance for sync test")
                     op_elapsed = time.perf_counter() - op_start
 
                     metrics.record_operation(op_elapsed)
@@ -676,7 +788,10 @@ class TestSemanticSearchStressTest:
         assert len(errors) == 0
         assert summary["percentiles"]["p99"] < 500  # P99 under 500ms even under load
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
     @patch_ml_dependencies()
     def test_burst_traffic_handling(self):
@@ -685,7 +800,10 @@ class TestSemanticSearchStressTest:
 
         # Index documents
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Simulate burst traffic pattern
         burst_sizes = [10, 50, 100, 200]
@@ -699,9 +817,12 @@ class TestSemanticSearchStressTest:
             # Launch all queries concurrently
             start = time.time()
             with ThreadPoolExecutor(max_workers=burst_size) as executor:
-                futures = [
-                    executor.submit(engine.search, query, top_k=5) for query in queries
-                ]
+                if isinstance(engine, SemanticSearch):
+                    futures = [
+                        executor.submit(engine.search, query, top_k=5) for query in queries
+                    ]
+                else:
+                    raise TypeError("Expected SemanticSearch instance for sync test")
 
                 # Wait for all to complete
                 results = []
@@ -722,7 +843,10 @@ class TestSemanticSearchStressTest:
             assert len(errors) == 0
             assert len(results) == burst_size
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
 
 def test_performance_regression_suite():
@@ -733,18 +857,24 @@ def test_performance_regression_suite():
     to detect performance regressions in CI/CD pipelines.
     """
     with patch_ml_dependencies():
-        results = {"timestamp": datetime.now().isoformat(), "tests": {}}
+        results: dict[str, Any] = {"timestamp": datetime.now().isoformat(), "tests": {}}
 
         # Test 1: Basic search latency
         engine = create_search_engine()
         docs = TestDataGenerator.generate_standards_corpus(1000)
-        engine.index_documents_batch(docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         latencies = []
         for i in range(100):
             query = f"test query {i % 20}"
             start = time.perf_counter()
-            engine.search(query, top_k=10)
+            if isinstance(engine, SemanticSearch):
+                engine.search(query, top_k=10)
+            else:
+                raise TypeError("Expected SemanticSearch instance for sync test")
             latencies.append(time.perf_counter() - start)
 
         results["tests"]["basic_search"] = {
@@ -756,7 +886,10 @@ def test_performance_regression_suite():
         # Test 2: Indexing throughput
         start = time.time()
         new_docs = TestDataGenerator.generate_standards_corpus(1000)
-        engine.index_documents_batch(new_docs)
+        if isinstance(engine, SemanticSearch):
+            engine.index_documents_batch(new_docs)
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
         indexing_time = time.time() - start
 
         results["tests"]["indexing"] = {
@@ -773,7 +906,10 @@ def test_performance_regression_suite():
             "memory_per_doc_kb": (memory_mb * 1024) / 2000,  # 2000 total docs
         }
 
-        engine.close()
+        if isinstance(engine, SemanticSearch):
+            engine.close()
+        else:
+            raise TypeError("Expected SemanticSearch instance for sync test")
 
         # Save results for comparison
         output_path = Path("performance_baseline.json")

@@ -5,7 +5,7 @@ Provides comprehensive validation for tool inputs using JSON Schema and Pydantic
 """
 
 import re
-from typing import Any
+from typing import Any, Type, cast
 
 import jsonschema
 from jsonschema import Draft7Validator
@@ -324,8 +324,8 @@ class InputValidator:
                 return arguments
 
             # Validate using Pydantic model
-            validated = validator_class(**arguments)
-            return validated.model_dump()  # type: ignore[no-any-return]
+            validated = cast(BaseModel, validator_class(**arguments))
+            return validated.model_dump()
 
         except ValueError as e:
             # Extract field information from Pydantic error

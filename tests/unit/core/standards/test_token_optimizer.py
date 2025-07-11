@@ -602,21 +602,15 @@ Best practices for this section include following all guidelines carefully.
         total_tokens_used = 0
         loaded_content = []
 
-        for batch in loading_plan:
-            batch_tokens = 0
-            for section_id, estimated_tokens in batch:
-                if total_tokens_used + estimated_tokens <= budget.available:
-                    content, actual_tokens = loader.load_section(
-                        "large-test-standard", section_id, budget
-                    )
-                    loaded_content.append(content)
-                    total_tokens_used += actual_tokens
-                    batch_tokens += actual_tokens
-                else:
-                    break
-
-            if batch_tokens == 0:
-                break  # Can't load any more sections
+        for section_id, estimated_tokens in loading_plan:
+            if total_tokens_used + estimated_tokens <= budget.available:
+                content, actual_tokens = loader.load_section(
+                    "large-test-standard", section_id, budget
+                )
+                loaded_content.append(content)
+                total_tokens_used += actual_tokens
+            else:
+                break
 
         # Verify progressive loading worked
         stats = loader.get_loading_stats("large-test-standard")

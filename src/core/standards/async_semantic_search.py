@@ -18,7 +18,7 @@ import weakref
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, cast
 
 import aiohttp
 import numpy as np
@@ -33,6 +33,7 @@ from .semantic_search import (
     SearchQuery,
     SearchResult,
 )
+from .vector_index_cache import VectorIndexCache
 
 logger = logging.getLogger(__name__)
 
@@ -273,14 +274,16 @@ class VectorIndexCache:
         # Check local cache first
         if index_id in self.local_cache:
             self.index_stats["cache_hits"] += 1
-            return self.local_cache[index_id]
+            return cast(dict[str, Any], self.local_cache[index_id])
 
         # Check Redis cache
-        cached = await self.redis_cache.async_get(f"vector_index:{index_id}")
+        cached = None
+        if self.redis_cache is not None:
+            cached = await self.redis_cache.async_get(f"vector_index:{index_id}")
         if cached:
             self.index_stats["cache_hits"] += 1
             self.local_cache[index_id] = cached
-            return cached
+            return cast(dict[str, Any], cached)
 
         self.index_stats["cache_misses"] += 1
         return None
@@ -291,9 +294,10 @@ class VectorIndexCache:
         self.local_cache[index_id] = index_data
 
         # Store in Redis cache
-        await self.redis_cache.async_set(
-            f"vector_index:{index_id}", index_data, ttl=self.config.vector_cache_ttl
-        )
+        if self.redis_cache is not None:
+            await self.redis_cache.async_set(
+                f"vector_index:{index_id}", index_data, ttl=self.config.vector_cache_ttl
+            )
 
     async def warm_cache(self, index_ids: list[str]) -> None:
         """Warm cache with specific index IDs."""
@@ -476,17 +480,17 @@ class AsyncSemanticSearch:
         # Core components
         self.embedding_model = None
         self.batch_processor = BatchProcessor(self.config)
-        self.redis_cache = None
-        self.vector_cache = None
+        self.redis_cache: Optional[RedisCache] = None
+        self.vector_cache: Optional[VectorIndexCache] = None
         self.memory_manager = MemoryManager(self.config)
 
         # Document storage
         self.documents: dict[str, Any] = {}
         self.document_embeddings: dict[str, Any] = {}
-        self.document_metadata = {}
+        self.document_metadata: dict[str, dict[str, Any]] = {}
 
         # HTTP client for external APIs
-        self.http_session = None
+        self.http_session: aiohttp.ClientSession | None = None
 
         # Performance tracking
         self.performance_metrics = {
@@ -516,9 +520,16 @@ class AsyncSemanticSearch:
         )
         self.redis_cache = RedisCache(cache_config)
 
-        # Initialize vector index cache
-        self.vector_cache = VectorIndexCache(self.config, self.redis_cache)
-        await self.vector_cache.start_warming()
+        # Initialize vector index cache with proper config
+        from .vector_index_cache import VectorIndexConfig
+        
+        vector_config = VectorIndexConfig(
+            memory_cache_size=self.config.vector_cache_size,
+            memory_cache_ttl=self.config.vector_cache_ttl,
+        )
+        self.vector_cache = VectorIndexCache(vector_config, self.redis_cache)
+        assert self.vector_cache is not None
+        await self.vector_cache.start()
 
         # Initialize memory manager
         await self.memory_manager.start_monitoring()
@@ -549,11 +560,15 @@ class AsyncSemanticSearch:
 
         # Initialize embedding model (in thread pool to avoid blocking)
         loop = asyncio.get_event_loop()
-        self.embedding_model = await loop.run_in_executor(
-            None,
-            lambda: SentenceTransformer(
-                self.config.model_name, cache_folder=self.config.model_cache_dir
-            ),
+        
+        def load_model() -> SentenceTransformer:
+            cache_folder = str(self.config.model_cache_dir) if self.config.model_cache_dir else None
+            return SentenceTransformer(self.config.model_name, cache_folder=cache_folder)
+        
+        # Type casting to satisfy mypy
+        self.embedding_model = cast(
+            SentenceTransformer,
+            await loop.run_in_executor(None, load_model)
         )
 
         self.initialized = True
@@ -571,7 +586,8 @@ class AsyncSemanticSearch:
 
         # Stop components
         await self.batch_processor.stop()
-        await self.vector_cache.stop_warming()
+        if self.vector_cache is not None:
+            await self.vector_cache.stop()
         await self.memory_manager.stop_monitoring()
 
         # Close HTTP session
@@ -587,7 +603,7 @@ class AsyncSemanticSearch:
 
     async def index_document(
         self, doc_id: str, content: str, metadata: dict[str, Any] | None = None
-    ):
+    ) -> None:
         """Index a single document asynchronously."""
         if not self.initialized:
             await self.initialize()
@@ -604,12 +620,13 @@ class AsyncSemanticSearch:
         self.memory_manager.register_object(embedding)
 
         # Cache the embedding
-        cache_key = f"doc_embedding:{doc_id}"
-        await self.redis_cache.async_set(cache_key, embedding.tolist(), ttl=3600)
+        if self.redis_cache is not None:
+            cache_key = f"doc_embedding:{doc_id}"
+            await self.redis_cache.async_set(cache_key, embedding.tolist(), ttl=3600)
 
     async def index_documents_batch(
         self, documents: list[tuple[str, str, dict[str, Any] | None]]
-    ):
+    ) -> None:
         """Index multiple documents in batches."""
         if not self.initialized:
             await self.initialize()
@@ -633,10 +650,11 @@ class AsyncSemanticSearch:
                 self.memory_manager.register_object(embedding)
 
                 # Cache the embedding
-                cache_key = f"doc_embedding:{doc_id}"
-                await self.redis_cache.async_set(
-                    cache_key, embedding.tolist(), ttl=3600
-                )
+                if self.redis_cache is not None:
+                    cache_key = f"doc_embedding:{doc_id}"
+                    await self.redis_cache.async_set(
+                        cache_key, embedding.tolist(), ttl=3600
+                    )
 
         self.performance_metrics["batch_operations"] += 1
 
@@ -659,7 +677,7 @@ class AsyncSemanticSearch:
 
             # Check cache first
             cache_key = self._get_cache_key(query, top_k, filters)
-            if use_cache:
+            if use_cache and self.redis_cache is not None:
                 cached_results = await self.redis_cache.async_get(f"search:{cache_key}")
                 if cached_results:
                     self.performance_metrics["cache_operations"] += 1
@@ -711,9 +729,10 @@ class AsyncSemanticSearch:
                     }
                     for r in results
                 ]
-                await self.redis_cache.async_set(
-                    f"search:{cache_key}", result_dicts, ttl=300
-                )
+                if self.redis_cache is not None:
+                    await self.redis_cache.async_set(
+                        f"search:{cache_key}", result_dicts, ttl=300
+                    )
 
             # Update metrics
             elapsed = time.time() - start_time
@@ -737,7 +756,7 @@ class AsyncSemanticSearch:
             raise
 
     async def search_batch(
-        self, queries: list[str], **kwargs
+        self, queries: list[str], **kwargs: Any
     ) -> list[list[SearchResult]]:
         """Search multiple queries in parallel."""
         if not self.initialized:
@@ -749,12 +768,13 @@ class AsyncSemanticSearch:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Handle exceptions
-        processed_results = []
+        processed_results: list[list[SearchResult]] = []
         for result in results:
             if isinstance(result, Exception):
                 logger.error(f"Batch search error: {result}")
                 processed_results.append([])
             else:
+                # result is already a list of SearchResult objects
                 processed_results.append(result)
 
         return processed_results
@@ -763,22 +783,25 @@ class AsyncSemanticSearch:
         """Get embedding for text asynchronously."""
         # Check cache first
         cache_key = hashlib.sha256(text.encode()).hexdigest()
-        cached = await self.redis_cache.async_get(f"embedding:{cache_key}")
+        cached = None
+        if self.redis_cache is not None:
+            cached = await self.redis_cache.async_get(f"embedding:{cache_key}")
         if cached:
             return np.array(cached, dtype=np.float32)
 
         # Use batch processor
-        future = asyncio.Future()
+        future: asyncio.Future[np.ndarray] = asyncio.Future()
         await self.batch_processor.queue_embedding(text, future)
 
         embedding = await future
 
         # Cache the result
-        await self.redis_cache.async_set(
-            f"embedding:{cache_key}", embedding.tolist(), ttl=3600
-        )
+        if self.redis_cache is not None:
+            await self.redis_cache.async_set(
+                f"embedding:{cache_key}", embedding.tolist(), ttl=3600
+            )
 
-        return embedding
+        return cast(np.ndarray, embedding)
 
     async def _get_embeddings_batch_async(self, texts: list[str]) -> list[np.ndarray]:
         """Get embeddings for multiple texts asynchronously."""
@@ -823,7 +846,7 @@ class AsyncSemanticSearch:
         if filters:
             similarities = self._apply_filters(similarities, doc_ids, filters)
 
-        return similarities
+        return cast(np.ndarray, similarities)
 
     def _apply_filters(
         self, similarities: np.ndarray, doc_ids: list[str], filters: dict[str, Any]
@@ -844,7 +867,7 @@ class AsyncSemanticSearch:
                     if metadata[key] != value:
                         modified_similarities[i] = 0
 
-        return modified_similarities
+        return cast(np.ndarray, modified_similarities)
 
     def _generate_highlights(self, content: str, terms: list[str]) -> list[str]:
         """Generate highlighted snippets."""
@@ -894,8 +917,8 @@ class AsyncSemanticSearch:
                 "batch_operations": self.performance_metrics["batch_operations"],
                 "cache_operations": self.performance_metrics["cache_operations"],
             },
-            "memory": self.memory_manager.get_stats(),
-            "vector_cache": self.vector_cache.get_stats(),
+            "memory": self.memory_manager.get_stats() if self.memory_manager else {},
+            "vector_cache": self.vector_cache.get_access_stats() if self.vector_cache else {},
             "redis_cache": self.redis_cache.get_metrics() if self.redis_cache else {},
             "analytics": {
                 "query_count": self.analytics.query_count,
@@ -909,7 +932,7 @@ class AsyncSemanticSearch:
 
     async def health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check."""
-        health = {
+        health: dict[str, Any] = {
             "status": "healthy",
             "initialized": self.initialized,
             "components": {},

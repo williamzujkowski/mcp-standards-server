@@ -532,7 +532,7 @@ class MCPCache:
         self,
         executor: Callable[[str, dict[str, Any]], Any],
         interval_seconds: int = 3600,
-    ):
+    ) -> None:
         """Start background cache warming tasks.
 
         Args:
@@ -604,8 +604,8 @@ class MCPCache:
         tool_name: str,
         strategy: CacheStrategy | None = None,
         ttl_seconds: int | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Configure or reconfigure a tool's caching behavior."""
         if tool_name not in self.tool_configs:
             self.tool_configs[tool_name] = ToolCacheConfig(tool_name=tool_name)
@@ -650,7 +650,7 @@ class MCPCache:
 # Convenience decorator for caching tool responses
 def cache_tool_response(
     cache: MCPCache, tool_name: str | None = None, ttl_override: int | None = None
-):
+) -> Callable[[Callable], Callable]:
     """Decorator to automatically cache tool responses.
 
     Usage:
@@ -659,8 +659,8 @@ def cache_tool_response(
             return expensive_operation(args)
     """
 
-    def decorator(func: Callable) -> None:
-        async def wrapper(arguments: dict[str, Any], **kwargs) -> None:
+    def decorator(func: Callable) -> Callable:
+        async def wrapper(arguments: dict[str, Any], **kwargs: Any) -> Any:
             nonlocal tool_name
             if tool_name is None:
                 tool_name = func.__name__

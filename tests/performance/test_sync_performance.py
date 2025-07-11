@@ -145,7 +145,7 @@ class TestLargeRepositoryPerformance:
         ), f"Memory usage increased by {memory_delta:.2f}MB, expected < 500MB"
 
         # Calculate throughput
-        total_size_mb = sum(f["size"] for f in files) / 1024 / 1024
+        total_size_mb = sum(int(f["size"]) for f in files) / 1024 / 1024
         throughput_mbps = total_size_mb / sync_duration
 
         print("\nPerformance Results:")
@@ -538,7 +538,7 @@ class TestFileSystemPerformance:
 
             memory_tracker.snapshot("after_writes")
 
-        successful_writes = sum(1 for r in results if r)
+        successful_writes = sum(1 for r in results if r is True)
         assert successful_writes == num_files
 
         # Calculate write throughput

@@ -459,7 +459,7 @@ class TestConvenienceFunctions:
     def test_check_for_updates(self, mock_synchronizer_class):
         """Test check_for_updates function."""
         mock_synchronizer = Mock()
-        mock_updates = {"outdated_files": [], "current_files": []}
+        mock_updates: dict[str, list[str]] = {"outdated_files": [], "current_files": []}
         mock_synchronizer.check_updates.return_value = mock_updates
         mock_synchronizer_class.return_value = mock_synchronizer
 

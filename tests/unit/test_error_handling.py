@@ -74,6 +74,7 @@ class TestMCPErrors:
 
         assert error.code == ErrorCode.VALIDATION_INVALID_PARAMETERS
         assert error.error_detail.field == "test_field"
+        assert error.error_detail.suggestion is not None
         assert "Check the parameter requirements" in error.error_detail.suggestion
 
     def test_authentication_error(self):
@@ -84,6 +85,7 @@ class TestMCPErrors:
 
         assert error.code == ErrorCode.AUTH_INVALID_TOKEN
         assert str(error) == "Invalid token"
+        assert error.error_detail.suggestion is not None
         assert "authentication token" in error.error_detail.suggestion
 
 

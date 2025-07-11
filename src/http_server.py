@@ -225,13 +225,13 @@ class HTTPServer:
             # Convert to simple list format
             standards_list = [
                 {
-                    "id": std.get("id"),
-                    "title": std.get("title"),
-                    "category": std.get("category"),
+                    "id": std.id,
+                    "title": std.title,
+                    "category": std.category,
                     "description": (
-                        std.get("description", "")[:200] + "..."
-                        if len(std.get("description", "")) > 200
-                        else std.get("description", "")
+                        std.description[:200] + "..."
+                        if len(std.description) > 200
+                        else std.description
                     ),
                 }
                 for std in standards
@@ -323,7 +323,7 @@ async def start_http_server(
     host = host or os.environ.get("HTTP_HOST", "127.0.0.1")
     port = port or int(os.environ.get("HTTP_PORT", "8080"))
 
-    server = HTTPServer(host, port)
+    server = HTTPServer(host or "127.0.0.1", port)
     return await server.start()
 
 

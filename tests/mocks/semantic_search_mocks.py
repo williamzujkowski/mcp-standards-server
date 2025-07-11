@@ -10,7 +10,7 @@ import threading
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -93,7 +93,7 @@ class MockSentenceTransformer:
 
         # Return single embedding if input was single text
         if single_text:
-            return result[0]
+            return cast(np.ndarray, result[0])
         return result
 
     def _text_to_embedding(self, text: str) -> np.ndarray:
@@ -199,7 +199,7 @@ class MockRedisClient:
             value = self._store.get(key)
 
         if value is not None and self.decode_responses and isinstance(value, bytes):
-            return value.decode("utf-8")
+            return cast(str, value.decode("utf-8"))
         return value
 
     def set(self, key: str, value: str | bytes, ex: int | None = None) -> bool:
@@ -275,7 +275,7 @@ class MockRedisClient:
             ttl = int((self._expiry[key] - datetime.now()).total_seconds())
             return max(0, ttl)
 
-    def scan_iter(self, match: str = None, count: int = 100):
+    def scan_iter(self, match: str | None = None, count: int = 100):
         """Scan keys matching pattern."""
         self._check_connection()
         self._cleanup_expired()
@@ -334,7 +334,7 @@ class MockRedisPipeline:
 
     def __init__(self, client: MockRedisClient):
         self.client = client
-        self.commands = []
+        self.commands: list[tuple[str, ...]] = []
 
     def set(self, key: str, value: str | bytes, ex: int | None = None):
         """Queue set command."""
@@ -358,7 +358,7 @@ class MockRedisPipeline:
         for cmd in self.commands:
             if cmd[0] == "set":
                 _, key, value, ex = cmd
-                result = self.client.set(key, value, ex=ex)
+                result: Any = self.client.set(key, value, ex=ex)
                 results.append(result)
             elif cmd[0] == "get":
                 _, key = cmd
@@ -523,7 +523,7 @@ class MockCosineSimilarity:
     """Mock sklearn cosine similarity."""
 
     @staticmethod
-    def cosine_similarity(X: np.ndarray, Y: np.ndarray = None) -> np.ndarray:
+    def cosine_similarity(X: np.ndarray, Y: np.ndarray | None = None) -> np.ndarray:
         """Calculate cosine similarity."""
         if Y is None:
             Y = X
@@ -535,7 +535,7 @@ class MockCosineSimilarity:
         # Compute similarity
         similarity = np.dot(X_norm, Y_norm.T)
 
-        return similarity
+        return cast(np.ndarray, similarity)
 
 
 class MockNearestNeighbors:
@@ -555,7 +555,7 @@ class MockNearestNeighbors:
         return self
 
     def kneighbors(
-        self, X: np.ndarray, n_neighbors: int = None, return_distance: bool = True
+        self, X: np.ndarray, n_neighbors: int | None = None, return_distance: bool = True
     ):
         """Find k nearest neighbors."""
         if not self.fitted:
@@ -570,9 +570,12 @@ class MockNearestNeighbors:
             distances = 1 - similarities  # Convert similarity to distance
         else:
             # Default to euclidean distance
-            distances = np.array(
-                [[np.linalg.norm(x - y) for y in self.X_train] for x in X]
-            )
+            if self.X_train is not None:
+                distances = np.array(
+                    [[np.linalg.norm(x - y) for y in self.X_train] for x in X]
+                )
+            else:
+                raise ValueError("X_train is not set")
 
         # Find k nearest neighbors
         neighbor_indices = np.argsort(distances, axis=1)[:, :n_neighbors]

@@ -458,8 +458,10 @@ class TestCredentialSecurity:
 
             # Verify token is in Authorization header
             assert "headers" in captured_request
-            assert "Authorization" in captured_request["headers"]
-            assert captured_request["headers"]["Authorization"] == f"token {token}"
+            headers = captured_request.get("headers")
+            assert headers is not None
+            assert "Authorization" in headers
+            assert headers["Authorization"] == f"token {token}"
 
             # Verify HTTPS is used
             assert "https://" in str(captured_request.get("url", ""))
