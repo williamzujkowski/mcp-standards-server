@@ -238,10 +238,10 @@ class TestRedisCacheSecurity:
             "pool_stats",
             "health_check_success_rate",
         ]
-        
+
         for key, value in metrics.items():
             # Check that values are safe types (not actual cached data)
-            assert isinstance(value, (int, float, str, dict))
+            assert isinstance(value, int | float | str | dict)
             # Check that key is expected
             assert key in expected_keys, f"Unexpected metric key: {key}"
 

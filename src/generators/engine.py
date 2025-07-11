@@ -136,7 +136,9 @@ class TemplateEngine:
         """Extract template variables using Jinja2 meta."""
         try:
             # Get the source directly from the loader
-            source, _ = self.env.get_or_select_template(template_name).environment.loader.get_source(self.env, template_name)  # type: ignore
+            source, _ = self.env.get_or_select_template(
+                template_name
+            ).environment.loader.get_source(self.env, template_name)
             ast = self.env.parse(source)
             return list(meta.find_undeclared_variables(ast))
         except Exception:
@@ -164,7 +166,7 @@ class TemplateEngine:
         """Validate a template file."""
         try:
             # Try to parse the template
-            source, _ = self.env.loader.get_source(self.env, template_name)  # type: ignore
+            source, _ = self.env.loader.get_source(self.env, template_name)
             self.env.parse(source)
 
             return {
@@ -201,7 +203,7 @@ class TemplateEngine:
     ) -> str:
         """Create a custom template based on an existing one."""
         # Load base template content
-        base_content, _ = self.env.loader.get_source(self.env, base_template)  # type: ignore
+        base_content, _ = self.env.loader.get_source(self.env, base_template)
 
         # Apply customizations
         custom_content = self._apply_customizations(base_content, customizations)

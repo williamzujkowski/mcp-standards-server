@@ -69,7 +69,7 @@ async def error_handling_middleware(
             duration=duration,
         )
 
-        return response  # type: ignore[no-any-return]
+        return response
 
     except web.HTTPException as e:
         # Handle aiohttp HTTP exceptions
@@ -197,7 +197,7 @@ async def request_logging_middleware(
         },
     )
 
-    return response  # type: ignore[no-any-return]
+    return response
 
 
 class WebSocketErrorHandler:

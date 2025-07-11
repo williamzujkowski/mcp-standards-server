@@ -1,7 +1,7 @@
 """Tests for Redis cache client."""
 
 import time
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import redis
@@ -43,50 +43,56 @@ aioredis.Redis = mock_aioredis_factory
 
 def create_redis_mock(**method_configs):
     """Create a Redis mock with specified method behaviors."""
+
     def custom_mock_factory(*args, **kwargs):
         mock_instance = Mock()
         mock_instance.__enter__ = Mock(return_value=mock_instance)
         mock_instance.__exit__ = Mock(return_value=None)
-        
+
         # Configure methods based on input
         for method_name, return_value in method_configs.items():
             if callable(return_value):
                 setattr(mock_instance, method_name, return_value)
             else:
                 setattr(mock_instance, method_name, Mock(return_value=return_value))
-        
+
         return mock_instance
-    
+
     return custom_mock_factory
 
 
 def create_async_redis_mock(**method_configs):
     """Create an async Redis mock with specified method behaviors."""
+
     def custom_mock_factory(*args, **kwargs):
         mock_instance = Mock()
-        
+
         # Create async context manager methods
         async def async_enter(self):
             return mock_instance
-        
+
         async def async_exit(self, *args):
             return None
-            
+
         mock_instance.__aenter__ = async_enter
         mock_instance.__aexit__ = async_exit
-        
+
         # Configure methods based on input
         for method_name, return_value in method_configs.items():
             if callable(return_value):
                 setattr(mock_instance, method_name, return_value)
             else:
-                # Create async mock
-                async def async_method(*args, **kwargs):
-                    return return_value
-                setattr(mock_instance, method_name, async_method)
-        
+                # Create async mock with proper closure
+                def make_async_method(rv):
+                    async def async_method(*args, **kwargs):
+                        return rv
+
+                    return async_method
+
+                setattr(mock_instance, method_name, make_async_method(return_value))
+
         return mock_instance
-    
+
     return custom_mock_factory
 
 
@@ -169,19 +175,21 @@ class TestRedisCache:
     @pytest.fixture
     def cache(self):
         """Create cache instance."""
-        with patch("redis.connection.ConnectionPool") as mock_sync_pool_cls, \
-             patch("redis.asyncio.ConnectionPool") as mock_async_pool_cls:
+        with (
+            patch("redis.connection.ConnectionPool") as mock_sync_pool_cls,
+            patch("redis.asyncio.ConnectionPool") as mock_async_pool_cls,
+        ):
             mock_sync_pool = MagicMock()
             mock_async_pool = MagicMock()
             mock_sync_pool_cls.return_value = mock_sync_pool
             mock_async_pool_cls.return_value = mock_async_pool
-            
+
             # Disable circuit breaker and retries for tests
             config = CacheConfig(
-                key_prefix="test", 
+                key_prefix="test",
                 enable_metrics=False,
                 max_retries=1,  # Reduce retries to speed up tests
-                circuit_breaker_threshold=100  # High threshold to prevent opening
+                circuit_breaker_threshold=100,  # High threshold to prevent opening
             )
             return RedisCache(config)
 
@@ -218,24 +226,26 @@ class TestRedisCache:
         """Test sync get with cache hit."""
         test_data = {"result": "data"}
         serialized_data = cache._serialize(test_data)
-        
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(get=serialized_data)):
+
+        with patch.object(
+            redis, "Redis", side_effect=create_redis_mock(get=serialized_data)
+        ):
             # Test get
             result = cache.get("test_key")
             assert result == {"result": "data"}
-            
+
             # Check L1 cache
             assert "test:test_key" in cache._l1_cache
 
     def test_sync_get_miss(self, cache):
         """Test sync get with cache miss."""
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(get=None)):
+        with patch.object(redis, "Redis", side_effect=create_redis_mock(get=None)):
             result = cache.get("missing_key")
             assert result is None
 
     def test_sync_set(self, cache):
         """Test sync set operation."""
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(setex=True)):
+        with patch.object(redis, "Redis", side_effect=create_redis_mock(setex=True)):
             result = cache.set("test_key", {"data": "value"}, ttl=60)
             assert result is True
 
@@ -255,8 +265,8 @@ class TestRedisCache:
         """Test delete operation."""
         # Pre-populate L1 cache
         cache._l1_cache["test:del_key"] = {"data": "value"}
-        
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(delete=1)):
+
+        with patch.object(redis, "Redis", side_effect=create_redis_mock(delete=1)):
             result = cache.delete("del_key")
             assert result is True
 
@@ -274,8 +284,10 @@ class TestRedisCache:
             cache._serialize("value2"),  # key2
             cache._serialize("value3"),  # key3
         ]
-        
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(mget=mget_response)):
+
+        with patch.object(
+            redis, "Redis", side_effect=create_redis_mock(mget=mget_response)
+        ):
             result = cache.mget(["key1", "missing", "key2", "key3"])
 
             assert result == {
@@ -289,23 +301,28 @@ class TestRedisCache:
         """Test async get operation."""
         test_data = {"async": "data"}
         serialized_data = cache._serialize(test_data)
-        
+
         # Create async get function
         async def mock_get(key):
             return serialized_data
-        
-        with patch.object(aioredis, 'Redis', side_effect=create_async_redis_mock(get=mock_get)):
+
+        with patch.object(
+            aioredis, "Redis", side_effect=create_async_redis_mock(get=mock_get)
+        ):
             result = await cache.async_get("async_key")
             assert result == {"async": "data"}
 
     @pytest.mark.asyncio
     async def test_async_set(self, cache):
         """Test async set operation."""
+
         # Create async setex function
         async def mock_setex(k, t, v):
             return True
-        
-        with patch.object(aioredis, 'Redis', side_effect=create_async_redis_mock(setex=mock_setex)):
+
+        with patch.object(
+            aioredis, "Redis", side_effect=create_async_redis_mock(setex=mock_setex)
+        ):
             result = await cache.async_set("async_key", {"async": "value"})
             assert result is True
 
@@ -326,18 +343,20 @@ class TestRedisCache:
 
         # Counter to track attempts
         attempt_count = 0
-        
+
         def get_with_retries(key):
             nonlocal attempt_count
             attempt_count += 1
             if attempt_count < 3:
                 raise redis.ConnectionError("Connection failed")
             return success_data
-        
+
         # Adjust max_retries for this test
         cache.config.max_retries = 3
-        
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(get=get_with_retries)):
+
+        with patch.object(
+            redis, "Redis", side_effect=create_redis_mock(get=get_with_retries)
+        ):
             result = cache.get("retry_key")
             assert result == {"retry": "success"}
             assert attempt_count == 3
@@ -350,10 +369,14 @@ class TestRedisCache:
         cache._l1_cache["test:other:1"] = "other"
 
         # Mock keys and delete to return integers
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(
-            keys=[b"test:user:1", b"test:user:2"],
-            delete=2  # Number of keys deleted
-        )):
+        with patch.object(
+            redis,
+            "Redis",
+            side_effect=create_redis_mock(
+                keys=[b"test:user:1", b"test:user:2"],
+                delete=2,  # Number of keys deleted
+            ),
+        ):
             result = cache.delete_pattern("user:*")
             assert result == 2
 
@@ -364,7 +387,7 @@ class TestRedisCache:
 
     def test_health_check(self, cache):
         """Test health check functionality."""
-        with patch.object(redis, 'Redis', side_effect=create_redis_mock(ping=True)):
+        with patch.object(redis, "Redis", side_effect=create_redis_mock(ping=True)):
             health = cache.health_check()
 
             assert health["status"] == "healthy"

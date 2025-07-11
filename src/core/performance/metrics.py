@@ -414,7 +414,8 @@ class MetricCollector:
         if not self.config.enable_prometheus:
             return ""
 
-        return generate_latest(self.prometheus_registry).decode("utf-8")
+        result: str = generate_latest(self.prometheus_registry).decode("utf-8")
+        return result
 
     async def start(self) -> None:
         """Start metric collection."""
