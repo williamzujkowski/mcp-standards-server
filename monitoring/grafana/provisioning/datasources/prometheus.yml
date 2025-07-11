@@ -18,13 +18,13 @@ datasources:
       httpMethod: POST
       prometheusType: Prometheus
       prometheusVersion: 2.40.0
-      timeInterval: "15s"
-      queryTimeout: "30s"
+      timeInterval: 15s
+      queryTimeout: 30s
       exemplarTraceIdDestinations:
         - datasourceUid: tempo
           name: trace_id
       incrementalQuerying:
         enabled: true
-      cacheLevel: 'High'
+      cacheLevel: High
       incrementalQueryOverlapWindow: 10m
       disableMetricsLookup: false

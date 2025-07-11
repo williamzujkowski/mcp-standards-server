@@ -64,7 +64,7 @@ groups:
           service: redis
         annotations:
           summary: Redis is down
-          description: 'Redis instance {{ $labels.instance }} has been down for more than 5 minutes.'
+          description: Redis instance {{ $labels.instance }} has been down for more than 5 minutes.
       - alert: RedisCacheMissRateHigh
         expr: |
           rate(app_cache_misses_total[5m]) /
@@ -100,7 +100,7 @@ groups:
           service: mcp-standards-server
         annotations:
           summary: Standards synchronization failures
-          description: 'Standards sync has failed {{ $value }} times in the last hour'
+          description: Standards sync has failed {{ $value }} times in the last hour
       # Search performance alerts
       - alert: SearchLatencyHigh
         expr: histogram_quantile(0.95, rate(search_query_duration_seconds_bucket[5m])) > 1
