@@ -8,7 +8,7 @@ redis:
   db: 0
   password: null  # Set if Redis requires authentication
   ssl: false
-  
+
   # Connection pool settings
   max_connections: 50
   max_connections_per_process: 10
@@ -52,19 +52,19 @@ tools:
     warm_args:
       - standard_id: secure-api-design
       - standard_id: react-best-practices
-      - standard_id: "python-coding-standards"
-    
+      - standard_id: python-coding-standards
+
   list_available_standards:
     strategy: medium_ttl
     ttl_seconds: 1800  # 30 minutes
     warm_on_startup: true
     warm_args:
       - {}  # List all
-      - category: "security"
+      - category: security
         limit: 100
-      - category: "api"
+      - category: api
         limit: 100
-    
+
   # Frequently changing data
   search_standards:
     strategy: short_ttl
@@ -75,7 +75,7 @@ tools:
       - limit
       - min_relevance
       - filters
-    
+
   get_standards_analytics:
     strategy: short_ttl
     ttl_seconds: 180  # 3 minutes
@@ -83,18 +83,18 @@ tools:
       - metric_type
       - time_range
       - standard_ids
-    
+
   # Context-dependent operations
   get_applicable_standards:
     strategy: short_ttl
     ttl_seconds: 600  # 10 minutes
     compress_threshold: 1024
-    
+
   suggest_improvements:
     strategy: short_ttl
     ttl_seconds: 600
     compress_threshold: 2048
-    
+
   # Token optimization (can be cached longer)
   get_optimized_standard:
     strategy: medium_ttl
@@ -105,18 +105,18 @@ tools:
       - format_type
       - token_budget
       - required_sections
-    
+
   estimate_token_usage:
     strategy: long_ttl
     ttl_seconds: 43200  # 12 hours
-    
+
   # Cross-references (invalidated when regenerated)
   get_cross_references:
     strategy: medium_ttl
     ttl_seconds: 1800
     invalidate_on:  # These tools invalidate this cache
       - generate_cross_references
-    
+
   # Templates (rarely change)
   list_templates:
     strategy: long_ttl
@@ -124,25 +124,25 @@ tools:
     warm_on_startup: true
     warm_args:
       - {}  # List all
-      - domain: "api"
-      - domain: "security"
-    
+      - domain: api
+      - domain: security
+
   # Operations that should never be cached
   sync_standards:
     strategy: no_cache
-    
+
   generate_standard:
     strategy: no_cache
-    
+
   validate_standard:
     strategy: no_cache
-    
+
   track_standards_usage:
     strategy: no_cache
-    
+
   generate_cross_references:
     strategy: no_cache
-    
+
   validate_against_standard:
     strategy: short_ttl
     ttl_seconds: 600
@@ -160,12 +160,12 @@ invalidation_rules:
       - get_standard_details
       - list_available_standards
       - search_standards
-      
+
   generate_standard:
     invalidates:
       - list_available_standards
       - search_standards
-      
+
   generate_cross_references:
     invalidates:
       - get_cross_references
