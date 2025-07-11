@@ -273,9 +273,15 @@ class RedisCache:
             import zlib
 
             data = zlib.compress(data)
-            return cast(bytes, b"Z" + serializer.encode("utf-8") + data)
+            result = bytearray(b"Z")
+            result.extend(serializer.encode("utf-8"))
+            result.extend(data)
+            return bytes(result)
         else:
-            return cast(bytes, b"U" + serializer.encode("utf-8") + data)
+            result = bytearray(b"U")
+            result.extend(serializer.encode("utf-8"))
+            result.extend(data)
+            return bytes(result)
 
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value from storage with security checks."""
