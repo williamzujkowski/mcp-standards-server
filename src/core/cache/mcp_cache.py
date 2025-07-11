@@ -638,7 +638,7 @@ class MCPCache:
         }
 
         # Check Redis health
-        if hasattr(self.redis, "health_check"):
+        if hasattr(self.redis, "async_health_check"):
             redis_health = await self.redis.async_health_check()
             health["redis"] = redis_health
             if redis_health.get("status") != "healthy":

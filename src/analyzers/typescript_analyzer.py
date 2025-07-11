@@ -968,8 +968,8 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             for match_text, line_num, col in matches:
                 # Check if it's inside try-catch
                 lines = content.split("\n")
-                context_start = max(0, line - 5)
-                context = "\n".join(lines[context_start:line])
+                context_start = max(0, line_num - 5)
+                context = "\n".join(lines[context_start:line_num])
 
                 if "try" not in context:
                     result.add_issue(

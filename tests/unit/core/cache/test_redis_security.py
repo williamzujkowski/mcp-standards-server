@@ -220,20 +220,30 @@ class TestRedisCacheSecurity:
         metrics = cache.get_metrics()
 
         # Should only contain numeric metrics, not actual data
+        expected_keys = [
+            "l1_hits",
+            "l1_misses",
+            "l2_hits",
+            "l2_misses",
+            "errors",
+            "slow_queries",
+            "connection_errors",
+            "pool_exhausted",
+            "pipeline_operations",
+            "l1_hit_rate",
+            "l2_hit_rate",
+            "l1_cache_size",
+            "circuit_breaker_state",
+            "connection_health",
+            "pool_stats",
+            "health_check_success_rate",
+        ]
+        
         for key, value in metrics.items():
-            assert isinstance(value, int | float | str)
-            assert key in [
-                "l1_hits",
-                "l1_misses",
-                "l2_hits",
-                "l2_misses",
-                "errors",
-                "slow_queries",
-                "l1_hit_rate",
-                "l2_hit_rate",
-                "l1_cache_size",
-                "circuit_breaker_state",
-            ]
+            # Check that values are safe types (not actual cached data)
+            assert isinstance(value, (int, float, str, dict))
+            # Check that key is expected
+            assert key in expected_keys, f"Unexpected metric key: {key}"
 
     def test_health_check_security(self, cache):
         """Test that health check doesn't expose sensitive information."""
@@ -252,6 +262,8 @@ class TestRedisCacheSecurity:
                 "metrics",
                 "redis_connected",
                 "latency_ms",
+                "connection_health",
+                "pool_stats",
             }
 
             assert set(health.keys()) == safe_keys
