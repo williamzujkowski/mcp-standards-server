@@ -187,15 +187,15 @@ automation:
 metrics:
   - name: Review Turnaround Time
     formula: Time from PR open to first review
-    target: < 4 hours
+    target: '< 4 hours'
     measurement_frequency: Weekly
   - name: Review Effectiveness
     formula: Bugs caught in review / Total bugs found
-    target: > 70%
+    target: '> 70%'
     measurement_frequency: Monthly
   - name: PR Size
     formula: Lines of code changed per PR
-    target: < 400 lines
+    target: '< 400 lines'
     measurement_frequency: Weekly
 
 dashboards:

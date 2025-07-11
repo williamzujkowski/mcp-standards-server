@@ -2,12 +2,11 @@ global:
   scrape_interval: 15s          # How frequently to scrape targets
   evaluation_interval: 15s      # How frequently to evaluate rules
   scrape_timeout: 10s          # How long until a scrape request times out
-  
   # Attach these labels to any time series or alerts when communicating with
   # external systems (federation, remote storage, Alertmanager).
   external_labels:
-    monitor: 'mcp-standards-monitor'
-    environment: 'production'
+    monitor: mcp-standards-monitor
+    environment: production
 
 # Alertmanager configuration
 alerting:
@@ -18,22 +17,22 @@ alerting:
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-  - "/etc/prometheus/rules/*.yml"
+  - /etc/prometheus/rules/*.yml
 
 scrape_configs:
   # Prometheus self-monitoring
-  - job_name: "prometheus"
+  - job_name: prometheus
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: [localhost:9090]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: "prometheus"
+        replacement: prometheus
 
   # MCP Standards Server metrics
-  - job_name: "mcp-standards-server"
+  - job_name: mcp-standards-server
     static_configs:
-      - targets: ["mcp-server:8080"]
+      - targets: [mcp-server:8080]
     metrics_path: "/metrics"
     scrape_interval: 10s
     scrape_timeout: 5s

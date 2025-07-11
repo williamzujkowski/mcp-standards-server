@@ -37,19 +37,19 @@ monitoring:
   metrics:
     - name: CPU Utilization
       type: Infrastructure
-      threshold: > 80%
+      threshold: '> 80%'
       collection_method: CloudWatch Agent
     - name: Memory Usage
       type: Infrastructure
-      threshold: > 90%
+      threshold: '> 90%'
       collection_method: CloudWatch Agent
     - name: API Latency
       type: Application
-      threshold: > 500ms p95
+      threshold: '> 500ms p95'
       collection_method: APM Tool
     - name: Error Rate
       type: Application
-      threshold: > 1%
+      threshold: '> 1%'
       collection_method: Log Analytics
   alerts:
     - name: High CPU Usage
