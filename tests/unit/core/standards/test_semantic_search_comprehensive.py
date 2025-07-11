@@ -981,10 +981,14 @@ class TestAsyncSemanticSearchComprehensive:
                                                 documents = TestDataGenerator.generate_standards_corpus(
                                                     20
                                                 )
-                                                sync_engine.index_documents_batch(documents)
+                                                sync_engine.index_documents_batch(
+                                                    documents
+                                                )
 
                                                 # Now wrap in async interface
-                                                engine = AsyncSemanticSearch(sync_engine)
+                                                engine = AsyncSemanticSearch(
+                                                    sync_engine
+                                                )
 
                                                 yield engine
                                                 engine.close()
