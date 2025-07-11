@@ -14,7 +14,7 @@ import pytest
 # Mock aioredis to avoid import errors in Python 3.12
 sys.modules["aioredis"] = MagicMock()
 
-from src.core.mcp.async_server import AsyncMCPServer, MCPSession  # noqa: E402
+from src.core.mcp.async_server import AsyncMCPServer, MCPSession, ServerConfig  # noqa: E402
 
 
 class TestAsyncMCPServer:
@@ -23,33 +23,27 @@ class TestAsyncMCPServer:
     @pytest.fixture
     def config(self):
         """Create test configuration."""
-        return {
-            "host": "localhost",
-            "port": 3000,
-            "max_connections": 100,
-            "heartbeat_interval": 30,
-            "message_timeout": 60,
-            "auth": {"enabled": False},
-        }
+        return ServerConfig(
+            host="localhost",
+            port=3000,
+            max_connections=100,
+            enable_authentication=False,
+        )
 
     @pytest.fixture
     def server(self, config):
         """Create async server instance."""
-        with patch("src.core.mcp.async_server.MCPStandardsServer"):
-            server = AsyncMCPServer(config)
-            return server
+        server = AsyncMCPServer(config)
+        return server
 
     def test_server_initialization(self, config):
         """Test server initialization."""
-        with patch("src.core.mcp.async_server.MCPStandardsServer"):
-            server = AsyncMCPServer(config)
+        server = AsyncMCPServer(config)
 
-            assert server.config == config
-            assert server.host == "localhost"
-            assert server.port == 3000
-            assert server.sessions == {}
-            assert server.running is False
-            assert hasattr(server, "mcp_server")
+        assert server.config == config
+        assert hasattr(server, "connection_manager")
+        assert hasattr(server, "request_batcher")
+        assert hasattr(server, "metrics")
 
     async def test_start_server(self, server):
         """Test server startup."""

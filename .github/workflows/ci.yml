@@ -321,9 +321,14 @@ jobs:
         timeout-minutes: 5
         run: |
           # Check that all .yaml files have corresponding .md files
+          # Skip configuration files
           for yaml_file in data/standards/*.yaml; do
             if [ -f "$yaml_file" ]; then
               base_name=$(basename "$yaml_file" .yaml)
+              # Skip configuration files
+              if [ "$base_name" = "sync_config" ]; then
+                continue
+              fi
               md_file="data/standards/${base_name}.md"
               if [ ! -f "$md_file" ]; then
                 echo "Missing markdown file for $yaml_file"
