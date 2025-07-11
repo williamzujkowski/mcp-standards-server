@@ -55,7 +55,9 @@ class TestCombinedServer:
         """Test starting HTTP server."""
         mock_runner = AsyncMock()
 
-        with patch("src.main.start_http_server", return_value=mock_runner) as mock_start:
+        with patch(
+            "src.main.start_http_server", return_value=mock_runner
+        ) as mock_start:
             await server.start_http_server()
 
             assert server.http_runner == mock_runner
@@ -155,7 +157,7 @@ class TestSignalHandling:
             patch("src.main.init_logging"),
             patch("signal.signal") as mock_signal,
         ):
-            server = CombinedServer({})
+            CombinedServer({})
 
             # Check SIGINT and SIGTERM are handled
             calls = mock_signal.call_args_list
