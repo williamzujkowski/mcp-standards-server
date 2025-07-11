@@ -3,95 +3,95 @@
 documentation:
   - changed-files:
       - any-glob-to-any-file:
-        - docs/**/*
-        - '**/*.md'
-        - '**/*.rst'
+          - docs/**/*
+          - '**/*.md'
+          - '**/*.rst'
 
 python:
   - changed-files:
       - any-glob-to-any-file:
-        - '**/*.py'
-        - requirements*.txt
-        - pyproject.toml
-        - setup.py
-        - setup.cfg
+          - '**/*.py'
+          - requirements*.txt
+          - pyproject.toml
+          - setup.py
+          - setup.cfg
 
 tests:
   - changed-files:
       - any-glob-to-any-file:
-        - tests/**/*
-        - '**/test_*.py'
-        - '**/*_test.py'
-        - pytest.ini
+          - tests/**/*
+          - '**/test_*.py'
+          - '**/*_test.py'
+          - pytest.ini
 
 ci:
   - changed-files:
       - any-glob-to-any-file:
-        - .github/workflows/*
-        - .github/actions/*
-        - .github/dependabot.yml
+          - .github/workflows/*
+          - .github/actions/*
+          - .github/dependabot.yml
 
 docker:
   - changed-files:
       - any-glob-to-any-file:
-        - Dockerfile*
-        - docker-compose*.yml
-        - .dockerignore
+          - Dockerfile*
+          - docker-compose*.yml
+          - .dockerignore
 
 frontend:
   - changed-files:
       - any-glob-to-any-file:
-        - web/frontend/**/*
-        - '**/*.tsx'
-        - '**/*.ts'
-        - '**/*.jsx'
-        - '**/*.js'
-        - '**/package.json'
-        - '**/package-lock.json'
+          - web/frontend/**/*
+          - '**/*.tsx'
+          - '**/*.ts'
+          - '**/*.jsx'
+          - '**/*.js'
+          - '**/package.json'
+          - '**/package-lock.json'
 
 backend:
   - changed-files:
       - any-glob-to-any-file:
-        - src/**/*.py
-        - web/backend/**/*
+          - src/**/*.py
+          - web/backend/**/*
 
 security:
   - changed-files:
       - any-glob-to-any-file:
-        - src/core/security.py
-        - src/core/auth.py
-        - src/core/privacy.py
-        - '**/security/**/*'
-        - SECURITY.md
+          - src/core/security.py
+          - src/core/auth.py
+          - src/core/privacy.py
+          - '**/security/**/*'
+          - SECURITY.md
 
 performance:
   - changed-files:
       - any-glob-to-any-file:
-        - benchmarks/**/*
-        - src/core/performance/**/*
-        - '**/memory_*.py'
-        - '**/cache*.py'
+          - benchmarks/**/*
+          - src/core/performance/**/*
+          - '**/memory_*.py'
+          - '**/cache*.py'
 
 standards:
   - changed-files:
       - any-glob-to-any-file:
-        - data/standards/**/*
-        - templates/**/*
-        - src/core/standards/**/*
+          - data/standards/**/*
+          - templates/**/*
+          - src/core/standards/**/*
 
 mcp:
   - changed-files:
       - any-glob-to-any-file:
-        - src/core/mcp/**/*
-        - src/mcp_server.py
-        - src/analyzers/mcp_integration.py
+          - src/core/mcp/**/*
+          - src/mcp_server.py
+          - src/analyzers/mcp_integration.py
 
 config:
   - changed-files:
       - any-glob-to-any-file:
-        - '**/*.yaml'
-        - '**/*.yml'
-        - '**/*.toml'
-        - '**/*.ini'
-        - '**/*.json'
-        - .env*
+          - '**/*.yaml'
+          - '**/*.yml'
+          - '**/*.toml'
+          - '**/*.ini'
+          - '**/*.json'
+          - .env*
