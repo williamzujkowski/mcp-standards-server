@@ -15,7 +15,11 @@ import pytest
 sys.modules["aioredis"] = MagicMock()
 
 # Import after mock setup
-from src.core.mcp.async_server import AsyncMCPServer, MCPSession, ServerConfig  # noqa: E402
+from src.core.mcp.async_server import (
+    AsyncMCPServer,
+    MCPSession,
+    ServerConfig,
+)  # noqa: E402
 
 
 class TestAsyncMCPServer:
