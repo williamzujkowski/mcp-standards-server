@@ -213,6 +213,9 @@ def mock_github_api(monkeypatch):
 def mock_ml_dependencies():
     """Mock ML dependencies for tests - session scoped for performance."""
     import sys
+    from types import ModuleType
+    from typing import cast
+    from unittest.mock import Mock
 
     from tests.mocks import MockSentenceTransformer
     from tests.mocks.semantic_search_mocks import (
@@ -226,11 +229,15 @@ def mock_ml_dependencies():
         MockStopwords,
     )
 
-    # Mock sentence-transformers
+    # Store original modules for cleanup
+    original_modules = {}
+    
+    # Mock sentence-transformers EARLY and COMPLETELY
     class MockSentenceTransformersModule:
         SentenceTransformer = MockSentenceTransformer
-
-    # Mock sklearn
+        __version__ = "2.0.0"  # Mock version
+        
+    # Mock sklearn components
     class MockPairwiseModule:
         cosine_similarity = MockCosineSimilarity.cosine_similarity
 
@@ -244,7 +251,7 @@ def mock_ml_dependencies():
         neighbors = MockNeighborsModule()
         metrics = MockMetricsModule()
 
-    # Mock NLTK - only mock specific components, not the entire module
+    # Mock NLTK components
     class MockNLTKStemModule:
         PorterStemmer = MockPorterStemmer
 
@@ -255,65 +262,115 @@ def mock_ml_dependencies():
     class MockNLTKCorpusModule:
         stopwords = MockStopwords()
 
-    # Create a mock download function
+    # Mock NLTK download function
     def mock_nltk_download(*args, **kwargs):
-        pass  # No-op for downloads
+        return True  # Always succeed
+
+    class MockNLTKModule:
+        download = staticmethod(mock_nltk_download)
+        stem = MockNLTKStemModule()
+        tokenize = MockNLTKTokenizeModule()
+        corpus = MockNLTKCorpusModule()
 
     # Mock fuzzywuzzy
     class MockFuzzyWuzzyModule:
         fuzz = MockFuzz()
         process = MockProcess()
 
-    # Patch the imports
-    from types import ModuleType
-    from typing import cast
+    # Mock huggingface_hub to prevent downloads
+    class MockHuggingFaceHub:
+        def snapshot_download(*args, **kwargs):
+            return "/tmp/mock_model"
+        
+        def hf_hub_download(*args, **kwargs):
+            return "/tmp/mock_file"
+            
+        def try_to_load_from_cache(*args, **kwargs):
+            return None
 
-    sys.modules["sentence_transformers"] = cast(
-        ModuleType, MockSentenceTransformersModule()
-    )
-    sys.modules["sklearn"] = cast(ModuleType, MockSklearnModule())
-    sys.modules["sklearn.neighbors"] = cast(ModuleType, MockNeighborsModule())
-    sys.modules["sklearn.metrics"] = cast(ModuleType, MockMetricsModule())
-    sys.modules["sklearn.metrics.pairwise"] = cast(ModuleType, MockPairwiseModule())
-    # Don't replace NLTK modules globally - this causes import conflicts
-    # Let individual tests handle their own mocking
-    # sys.modules['nltk.stem'] = MockNLTKStemModule()
-    # sys.modules['nltk.tokenize'] = MockNLTKTokenizeModule()
-    sys.modules["fuzzywuzzy"] = cast(ModuleType, MockFuzzyWuzzyModule())
+    # Store and replace modules BEFORE any imports happen
+    modules_to_mock = {
+        "sentence_transformers": MockSentenceTransformersModule(),
+        "sklearn": MockSklearnModule(),
+        "sklearn.neighbors": MockNeighborsModule(),
+        "sklearn.metrics": MockMetricsModule(),
+        "sklearn.metrics.pairwise": MockPairwiseModule(),
+        "nltk": MockNLTKModule(),
+        "nltk.stem": MockNLTKStemModule(),
+        "nltk.tokenize": MockNLTKTokenizeModule(),
+        "nltk.corpus": MockNLTKCorpusModule(),
+        "fuzzywuzzy": MockFuzzyWuzzyModule(),
+        "huggingface_hub": MockHuggingFaceHub(),
+    }
+
+    for module_name, mock_module in modules_to_mock.items():
+        if module_name in sys.modules:
+            original_modules[module_name] = sys.modules[module_name]
+        sys.modules[module_name] = cast(ModuleType, mock_module)
 
     # Create mock redis module
     redis_module = type(sys)("redis")
     redis_module.Redis = MockRedisClient
+    redis_module.StrictRedis = MockRedisClient  # Some code uses StrictRedis
+    if "redis" in sys.modules:
+        original_modules["redis"] = sys.modules["redis"]
     sys.modules["redis"] = redis_module
 
-    # Since this is session-scoped, we can't use monkeypatch
-    # Apply patches at module level
-    import sentence_transformers
-
-    setattr(  # noqa: B010
-        sentence_transformers, "SentenceTransformer", MockSentenceTransformer
-    )
-
-    # Apply Redis patch if available
+    # Patch already imported modules if they exist
     try:
-        import redis
-
-        setattr(redis, "Redis", MockRedisClient)  # noqa: B010
+        import sentence_transformers
+        sentence_transformers.SentenceTransformer = MockSentenceTransformer
     except ImportError:
         pass
 
-    # Mock NLTK download function specifically
+    try:
+        import redis
+        redis.Redis = MockRedisClient
+        redis.StrictRedis = MockRedisClient
+    except ImportError:
+        pass
+
     try:
         import nltk
-
         nltk.download = mock_nltk_download
     except ImportError:
-        pass  # NLTK not installed
+        pass
+
+    # Mock requests to prevent any HTTP calls
+    class MockResponse:
+        def __init__(self, status_code=200):
+            self.status_code = status_code
+            self.text = "mocked response"
+            self.content = b"mocked response"
+            
+        def json(self):
+            return {"mocked": True}
+            
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise Exception(f"HTTP {self.status_code}")
+
+    def mock_requests_get(*args, **kwargs):
+        return MockResponse()
+
+    def mock_requests_post(*args, **kwargs):
+        return MockResponse()
+
+    # Mock requests module
+    class MockRequestsModule:
+        get = staticmethod(mock_requests_get)
+        post = staticmethod(mock_requests_post)
+        Session = Mock
+        
+    if "requests" in sys.modules:
+        original_modules["requests"] = sys.modules["requests"]
+    sys.modules["requests"] = cast(ModuleType, MockRequestsModule())
 
     yield
 
-    # Skip cleanup for session-scoped fixture to avoid overhead
-    # Cleanup will happen at end of test session
+    # Restore original modules if needed (optional for session scope)
+    # for module_name, original_module in original_modules.items():
+    #     sys.modules[module_name] = original_module
 
 
 # Pytest plugins configuration

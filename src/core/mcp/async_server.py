@@ -661,6 +661,9 @@ class AsyncMCPServer:
         self.request_batcher = RequestBatcher(self.config)
         self.metrics = RequestMetrics()
 
+        # Session management
+        self.sessions: dict[str, MCPSession] = {}
+
         # Handlers
         self.handlers = {}
         if standards_engine:
@@ -753,6 +756,18 @@ class AsyncMCPServer:
                 await self.metrics_task
             except asyncio.CancelledError:
                 pass
+
+        # Close all sessions
+        session_close_tasks = []
+        for session in list(self.sessions.values()):
+            if hasattr(session, 'close'):
+                session_close_tasks.append(session.close())
+        
+        if session_close_tasks:
+            await asyncio.gather(*session_close_tasks, return_exceptions=True)
+        
+        # Clear sessions
+        self.sessions.clear()
 
         # Stop components
         await self.connection_manager.stop()
@@ -1073,6 +1088,45 @@ class AsyncMCPServer:
         """Get information about active connections."""
         connections = self.connection_manager.get_all_connections()
         return [conn.to_dict() for conn in connections]
+
+    def _create_session(self, reader: Any, writer: Any) -> MCPSession:
+        """Create a new MCP session."""
+        session_id = str(uuid.uuid4())
+        session = MCPSession(session_id, self, reader, writer)
+        self.sessions[session_id] = session
+        return session
+
+    async def _remove_session(self, session_id: str) -> None:
+        """Remove a session from the server."""
+        if session_id in self.sessions:
+            session = self.sessions.pop(session_id)
+            try:
+                if hasattr(session, 'close'):
+                    await session.close()
+            except Exception:
+                pass  # Session already closed or error
+
+    async def broadcast_message(self, message: dict[str, Any]) -> None:
+        """Broadcast a message to all active sessions."""
+        tasks = []
+        for session in self.sessions.values():
+            if hasattr(session, 'send_message'):
+                tasks.append(session.send_message(message))
+        
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get server statistics."""
+        return {
+            "running": self.running,
+            "sessions": len(self.sessions),
+            "active_connections": len(self.connection_manager.connections),
+            "total_requests": self.metrics.completed_requests + self.metrics.failed_requests,
+            "completed_requests": self.metrics.completed_requests,
+            "failed_requests": self.metrics.failed_requests,
+            "active_requests": self.metrics.active_requests,
+        }
 
 
 # Factory function
