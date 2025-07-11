@@ -7,8 +7,8 @@ repo_name: williamzujkowski/mcp-standards-server
 nav:
   - Home: index.md
   - Installation: guides/installation.md
-  - API Reference: 
-    - MCP Tools: api/mcp-tools.md
+  - API Reference:
+      - MCP Tools: api/mcp-tools.md
   - Reference: reference/
 
 theme:
