@@ -102,7 +102,9 @@ class TestMCPCacheMiddleware:
         mock_async_client = AsyncMock()
         mock_async_client.ping = AsyncMock(return_value=True)
 
-        with patch.object(cache_middleware.cache.redis, '_async_client', mock_async_client):
+        with patch.object(
+            cache_middleware.cache.redis, "_async_client", mock_async_client
+        ):
             stats = await cache_middleware.handle_cache_stats({"include_redis": False})
 
             assert "overall" in stats

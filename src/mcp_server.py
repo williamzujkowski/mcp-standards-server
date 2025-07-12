@@ -185,7 +185,11 @@ class MCPStandardsServer:
                     continue
 
             # Index documents in batch
-            if documents and self.search and hasattr(self.search, "index_documents_batch"):
+            if (
+                documents
+                and self.search
+                and hasattr(self.search, "index_documents_batch")
+            ):
                 self.search.index_documents_batch(documents)
                 logger.info(f"Indexed {len(documents)} standards in search engine")
             else:
