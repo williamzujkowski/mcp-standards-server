@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-07-11 21:58:20",
+  "test_type": "spike_test",
+  "spike_levels": [
+    1,
+    2,
+    3,
+    5,
+    8,
+    10,
+    15,
+    20
+  ],
+  "results": [
+    {
+      "users": 1,
+      "status": "timeout",
+      "success_rate": 0,
+      "error": "Test timed out after 45s"
+    }
+  ],
+  "analysis": {
+    "last_successful_level": null,
+    "breaking_point": 1,
+    "total_levels_tested": 1,
+    "successful_levels": 0,
+    "verdict": "\u274c CRITICAL - Poor concurrency performance"
+  }
+}
