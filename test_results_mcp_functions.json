@@ -1,0 +1,16 @@
+{
+  "timestamp": 427198.639788458,
+  "total_tests": 7,
+  "passed": 7,
+  "warned": 0,
+  "failed": 0,
+  "details": {
+    "list_available_standards": "PASS",
+    "get_applicable_standards": "PASS",
+    "search_standards": "PASS",
+    "get_standard_details": "PASS",
+    "validate_against_standard": "PASS",
+    "get_optimized_standard": "PASS",
+    "sync_standards": "PASS"
+  }
+}

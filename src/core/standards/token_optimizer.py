@@ -395,6 +395,20 @@ class TokenOptimizer:
         sections = []
         content = standard.get("content", "")
         
+        # Handle different content formats
+        if isinstance(content, dict):
+            # If content is a dictionary, convert it to a string representation
+            content_parts = []
+            for key, value in content.items():
+                if isinstance(value, list):
+                    content_parts.append(f"## {key.title()}\n" + "\n".join(f"- {item}" for item in value))
+                else:
+                    content_parts.append(f"## {key.title()}\n{value}")
+            content = "\n\n".join(content_parts)
+        elif not isinstance(content, str):
+            # Convert non-string, non-dict content to string
+            content = str(content)
+        
         if not content.strip():
             return sections
 
