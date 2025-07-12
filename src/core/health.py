@@ -192,7 +192,9 @@ class HealthChecker:
     async def _check_system_resources(self) -> tuple:
         """Check system CPU and load average."""
         try:
-            cpu_percent = psutil.cpu_percent(interval=1)
+            # Use interval=None for non-blocking CPU check (returns instant reading)
+            # Note: First call returns 0.0, subsequent calls return meaningful values
+            cpu_percent = psutil.cpu_percent(interval=None)
             load_avg = psutil.getloadavg()[0] if hasattr(psutil, "getloadavg") else 0
 
             details = {
