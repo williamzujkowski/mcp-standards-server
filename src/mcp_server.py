@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool

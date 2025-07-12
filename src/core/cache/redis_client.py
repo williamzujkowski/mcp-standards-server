@@ -736,7 +736,7 @@ class RedisCache:
 
             @self._with_retry
             def _delete_pattern() -> int:
-                keys = self.sync_client.keys(full_pattern)
+                keys: list[str] = self.sync_client.keys(full_pattern)
                 if keys:
                     return cast(int, self.sync_client.delete(*keys))
                 return 0

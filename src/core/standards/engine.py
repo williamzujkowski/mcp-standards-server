@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
 from .async_semantic_search import AsyncSemanticSearch
 from .models import Requirement, Standard, StandardMetadata
