@@ -126,6 +126,8 @@ class RedisCache:
         self.config = config or CacheConfig()
         self._sync_pool: redis.ConnectionPool | None = None
         self._async_pool: aioredis.ConnectionPool | None = None
+        self._sync_client: redis.Redis | None = None
+        self._async_client: aioredis.Redis | None = None
         self._l1_cache: TTLCache[str, Any] = TTLCache(
             maxsize=self.config.l1_max_size, ttl=self.config.l1_ttl
         )
@@ -243,6 +245,20 @@ class RedisCache:
                 self._start_health_monitoring()
 
         return self._async_pool
+
+    @property
+    def sync_client(self) -> redis.Redis:
+        """Get or create sync Redis client instance."""
+        if self._sync_client is None:
+            self._sync_client = redis.Redis(connection_pool=self.sync_pool)
+        return self._sync_client
+
+    @property
+    def async_client(self) -> aioredis.Redis:
+        """Get or create async Redis client instance."""
+        if self._async_client is None:
+            self._async_client = aioredis.Redis(connection_pool=self.async_pool)
+        return self._async_client
 
     def _serialize(self, value: Any) -> bytes:
         """Serialize value for storage with secure methods."""
@@ -415,8 +431,7 @@ class RedisCache:
 
         try:
             # Check sync pool
-            with redis.Redis(connection_pool=self.sync_pool) as r:
-                r.ping()
+            self.sync_client.ping()
 
             # Update health status
             self._connection_health["is_healthy"] = True
@@ -472,38 +487,37 @@ class RedisCache:
             return results
 
         try:
-            with redis.Redis(connection_pool=self.sync_pool) as r:
-                pipe = r.pipeline()
+            pipe = self.sync_client.pipeline()
 
-                for op in operations:
-                    method_name = op["method"]
-                    args = op.get("args", [])
-                    kwargs = op.get("kwargs", {})
+            for op in operations:
+                method_name = op["method"]
+                args = op.get("args", [])
+                kwargs = op.get("kwargs", {})
 
-                    # Map our method names to Redis methods
-                    if method_name == "set":
-                        pipe.set(args[0], self._serialize(args[1]), **kwargs)
-                    elif method_name == "get":
-                        pipe.get(args[0])
-                    elif method_name == "delete":
-                        pipe.delete(args[0])
-                    else:
-                        logger.warning(f"Unknown pipeline method: {method_name}")
+                # Map our method names to Redis methods
+                if method_name == "set":
+                    pipe.set(args[0], self._serialize(args[1]), **kwargs)
+                elif method_name == "get":
+                    pipe.get(args[0])
+                elif method_name == "delete":
+                    pipe.delete(args[0])
+                else:
+                    logger.warning(f"Unknown pipeline method: {method_name}")
 
-                results = pipe.execute()
+            results = pipe.execute()
 
-                # Deserialize results where needed
-                processed_results = []
-                for _i, (result, op) in enumerate(
-                    zip(results, operations, strict=False)
-                ):
-                    if op["method"] == "get" and result:
-                        processed_results.append(self._deserialize(result))
-                    else:
-                        processed_results.append(result)
+            # Deserialize results where needed
+            processed_results = []
+            for _i, (result, op) in enumerate(
+                zip(results, operations, strict=False)
+            ):
+                if op["method"] == "get" and result:
+                    processed_results.append(self._deserialize(result))
+                else:
+                    processed_results.append(result)
 
-                self._metrics["pipeline_operations"] += 1
-                return processed_results
+            self._metrics["pipeline_operations"] += 1
+            return processed_results
 
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
@@ -523,38 +537,37 @@ class RedisCache:
             return results
 
         try:
-            async with aioredis.Redis(connection_pool=self.async_pool) as r:
-                pipe = r.pipeline()
+            pipe = self.async_client.pipeline()
 
-                for op in operations:
-                    method_name = op["method"]
-                    args = op.get("args", [])
-                    kwargs = op.get("kwargs", {})
+            for op in operations:
+                method_name = op["method"]
+                args = op.get("args", [])
+                kwargs = op.get("kwargs", {})
 
-                    # Map our method names to Redis methods
-                    if method_name == "set":
-                        await pipe.set(args[0], self._serialize(args[1]), **kwargs)
-                    elif method_name == "get":
-                        await pipe.get(args[0])
-                    elif method_name == "delete":
-                        await pipe.delete(args[0])
-                    else:
-                        logger.warning(f"Unknown pipeline method: {method_name}")
+                # Map our method names to Redis methods
+                if method_name == "set":
+                    await pipe.set(args[0], self._serialize(args[1]), **kwargs)
+                elif method_name == "get":
+                    await pipe.get(args[0])
+                elif method_name == "delete":
+                    await pipe.delete(args[0])
+                else:
+                    logger.warning(f"Unknown pipeline method: {method_name}")
 
-                results = await pipe.execute()
+            results = await pipe.execute()
 
-                # Deserialize results where needed
-                processed_results = []
-                for _i, (result, op) in enumerate(
-                    zip(results, operations, strict=False)
-                ):
-                    if op["method"] == "get" and result:
-                        processed_results.append(self._deserialize(result))
-                    else:
-                        processed_results.append(result)
+            # Deserialize results where needed
+            processed_results = []
+            for _i, (result, op) in enumerate(
+                zip(results, operations, strict=False)
+            ):
+                if op["method"] == "get" and result:
+                    processed_results.append(self._deserialize(result))
+                else:
+                    processed_results.append(result)
 
-                self._metrics["pipeline_operations"] += 1
-                return processed_results
+            self._metrics["pipeline_operations"] += 1
+            return processed_results
 
         except Exception as e:
             logger.error(f"Async pipeline execution failed: {e}")
@@ -579,8 +592,7 @@ class RedisCache:
 
             @self._with_retry
             def _get() -> Any:
-                with redis.Redis(connection_pool=self.sync_pool) as r:
-                    return r.get(full_key)
+                return self.sync_client.get(full_key)
 
             data = _get()
             if data:
@@ -615,8 +627,7 @@ class RedisCache:
 
             @self._with_retry
             def _set() -> Any:
-                with redis.Redis(connection_pool=self.sync_pool) as r:
-                    return r.setex(full_key, ttl, self._serialize(value))
+                return self.sync_client.setex(full_key, ttl, self._serialize(value))
 
             return bool(_set())
 
@@ -641,8 +652,7 @@ class RedisCache:
 
             @self._with_retry
             def _delete() -> Any:
-                with redis.Redis(connection_pool=self.sync_pool) as r:
-                    return r.delete(full_key)
+                return self.sync_client.delete(full_key)
 
             return bool(_delete())
 
@@ -671,9 +681,8 @@ class RedisCache:
 
                 @self._with_retry
                 def _mget() -> Any:
-                    with redis.Redis(connection_pool=self.sync_pool) as r:
-                        full_keys = [self._build_key(k) for k in l2_keys]
-                        return r.mget(full_keys)
+                    full_keys = [self._build_key(k) for k in l2_keys]
+                    return self.sync_client.mget(full_keys)
 
                 values = _mget()
                 for key, value in zip(l2_keys, values, strict=False):
@@ -703,12 +712,11 @@ class RedisCache:
 
             @self._with_retry
             def _mset() -> Any:
-                with redis.Redis(connection_pool=self.sync_pool) as r:
-                    pipe = r.pipeline()
-                    for key, value in mapping.items():
-                        full_key = self._build_key(key)
-                        pipe.setex(full_key, ttl, self._serialize(value))
-                    return pipe.execute()
+                pipe = self.sync_client.pipeline()
+                for key, value in mapping.items():
+                    full_key = self._build_key(key)
+                    pipe.setex(full_key, ttl, self._serialize(value))
+                return pipe.execute()
 
             return all(_mset())
 
@@ -732,11 +740,10 @@ class RedisCache:
 
             @self._with_retry
             def _delete_pattern() -> int:
-                with redis.Redis(connection_pool=self.sync_pool) as r:
-                    keys = r.keys(full_pattern)
-                    if keys:
-                        return cast(int, r.delete(*keys))
-                    return 0
+                keys = self.sync_client.keys(full_pattern)
+                if keys:
+                    return cast(int, self.sync_client.delete(*keys))
+                return 0
 
             l2_cleared = _delete_pattern()
             return cast(int, max(l1_cleared, l2_cleared))
@@ -764,8 +771,7 @@ class RedisCache:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
 
-            async with aioredis.Redis(connection_pool=self.async_pool) as r:
-                data = await r.get(full_key)
+            data = await self.async_client.get(full_key)
 
             self._circuit_breaker.record_success()
 
@@ -803,8 +809,7 @@ class RedisCache:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
 
-            async with aioredis.Redis(connection_pool=self.async_pool) as r:
-                result = await r.setex(full_key, ttl, self._serialize(value))
+            result = await self.async_client.setex(full_key, ttl, self._serialize(value))
 
             self._circuit_breaker.record_success()
             return bool(result)
@@ -834,8 +839,7 @@ class RedisCache:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
 
-            async with aioredis.Redis(connection_pool=self.async_pool) as r:
-                result = await r.delete(full_key)
+            result = await self.async_client.delete(full_key)
 
             self._circuit_breaker.record_success()
             return bool(result)
@@ -862,18 +866,17 @@ class RedisCache:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
 
-            async with aioredis.Redis(connection_pool=self.async_pool) as r:
-                keys = []
-                async for key in r.scan_iter(match=full_pattern):
-                    keys.append(key)
+            keys = []
+            async for key in self.async_client.scan_iter(match=full_pattern):
+                keys.append(key)
 
-                if keys:
-                    result = await r.delete(*keys)
-                    self._circuit_breaker.record_success()
-                    return max(l1_cleared, cast(int, result))
-                else:
-                    self._circuit_breaker.record_success()
-                    return l1_cleared
+            if keys:
+                result = await self.async_client.delete(*keys)
+                self._circuit_breaker.record_success()
+                return max(l1_cleared, cast(int, result))
+            else:
+                self._circuit_breaker.record_success()
+                return l1_cleared
 
         except RedisError:
             self._circuit_breaker.record_failure()
@@ -901,8 +904,7 @@ class RedisCache:
         # Check Redis connection
         try:
             start_time = time.time()
-            with redis.Redis(connection_pool=self.sync_pool) as r:
-                r.ping()
+            self.sync_client.ping()
             health["redis_connected"] = True
             health["latency_ms"] = (time.time() - start_time) * 1000
 
@@ -935,8 +937,7 @@ class RedisCache:
         # Check Redis connection
         try:
             start_time = time.time()
-            async with aioredis.Redis(connection_pool=self.async_pool) as r:
-                await r.ping()
+            await self.async_client.ping()
             health["redis_connected"] = True
             health["latency_ms"] = (time.time() - start_time) * 1000
 
@@ -980,14 +981,26 @@ class RedisCache:
         self._l1_cache.clear()
 
     def close(self) -> None:
-        """Close connection pools."""
+        """Close connection pools and clients."""
+        if self._sync_client:
+            self._sync_client.close()
+            self._sync_client = None
+        if self._async_client:
+            asyncio.create_task(self._async_client.aclose())
+            self._async_client = None
         if self._sync_pool:
             self._sync_pool.disconnect()
         if self._async_pool:
             asyncio.create_task(self._async_pool.disconnect())
 
     async def async_close(self) -> None:
-        """Close connection pools (async)."""
+        """Close connection pools and clients (async)."""
+        if self._sync_client:
+            self._sync_client.close()
+            self._sync_client = None
+        if self._async_client:
+            await self._async_client.aclose()
+            self._async_client = None
         if self._sync_pool:
             self._sync_pool.disconnect()
         if self._async_pool:
