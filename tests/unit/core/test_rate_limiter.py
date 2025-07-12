@@ -42,7 +42,9 @@ class TestRateLimiter:
         """Test allowing request when under limit."""
         # Mock previous request times (5 requests in the past 30 seconds)
         current_time = int(time.time())
-        previous_requests = [current_time - i for i in range(5, 30, 5)]  # 5 requests within window
+        previous_requests = [
+            current_time - i for i in range(5, 30, 5)
+        ]  # 5 requests within window
         mock_redis.get.return_value = previous_requests
 
         is_allowed, limit_info = rate_limiter.check_rate_limit("test_user")
@@ -55,7 +57,9 @@ class TestRateLimiter:
         """Test blocking request when at limit."""
         # Mock 10 requests already in the current window
         current_time = int(time.time())
-        previous_requests = [current_time - i for i in range(1, 11)]  # 10 recent requests
+        previous_requests = [
+            current_time - i for i in range(1, 11)
+        ]  # 10 recent requests
         mock_redis.get.return_value = previous_requests
 
         is_allowed, limit_info = rate_limiter.check_rate_limit("test_user")
@@ -68,7 +72,10 @@ class TestRateLimiter:
         """Test that old entries are cleaned up."""
         # Mock some old and new requests
         current_time = int(time.time())
-        old_requests = [current_time - 120, current_time - 100]  # Old (outside 60s window)
+        old_requests = [
+            current_time - 120,
+            current_time - 100,
+        ]  # Old (outside 60s window)
         new_requests = [current_time - 30, current_time - 10]  # Recent
         all_requests = old_requests + new_requests
         mock_redis.get.return_value = all_requests
@@ -153,7 +160,9 @@ class TestMultiTierRateLimiter:
                 requests = []
                 for i in range(105):
                     # Distribute across 60 seconds but with some overlap
-                    time_offset = (i % 60)  # This will create multiple requests per second
+                    time_offset = (
+                        i % 60
+                    )  # This will create multiple requests per second
                     requests.append(current_time - time_offset)
                 return requests
             return []

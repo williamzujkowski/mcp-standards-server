@@ -122,9 +122,16 @@ class StandardsHandler:
                             "description": "Path to file to validate",
                         },
                         "language": {
-                            "type": "string", 
+                            "type": "string",
                             "description": "Programming language (auto-detected if not provided)",
-                            "enum": ["python", "javascript", "typescript", "go", "java", "rust"]
+                            "enum": [
+                                "python",
+                                "javascript",
+                                "typescript",
+                                "go",
+                                "java",
+                                "rust",
+                            ],
                         },
                     },
                     "required": ["standard_id"],
@@ -260,21 +267,22 @@ class StandardsHandler:
 
                 # Validate code using analyzer infrastructure
                 try:
-                    from ...analyzers.base import AnalyzerPlugin
                     import tempfile
                     from pathlib import Path
-                    
+
+                    from ...analyzers.base import AnalyzerPlugin
+
                     if code and not file_path:
                         # Create temporary file for code analysis
                         extension_map = {
                             "python": ".py",
-                            "typescript": ".ts", 
+                            "typescript": ".ts",
                             "javascript": ".js",
                             "go": ".go",
                             "java": ".java",
-                            "rust": ".rs"
+                            "rust": ".rs",
                         }
-                        
+
                         # Auto-detect language if not provided
                         if not language and file_path:
                             ext = Path(file_path).suffix
@@ -282,18 +290,22 @@ class StandardsHandler:
                                 if ext == lang_ext:
                                     language = lang
                                     break
-                        
+
                         if not language:
                             language = "typescript"  # Default fallback
-                        
+
                         extension = extension_map.get(language, ".txt")
-                        with tempfile.NamedTemporaryFile(mode='w', suffix=extension, delete=False) as f:
+                        with tempfile.NamedTemporaryFile(
+                            mode="w", suffix=extension, delete=False
+                        ) as f:
                             f.write(code)
                             file_path = f.name
-                    
+
                     if not file_path:
-                        return {"error": "Either 'code' or 'file_path' must be provided"}
-                    
+                        return {
+                            "error": "Either 'code' or 'file_path' must be provided"
+                        }
+
                     # Auto-detect language from file extension if not provided
                     if not language:
                         ext = Path(file_path).suffix
@@ -302,27 +314,31 @@ class StandardsHandler:
                             if analyzer and ext in analyzer.file_extensions:
                                 language = lang
                                 break
-                        
+
                         if not language:
-                            return {"error": f"Could not detect language for file: {file_path}"}
-                    
+                            return {
+                                "error": f"Could not detect language for file: {file_path}"
+                            }
+
                     # Get analyzer for language
                     analyzer = AnalyzerPlugin.get_analyzer(language)
                     if not analyzer:
-                        return {"error": f"No analyzer available for language: {language}"}
-                    
+                        return {
+                            "error": f"No analyzer available for language: {language}"
+                        }
+
                     # Run analysis
-                    if code and hasattr(analyzer, 'analyze_code'):
+                    if code and hasattr(analyzer, "analyze_code"):
                         # Direct code analysis
                         analysis_result = analyzer.analyze_code(code, file_path)
                     else:
                         # File-based analysis
                         analysis_result = analyzer.analyze_file(Path(file_path))
-                    
+
                     # Format results for MCP response
                     issues = []
                     warnings = []
-                    
+
                     for issue in analysis_result.issues:
                         issue_dict = {
                             "type": issue.type.value,
@@ -332,17 +348,17 @@ class StandardsHandler:
                             "column": issue.column_number,
                             "recommendation": issue.recommendation,
                         }
-                        
-                        if hasattr(issue, 'cwe_id') and issue.cwe_id:
+
+                        if hasattr(issue, "cwe_id") and issue.cwe_id:
                             issue_dict["cwe_id"] = issue.cwe_id
-                        if hasattr(issue, 'owasp_category') and issue.owasp_category:
+                        if hasattr(issue, "owasp_category") and issue.owasp_category:
                             issue_dict["owasp_category"] = issue.owasp_category
-                        
+
                         if issue.severity.value in ["critical", "high"]:
                             issues.append(issue_dict)
                         else:
                             warnings.append(issue_dict)
-                    
+
                     result = {
                         "standard_id": standard_id,
                         "language": language,
@@ -353,22 +369,46 @@ class StandardsHandler:
                         "analysis_time": analysis_result.analysis_time,
                         "summary": {
                             "total_issues": len(analysis_result.issues),
-                            "critical_issues": len([i for i in analysis_result.issues if i.severity.value == "critical"]),
-                            "high_issues": len([i for i in analysis_result.issues if i.severity.value == "high"]),
-                            "medium_issues": len([i for i in analysis_result.issues if i.severity.value == "medium"]),
-                            "low_issues": len([i for i in analysis_result.issues if i.severity.value == "low"]),
-                        }
+                            "critical_issues": len(
+                                [
+                                    i
+                                    for i in analysis_result.issues
+                                    if i.severity.value == "critical"
+                                ]
+                            ),
+                            "high_issues": len(
+                                [
+                                    i
+                                    for i in analysis_result.issues
+                                    if i.severity.value == "high"
+                                ]
+                            ),
+                            "medium_issues": len(
+                                [
+                                    i
+                                    for i in analysis_result.issues
+                                    if i.severity.value == "medium"
+                                ]
+                            ),
+                            "low_issues": len(
+                                [
+                                    i
+                                    for i in analysis_result.issues
+                                    if i.severity.value == "low"
+                                ]
+                            ),
+                        },
                     }
-                    
+
                     # Clean up temporary file if created
-                    if code and file_path and file_path.startswith('/tmp'):
+                    if code and file_path and file_path.startswith("/tmp"):
                         try:
                             Path(file_path).unlink()
-                        except:
+                        except OSError:
                             pass
-                    
+
                     return {"result": result}
-                    
+
                 except Exception as e:
                     logger.error(f"Error during code validation: {e}")
                     return {"error": f"Validation failed: {str(e)}"}

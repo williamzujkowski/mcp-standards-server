@@ -188,8 +188,10 @@ class TestMCPProtocolCompliance:
 
         # Test rate limit configuration
         # Note: Actual rate limit checking is async and tested in dedicated tests
-        assert mcp_server._async_rate_limiter is None  # Not initialized until async context
-        
+        assert (
+            mcp_server._async_rate_limiter is None
+        )  # Not initialized until async context
+
         # Verify rate limiting will be initialized on first async operation
         assert hasattr(mcp_server, "_initialize_async_components")
 

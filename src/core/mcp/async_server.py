@@ -760,7 +760,7 @@ class AsyncMCPServer:
         # Close all sessions
         session_close_tasks = []
         for session in list(self.sessions.values()):
-            if hasattr(session, 'close'):
+            if hasattr(session, "close"):
                 session_close_tasks.append(session.close())
 
         if session_close_tasks:
@@ -1101,7 +1101,7 @@ class AsyncMCPServer:
         if session_id in self.sessions:
             session = self.sessions.pop(session_id)
             try:
-                if hasattr(session, 'close'):
+                if hasattr(session, "close"):
                     await session.close()
             except Exception:
                 pass  # Session already closed or error
@@ -1125,7 +1125,7 @@ class AsyncMCPServer:
         """Broadcast a message to all active sessions."""
         tasks = []
         for session in self.sessions.values():
-            if hasattr(session, 'send_message'):
+            if hasattr(session, "send_message"):
                 tasks.append(session.send_message(message))
 
         if tasks:
@@ -1137,7 +1137,8 @@ class AsyncMCPServer:
             "running": self.running,
             "sessions": len(self.sessions),
             "active_connections": len(self.connection_manager.connections),
-            "total_requests": self.metrics.completed_requests + self.metrics.failed_requests,
+            "total_requests": self.metrics.completed_requests
+            + self.metrics.failed_requests,
             "completed_requests": self.metrics.completed_requests,
             "failed_requests": self.metrics.failed_requests,
             "active_requests": self.metrics.active_requests,

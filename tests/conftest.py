@@ -295,12 +295,14 @@ def mock_ml_dependencies():
     # Patch already imported modules if they exist
     try:
         import sentence_transformers
+
         sentence_transformers.SentenceTransformer = MockSentenceTransformer
     except ImportError:
         pass
 
     try:
         import redis
+
         redis.Redis = MockRedisClient
         redis.StrictRedis = MockRedisClient
     except ImportError:
@@ -309,26 +311,27 @@ def mock_ml_dependencies():
     # Patch NLTK download function if NLTK is available
     try:
         import nltk
+
         # Store original for restoration
         original_modules["nltk.download"] = getattr(nltk, "download", None)
         # Replace with mock
         nltk.download = mock_nltk_download
-        
+
         # Mock nltk.corpus.stopwords to prevent LookupError
         from tests.mocks.semantic_search_mocks import MockStopwords
-        
+
         # Create a mock corpus module with proper stopwords attribute
         class MockCorpus:
             class stopwords:
                 @staticmethod
                 def words(language="english"):
                     return MockStopwords.words(language)
-        
+
         # Patch nltk.corpus if it exists
-        if hasattr(nltk, 'corpus'):
+        if hasattr(nltk, "corpus"):
             original_modules["nltk.corpus"] = nltk.corpus
             nltk.corpus = MockCorpus()
-            
+
     except ImportError:
         # If NLTK isn't installed, create minimal mock only if needed
         pass

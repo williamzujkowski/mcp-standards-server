@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any, cast
 
 import aiofiles
-
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -30,13 +29,13 @@ from .core.errors import (
     ToolNotFoundError,
     ValidationError,
 )
-from .core.rate_limiter import get_async_rate_limiter
 
 # Import metrics module
 from .core.metrics import get_mcp_metrics
 
 # Import privacy filtering
 from .core.privacy import PrivacyConfig, get_privacy_filter
+from .core.rate_limiter import get_async_rate_limiter
 from .core.standards.analytics import StandardsAnalytics
 from .core.standards.cross_referencer import CrossReferencer
 from .core.standards.rule_engine import RuleEngine
@@ -81,8 +80,10 @@ class MCPStandardsServer:
         # Initialize async rate limiting with request queuing
         self.rate_limit_window = self.config.get("rate_limit_window", 60)  # seconds
         self.rate_limit_max_requests = self.config.get("rate_limit_max_requests", 100)
-        self.rate_limit_enable_queuing = self.config.get("rate_limit_enable_queuing", True)
-        self._async_rate_limiter: Optional[Any] = None  # Will be initialized in startup
+        self.rate_limit_enable_queuing = self.config.get(
+            "rate_limit_enable_queuing", True
+        )
+        self._async_rate_limiter: Any | None = None  # Will be initialized in startup
 
         # Initialize components
         # Get data directory
@@ -134,7 +135,7 @@ class MCPStandardsServer:
         # Register tools
         self._register_tools()
 
-    async def _initialize_async_components(self):
+    async def _initialize_async_components(self) -> None:
         """Initialize async components that require async context."""
         if self._async_rate_limiter is None:
             self._async_rate_limiter = await get_async_rate_limiter(
@@ -142,30 +143,32 @@ class MCPStandardsServer:
                 window_seconds=self.rate_limit_window,
                 enable_queuing=self.rate_limit_enable_queuing,
             )
-            logger.info(f"Async rate limiter initialized with {self.rate_limit_max_requests} requests per {self.rate_limit_window}s")
-        
+            logger.info(
+                f"Async rate limiter initialized with {self.rate_limit_max_requests} requests per {self.rate_limit_window}s"
+            )
+
         # Index standards in search engine if available
         if self.search is not None:
             await self._index_standards_in_search()
 
-    async def _index_standards_in_search(self):
+    async def _index_standards_in_search(self) -> None:
         """Index all standards in the search engine."""
         try:
             # Get all available standards
             standards_result = await self._list_available_standards(limit=1000)
             standards_list = standards_result.get("standards", [])
-            
+
             if not standards_list:
                 logger.warning("No standards found to index in search")
                 return
-                
+
             # Prepare documents for indexing
             documents = []
             for std in standards_list:
                 try:
                     # Get full standard details
                     details = await self._get_standard_details(std["id"])
-                    
+
                     # Create document for indexing (id, content, metadata)
                     content = f"{details.get('name', std['name'])}\n{details.get('description', '')}"
                     metadata = {
@@ -174,24 +177,24 @@ class MCPStandardsServer:
                         "id": std["id"],
                         "name": std["name"],
                     }
-                    
+
                     documents.append((std["id"], content, metadata))
-                    
+
                 except Exception as e:
                     logger.warning(f"Failed to prepare {std['id']} for indexing: {e}")
                     continue
-            
+
             # Index documents in batch
-            if documents and hasattr(self.search, 'index_documents_batch'):
+            if documents and self.search and hasattr(self.search, "index_documents_batch"):
                 self.search.index_documents_batch(documents)
                 logger.info(f"Indexed {len(documents)} standards in search engine")
             else:
                 logger.warning("Search engine does not support batch indexing")
-                
+
         except Exception as e:
             logger.error(f"Failed to index standards in search: {e}")
-    
-    async def _cleanup_async_components(self):
+
+    async def _cleanup_async_components(self) -> None:
         """Clean up async components."""
         if self._async_rate_limiter:
             await self._async_rate_limiter.cleanup()
@@ -659,31 +662,48 @@ class MCPStandardsServer:
 
                     # Check rate limits using async rate limiter
                     user_key = credential if credential else "anonymous"
-                    
+
                     # Initialize async rate limiter if needed
                     if server_instance._async_rate_limiter is None:
                         await server_instance._initialize_async_components()
+
+                    if server_instance._async_rate_limiter is None:
+                        raise RuntimeError("Rate limiter not initialized")
                     
-                    is_allowed, limit_info = await server_instance._async_rate_limiter.check_rate_limit(user_key)
+                    is_allowed, limit_info = (
+                        await server_instance._async_rate_limiter.check_rate_limit(
+                            user_key
+                        )
+                    )
                     if not is_allowed:
                         server_instance.metrics.record_rate_limit_hit(
                             user_key, "standard"
                         )
-                        
+
                         # Handle different types of rate limit responses
-                        if limit_info and limit_info.get("error") == "circuit_breaker_open":
+                        if (
+                            limit_info
+                            and limit_info.get("error") == "circuit_breaker_open"
+                        ):
                             raise RateLimitError(
                                 limit=server_instance.rate_limit_max_requests,
                                 window=f"{server_instance.rate_limit_window}s",
                                 retry_after=limit_info.get("retry_after", 60),
-                                message="Circuit breaker open - too many failures",
                             )
                         elif limit_info and limit_info.get("queued"):
                             # Request was queued - this is actually success
-                            logger.info(f"Request queued for {user_key}, estimated wait: {limit_info.get('estimated_wait', 0):.1f}s")
+                            logger.info(
+                                f"Request queued for {user_key}, estimated wait: {limit_info.get('estimated_wait', 0):.1f}s"
+                            )
                         else:
                             # Standard rate limit exceeded
-                            retry_after = limit_info.get("retry_after", server_instance.rate_limit_window) if limit_info else server_instance.rate_limit_window
+                            retry_after = (
+                                limit_info.get(
+                                    "retry_after", server_instance.rate_limit_window
+                                )
+                                if limit_info
+                                else server_instance.rate_limit_window
+                            )
                             raise RateLimitError(
                                 limit=server_instance.rate_limit_max_requests,
                                 window=f"{server_instance.rate_limit_window}s",
@@ -1007,22 +1027,24 @@ class MCPStandardsServer:
             cache_dir / f"{standard_id.upper()}.json",
             cache_dir / f"{standard_id.lower()}.json",
         ]
-        
+
         # Also check if standard_id needs transformation (e.g., underscores to uppercase)
         if "_" in standard_id:
             possible_paths.append(cache_dir / f"{standard_id.replace('_', '-')}.json")
-            possible_paths.append(cache_dir / f"{standard_id.upper().replace('-', '_')}.json")
-        
+            possible_paths.append(
+                cache_dir / f"{standard_id.upper().replace('-', '_')}.json"
+            )
+
         standard_path = None
         for path in possible_paths:
             if path.exists():
                 standard_path = path
                 break
-        
+
         if standard_path:
             # Record cache hit
             self.metrics.record_cache_access("get_standard_details", True)
-            async with aiofiles.open(standard_path, 'r') as f:
+            async with aiofiles.open(standard_path) as f:
                 content = await f.read()
                 return cast(dict[str, Any], json.loads(content))
         else:
@@ -1051,7 +1073,7 @@ class MCPStandardsServer:
 
         for file_path in cache_dir.glob("*.json"):
             try:
-                async with aiofiles.open(file_path, 'r') as f:
+                async with aiofiles.open(file_path) as f:
                     content = await f.read()
                     standard = json.loads(content)
 
@@ -1574,12 +1596,11 @@ class MCPStandardsServer:
         """Get rate limiter for backwards compatibility."""
         return self
 
-
     async def run(self) -> None:
         """Run the MCP server."""
         # Initialize async components
         await self._initialize_async_components()
-        
+
         # Start metrics export task
         await self.metrics.collector.start_export_task()
 
@@ -1594,7 +1615,7 @@ class MCPStandardsServer:
         finally:
             # Clean up async components
             await self._cleanup_async_components()
-            
+
             # Stop metrics export task
             await self.metrics.collector.stop_export_task()
 
@@ -1615,7 +1636,7 @@ async def main() -> None:
     config = {}
     config_path = os.environ.get("MCP_CONFIG_PATH", "config.json")
     if os.path.exists(config_path):
-        async with aiofiles.open(config_path, 'r') as f:
+        async with aiofiles.open(config_path) as f:
             content = await f.read()
             config = json.loads(content)
 

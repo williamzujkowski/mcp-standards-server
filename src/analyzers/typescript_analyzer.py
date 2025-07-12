@@ -17,7 +17,7 @@ from .base import (
 
 
 @AnalyzerPlugin.register("typescript")
-@AnalyzerPlugin.register("javascript") 
+@AnalyzerPlugin.register("javascript")
 class TypeScriptAnalyzer(BaseAnalyzer):
     """Analyzer for TypeScript with focus on type safety and modern patterns."""
 

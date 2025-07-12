@@ -86,6 +86,7 @@ dev = [
     "types-psutil",
     "types-cachetools",
     "types-setuptools",
+    "types-aiofiles",
     "scipy-stubs",
     "click",  # Add click dependency
     "semantic-version",  # Add semantic-version dependency

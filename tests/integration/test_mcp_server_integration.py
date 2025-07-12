@@ -8,7 +8,7 @@ authentication, validation, and integration with all components.
 import asyncio
 import os
 import tempfile
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -36,18 +36,18 @@ class TestMCPServerIntegration:
         """Create temporary data directory with required structure."""
         import json
         import os
-        
+
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create required directory structure
             standards_dir = os.path.join(temp_dir, "standards")
             meta_dir = os.path.join(standards_dir, "meta")
             cache_dir = os.path.join(standards_dir, "cache")
             analytics_dir = os.path.join(standards_dir, "analytics")
-            
+
             os.makedirs(meta_dir, exist_ok=True)
             os.makedirs(cache_dir, exist_ok=True)
             os.makedirs(analytics_dir, exist_ok=True)
-            
+
             # Create minimal rules file
             rules_data = {
                 "rules": [
@@ -59,26 +59,26 @@ class TestMCPServerIntegration:
                         "conditions": {
                             "field": "languages",
                             "operator": "contains",
-                            "value": "python"
+                            "value": "python",
                         },
                         "standards": ["python-coding-standards"],
                         "tags": ["test"],
-                        "metadata": {}
+                        "metadata": {},
                     }
                 ]
             }
-            
+
             rules_file = os.path.join(meta_dir, "enhanced-selection-rules.json")
             with open(rules_file, "w") as f:
                 json.dump(rules_data, f)
-            
+
             # Create sync config
             sync_config = """
 source:
   type: github
   repository: williamzujkowski/standards
   branch: main
-  
+
 target:
   directory: cache
   format: json
@@ -91,7 +91,7 @@ sync:
             sync_config_file = os.path.join(standards_dir, "sync_config.yaml")
             with open(sync_config_file, "w") as f:
                 f.write(sync_config)
-                
+
             yield temp_dir
 
     @pytest.fixture
@@ -198,8 +198,11 @@ sync:
             assert "standards" in result
             assert "evaluation_path" in result
 
-            # Verify standards content  
-            assert result["standards"] == ["python-coding-standards", "web-security-standards"]
+            # Verify standards content
+            assert result["standards"] == [
+                "python-coding-standards",
+                "web-security-standards",
+            ]
             assert result["evaluation_path"] == ["python_web_rule"]
 
     async def test_validate_against_standard_tool(
@@ -239,7 +242,7 @@ sync:
         # Verify result structure (search is disabled in test environment)
         assert "results" in result
         assert isinstance(result["results"], list)
-        
+
         # When search is disabled, we expect either empty results or a warning
         if "warning" in result:
             assert "Semantic search is disabled" in result["warning"]
@@ -293,7 +296,7 @@ sync:
         result = await mcp_server._get_applicable_standards(
             context={"languages": ["python"], "requirements": ["code_quality"]},
         )
-        
+
         # Should work without authentication when auth is disabled
         assert "standards" in result
         assert "evaluation_path" in result
@@ -318,7 +321,7 @@ sync:
         result = await mcp_server._get_applicable_standards(
             context={"languages": ["python"]},  # Valid dict
         )
-        
+
         # Should work with valid input
         assert "standards" in result
         assert "evaluation_path" in result
@@ -399,18 +402,18 @@ class TestMCPServerTools:
         """Create temporary data directory with required structure."""
         import json
         import os
-        
+
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create required directory structure
             standards_dir = os.path.join(temp_dir, "standards")
             meta_dir = os.path.join(standards_dir, "meta")
             cache_dir = os.path.join(standards_dir, "cache")
             analytics_dir = os.path.join(standards_dir, "analytics")
-            
+
             os.makedirs(meta_dir, exist_ok=True)
             os.makedirs(cache_dir, exist_ok=True)
             os.makedirs(analytics_dir, exist_ok=True)
-            
+
             # Create minimal rules file
             rules_data = {
                 "rules": [
@@ -422,26 +425,26 @@ class TestMCPServerTools:
                         "conditions": {
                             "field": "languages",
                             "operator": "contains",
-                            "value": "python"
+                            "value": "python",
                         },
                         "standards": ["python-coding-standards"],
                         "tags": ["test"],
-                        "metadata": {}
+                        "metadata": {},
                     }
                 ]
             }
-            
+
             rules_file = os.path.join(meta_dir, "enhanced-selection-rules.json")
             with open(rules_file, "w") as f:
                 json.dump(rules_data, f)
-            
+
             # Create sync config
             sync_config = """
 source:
   type: github
   repository: williamzujkowski/standards
   branch: main
-  
+
 target:
   directory: cache
   format: json
@@ -454,7 +457,7 @@ sync:
             sync_config_file = os.path.join(standards_dir, "sync_config.yaml")
             with open(sync_config_file, "w") as f:
                 f.write(sync_config)
-                
+
             yield temp_dir
 
     @pytest.fixture
@@ -471,17 +474,18 @@ sync:
     async def test_sync_standards_tool(self, mcp_server):
         """Test sync_standards tool."""
         # Mock the sync method to return a proper async mock result
-        from unittest.mock import AsyncMock
         from src.core.standards.sync import SyncResult, SyncStatus
 
         mock_result = SyncResult(
             status=SyncStatus.SUCCESS,
             synced_files=[],
             failed_files=[],
-            message="Sync completed"
+            message="Sync completed",
         )
 
-        with patch.object(mcp_server.synchronizer, "sync", new_callable=AsyncMock) as mock_sync:
+        with patch.object(
+            mcp_server.synchronizer, "sync", new_callable=AsyncMock
+        ) as mock_sync:
             mock_sync.return_value = mock_result
 
             result = await mcp_server._sync_standards()

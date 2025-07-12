@@ -1,6 +1,6 @@
 """Tests for MCP cache integration."""
 
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -98,11 +98,16 @@ class TestMCPCacheMiddleware:
     @pytest.mark.asyncio
     async def test_handle_cache_stats(self, cache_middleware):
         """Test handling cache stats request."""
-        stats = await cache_middleware.handle_cache_stats({"include_redis": False})
+        # Mock the async Redis client's ping method
+        mock_async_client = AsyncMock()
+        mock_async_client.ping = AsyncMock(return_value=True)
+        
+        with patch.object(cache_middleware.cache.redis, '_async_client', mock_async_client):
+            stats = await cache_middleware.handle_cache_stats({"include_redis": False})
 
-        assert "overall" in stats
-        assert "health" in stats
-        assert "redis_metrics" not in stats  # Excluded
+            assert "overall" in stats
+            assert "health" in stats
+            assert "redis_metrics" not in stats  # Excluded
 
     def test_get_cache_management_tools(self, cache_middleware):
         """Test cache management tool definitions."""

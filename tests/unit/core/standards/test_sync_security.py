@@ -63,10 +63,12 @@ class TestPathTraversalPrevention:
         # Test that the synchronizer's validation methods reject these paths
         for file_info in malicious_files:
             path = file_info["path"]
-            
+
             # Test _is_safe_path method
-            assert not secure_synchronizer._is_safe_path(path), f"Path {path} should be rejected as unsafe"
-            
+            assert not secure_synchronizer._is_safe_path(
+                path
+            ), f"Path {path} should be rejected as unsafe"
+
         # Test that filtering removes these files
         filtered = secure_synchronizer._filter_files(malicious_files)
         assert len(filtered) == 0, "Malicious paths were not filtered out"
@@ -154,7 +156,7 @@ class TestContentValidation:
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_dir = Path(tmpdir) / "cache"
             config_path = Path(tmpdir) / "config.yaml"
-            
+
             # Create a config with max_file_size
             config = {
                 "repository": {
@@ -169,10 +171,10 @@ class TestContentValidation:
                     "max_file_size": 1048576,  # 1MB
                 },
             }
-            
+
             with open(config_path, "w") as f:
                 yaml.dump(config, f)
-                
+
             yield StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
 
     @pytest.mark.asyncio

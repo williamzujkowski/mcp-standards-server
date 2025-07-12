@@ -2,9 +2,16 @@
 
 import ast
 from typing import Any
-from pathlib import Path
 
-from .base import AnalyzerPlugin, AnalyzerResult, BaseAnalyzer, Issue, IssueType, Severity, SecurityIssue
+from .base import (
+    AnalyzerPlugin,
+    AnalyzerResult,
+    BaseAnalyzer,
+    Issue,
+    IssueType,
+    SecurityIssue,
+    Severity,
+)
 
 
 @AnalyzerPlugin.register("python")
@@ -36,18 +43,20 @@ class PythonAnalyzer(BaseAnalyzer):
 
         try:
             tree = ast.parse(code)
-            
+
             # Create a temporary result to collect issues
-            temp_result = AnalyzerResult(file_path=file_path or "", language=self.language)
-            
+            temp_result = AnalyzerResult(
+                file_path=file_path or "", language=self.language
+            )
+
             # Run all analysis methods
             self.analyze_security(tree, temp_result)
             self.analyze_performance(tree, temp_result)
             self.analyze_best_practices(tree, temp_result)
-            
+
             # Add issues from temp result
             issues.extend(temp_result.issues)
-            
+
             # Also run the old _analyze_ast method for React-specific checks
             issues.extend(self._analyze_ast(tree, file_path or ""))
             metrics.update(self._calculate_metrics(tree))
@@ -123,8 +132,13 @@ class PythonAnalyzer(BaseAnalyzer):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         var_name = target.id.lower()
-                        if any(keyword in var_name for keyword in ['password', 'secret', 'key', 'token']):
-                            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                        if any(
+                            keyword in var_name
+                            for keyword in ["password", "secret", "key", "token"]
+                        ):
+                            if isinstance(node.value, ast.Constant) and isinstance(
+                                node.value.value, str
+                            ):
                                 if len(node.value.value) > 8:  # Likely a real secret
                                     result.add_issue(
                                         SecurityIssue(
@@ -135,15 +149,15 @@ class PythonAnalyzer(BaseAnalyzer):
                                             line_number=node.lineno,
                                             column_number=node.col_offset,
                                             recommendation="Use environment variables for secrets",
-                                            cwe_id="CWE-798"
+                                            cwe_id="CWE-798",
                                         )
                                     )
-            
+
             # Check for dangerous function calls
             elif isinstance(node, ast.Call):
                 if isinstance(node.func, ast.Name):
                     func_name = node.func.id
-                    if func_name == 'exec':
+                    if func_name == "exec":
                         result.add_issue(
                             SecurityIssue(
                                 type=IssueType.SECURITY,
@@ -153,10 +167,10 @@ class PythonAnalyzer(BaseAnalyzer):
                                 line_number=node.lineno,
                                 column_number=node.col_offset,
                                 recommendation="Avoid dynamic code execution",
-                                cwe_id="CWE-94"
+                                cwe_id="CWE-94",
                             )
                         )
-                    elif func_name == 'eval':
+                    elif func_name == "eval":
                         result.add_issue(
                             SecurityIssue(
                                 type=IssueType.SECURITY,
@@ -166,7 +180,7 @@ class PythonAnalyzer(BaseAnalyzer):
                                 line_number=node.lineno,
                                 column_number=node.col_offset,
                                 recommendation="Use ast.literal_eval() for safe evaluation",
-                                cwe_id="CWE-94"
+                                cwe_id="CWE-94",
                             )
                         )
 
@@ -174,11 +188,13 @@ class PythonAnalyzer(BaseAnalyzer):
         """Analyze performance issues in Python code."""
         for node in ast.walk(tree):
             # Check for inefficient string concatenation in loops
-            if isinstance(node, (ast.For, ast.While)):
+            if isinstance(node, ast.For | ast.While):
                 for child in ast.walk(node):
-                    if (isinstance(child, ast.AugAssign) and 
-                        isinstance(child.op, ast.Add) and
-                        isinstance(child.target, ast.Name)):
+                    if (
+                        isinstance(child, ast.AugAssign)
+                        and isinstance(child.op, ast.Add)
+                        and isinstance(child.target, ast.Name)
+                    ):
                         result.add_issue(
                             Issue(
                                 type=IssueType.PERFORMANCE,
@@ -187,7 +203,7 @@ class PythonAnalyzer(BaseAnalyzer):
                                 file_path=result.file_path,
                                 line_number=child.lineno,
                                 column_number=child.col_offset,
-                                recommendation="Use join() or list comprehension instead"
+                                recommendation="Use join() or list comprehension instead",
                             )
                         )
 
@@ -205,7 +221,7 @@ class PythonAnalyzer(BaseAnalyzer):
                             file_path=result.file_path,
                             line_number=node.lineno,
                             column_number=node.col_offset,
-                            recommendation="Catch specific exceptions instead of using bare except"
+                            recommendation="Catch specific exceptions instead of using bare except",
                         )
                     )
 
@@ -213,7 +229,7 @@ class PythonAnalyzer(BaseAnalyzer):
         """Calculate cyclomatic complexity."""
         complexity = 1
         for node in ast.walk(tree):
-            if isinstance(node, (ast.If, ast.For, ast.While, ast.Try, ast.With)):
+            if isinstance(node, ast.If | ast.For | ast.While | ast.Try | ast.With):
                 complexity += 1
             elif isinstance(node, ast.BoolOp):
                 complexity += len(node.values) - 1
@@ -225,9 +241,9 @@ class PythonAnalyzer(BaseAnalyzer):
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if not alias.name.startswith('.'):
-                        dependencies.append(alias.name.split('.')[0])
+                    if not alias.name.startswith("."):
+                        dependencies.append(alias.name.split(".")[0])
             elif isinstance(node, ast.ImportFrom):
-                if node.module and not node.module.startswith('.'):
-                    dependencies.append(node.module.split('.')[0])
+                if node.module and not node.module.startswith("."):
+                    dependencies.append(node.module.split(".")[0])
         return list(set(dependencies))

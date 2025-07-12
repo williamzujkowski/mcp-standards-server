@@ -39,7 +39,7 @@ class TestErrorHandling:
         """Create synchronizer with temporary directories."""
         config_path = temp_dir / "sync_config.yaml"
         cache_dir = temp_dir / "cache"
-        
+
         # Create a default config to ensure consistent behavior
         config = {
             "repository": {
@@ -54,11 +54,11 @@ class TestErrorHandling:
                 "max_file_size": 1048576,
             },
         }
-        
+
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w") as f:
             yaml.dump(config, f)
-            
+
         return StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
 
     @pytest.mark.asyncio

@@ -508,9 +508,7 @@ class RedisCache:
 
             # Deserialize results where needed
             processed_results = []
-            for _i, (result, op) in enumerate(
-                zip(results, operations, strict=False)
-            ):
+            for _i, (result, op) in enumerate(zip(results, operations, strict=False)):
                 if op["method"] == "get" and result:
                     processed_results.append(self._deserialize(result))
                 else:
@@ -558,9 +556,7 @@ class RedisCache:
 
             # Deserialize results where needed
             processed_results = []
-            for _i, (result, op) in enumerate(
-                zip(results, operations, strict=False)
-            ):
+            for _i, (result, op) in enumerate(zip(results, operations, strict=False)):
                 if op["method"] == "get" and result:
                     processed_results.append(self._deserialize(result))
                 else:
@@ -809,7 +805,9 @@ class RedisCache:
             if not self._circuit_breaker.can_attempt():
                 raise RedisConnectionError("Circuit breaker is open")
 
-            result = await self.async_client.setex(full_key, ttl, self._serialize(value))
+            result = await self.async_client.setex(
+                full_key, ttl, self._serialize(value)
+            )
 
             self._circuit_breaker.record_success()
             return bool(result)

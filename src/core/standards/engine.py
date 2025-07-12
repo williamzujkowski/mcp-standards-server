@@ -113,7 +113,7 @@ class StandardsEngine:
                     continue
 
                 try:
-                    async with aiofiles.open(json_file, 'r') as f:
+                    async with aiofiles.open(json_file) as f:
                         content = await f.read()
                         data = json.loads(content)
 

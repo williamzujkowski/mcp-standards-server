@@ -158,14 +158,14 @@ class CompressionTechniques:
         # Split on \n\n first to preserve paragraph breaks
         paragraphs = text.split("\n\n")
         cleaned_paragraphs = []
-        
+
         for paragraph in paragraphs:
             # Clean each paragraph
             lines = [line.rstrip() for line in paragraph.split("\n")]
             cleaned_paragraph = "\n".join(line for line in lines if line.strip())
             if cleaned_paragraph.strip():
                 cleaned_paragraphs.append(cleaned_paragraph)
-        
+
         return "\n\n".join(cleaned_paragraphs).strip()
 
     @staticmethod
@@ -356,7 +356,9 @@ class TokenOptimizer:
         budget = budget or self.default_budget
 
         # Check cache
-        cache_key = self._get_cache_key(standard, format_type, required_sections, context)
+        cache_key = self._get_cache_key(
+            standard, format_type, required_sections, context
+        )
         if cache_key in self._format_cache:
             cached_time, cached_content, cached_result = self._format_cache[cache_key]
             if time.time() - cached_time < self._cache_ttl:
@@ -392,23 +394,25 @@ class TokenOptimizer:
         self, standard: dict[str, Any]
     ) -> list[StandardSection]:
         """Parse standard into sections."""
-        sections = []
+        sections: list[StandardSection] = []
         content = standard.get("content", "")
-        
+
         # Handle different content formats
         if isinstance(content, dict):
             # If content is a dictionary, convert it to a string representation
             content_parts = []
             for key, value in content.items():
                 if isinstance(value, list):
-                    content_parts.append(f"## {key.title()}\n" + "\n".join(f"- {item}" for item in value))
+                    content_parts.append(
+                        f"## {key.title()}\n" + "\n".join(f"- {item}" for item in value)
+                    )
                 else:
                     content_parts.append(f"## {key.title()}\n{value}")
             content = "\n\n".join(content_parts)
         elif not isinstance(content, str):
             # Convert non-string, non-dict content to string
             content = str(content)
-        
+
         if not content.strip():
             return sections
 
@@ -433,13 +437,13 @@ class TokenOptimizer:
             for match in matches:
                 start, end = match.span()
                 section_content = match.group(0)
-                
+
                 # Check if this range overlaps with already covered content
                 overlaps = any(
-                    not (end <= r_start or start >= r_end) 
+                    not (end <= r_start or start >= r_end)
                     for r_start, r_end in covered_ranges
                 )
-                
+
                 if not overlaps:
                     sections.append(
                         StandardSection(
@@ -447,7 +451,9 @@ class TokenOptimizer:
                             title=section_id.replace("_", " ").title(),
                             content=section_content,
                             priority=priority,
-                            token_count=self.token_counter.count_tokens(section_content),
+                            token_count=self.token_counter.count_tokens(
+                                section_content
+                            ),
                         )
                     )
                     covered_ranges.append((start, end))
@@ -468,13 +474,13 @@ class TokenOptimizer:
             # Sort covered ranges and find gaps
             covered_ranges.sort()
             uncovered_parts = []
-            
+
             # Check content before first range
             if covered_ranges and covered_ranges[0][0] > 0:
-                uncovered_content = content[:covered_ranges[0][0]].strip()
+                uncovered_content = content[: covered_ranges[0][0]].strip()
                 if len(uncovered_content) > 50:  # Only include substantial content
                     uncovered_parts.append(uncovered_content)
-            
+
             # Check gaps between ranges
             for i in range(len(covered_ranges) - 1):
                 gap_start = covered_ranges[i][1]
@@ -482,13 +488,13 @@ class TokenOptimizer:
                 gap_content = content[gap_start:gap_end].strip()
                 if len(gap_content) > 50:  # Only include substantial content
                     uncovered_parts.append(gap_content)
-            
+
             # Check content after last range
             if covered_ranges and covered_ranges[-1][1] < len(content):
-                uncovered_content = content[covered_ranges[-1][1]:].strip()
+                uncovered_content = content[covered_ranges[-1][1] :].strip()
                 if len(uncovered_content) > 50:  # Only include substantial content
                     uncovered_parts.append(uncovered_content)
-            
+
             # Add uncovered content as "other" section if any
             if uncovered_parts:
                 remaining_content = "\n\n".join(uncovered_parts)
@@ -842,14 +848,13 @@ class TokenOptimizer:
         # add a fallback batch with high-priority sections
         if len(loading_plan) == 1 and len(loaded) == len(initial_sections):
             high_priority_sections = [
-                s for s in sections 
-                if s.id not in loaded and s.priority >= 7
+                s for s in sections if s.id not in loaded and s.priority >= 7
             ]
             if high_priority_sections:
                 # Sort by priority and take up to 3 additional sections
                 high_priority_sections.sort(key=lambda s: s.priority, reverse=True)
                 fallback_batch = [
-                    (section.id, section.token_count) 
+                    (section.id, section.token_count)
                     for section in high_priority_sections[:3]
                 ]
                 if fallback_batch:
@@ -975,7 +980,7 @@ class TokenOptimizer:
             format_type.value,
             ",".join(sorted(required_sections)) if required_sections else "all",
         ]
-        
+
         # Include context for CUSTOM format to avoid cache collisions
         if format_type == StandardFormat.CUSTOM and context:
             context_key = []

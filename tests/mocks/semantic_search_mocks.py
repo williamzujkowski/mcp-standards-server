@@ -139,10 +139,6 @@ class MockSentenceTransformer:
 
         return features
 
-    def get_sentence_embedding_dimension(self) -> int:
-        """Get the embedding dimension."""
-        return self.embedding_dim
-
     def tokenize(self, texts: list[str]) -> dict[str, Any]:
         """Mock tokenization."""
         return {

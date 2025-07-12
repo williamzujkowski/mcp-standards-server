@@ -298,13 +298,14 @@ class TestEmbeddingCacheComprehensive:
 
         # Time individual processing
         cache.memory_cache.clear()  # Clear cache for fair comparison
-        start = time.time()
         individual_embeddings = np.vstack([cache.get_embedding(text) for text in texts])
-        individual_time = time.time() - start
 
         # Batch should be more efficient (or at least not significantly slower)
         # With mocked embeddings, batch may not always be faster, so we test for reasonable performance
-        assert batch_embeddings.shape == (100, cache.model.get_sentence_embedding_dimension())
+        assert batch_embeddings.shape == (
+            100,
+            cache.model.get_sentence_embedding_dimension(),
+        )
 
         # In mock scenarios, batch processing might not be faster due to overhead
         # Just ensure batch processing completes successfully

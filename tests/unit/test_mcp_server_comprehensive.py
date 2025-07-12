@@ -51,7 +51,6 @@ Test Structure:
 
 import asyncio
 import json
-import time
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, mock_open, patch
 
@@ -272,7 +271,6 @@ class TestMCPServerRateLimiting:
 
     def test_rate_limit_cleanup(self, server_with_rate_limit):
         """Test that old rate limit entries are cleaned up."""
-        user_key = "test_user"
 
         # Add old entries to rate limit store
         # Note: With async rate limiter, cleanup is handled internally
