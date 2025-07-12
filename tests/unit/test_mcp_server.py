@@ -69,7 +69,7 @@ class TestMCPStandardsServer:
         assert hasattr(server, "auth_manager")
         assert hasattr(server, "privacy_filter")
         assert hasattr(server, "input_validator")
-        assert hasattr(server, "_rate_limit_store")
+        assert hasattr(server, "_async_rate_limiter")
         assert hasattr(server, "metrics")
 
     def test_server_initialization_with_auth_enabled(self, mock_dependencies):

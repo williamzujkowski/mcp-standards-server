@@ -17,7 +17,7 @@ class TestTypeScriptAnalyzer:
     def test_language_properties(self, analyzer):
         """Test language and file extension properties."""
         assert analyzer.language == "typescript"
-        assert analyzer.file_extensions == [".ts", ".tsx"]
+        assert analyzer.file_extensions == [".ts", ".tsx", ".js", ".jsx"]
 
     def test_xss_vulnerabilities(self, analyzer, tmp_path):
         """Test XSS vulnerability detection."""
