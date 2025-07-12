@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-07-11 21:56:17",
+  "results": [
+    {
+      "users": 10,
+      "total_time": 30.166008710861206,
+      "requests": 10,
+      "successful": 0,
+      "success_rate": 0.0,
+      "avg_response_ms": 30164.357805252075,
+      "rps": 0.331498942927757
+    }
+  ]
+}
