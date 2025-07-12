@@ -1,0 +1,14 @@
+{
+  "id": "code-review-best-practices",
+  "title": "Code Review Best Practices",
+  "category": "testing_quality",
+  "version": "1.0.0",
+  "summary": "Test fixture for code-review-best-practices",
+  "rules": [
+    {
+      "id": "code-review-best-practices-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

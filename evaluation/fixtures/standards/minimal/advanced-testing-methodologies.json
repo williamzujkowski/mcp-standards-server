@@ -1,0 +1,14 @@
+{
+  "id": "advanced-testing-methodologies",
+  "title": "Advanced Testing Methodologies",
+  "category": "testing_quality",
+  "version": "1.0.0",
+  "summary": "Test fixture for advanced-testing-methodologies",
+  "rules": [
+    {
+      "id": "advanced-testing-methodologies-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

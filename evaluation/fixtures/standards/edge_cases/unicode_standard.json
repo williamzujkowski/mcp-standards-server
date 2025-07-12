@@ -1,0 +1,11 @@
+{
+  "id": "unicode-standard",
+  "title": "Unicode Test Standard 🚀",
+  "description": "Testing with emojis 😊 and special chars: ñ, ü, 中文, 日本語, 한국어",
+  "rules": [
+    {
+      "id": "unicode-rule",
+      "description": "Check for proper UTF-8 handling: ✓ ✗ ⚠️"
+    }
+  ]
+}

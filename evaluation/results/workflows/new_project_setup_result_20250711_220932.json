@@ -1,0 +1,20 @@
+{
+  "result": {
+    "workflow_name": "new_project_setup",
+    "success": false,
+    "steps_completed": 1,
+    "total_steps": 6,
+    "errors": [
+      "Step get_applicable_standards: 405, message='Attempt to decode JSON with unexpected mimetype: text/plain; charset=utf-8', url='http://localhost:8000/mcp/get_applicable_standards'"
+    ],
+    "execution_time": 0.005695,
+    "timestamp": "2025-07-11T22:09:32.397144"
+  },
+  "context": {
+    "workflow_name": "new_project_setup",
+    "start_time": "2025-07-11T22:09:32.391440",
+    "standards_used": 0,
+    "validations_performed": 0,
+    "artifacts_created": 1
+  }
+}

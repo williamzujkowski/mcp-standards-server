@@ -1,0 +1,35 @@
+{
+  "id": "data_engineering_standards",
+  "title": "Data Engineering Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# DATA_ENGINEERING_STANDARDS\n\nThis is a test fixture representing the DATA_ENGINEERING_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296457",
+    "format": "markdown",
+    "size": 24120
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of DATA_ENGINEERING_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of DATA_ENGINEERING_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement DATA_ENGINEERING_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for DATA_ENGINEERING_STANDARDS",
+      "order": 4
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "project-planning-estimation",
+  "title": "Project Planning Estimation",
+  "category": "documentation_communication",
+  "version": "1.0.0",
+  "summary": "Test fixture for project-planning-estimation",
+  "rules": [
+    {
+      "id": "project-planning-estimation-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "iot-edge-computing",
+  "title": "Iot Edge Computing",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Test fixture for iot-edge-computing",
+  "rules": [
+    {
+      "id": "iot-edge-computing-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

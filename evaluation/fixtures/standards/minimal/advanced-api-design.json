@@ -1,0 +1,14 @@
+{
+  "id": "advanced-api-design",
+  "title": "Advanced Api Design",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Test fixture for advanced-api-design",
+  "rules": [
+    {
+      "id": "advanced-api-design-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

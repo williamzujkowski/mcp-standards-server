@@ -1,0 +1,35 @@
+{
+  "id": "compliance_standards",
+  "title": "Compliance Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# COMPLIANCE_STANDARDS\n\nThis is a test fixture representing the COMPLIANCE_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296280",
+    "format": "markdown",
+    "size": 4540
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of COMPLIANCE_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of COMPLIANCE_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement COMPLIANCE_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for COMPLIANCE_STANDARDS",
+      "order": 4
+    }
+  ]
+}

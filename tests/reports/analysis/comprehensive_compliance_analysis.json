@@ -1,0 +1,577 @@
+{
+  "summary": {
+    "test_results": {
+      "total_tests": 4,
+      "successful_tests": 4,
+      "total_mappings_found": 0
+    },
+    "source_analysis": {
+      "files_with_nist": 23,
+      "total_controls_in_files": 337,
+      "unmatched_files_count": 23
+    },
+    "gap_analysis": {
+      "controls_in_files": 337,
+      "mappings_via_api": 0,
+      "mapping_gap": 337
+    }
+  },
+  "nist_references_in_files": {
+    "IOT_EDGE_COMPUTING_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-6",
+        "AU-12",
+        "AU-2",
+        "CM-2",
+        "CM-8",
+        "IA-2",
+        "IA-4",
+        "RA-3",
+        "RA-5",
+        "SA-3",
+        "SA-8",
+        "SC-12",
+        "SC-13",
+        "SC-7",
+        "SC-8",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "iot-edge-computing-standards"
+    },
+    "TECHNICAL_DEBT_MANAGEMENT_STANDARDS.md": {
+      "controls": [
+        "CM-2",
+        "CM-3",
+        "CM-4",
+        "PM-11",
+        "PM-5",
+        "RA-5",
+        "SA-10",
+        "SA-11",
+        "SA-15",
+        "SA-17",
+        "SA-4",
+        "SA-8",
+        "SI-2",
+        "SI-5"
+      ],
+      "matching_standard_id": null,
+      "file_base": "technical-debt-management-standards"
+    },
+    "AR_VR_DEVELOPMENT_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-6",
+        "AU-12",
+        "AU-2",
+        "CM-2",
+        "CM-8",
+        "IA-2",
+        "IA-4",
+        "RA-3",
+        "RA-5",
+        "SA-3",
+        "SA-8",
+        "SC-7",
+        "SC-8",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "ar-vr-development-standards"
+    },
+    "AI_ML_OPERATIONS_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-6",
+        "AU-12",
+        "AU-2",
+        "CM-2",
+        "CM-8",
+        "IA-2",
+        "IA-4",
+        "RA-3",
+        "RA-5",
+        "SA-3",
+        "SA-8",
+        "SC-7",
+        "SC-8",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "ai-ml-operations-standards"
+    },
+    "TEAM_COLLABORATION_STANDARDS.md": {
+      "controls": [
+        "AC-14",
+        "AC-2",
+        "AC-3",
+        "AT-2",
+        "AT-3",
+        "AU-6",
+        "CM-3",
+        "IA-2",
+        "PL-4",
+        "PM-13",
+        "PS-6",
+        "PS-7",
+        "SA-3",
+        "SA-9"
+      ],
+      "matching_standard_id": null,
+      "file_base": "team-collaboration-standards"
+    },
+    "DEVELOPER_EXPERIENCE_STANDARDS.md": {
+      "controls": [
+        "SA-15",
+        "SA-8",
+        "SC-8",
+        "SI-10",
+        "SI-11"
+      ],
+      "matching_standard_id": null,
+      "file_base": "developer-experience-standards"
+    },
+    "SRE_STANDARDS.md": {
+      "controls": [
+        "CA-7",
+        "CP-10",
+        "CP-2",
+        "PM-14",
+        "PM-30",
+        "RA-3",
+        "RA-5",
+        "SA-11",
+        "SA-15",
+        "SA-8",
+        "SC-5",
+        "SI-2",
+        "SI-4",
+        "SI-6"
+      ],
+      "matching_standard_id": null,
+      "file_base": "sre-standards"
+    },
+    "CODE_REVIEW_STANDARDS.md": {
+      "controls": [
+        "AU-12",
+        "AU-2",
+        "AU-3",
+        "CM-2",
+        "CM-3",
+        "CM-4",
+        "CM-7",
+        "SA-11",
+        "SA-15",
+        "SA-3",
+        "SA-4",
+        "SA-8",
+        "SI-2",
+        "SI-3",
+        "SI-7"
+      ],
+      "matching_standard_id": null,
+      "file_base": "code-review-standards"
+    },
+    "DATA_PRIVACY_COMPLIANCE_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-3",
+        "AC-7",
+        "AU-1",
+        "AU-12",
+        "AU-2",
+        "AU-3",
+        "IA-1",
+        "IA-2",
+        "IA-8",
+        "IP-1",
+        "IP-2",
+        "IP-3",
+        "IP-4",
+        "MP-1",
+        "MP-6",
+        "PE-1",
+        "PL-1",
+        "PL-4",
+        "PL-8",
+        "RA-3",
+        "RA-5",
+        "SA-8",
+        "SC-1",
+        "SC-13",
+        "SC-28",
+        "SC-7",
+        "SC-8",
+        "SI-12"
+      ],
+      "matching_standard_id": null,
+      "file_base": "data-privacy-compliance-standards"
+    },
+    "GAMING_DEVELOPMENT_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-6",
+        "AU-12",
+        "AU-2",
+        "CM-2",
+        "CM-8",
+        "IA-2",
+        "IA-4",
+        "RA-3",
+        "RA-5",
+        "SA-3",
+        "SA-8",
+        "SC-7",
+        "SC-8",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "gaming-development-standards"
+    },
+    "MONITORING_INCIDENT_RESPONSE_STANDARDS.md": {
+      "controls": [
+        "AU-12",
+        "AU-2",
+        "AU-3",
+        "AU-4",
+        "AU-5",
+        "AU-6",
+        "CA-7",
+        "CP-2",
+        "IR-4",
+        "IR-5",
+        "IR-6",
+        "IR-8",
+        "SA-15",
+        "SI-4",
+        "SI-5",
+        "SI-6"
+      ],
+      "matching_standard_id": null,
+      "file_base": "monitoring-incident-response-standards"
+    },
+    "SECURITY_REVIEW_AUDIT_STANDARDS.md": {
+      "controls": [
+        "CA-2",
+        "CA-5",
+        "CA-7",
+        "CA-8",
+        "CM-3",
+        "CM-4",
+        "PM-11",
+        "PM-9",
+        "RA-3",
+        "RA-5",
+        "SA-11",
+        "SA-15",
+        "SA-17",
+        "SA-3",
+        "SA-4",
+        "SA-5",
+        "SA-8",
+        "SC-7",
+        "SI-2",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "security-review-audit-standards"
+    },
+    "PERFORMANCE_OPTIMIZATION_STANDARDS.md": {
+      "controls": [
+        "AU-12",
+        "AU-4",
+        "AU-6",
+        "CP-10",
+        "CP-2",
+        "SA-11",
+        "SA-17",
+        "SA-8",
+        "SC-5",
+        "SC-6",
+        "SI-10",
+        "SI-16",
+        "SI-2",
+        "SI-4",
+        "SI-6"
+      ],
+      "matching_standard_id": null,
+      "file_base": "performance-optimization-standards"
+    },
+    "TECHNICAL_CONTENT_CREATION_STANDARDS.md": {
+      "controls": [
+        "AC-14",
+        "AC-2",
+        "AC-3",
+        "AU-4",
+        "CM-3",
+        "IA-2",
+        "PL-2",
+        "PM-15",
+        "RA-5",
+        "SA-5",
+        "SC-13",
+        "SI-10"
+      ],
+      "matching_standard_id": null,
+      "file_base": "technical-content-creation-standards"
+    },
+    "ADVANCED_ACCESSIBILITY_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-3",
+        "AU-2",
+        "PE-9",
+        "PL-4",
+        "PL-5",
+        "SI-10",
+        "SI-11"
+      ],
+      "matching_standard_id": null,
+      "file_base": "advanced-accessibility-standards"
+    },
+    "ADVANCED_TESTING_STANDARDS.md": {
+      "controls": [
+        "AU-12",
+        "AU-2",
+        "CA-2",
+        "CA-7",
+        "CM-3",
+        "CM-4",
+        "RA-5",
+        "SA-11",
+        "SA-15",
+        "SA-3",
+        "SA-4",
+        "SA-8",
+        "SC-7",
+        "SC-8",
+        "SI-10",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "advanced-testing-standards"
+    },
+    "INTERNATIONALIZATION_LOCALIZATION_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AU-2",
+        "CM-2",
+        "IA-2",
+        "PL-2",
+        "SA-8",
+        "SC-8",
+        "SI-10"
+      ],
+      "matching_standard_id": null,
+      "file_base": "internationalization-localization-standards"
+    },
+    "BUSINESS_CONTINUITY_DISASTER_RECOVERY_STANDARDS.md": {
+      "controls": [
+        "CP-1"
+      ],
+      "matching_standard_id": null,
+      "file_base": "business-continuity-disaster-recovery-standards"
+    },
+    "PROJECT_PLANNING_STANDARDS.md": {
+      "controls": [
+        "CA-2",
+        "CA-5",
+        "CM-2",
+        "CM-9",
+        "PL-2",
+        "PL-7",
+        "PL-8",
+        "PM-10",
+        "PM-11",
+        "PM-9",
+        "RA-3",
+        "RA-5",
+        "SA-15",
+        "SA-17"
+      ],
+      "matching_standard_id": null,
+      "file_base": "project-planning-standards"
+    },
+    "ADVANCED_API_DESIGN_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-6",
+        "AU-12",
+        "AU-2",
+        "CM-2",
+        "CM-8",
+        "IA-2",
+        "IA-4",
+        "RA-3",
+        "RA-5",
+        "SA-3",
+        "SA-8",
+        "SC-12",
+        "SC-13",
+        "SC-7",
+        "SC-8",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "advanced-api-design-standards"
+    },
+    "BLOCKCHAIN_WEB3_STANDARDS.md": {
+      "controls": [
+        "AC-1",
+        "AC-6",
+        "AU-12",
+        "AU-2",
+        "CM-2",
+        "CM-8",
+        "IA-2",
+        "IA-4",
+        "RA-3",
+        "RA-5",
+        "SA-3",
+        "SA-8",
+        "SC-12",
+        "SC-13",
+        "SC-7",
+        "SC-8",
+        "SI-3",
+        "SI-4"
+      ],
+      "matching_standard_id": null,
+      "file_base": "blockchain-web3-standards"
+    },
+    "DOCUMENTATION_WRITING_STANDARDS.md": {
+      "controls": [
+        "AC-14",
+        "AC-2",
+        "AC-3",
+        "CM-3",
+        "CM-4",
+        "CM-8",
+        "CP-9",
+        "IA-2",
+        "PL-2",
+        "PM-15",
+        "SA-17",
+        "SA-5",
+        "SC-8",
+        "SI-12"
+      ],
+      "matching_standard_id": null,
+      "file_base": "documentation-writing-standards"
+    },
+    "DEPLOYMENT_RELEASE_STANDARDS.md": {
+      "controls": [
+        "CM-2",
+        "CM-3",
+        "CM-4",
+        "CM-7",
+        "CM-8",
+        "CP-10",
+        "CP-2",
+        "CP-7",
+        "CP-9",
+        "SA-10",
+        "SA-11",
+        "SC-7",
+        "SC-8",
+        "SI-2",
+        "SI-3",
+        "SI-4",
+        "SI-6",
+        "SI-7"
+      ],
+      "matching_standard_id": null,
+      "file_base": "deployment-release-standards"
+    }
+  },
+  "standards_discovered": [
+    "seo_web_marketing_standards",
+    "project_management_standards",
+    "data_engineering_standards",
+    "toolchain_standards",
+    "legal_compliance_standards",
+    "unified_standards",
+    "cold-start-test-3",
+    "react-18-patterns",
+    "testing_standards",
+    "cold-start-test-0",
+    "compliance_standards",
+    "event_driven_standards",
+    "frontend_mobile_standards",
+    "cold-start-test-1",
+    "cost_optimization_standards",
+    "cold-start-test-2",
+    "github_platform_standards",
+    "cold-start-test-4",
+    "web_design_ux_standards",
+    "typescript-5-guidelines",
+    "content_standards",
+    "devops_platform_standards",
+    "cloud_native_standards",
+    "knowledge_management_standards",
+    "modern_security_standards",
+    "coding_standards",
+    "observability_standards",
+    "model_context_protocol_standards"
+  ],
+  "potential_mappings": [],
+  "test_results": [
+    {
+      "test_case": "Security-related Standards",
+      "standards_tested": [
+        "modern_security_standards"
+      ],
+      "mapping_count": 0,
+      "response_time_ms": 0.01,
+      "success": true
+    },
+    {
+      "test_case": "Privacy-related Standards",
+      "standards_tested": [
+        "data_engineering_standards"
+      ],
+      "mapping_count": 0,
+      "response_time_ms": 0.0,
+      "success": true
+    },
+    {
+      "test_case": "Technology Standards",
+      "standards_tested": [
+        "react-18-patterns",
+        "typescript-5-guidelines"
+      ],
+      "mapping_count": 0,
+      "response_time_ms": 0.0,
+      "success": true
+    },
+    {
+      "test_case": "All Standards Sample",
+      "standards_tested": [
+        "seo_web_marketing_standards",
+        "project_management_standards",
+        "data_engineering_standards",
+        "toolchain_standards",
+        "legal_compliance_standards"
+      ],
+      "mapping_count": 0,
+      "response_time_ms": 0.0,
+      "success": true
+    }
+  ],
+  "recommendations": [
+    "Fix NIST control parsing and metadata synchronization",
+    "Map unmatched files to proper standard IDs",
+    "Implement automated NIST control extraction",
+    "Add validation for NIST metadata population",
+    "Consider expanding NIST coverage for unmapped standards"
+  ]
+}

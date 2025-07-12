@@ -1,0 +1,14 @@
+{
+  "id": "database-design-optimization",
+  "title": "Database Design Optimization",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Test fixture for database-design-optimization",
+  "rules": [
+    {
+      "id": "database-design-optimization-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

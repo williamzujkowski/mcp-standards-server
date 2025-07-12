@@ -1,0 +1,35 @@
+{
+  "id": "seo_web_marketing_standards",
+  "title": "Seo Web Marketing Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# SEO_WEB_MARKETING_STANDARDS\n\nThis is a test fixture representing the SEO_WEB_MARKETING_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.297157",
+    "format": "markdown",
+    "size": 42503
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of SEO_WEB_MARKETING_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of SEO_WEB_MARKETING_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement SEO_WEB_MARKETING_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for SEO_WEB_MARKETING_STANDARDS",
+      "order": 4
+    }
+  ]
+}

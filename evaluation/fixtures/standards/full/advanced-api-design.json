@@ -1,0 +1,140 @@
+{
+  "id": "advanced-api-design",
+  "title": "Advanced Api Design",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Comprehensive test fixture for advanced-api-design",
+  "description": "This is a detailed description of the advanced-api-design standard used for testing MCP functionality.",
+  "tags": [
+    "test",
+    "fixture",
+    "api",
+    "rest",
+    "graphql"
+  ],
+  "metadata": {
+    "created": "2025-01-01T00:00:00Z",
+    "updated": "2025-07-11T21:01:52.292598",
+    "authors": [
+      "Test Generator"
+    ],
+    "reviewers": [
+      "QA Team"
+    ],
+    "status": "active"
+  },
+  "rules": [
+    {
+      "id": "advanced-api-design-rule-1",
+      "name": "Test Rule 1",
+      "description": "Test rule 1 for advanced-api-design",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "advanced-api-design-rule-2",
+      "name": "Test Rule 2",
+      "description": "Test rule 2 for advanced-api-design",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "advanced-api-design-rule-3",
+      "name": "Test Rule 3",
+      "description": "Test rule 3 for advanced-api-design",
+      "severity": "info",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "advanced-api-design-rule-4",
+      "name": "Test Rule 4",
+      "description": "Test rule 4 for advanced-api-design",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "advanced-api-design-rule-5",
+      "name": "Test Rule 5",
+      "description": "Test rule 5 for advanced-api-design",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    }
+  ],
+  "examples": {
+    "good": {
+      "description": "Example of compliant code",
+      "code": "// This code follows advanced-api-design standard\nfunction example() {\n  return 'compliant';\n}"
+    },
+    "bad": {
+      "description": "Example of non-compliant code",
+      "code": "// This code violates advanced-api-design standard\nfunction example() {\n  return 'non-compliant';\n}"
+    }
+  },
+  "references": [
+    {
+      "title": "Official Docs",
+      "url": "https://docs.example.com/advanced-api-design"
+    },
+    {
+      "title": "Best Practices",
+      "url": "https://best.example.com/advanced-api-design"
+    }
+  ],
+  "compliance": {
+    "nist_800_53": [
+      "AC-2"
+    ],
+    "coverage": "minimal"
+  },
+  "tools": []
+}

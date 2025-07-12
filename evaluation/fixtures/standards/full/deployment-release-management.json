@@ -1,0 +1,137 @@
+{
+  "id": "deployment-release-management",
+  "title": "Deployment Release Management",
+  "category": "operations_infrastructure",
+  "version": "1.0.0",
+  "summary": "Comprehensive test fixture for deployment-release-management",
+  "description": "This is a detailed description of the deployment-release-management standard used for testing MCP functionality.",
+  "tags": [
+    "test",
+    "fixture"
+  ],
+  "metadata": {
+    "created": "2025-01-01T00:00:00Z",
+    "updated": "2025-07-11T21:01:52.294918",
+    "authors": [
+      "Test Generator"
+    ],
+    "reviewers": [
+      "QA Team"
+    ],
+    "status": "active"
+  },
+  "rules": [
+    {
+      "id": "deployment-release-management-rule-1",
+      "name": "Test Rule 1",
+      "description": "Test rule 1 for deployment-release-management",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "deployment-release-management-rule-2",
+      "name": "Test Rule 2",
+      "description": "Test rule 2 for deployment-release-management",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "deployment-release-management-rule-3",
+      "name": "Test Rule 3",
+      "description": "Test rule 3 for deployment-release-management",
+      "severity": "info",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "deployment-release-management-rule-4",
+      "name": "Test Rule 4",
+      "description": "Test rule 4 for deployment-release-management",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "deployment-release-management-rule-5",
+      "name": "Test Rule 5",
+      "description": "Test rule 5 for deployment-release-management",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    }
+  ],
+  "examples": {
+    "good": {
+      "description": "Example of compliant code",
+      "code": "// This code follows deployment-release-management standard\nfunction example() {\n  return 'compliant';\n}"
+    },
+    "bad": {
+      "description": "Example of non-compliant code",
+      "code": "// This code violates deployment-release-management standard\nfunction example() {\n  return 'non-compliant';\n}"
+    }
+  },
+  "references": [
+    {
+      "title": "Official Docs",
+      "url": "https://docs.example.com/deployment-release-management"
+    },
+    {
+      "title": "Best Practices",
+      "url": "https://best.example.com/deployment-release-management"
+    }
+  ],
+  "compliance": {
+    "nist_800_53": [
+      "AC-2"
+    ],
+    "coverage": "minimal"
+  },
+  "tools": []
+}

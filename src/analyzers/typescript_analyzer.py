@@ -17,6 +17,7 @@ from .base import (
 
 
 @AnalyzerPlugin.register("typescript")
+@AnalyzerPlugin.register("javascript") 
 class TypeScriptAnalyzer(BaseAnalyzer):
     """Analyzer for TypeScript with focus on type safety and modern patterns."""
 
@@ -26,7 +27,7 @@ class TypeScriptAnalyzer(BaseAnalyzer):
 
     @property
     def file_extensions(self) -> list[str]:
-        return [".ts", ".tsx"]
+        return [".ts", ".tsx", ".js", ".jsx"]
 
     def parse_ast(self, content: str) -> ASTNode:
         """Parse TypeScript source code into AST."""

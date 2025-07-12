@@ -1,0 +1,14 @@
+{
+  "id": "data-privacy-compliance",
+  "title": "Data Privacy Compliance",
+  "category": "security_compliance",
+  "version": "1.0.0",
+  "summary": "Test fixture for data-privacy-compliance",
+  "rules": [
+    {
+      "id": "data-privacy-compliance-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

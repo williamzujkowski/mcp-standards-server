@@ -1,0 +1,140 @@
+{
+  "id": "sustainability-green-computing",
+  "title": "Sustainability Green Computing",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Comprehensive test fixture for sustainability-green-computing",
+  "description": "This is a detailed description of the sustainability-green-computing standard used for testing MCP functionality.",
+  "tags": [
+    "test",
+    "fixture",
+    "machine-learning",
+    "ai",
+    "mlops"
+  ],
+  "metadata": {
+    "created": "2025-01-01T00:00:00Z",
+    "updated": "2025-07-11T21:01:52.292935",
+    "authors": [
+      "Test Generator"
+    ],
+    "reviewers": [
+      "QA Team"
+    ],
+    "status": "active"
+  },
+  "rules": [
+    {
+      "id": "sustainability-green-computing-rule-1",
+      "name": "Test Rule 1",
+      "description": "Test rule 1 for sustainability-green-computing",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "sustainability-green-computing-rule-2",
+      "name": "Test Rule 2",
+      "description": "Test rule 2 for sustainability-green-computing",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "sustainability-green-computing-rule-3",
+      "name": "Test Rule 3",
+      "description": "Test rule 3 for sustainability-green-computing",
+      "severity": "info",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "sustainability-green-computing-rule-4",
+      "name": "Test Rule 4",
+      "description": "Test rule 4 for sustainability-green-computing",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "sustainability-green-computing-rule-5",
+      "name": "Test Rule 5",
+      "description": "Test rule 5 for sustainability-green-computing",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    }
+  ],
+  "examples": {
+    "good": {
+      "description": "Example of compliant code",
+      "code": "// This code follows sustainability-green-computing standard\nfunction example() {\n  return 'compliant';\n}"
+    },
+    "bad": {
+      "description": "Example of non-compliant code",
+      "code": "// This code violates sustainability-green-computing standard\nfunction example() {\n  return 'non-compliant';\n}"
+    }
+  },
+  "references": [
+    {
+      "title": "Official Docs",
+      "url": "https://docs.example.com/sustainability-green-computing"
+    },
+    {
+      "title": "Best Practices",
+      "url": "https://best.example.com/sustainability-green-computing"
+    }
+  ],
+  "compliance": {
+    "nist_800_53": [
+      "AC-2"
+    ],
+    "coverage": "minimal"
+  },
+  "tools": []
+}

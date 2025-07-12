@@ -1,0 +1,14 @@
+{
+  "id": "developer-experience-dx",
+  "title": "Developer Experience Dx",
+  "category": "user_experience",
+  "version": "1.0.0",
+  "summary": "Test fixture for developer-experience-dx",
+  "rules": [
+    {
+      "id": "developer-experience-dx-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

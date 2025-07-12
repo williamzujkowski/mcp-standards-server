@@ -1,0 +1,14 @@
+{
+  "id": "deployment-release-management",
+  "title": "Deployment Release Management",
+  "category": "operations_infrastructure",
+  "version": "1.0.0",
+  "summary": "Test fixture for deployment-release-management",
+  "rules": [
+    {
+      "id": "deployment-release-management-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

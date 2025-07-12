@@ -1,0 +1,20 @@
+{
+  "result": {
+    "workflow_name": "compliance_verification",
+    "success": false,
+    "steps_completed": 1,
+    "total_steps": 6,
+    "errors": [
+      "Step map_standards_to_controls: 405, message='Attempt to decode JSON with unexpected mimetype: text/plain; charset=utf-8', url='http://localhost:8000/mcp/get_compliance_mapping'"
+    ],
+    "execution_time": 0.501725,
+    "timestamp": "2025-07-11T22:09:33.905230"
+  },
+  "context": {
+    "workflow_name": "compliance_verification",
+    "start_time": "2025-07-11T22:09:33.403500",
+    "standards_used": 0,
+    "validations_performed": 0,
+    "artifacts_created": 1
+  }
+}

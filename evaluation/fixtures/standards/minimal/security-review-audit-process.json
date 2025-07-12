@@ -1,0 +1,14 @@
+{
+  "id": "security-review-audit-process",
+  "title": "Security Review Audit Process",
+  "category": "security_compliance",
+  "version": "1.0.0",
+  "summary": "Test fixture for security-review-audit-process",
+  "rules": [
+    {
+      "id": "security-review-audit-process-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

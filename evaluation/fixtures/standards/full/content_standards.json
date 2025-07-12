@@ -1,0 +1,35 @@
+{
+  "id": "content_standards",
+  "title": "Content Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# CONTENT_STANDARDS\n\nThis is a test fixture representing the CONTENT_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296338",
+    "format": "markdown",
+    "size": 43508
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of CONTENT_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of CONTENT_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement CONTENT_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for CONTENT_STANDARDS",
+      "order": 4
+    }
+  ]
+}

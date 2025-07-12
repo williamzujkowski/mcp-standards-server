@@ -1,0 +1,15 @@
+{
+  "id": "circular-standard",
+  "title": "Circular Reference Standard",
+  "extends": [
+    "circular-standard"
+  ],
+  "rules": [
+    {
+      "id": "circular-rule",
+      "depends_on": [
+        "circular-rule"
+      ]
+    }
+  ]
+}

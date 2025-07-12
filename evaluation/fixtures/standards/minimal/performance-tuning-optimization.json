@@ -1,0 +1,14 @@
+{
+  "id": "performance-tuning-optimization",
+  "title": "Performance Tuning Optimization",
+  "category": "testing_quality",
+  "version": "1.0.0",
+  "summary": "Test fixture for performance-tuning-optimization",
+  "rules": [
+    {
+      "id": "performance-tuning-optimization-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

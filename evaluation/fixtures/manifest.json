@@ -1,0 +1,18 @@
+{
+  "generated": "2025-07-11T21:01:52.304087",
+  "total_fixtures": 91,
+  "categories": {
+    "standards": {
+      "minimal": 25,
+      "full": 46,
+      "edge_cases": 4,
+      "corrupted": 1
+    },
+    "code_samples": {
+      "compliant": 6,
+      "non_compliant": 3
+    },
+    "test_projects": 5
+  },
+  "errors": []
+}

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import aiofiles
+
 from .async_semantic_search import AsyncSemanticSearch
 from .models import Requirement, Standard, StandardMetadata
 from .rule_engine import RuleEngine
@@ -111,8 +113,9 @@ class StandardsEngine:
                     continue
 
                 try:
-                    with open(json_file) as f:
-                        data = json.load(f)
+                    async with aiofiles.open(json_file, 'r') as f:
+                        content = await f.read()
+                        data = json.loads(content)
 
                     if isinstance(data, dict):
                         # Check if it's a unified standards file with multiple standards

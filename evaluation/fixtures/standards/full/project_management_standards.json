@@ -1,0 +1,35 @@
+{
+  "id": "project_management_standards",
+  "title": "Project Management Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# PROJECT_MANAGEMENT_STANDARDS\n\nThis is a test fixture representing the PROJECT_MANAGEMENT_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.297102",
+    "format": "markdown",
+    "size": 20563
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of PROJECT_MANAGEMENT_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of PROJECT_MANAGEMENT_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement PROJECT_MANAGEMENT_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for PROJECT_MANAGEMENT_STANDARDS",
+      "order": 4
+    }
+  ]
+}

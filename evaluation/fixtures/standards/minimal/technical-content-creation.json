@@ -1,0 +1,14 @@
+{
+  "id": "technical-content-creation",
+  "title": "Technical Content Creation",
+  "category": "documentation_communication",
+  "version": "1.0.0",
+  "summary": "Test fixture for technical-content-creation",
+  "rules": [
+    {
+      "id": "technical-content-creation-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

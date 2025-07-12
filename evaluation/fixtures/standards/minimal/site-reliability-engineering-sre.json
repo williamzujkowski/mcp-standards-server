@@ -1,0 +1,14 @@
+{
+  "id": "site-reliability-engineering-sre",
+  "title": "Site Reliability Engineering Sre",
+  "category": "operations_infrastructure",
+  "version": "1.0.0",
+  "summary": "Test fixture for site-reliability-engineering-sre",
+  "rules": [
+    {
+      "id": "site-reliability-engineering-sre-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "documentation-writing",
+  "title": "Documentation Writing",
+  "category": "documentation_communication",
+  "version": "1.0.0",
+  "summary": "Test fixture for documentation-writing",
+  "rules": [
+    {
+      "id": "documentation-writing-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

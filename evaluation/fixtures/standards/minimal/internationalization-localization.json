@@ -1,0 +1,14 @@
+{
+  "id": "internationalization-localization",
+  "title": "Internationalization Localization",
+  "category": "user_experience",
+  "version": "1.0.0",
+  "summary": "Test fixture for internationalization-localization",
+  "rules": [
+    {
+      "id": "internationalization-localization-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

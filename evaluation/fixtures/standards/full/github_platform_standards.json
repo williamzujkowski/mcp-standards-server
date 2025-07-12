@@ -1,0 +1,35 @@
+{
+  "id": "github_platform_standards",
+  "title": "Github Platform Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# GITHUB_PLATFORM_STANDARDS\n\nThis is a test fixture representing the GITHUB_PLATFORM_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296697",
+    "format": "markdown",
+    "size": 37382
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of GITHUB_PLATFORM_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of GITHUB_PLATFORM_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement GITHUB_PLATFORM_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for GITHUB_PLATFORM_STANDARDS",
+      "order": 4
+    }
+  ]
+}

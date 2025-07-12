@@ -12,6 +12,8 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
+import aiofiles
+
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -915,8 +917,9 @@ class MCPStandardsServer:
         if standard_path.exists():
             # Record cache hit
             self.metrics.record_cache_access("get_standard_details", True)
-            with open(standard_path) as f:
-                return cast(dict[str, Any], json.load(f))
+            async with aiofiles.open(standard_path, 'r') as f:
+                content = await f.read()
+                return cast(dict[str, Any], json.loads(content))
         else:
             # Record cache miss
             self.metrics.record_cache_access("get_standard_details", False)
@@ -943,8 +946,9 @@ class MCPStandardsServer:
 
         for file_path in cache_dir.glob("*.json"):
             try:
-                with open(file_path) as f:
-                    standard = json.load(f)
+                async with aiofiles.open(file_path, 'r') as f:
+                    content = await f.read()
+                    standard = json.loads(content)
 
                 if category is None or standard.get("category") == category:
                     standards.append(
@@ -1521,8 +1525,9 @@ async def main() -> None:
     config = {}
     config_path = os.environ.get("MCP_CONFIG_PATH", "config.json")
     if os.path.exists(config_path):
-        with open(config_path) as f:
-            config = json.load(f)
+        async with aiofiles.open(config_path, 'r') as f:
+            content = await f.read()
+            config = json.loads(content)
 
     # Create and run server
     server = MCPStandardsServer(config)

@@ -1,0 +1,14 @@
+{
+  "id": "technical-debt-management",
+  "title": "Technical Debt Management",
+  "category": "operations_infrastructure",
+  "version": "1.0.0",
+  "summary": "Test fixture for technical-debt-management",
+  "rules": [
+    {
+      "id": "technical-debt-management-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

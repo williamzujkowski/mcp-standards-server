@@ -1,0 +1,14 @@
+{
+  "id": "team-collaboration-communication",
+  "title": "Team Collaboration Communication",
+  "category": "documentation_communication",
+  "version": "1.0.0",
+  "summary": "Test fixture for team-collaboration-communication",
+  "rules": [
+    {
+      "id": "team-collaboration-communication-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

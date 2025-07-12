@@ -1,0 +1,20 @@
+{
+  "result": {
+    "workflow_name": "team_onboarding",
+    "success": false,
+    "steps_completed": 0,
+    "total_steps": 6,
+    "errors": [
+      "Step list_all_standards: 405, message='Attempt to decode JSON with unexpected mimetype: text/plain; charset=utf-8', url='http://localhost:8000/mcp/list_available_standards'"
+    ],
+    "execution_time": 0.000691,
+    "timestamp": "2025-07-11T22:09:33.403349"
+  },
+  "context": {
+    "workflow_name": "team_onboarding",
+    "start_time": "2025-07-11T22:09:33.402656",
+    "standards_used": 0,
+    "validations_performed": 0,
+    "artifacts_created": 0
+  }
+}

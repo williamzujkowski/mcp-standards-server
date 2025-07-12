@@ -1,0 +1,10 @@
+{
+  "timestamp": 1752272192.2333374,
+  "workflow_steps": {
+    "standards_discovery": {
+      "queries_executed": 5,
+      "total_results": 8,
+      "unique_standards": 6,
+      "standards": [
+        {
+          "standard": 

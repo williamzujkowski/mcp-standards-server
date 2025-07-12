@@ -1,0 +1,35 @@
+{
+  "id": "cloud_native_standards",
+  "title": "Cloud Native Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# CLOUD_NATIVE_STANDARDS\n\nThis is a test fixture representing the CLOUD_NATIVE_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296148",
+    "format": "markdown",
+    "size": 37837
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of CLOUD_NATIVE_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of CLOUD_NATIVE_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement CLOUD_NATIVE_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for CLOUD_NATIVE_STANDARDS",
+      "order": 4
+    }
+  ]
+}

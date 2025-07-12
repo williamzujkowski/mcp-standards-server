@@ -1,0 +1,14 @@
+{
+  "id": "ai-ml-operations-mlops",
+  "title": "Ai Ml Operations Mlops",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Test fixture for ai-ml-operations-mlops",
+  "rules": [
+    {
+      "id": "ai-ml-operations-mlops-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

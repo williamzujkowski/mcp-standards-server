@@ -1,0 +1,14 @@
+{
+  "id": "business-continuity-disaster-recovery",
+  "title": "Business Continuity Disaster Recovery",
+  "category": "security_compliance",
+  "version": "1.0.0",
+  "summary": "Test fixture for business-continuity-disaster-recovery",
+  "rules": [
+    {
+      "id": "business-continuity-disaster-recovery-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

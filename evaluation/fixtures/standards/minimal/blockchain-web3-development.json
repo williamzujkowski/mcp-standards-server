@@ -1,0 +1,14 @@
+{
+  "id": "blockchain-web3-development",
+  "title": "Blockchain Web3 Development",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Test fixture for blockchain-web3-development",
+  "rules": [
+    {
+      "id": "blockchain-web3-development-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "result": {
+    "workflow_name": "performance_optimization",
+    "success": false,
+    "steps_completed": 1,
+    "total_steps": 7,
+    "errors": [
+      "Step search_performance_standards: 405, message='Attempt to decode JSON with unexpected mimetype: text/plain; charset=utf-8', url='http://localhost:8000/mcp/search_standards'"
+    ],
+    "execution_time": 0.501994,
+    "timestamp": "2025-07-11T22:09:33.402446"
+  },
+  "context": {
+    "workflow_name": "performance_optimization",
+    "start_time": "2025-07-11T22:09:32.900447",
+    "standards_used": 0,
+    "validations_performed": 0,
+    "artifacts_created": 1
+  }
+}

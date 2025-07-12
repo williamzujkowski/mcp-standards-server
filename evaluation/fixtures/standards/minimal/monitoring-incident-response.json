@@ -1,0 +1,14 @@
+{
+  "id": "monitoring-incident-response",
+  "title": "Monitoring Incident Response",
+  "category": "operations_infrastructure",
+  "version": "1.0.0",
+  "summary": "Test fixture for monitoring-incident-response",
+  "rules": [
+    {
+      "id": "monitoring-incident-response-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

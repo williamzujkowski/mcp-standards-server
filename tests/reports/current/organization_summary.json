@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-07-11T20:57:13.023066",
+  "summary": {
+    "files_moved": 19,
+    "files_archived": 0,
+    "duplicates_removed": 0,
+    "directories_created": 16,
+    "errors": []
+  },
+  "new_structure": {
+    "reports_dir": "tests/reports",
+    "evaluation_dir": "evaluation",
+    "archive_dir": "archive"
+  }
+}

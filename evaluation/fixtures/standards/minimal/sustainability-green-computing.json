@@ -1,0 +1,14 @@
+{
+  "id": "sustainability-green-computing",
+  "title": "Sustainability Green Computing",
+  "category": "specialty_domain",
+  "version": "1.0.0",
+  "summary": "Test fixture for sustainability-green-computing",
+  "rules": [
+    {
+      "id": "sustainability-green-computing-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

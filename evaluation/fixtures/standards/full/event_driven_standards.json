@@ -1,0 +1,35 @@
+{
+  "id": "event_driven_standards",
+  "title": "Event Driven Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# EVENT_DRIVEN_STANDARDS\n\nThis is a test fixture representing the EVENT_DRIVEN_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296586",
+    "format": "markdown",
+    "size": 23447
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of EVENT_DRIVEN_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of EVENT_DRIVEN_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement EVENT_DRIVEN_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for EVENT_DRIVEN_STANDARDS",
+      "order": 4
+    }
+  ]
+}

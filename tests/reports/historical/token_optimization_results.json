@@ -1,0 +1,1329 @@
+{
+  "format_variants": {
+    "small": {
+      "large": {
+        "auto_format": "full",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 3084,
+            "compression_ratio": 1.0,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 0.0020911693572998047,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 1250,
+            "compression_ratio": 0.4053177691309987,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 0.015232086181640625,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 139,
+            "compression_ratio": 0.045071335927367055,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 0.008610010147094727,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 28,
+            "compression_ratio": 0.009079118028534372,
+            "sections_included": 3,
+            "sections_excluded": 2,
+            "processing_time": 0.0027680397033691406,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "medium": {
+        "auto_format": "condensed",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 3084,
+            "compression_ratio": 1.0,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 1.0251998901367188e-05,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 1250,
+            "compression_ratio": 0.4053177691309987,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 4.291534423828125e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 139,
+            "compression_ratio": 0.045071335927367055,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 2.384185791015625e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 28,
+            "compression_ratio": 0.009079118028534372,
+            "sections_included": 3,
+            "sections_excluded": 2,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "small": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 3084,
+            "compression_ratio": 1.0,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 5.0067901611328125e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 1250,
+            "compression_ratio": 0.4053177691309987,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 2.6226043701171875e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 139,
+            "compression_ratio": 0.045071335927367055,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 1.430511474609375e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 28,
+            "compression_ratio": 0.009079118028534372,
+            "sections_included": 3,
+            "sections_excluded": 2,
+            "processing_time": 1.9073486328125e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "tiny": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 3084,
+            "compression_ratio": 1.0,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 4.5299530029296875e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 1250,
+            "compression_ratio": 0.4053177691309987,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 2.384185791015625e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 139,
+            "compression_ratio": 0.045071335927367055,
+            "sections_included": 5,
+            "sections_excluded": 0,
+            "processing_time": 1.430511474609375e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 3084,
+            "compressed_tokens": 28,
+            "compression_ratio": 0.009079118028534372,
+            "sections_included": 3,
+            "sections_excluded": 2,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      }
+    },
+    "medium": {
+      "large": {
+        "auto_format": "full",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 7694,
+            "compression_ratio": 1.0,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 0.006240129470825195,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 1682,
+            "compression_ratio": 0.2186119053808162,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 0.03305959701538086,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 149,
+            "compression_ratio": 0.019365739537301793,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 0.011293888092041016,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 25,
+            "compression_ratio": 0.0032492851572654014,
+            "sections_included": 3,
+            "sections_excluded": 13,
+            "processing_time": 0.006322383880615234,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "medium": {
+        "auto_format": "reference",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 7694,
+            "compression_ratio": 1.0,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 7.62939453125e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 1682,
+            "compression_ratio": 0.2186119053808162,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 3.337860107421875e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 149,
+            "compression_ratio": 0.019365739537301793,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 25,
+            "compression_ratio": 0.0032492851572654014,
+            "sections_included": 3,
+            "sections_excluded": 13,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "small": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 7694,
+            "compression_ratio": 1.0,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 5.0067901611328125e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 1682,
+            "compression_ratio": 0.2186119053808162,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 2.1457672119140625e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 149,
+            "compression_ratio": 0.019365739537301793,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 2.1457672119140625e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 25,
+            "compression_ratio": 0.0032492851572654014,
+            "sections_included": 3,
+            "sections_excluded": 13,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "tiny": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 7694,
+            "compression_ratio": 1.0,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 4.0531158447265625e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 1682,
+            "compression_ratio": 0.2186119053808162,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 2.1457672119140625e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 149,
+            "compression_ratio": 0.019365739537301793,
+            "sections_included": 16,
+            "sections_excluded": 0,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 7694,
+            "compressed_tokens": 25,
+            "compression_ratio": 0.0032492851572654014,
+            "sections_included": 3,
+            "sections_excluded": 13,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      }
+    },
+    "large": {
+      "large": {
+        "auto_format": "full",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 16794,
+            "compression_ratio": 0.8766508325938299,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 0.0230410099029541,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 2287,
+            "compression_ratio": 0.11938194915696612,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 0.08854937553405762,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 201,
+            "compression_ratio": 0.010492248264342016,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 0.02209019660949707,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 13,
+            "compression_ratio": 0.0006786031215743593,
+            "sections_included": 3,
+            "sections_excluded": 19,
+            "processing_time": 0.01738739013671875,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "medium": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 16794,
+            "compression_ratio": 0.8766508325938299,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 1.3113021850585938e-05,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 2287,
+            "compression_ratio": 0.11938194915696612,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 4.0531158447265625e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 201,
+            "compression_ratio": 0.010492248264342016,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 2.384185791015625e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 13,
+            "compression_ratio": 0.0006786031215743593,
+            "sections_included": 3,
+            "sections_excluded": 19,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "small": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 16794,
+            "compression_ratio": 0.8766508325938299,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 9.059906005859375e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 2287,
+            "compression_ratio": 0.11938194915696612,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 3.5762786865234375e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 201,
+            "compression_ratio": 0.010492248264342016,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 1.9073486328125e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 13,
+            "compression_ratio": 0.0006786031215743593,
+            "sections_included": 3,
+            "sections_excluded": 19,
+            "processing_time": 1.9073486328125e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      },
+      "tiny": {
+        "auto_format": "summary",
+        "formats": {
+          "full": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 16794,
+            "compression_ratio": 0.8766508325938299,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 9.5367431640625e-06,
+            "warnings": []
+          },
+          "condensed": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 2287,
+            "compression_ratio": 0.11938194915696612,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 3.337860107421875e-06,
+            "warnings": []
+          },
+          "reference": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 201,
+            "compression_ratio": 0.010492248264342016,
+            "sections_included": 22,
+            "sections_excluded": 0,
+            "processing_time": 1.9073486328125e-06,
+            "warnings": [
+              "Reference format shows key points only"
+            ]
+          },
+          "summary": {
+            "success": true,
+            "original_tokens": 19157,
+            "compressed_tokens": 13,
+            "compression_ratio": 0.0006786031215743593,
+            "sections_included": 3,
+            "sections_excluded": 19,
+            "processing_time": 1.6689300537109375e-06,
+            "warnings": [
+              "Summary format provides high-level overview only"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "compression_ratios": {
+    "small": {
+      "full": {
+        "original_tokens": 3084,
+        "compressed_tokens": 3084,
+        "compression_ratio": 0.0,
+        "sections_included": [
+          "implementation",
+          "implementation",
+          "best_practices",
+          "testing",
+          "other"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": true,
+          "line_count": 533,
+          "avg_line_length": 25.202626641651033
+        }
+      },
+      "condensed": {
+        "original_tokens": 3084,
+        "compressed_tokens": 1250,
+        "compression_ratio": 0.5946822308690013,
+        "sections_included": [
+          "best_practices",
+          "implementation",
+          "implementation",
+          "testing",
+          "other"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 160,
+          "avg_line_length": 35.34375
+        }
+      },
+      "reference": {
+        "original_tokens": 3084,
+        "compressed_tokens": 139,
+        "compression_ratio": 0.954928664072633,
+        "sections_included": [
+          "implementation",
+          "implementation",
+          "best_practices",
+          "testing",
+          "other"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 12,
+          "avg_line_length": 50.833333333333336
+        }
+      },
+      "summary": {
+        "original_tokens": 3084,
+        "compressed_tokens": 28,
+        "compression_ratio": 0.9909208819714657,
+        "sections_included": [
+          "best_practices",
+          "implementation",
+          "implementation"
+        ],
+        "sections_excluded": [
+          "testing",
+          "other"
+        ],
+        "content_quality": {
+          "has_headers": false,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 3,
+          "avg_line_length": 46.333333333333336
+        }
+      }
+    },
+    "medium": {
+      "full": {
+        "original_tokens": 7694,
+        "compressed_tokens": 7694,
+        "compression_ratio": 0.0,
+        "sections_included": [
+          "implementation",
+          "implementation",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "references",
+          "other"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": true,
+          "line_count": 1113,
+          "avg_line_length": 33.57412398921833
+        }
+      },
+      "condensed": {
+        "original_tokens": 7694,
+        "compressed_tokens": 1682,
+        "compression_ratio": 0.7813880946191838,
+        "sections_included": [
+          "implementation",
+          "implementation",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "other",
+          "references"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 233,
+          "avg_line_length": 30.665236051502145
+        }
+      },
+      "reference": {
+        "original_tokens": 7694,
+        "compressed_tokens": 149,
+        "compression_ratio": 0.9806342604626982,
+        "sections_included": [
+          "implementation",
+          "implementation",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "references",
+          "other"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 25,
+          "avg_line_length": 21.44
+        }
+      },
+      "summary": {
+        "original_tokens": 7694,
+        "compressed_tokens": 25,
+        "compression_ratio": 0.9967507148427346,
+        "sections_included": [
+          "implementation",
+          "implementation",
+          "examples"
+        ],
+        "sections_excluded": [
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "references",
+          "other"
+        ],
+        "content_quality": {
+          "has_headers": false,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 3,
+          "avg_line_length": 42.666666666666664
+        }
+      }
+    },
+    "large": {
+      "full": {
+        "original_tokens": 19157,
+        "compressed_tokens": 16794,
+        "compression_ratio": 0.12334916740617008,
+        "sections_included": [
+          "security",
+          "security",
+          "security",
+          "security",
+          "implementation",
+          "performance",
+          "performance",
+          "performance",
+          "performance",
+          "testing",
+          "testing",
+          "testing",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "other",
+          "references"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": true,
+          "line_count": 2423,
+          "avg_line_length": 28.37144036318613
+        }
+      },
+      "condensed": {
+        "original_tokens": 19157,
+        "compressed_tokens": 2287,
+        "compression_ratio": 0.8806180508430339,
+        "sections_included": [
+          "security",
+          "security",
+          "security",
+          "security",
+          "implementation",
+          "performance",
+          "performance",
+          "performance",
+          "performance",
+          "testing",
+          "testing",
+          "testing",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "other",
+          "references"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 344,
+          "avg_line_length": 29.334302325581394
+        }
+      },
+      "reference": {
+        "original_tokens": 19157,
+        "compressed_tokens": 201,
+        "compression_ratio": 0.989507751735658,
+        "sections_included": [
+          "implementation",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "security",
+          "security",
+          "security",
+          "security",
+          "performance",
+          "performance",
+          "performance",
+          "performance",
+          "testing",
+          "testing",
+          "testing",
+          "references",
+          "other"
+        ],
+        "sections_excluded": [],
+        "content_quality": {
+          "has_headers": true,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 25,
+          "avg_line_length": 32.36
+        }
+      },
+      "summary": {
+        "original_tokens": 19157,
+        "compressed_tokens": 13,
+        "compression_ratio": 0.9993213968784257,
+        "sections_included": [
+          "security",
+          "security",
+          "security"
+        ],
+        "sections_excluded": [
+          "implementation",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "examples",
+          "security",
+          "performance",
+          "performance",
+          "performance",
+          "performance",
+          "testing",
+          "testing",
+          "testing",
+          "references",
+          "other"
+        ],
+        "content_quality": {
+          "has_headers": false,
+          "has_bullets": true,
+          "has_code": false,
+          "line_count": 3,
+          "avg_line_length": 21.0
+        }
+      }
+    }
+  },
+  "progressive_loading": {
+    "Security-focused": {
+      "initial_sections": [
+        "security",
+        "requirements"
+      ],
+      "total_batches": 1,
+      "total_sections": 1,
+      "total_tokens": 56,
+      "batch_analysis": [
+        {
+          "batch_number": 1,
+          "sections": [
+            "security"
+          ],
+          "batch_tokens": 56,
+          "cumulative_tokens": 56,
+          "sections_count": 1
+        }
+      ],
+      "loading_suggestions": [],
+      "efficiency": {
+        "avg_batch_size": 1.0,
+        "avg_tokens_per_batch": 56.0
+      }
+    },
+    "Implementation-focused": {
+      "initial_sections": [
+        "implementation",
+        "examples"
+      ],
+      "total_batches": 2,
+      "total_sections": 5,
+      "total_tokens": 1830,
+      "batch_analysis": [
+        {
+          "batch_number": 1,
+          "sections": [
+            "examples",
+            "implementation"
+          ],
+          "batch_tokens": 1799,
+          "cumulative_tokens": 1799,
+          "sections_count": 2
+        },
+        {
+          "batch_number": 2,
+          "sections": [
+            "security",
+            "security",
+            "security"
+          ],
+          "batch_tokens": 31,
+          "cumulative_tokens": 1830,
+          "sections_count": 3
+        }
+      ],
+      "loading_suggestions": [],
+      "efficiency": {
+        "avg_batch_size": 2.5,
+        "avg_tokens_per_batch": 915.0
+      }
+    },
+    "Performance-focused": {
+      "initial_sections": [
+        "performance",
+        "best_practices"
+      ],
+      "total_batches": 1,
+      "total_sections": 1,
+      "total_tokens": 56,
+      "batch_analysis": [
+        {
+          "batch_number": 1,
+          "sections": [
+            "performance"
+          ],
+          "batch_tokens": 56,
+          "cumulative_tokens": 56,
+          "sections_count": 1
+        }
+      ],
+      "loading_suggestions": [],
+      "efficiency": {
+        "avg_batch_size": 1.0,
+        "avg_tokens_per_batch": 56.0
+      }
+    }
+  },
+  "multi_standard_optimization": {
+    "generous": {
+      "standards": [
+        {
+          "id": "DATABASE_DESIGN_OPTIMIZATION_STANDARDS",
+          "format_used": "full",
+          "original_tokens": 7805,
+          "compressed_tokens": 4176,
+          "compression_ratio": 0.5350416399743754
+        },
+        {
+          "id": "BLOCKCHAIN_WEB3_STANDARDS",
+          "format_used": "condensed",
+          "original_tokens": 10532,
+          "compressed_tokens": 1776,
+          "compression_ratio": 0.168628940372199
+        },
+        {
+          "id": "DOCUMENTATION_WRITING_STANDARDS",
+          "format_used": "condensed",
+          "original_tokens": 11460,
+          "compressed_tokens": 4665,
+          "compression_ratio": 0.40706806282722513
+        },
+        {
+          "id": "SECURITY_REVIEW_AUDIT_STANDARDS",
+          "format_used": "condensed",
+          "original_tokens": 14241,
+          "compressed_tokens": 2212,
+          "compression_ratio": 0.15532617091496384
+        },
+        {
+          "id": "DEPLOYMENT_RELEASE_STANDARDS",
+          "format_used": "condensed",
+          "original_tokens": 14264,
+          "compressed_tokens": 2140,
+          "compression_ratio": 0.1500280426247897
+        }
+      ],
+      "timing": {
+        "total_processing_time": 0.2998929023742676,
+        "avg_time_per_standard": 0.059978580474853514
+      },
+      "token_allocation": {
+        "total_original": 58302,
+        "total_compressed": 14969,
+        "overall_compression": 0.25674933964529517,
+        "budget_utilization": 0.31848936170212766
+      }
+    },
+    "moderate": {
+      "standards": [
+        {
+          "id": "DATABASE_DESIGN_OPTIMIZATION_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 7805,
+          "compressed_tokens": 39,
+          "compression_ratio": 0.004996796925048046
+        },
+        {
+          "id": "BLOCKCHAIN_WEB3_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 10532,
+          "compressed_tokens": 24,
+          "compression_ratio": 0.002278769464489176
+        },
+        {
+          "id": "DOCUMENTATION_WRITING_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 11460,
+          "compressed_tokens": 40,
+          "compression_ratio": 0.0034904013961605585
+        },
+        {
+          "id": "SECURITY_REVIEW_AUDIT_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 14241,
+          "compressed_tokens": 104,
+          "compression_ratio": 0.007302857945369005
+        },
+        {
+          "id": "DEPLOYMENT_RELEASE_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 14264,
+          "compressed_tokens": 40,
+          "compression_ratio": 0.0028042624789680315
+        }
+      ],
+      "timing": {
+        "total_processing_time": 0.10270118713378906,
+        "avg_time_per_standard": 0.020540237426757812
+      },
+      "token_allocation": {
+        "total_original": 58302,
+        "total_compressed": 247,
+        "overall_compression": 0.004236561352955302,
+        "budget_utilization": 0.014529411764705883
+      }
+    },
+    "constrained": {
+      "standards": [
+        {
+          "id": "DATABASE_DESIGN_OPTIMIZATION_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 7805,
+          "compressed_tokens": 39,
+          "compression_ratio": 0.004996796925048046
+        },
+        {
+          "id": "BLOCKCHAIN_WEB3_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 10532,
+          "compressed_tokens": 24,
+          "compression_ratio": 0.002278769464489176
+        },
+        {
+          "id": "DOCUMENTATION_WRITING_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 11460,
+          "compressed_tokens": 40,
+          "compression_ratio": 0.0034904013961605585
+        },
+        {
+          "id": "SECURITY_REVIEW_AUDIT_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 14241,
+          "compressed_tokens": 104,
+          "compression_ratio": 0.007302857945369005
+        },
+        {
+          "id": "DEPLOYMENT_RELEASE_STANDARDS",
+          "format_used": "summary",
+          "original_tokens": 14264,
+          "compressed_tokens": 40,
+          "compression_ratio": 0.0028042624789680315
+        }
+      ],
+      "timing": {
+        "total_processing_time": 0.051044464111328125,
+        "avg_time_per_standard": 0.010208892822265624
+      },
+      "token_allocation": {
+        "total_original": 58302,
+        "total_compressed": 247,
+        "overall_compression": 0.004236561352955302,
+        "budget_utilization": 0.03528571428571429
+      }
+    }
+  },
+  "performance_benchmarks": {
+    "single_standard": {
+      "small": {
+        "full": {
+          "avg_time": 2.2252400716145835e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 2.86102294921875e-06,
+          "tokens_processed": 3084,
+          "tokens_per_second": 1385917878.8571427
+        },
+        "condensed": {
+          "avg_time": 1.5099843343098958e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 3084,
+          "tokens_per_second": 2042405295.1578948
+        },
+        "reference": {
+          "avg_time": 1.430511474609375e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.430511474609375e-06,
+          "tokens_processed": 3084,
+          "tokens_per_second": 2155872256.0
+        },
+        "summary": {
+          "avg_time": 1.3510386149088542e-06,
+          "min_time": 1.1920928955078125e-06,
+          "max_time": 1.430511474609375e-06,
+          "tokens_processed": 3084,
+          "tokens_per_second": 2282688271.0588236
+        }
+      },
+      "medium": {
+        "full": {
+          "avg_time": 1.5099843343098958e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 7694,
+          "tokens_per_second": 5095417101.473684
+        },
+        "condensed": {
+          "avg_time": 1.5894571940104167e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 7694,
+          "tokens_per_second": 4840646246.4
+        },
+        "reference": {
+          "avg_time": 1.5099843343098958e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 7694,
+          "tokens_per_second": 5095417101.473684
+        },
+        "summary": {
+          "avg_time": 1.3510386149088542e-06,
+          "min_time": 1.1920928955078125e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 7694,
+          "tokens_per_second": 5694877936.941176
+        }
+      },
+      "large": {
+        "full": {
+          "avg_time": 1.6689300537109375e-06,
+          "min_time": 1.6689300537109375e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 19157,
+          "tokens_per_second": 11478611675.428572
+        },
+        "condensed": {
+          "avg_time": 1.5099843343098958e-06,
+          "min_time": 1.1920928955078125e-06,
+          "max_time": 1.6689300537109375e-06,
+          "tokens_processed": 19157,
+          "tokens_per_second": 12686886588.63158
+        },
+        "reference": {
+          "avg_time": 1.430511474609375e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.430511474609375e-06,
+          "tokens_processed": 19157,
+          "tokens_per_second": 13391713621.333334
+        },
+        "summary": {
+          "avg_time": 1.5894571940104167e-06,
+          "min_time": 1.430511474609375e-06,
+          "max_time": 1.9073486328125e-06,
+          "tokens_processed": 19157,
+          "tokens_per_second": 12052542259.199999
+        }
+      }
+    },
+    "batch_processing": {
+      "batch_1": {
+        "total_time": 0.035943031311035156,
+        "avg_time_per_standard": 0.035943031311035156,
+        "total_tokens": 984,
+        "throughput": 27376.655894292766
+      },
+      "batch_5": {
+        "total_time": 2.288818359375e-05,
+        "avg_time_per_standard": 4.57763671875e-06,
+        "total_tokens": 11777,
+        "throughput": 514544981.3333333
+      },
+      "batch_10": {
+        "total_time": 1.2159347534179688e-05,
+        "avg_time_per_standard": 1.2159347534179687e-06,
+        "total_tokens": 11777,
+        "throughput": 968555258.9803921
+      }
+    },
+    "cache_performance": {
+      "cache_miss_time": 0.03683638572692871,
+      "cache_hit_time": 1.239776611328125e-05,
+      "speedup_factor": 2971.2115384615386,
+      "cache_efficiency": 99.96634369559168
+    },
+    "memory_usage": {},
+    "compression_stats": {
+      "cache_size": 1,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "average_compression_ratio": 0.2186119053808162,
+      "format_usage": {
+        "condensed": 1
+      }
+    }
+  }
+}

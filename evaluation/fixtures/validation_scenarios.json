@@ -1,0 +1,65 @@
+{
+  "security_validation": {
+    "name": "Security Validation Scenarios",
+    "scenarios": [
+      {
+        "id": "sql_injection",
+        "description": "Test SQL injection detection",
+        "standard": "security-review-audit-process",
+        "test_cases": [
+          {
+            "code": "query = f\"SELECT * FROM users WHERE id = {user_id}\"",
+            "expected": "error",
+            "message": "SQL injection vulnerability"
+          }
+        ]
+      },
+      {
+        "id": "hardcoded_secrets",
+        "description": "Test hardcoded secrets detection",
+        "standard": "security-review-audit-process",
+        "test_cases": [
+          {
+            "code": "API_KEY = 'sk-1234567890abcdef'",
+            "expected": "error",
+            "message": "Hardcoded secret detected"
+          }
+        ]
+      }
+    ]
+  },
+  "performance_validation": {
+    "name": "Performance Validation Scenarios",
+    "scenarios": [
+      {
+        "id": "n_plus_one_query",
+        "description": "Test N+1 query detection",
+        "standard": "performance-tuning-optimization",
+        "test_cases": [
+          {
+            "code": "for user in users:\n    user.posts = db.query(f\"SELECT * FROM posts WHERE user_id = {user.id}\")",
+            "expected": "warning",
+            "message": "N+1 query pattern detected"
+          }
+        ]
+      }
+    ]
+  },
+  "accessibility_validation": {
+    "name": "Accessibility Validation Scenarios",
+    "scenarios": [
+      {
+        "id": "missing_alt_text",
+        "description": "Test missing alt text detection",
+        "standard": "advanced-accessibility",
+        "test_cases": [
+          {
+            "code": "<img src=\"logo.png\" />",
+            "expected": "error",
+            "message": "Missing alt attribute for image"
+          }
+        ]
+      }
+    ]
+  }
+}

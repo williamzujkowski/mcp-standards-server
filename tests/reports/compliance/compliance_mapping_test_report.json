@@ -1,0 +1,136 @@
+{
+  "summary": {
+    "total_tests": 7,
+    "successful_tests": 6,
+    "failed_tests": 1,
+    "success_rate": 85.71428571428571,
+    "total_mappings": 0,
+    "control_families_covered": 0,
+    "standards_with_mappings": 0
+  },
+  "performance": {
+    "average_response_time_ms": 0.0016666666666666668,
+    "min_response_time_ms": 0.0,
+    "max_response_time_ms": 0.01
+  },
+  "coverage": {
+    "control_families": [],
+    "standards_with_mappings": []
+  },
+  "detailed_results": [
+    {
+      "test_case": "Test Case 1 - Security Standards",
+      "args": {
+        "standard_ids": [
+          "security-review-audit-process"
+        ],
+        "framework": "nist-800-53"
+      },
+      "success": true,
+      "response_time_ms": 0.01,
+      "result": {
+        "result": []
+      },
+      "error": null,
+      "mapping_count": 0,
+      "control_families": [],
+      "standards_covered": []
+    },
+    {
+      "test_case": "Test Case 2 - Data Privacy Standards",
+      "args": {
+        "standard_ids": [
+          "data-privacy-compliance"
+        ],
+        "framework": "nist-800-53"
+      },
+      "success": true,
+      "response_time_ms": 0.0,
+      "result": {
+        "result": []
+      },
+      "error": null,
+      "mapping_count": 0,
+      "control_families": [],
+      "standards_covered": []
+    },
+    {
+      "test_case": "Test Case 3 - Multiple Standards",
+      "args": {
+        "standard_ids": [
+          "security-review-audit-process",
+          "data-privacy-compliance",
+          "authentication-authorization"
+        ],
+        "framework": "nist-800-53"
+      },
+      "success": true,
+      "response_time_ms": 0.0,
+      "result": {
+        "result": []
+      },
+      "error": null,
+      "mapping_count": 0,
+      "control_families": [],
+      "standards_covered": []
+    },
+    {
+      "test_case": "Test Case 4 - Technology Standards",
+      "args": {
+        "standard_ids": [
+          "react-18-patterns",
+          "typescript-5-guidelines"
+        ],
+        "framework": "nist-800-53"
+      },
+      "success": true,
+      "response_time_ms": 0.0,
+      "result": {
+        "result": []
+      },
+      "error": null,
+      "mapping_count": 0,
+      "control_families": [],
+      "standards_covered": []
+    },
+    {
+      "test_case": "Test Case 5 - Invalid Framework Test",
+      "args": {
+        "standard_ids": [
+          "security-review-audit-process"
+        ],
+        "framework": "iso-27001"
+      },
+      "success": true,
+      "response_time_ms": 0.0,
+      "result": {
+        "result": []
+      },
+      "error": null,
+      "mapping_count": 0,
+      "control_families": [],
+      "standards_covered": []
+    },
+    {
+      "test_case": "Test Case 6 - Empty Standards List",
+      "args": {
+        "standard_ids": [],
+        "framework": "nist-800-53"
+      },
+      "success": true,
+      "response_time_ms": 0.0,
+      "result": {
+        "result": []
+      },
+      "error": null,
+      "mapping_count": 0,
+      "control_families": [],
+      "standards_covered": []
+    },
+    {
+      "test_case": "All Available Standards",
+      "success": false,
+      "error": "'Standard' object has no attribute 'get'"
+    }
+  ]
+}

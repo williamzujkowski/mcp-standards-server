@@ -1,0 +1,35 @@
+{
+  "id": "coding_standards",
+  "title": "Coding Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# CODING_STANDARDS\n\nThis is a test fixture representing the CODING_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296218",
+    "format": "markdown",
+    "size": 2947
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of CODING_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of CODING_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement CODING_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for CODING_STANDARDS",
+      "order": 4
+    }
+  ]
+}

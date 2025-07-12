@@ -1,0 +1,35 @@
+{
+  "id": "frontend_mobile_standards",
+  "title": "Frontend Mobile Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# FRONTEND_MOBILE_STANDARDS\n\nThis is a test fixture representing the FRONTEND_MOBILE_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.296642",
+    "format": "markdown",
+    "size": 1078
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of FRONTEND_MOBILE_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of FRONTEND_MOBILE_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement FRONTEND_MOBILE_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for FRONTEND_MOBILE_STANDARDS",
+      "order": 4
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "id": "developer-experience-dx",
+  "title": "Developer Experience Dx",
+  "category": "user_experience",
+  "version": "1.0.0",
+  "summary": "Comprehensive test fixture for developer-experience-dx",
+  "description": "This is a detailed description of the developer-experience-dx standard used for testing MCP functionality.",
+  "tags": [
+    "test",
+    "fixture"
+  ],
+  "metadata": {
+    "created": "2025-01-01T00:00:00Z",
+    "updated": "2025-07-11T21:01:52.296025",
+    "authors": [
+      "Test Generator"
+    ],
+    "reviewers": [
+      "QA Team"
+    ],
+    "status": "active"
+  },
+  "rules": [
+    {
+      "id": "developer-experience-dx-rule-1",
+      "name": "Test Rule 1",
+      "description": "Test rule 1 for developer-experience-dx",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "developer-experience-dx-rule-2",
+      "name": "Test Rule 2",
+      "description": "Test rule 2 for developer-experience-dx",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "developer-experience-dx-rule-3",
+      "name": "Test Rule 3",
+      "description": "Test rule 3 for developer-experience-dx",
+      "severity": "info",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "developer-experience-dx-rule-4",
+      "name": "Test Rule 4",
+      "description": "Test rule 4 for developer-experience-dx",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "developer-experience-dx-rule-5",
+      "name": "Test Rule 5",
+      "description": "Test rule 5 for developer-experience-dx",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    }
+  ],
+  "examples": {
+    "good": {
+      "description": "Example of compliant code",
+      "code": "// This code follows developer-experience-dx standard\nfunction example() {\n  return 'compliant';\n}"
+    },
+    "bad": {
+      "description": "Example of non-compliant code",
+      "code": "// This code violates developer-experience-dx standard\nfunction example() {\n  return 'non-compliant';\n}"
+    }
+  },
+  "references": [
+    {
+      "title": "Official Docs",
+      "url": "https://docs.example.com/developer-experience-dx"
+    },
+    {
+      "title": "Best Practices",
+      "url": "https://best.example.com/developer-experience-dx"
+    }
+  ],
+  "compliance": {
+    "nist_800_53": [
+      "AC-2"
+    ],
+    "coverage": "minimal"
+  },
+  "tools": []
+}

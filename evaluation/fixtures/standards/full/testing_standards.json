@@ -1,0 +1,35 @@
+{
+  "id": "testing_standards",
+  "title": "Testing Standards",
+  "source": "github",
+  "repository": "williamzujkowski/standards",
+  "version": "latest",
+  "content": "# TESTING_STANDARDS\n\nThis is a test fixture representing the TESTING_STANDARDS from GitHub.",
+  "metadata": {
+    "sync_date": "2025-07-11T21:01:52.297212",
+    "format": "markdown",
+    "size": 23332
+  },
+  "sections": [
+    {
+      "title": "Overview",
+      "content": "Overview of TESTING_STANDARDS",
+      "order": 1
+    },
+    {
+      "title": "Key Principles",
+      "content": "Core principles of TESTING_STANDARDS",
+      "order": 2
+    },
+    {
+      "title": "Implementation Guide",
+      "content": "How to implement TESTING_STANDARDS",
+      "order": 3
+    },
+    {
+      "title": "Tools and Resources",
+      "content": "Recommended tools for TESTING_STANDARDS",
+      "order": 4
+    }
+  ]
+}

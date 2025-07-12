@@ -1,0 +1,14 @@
+{
+  "id": "advanced-accessibility",
+  "title": "Advanced Accessibility",
+  "category": "user_experience",
+  "version": "1.0.0",
+  "summary": "Test fixture for advanced-accessibility",
+  "rules": [
+    {
+      "id": "advanced-accessibility-rule-1",
+      "description": "Primary rule for testing",
+      "severity": "error"
+    }
+  ]
+}

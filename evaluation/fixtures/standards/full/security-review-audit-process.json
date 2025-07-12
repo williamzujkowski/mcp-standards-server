@@ -1,0 +1,156 @@
+{
+  "id": "security-review-audit-process",
+  "title": "Security Review Audit Process",
+  "category": "security_compliance",
+  "version": "1.0.0",
+  "summary": "Comprehensive test fixture for security-review-audit-process",
+  "description": "This is a detailed description of the security-review-audit-process standard used for testing MCP functionality.",
+  "tags": [
+    "test",
+    "fixture",
+    "security",
+    "compliance",
+    "audit"
+  ],
+  "metadata": {
+    "created": "2025-01-01T00:00:00Z",
+    "updated": "2025-07-11T21:01:52.293717",
+    "authors": [
+      "Test Generator"
+    ],
+    "reviewers": [
+      "QA Team"
+    ],
+    "status": "active"
+  },
+  "rules": [
+    {
+      "id": "security-review-audit-process-rule-1",
+      "name": "Test Rule 1",
+      "description": "Test rule 1 for security-review-audit-process",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "security-review-audit-process-rule-2",
+      "name": "Test Rule 2",
+      "description": "Test rule 2 for security-review-audit-process",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "security-review-audit-process-rule-3",
+      "name": "Test Rule 3",
+      "description": "Test rule 3 for security-review-audit-process",
+      "severity": "info",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "security-review-audit-process-rule-4",
+      "name": "Test Rule 4",
+      "description": "Test rule 4 for security-review-audit-process",
+      "severity": "error",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    },
+    {
+      "id": "security-review-audit-process-rule-5",
+      "name": "Test Rule 5",
+      "description": "Test rule 5 for security-review-audit-process",
+      "severity": "warning",
+      "category": "test",
+      "implementation": {
+        "languages": [
+          "python",
+          "javascript",
+          "go"
+        ],
+        "frameworks": [
+          "any"
+        ]
+      }
+    }
+  ],
+  "examples": {
+    "good": {
+      "description": "Example of compliant code",
+      "code": "// This code follows security-review-audit-process standard\nfunction example() {\n  return 'compliant';\n}"
+    },
+    "bad": {
+      "description": "Example of non-compliant code",
+      "code": "// This code violates security-review-audit-process standard\nfunction example() {\n  return 'non-compliant';\n}"
+    }
+  },
+  "references": [
+    {
+      "title": "Official Docs",
+      "url": "https://docs.example.com/security-review-audit-process"
+    },
+    {
+      "title": "Best Practices",
+      "url": "https://best.example.com/security-review-audit-process"
+    }
+  ],
+  "compliance": {
+    "nist_800_53": [
+      "SC-7",
+      "SC-8",
+      "SC-13",
+      "SI-2",
+      "SI-3",
+      "SI-4"
+    ],
+    "coverage": "partial"
+  },
+  "tools": [
+    {
+      "name": "bandit",
+      "purpose": "Security linting",
+      "language": "python"
+    },
+    {
+      "name": "eslint-plugin-security",
+      "purpose": "Security linting",
+      "language": "javascript"
+    }
+  ]
+}
