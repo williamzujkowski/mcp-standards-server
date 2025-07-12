@@ -78,7 +78,8 @@ jobs:
     
     services:
       redis:
-        image: redis:7.2-alpine
+        # Only run Redis service on Linux runners
+        image: ${{ runner.os == 'Linux' && 'redis:7.2-alpine' || '' }}
         ports:
           - 6379:6379
         options: >-
@@ -123,7 +124,7 @@ jobs:
       - name: Run unit tests
         timeout-minutes: 15
         env:
-          REDIS_URL: redis://localhost:6379
+          REDIS_URL: ${{ runner.os == 'Linux' && 'redis://localhost:6379' || '' }}
           MCP_TEST_MODE: "true"
         run: |
           pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term-missing
