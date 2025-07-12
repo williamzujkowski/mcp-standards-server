@@ -201,7 +201,10 @@ class EmbeddingCache:
         self, model_name: str = "all-MiniLM-L6-v2", cache_dir: Path | None = None
     ):
         self.model = SentenceTransformer(model_name)
-        self.cache_dir = cache_dir or Path.home() / ".mcp_search_cache"
+        if cache_dir is None:
+            self.cache_dir = Path.home() / ".mcp_search_cache"
+        else:
+            self.cache_dir = Path(cache_dir) if isinstance(cache_dir, str) else cache_dir
         self.cache_dir.mkdir(exist_ok=True)
 
         # In-memory cache with TTL
@@ -211,10 +214,11 @@ class EmbeddingCache:
         # Redis cache for distributed systems (optional)
         self.redis_client = None
         try:
-            self.redis_client = redis.Redis(
+            temp_client = redis.Redis(
                 host="localhost", port=6379, decode_responses=False
             )
-            self.redis_client.ping()
+            temp_client.ping()
+            self.redis_client = temp_client
         except Exception:
             logger.info("Redis not available, using file-based cache only")
 
@@ -456,9 +460,12 @@ class SemanticSearch:
         self,
         embedding_model: str = "all-MiniLM-L6-v2",
         enable_analytics: bool = True,
-        cache_dir: Path | None = None,
+        cache_dir: Path | str | None = None,
     ):
         self.preprocessor = QueryPreprocessor()
+        # Convert string to Path if needed
+        if isinstance(cache_dir, str):
+            cache_dir = Path(cache_dir)
         self.embedding_cache = EmbeddingCache(embedding_model, cache_dir)
         self.fuzzy_matcher = FuzzyMatcher()
         self.analytics = SearchAnalytics() if enable_analytics else None
@@ -533,8 +540,13 @@ class SemanticSearch:
         """Perform semantic search with all enhancements."""
         start_time = time.time()
 
+        # Track query attempt in analytics (regardless of success/failure)
+        if self.analytics:
+            self.analytics.query_count += 1
+            self.analytics.popular_queries[query] += 1
+
         # Check result cache
-        cache_key = self._get_result_cache_key(query, top_k, filters)
+        cache_key = self._get_result_cache_key(query, top_k, filters, rerank, use_fuzzy)
         if use_cache and cache_key in self.result_cache:
             cached_time, cached_results = self.result_cache[cache_key]
             if datetime.now() - cached_time < self.result_cache_ttl:
@@ -636,9 +648,7 @@ class SemanticSearch:
             # Update analytics
             if self.analytics:
                 elapsed = time.time() - start_time
-                self.analytics.query_count += 1
                 self.analytics.total_latency += elapsed
-                self.analytics.popular_queries[query] += 1
                 self.analytics.average_results_per_query = (
                     self.analytics.average_results_per_query
                     * (self.analytics.query_count - 1)
@@ -1130,11 +1140,11 @@ class SemanticSearch:
         return highlights
 
     def _get_result_cache_key(
-        self, query: str, top_k: int, filters: dict | None
+        self, query: str, top_k: int, filters: dict | None, rerank: bool = True, use_fuzzy: bool = True
     ) -> str:
         """Generate cache key for results."""
         filter_str = json.dumps(filters, sort_keys=True) if filters else ""
-        return hashlib.sha256(f"{query}:{top_k}:{filter_str}".encode()).hexdigest()
+        return hashlib.sha256(f"{query}:{top_k}:{filter_str}:{rerank}:{use_fuzzy}".encode()).hexdigest()
 
     def get_analytics_report(self) -> dict[str, Any]:
         """Generate analytics report."""
