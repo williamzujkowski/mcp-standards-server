@@ -143,7 +143,54 @@ class MCPStandardsServer:
                 enable_queuing=self.rate_limit_enable_queuing,
             )
             logger.info(f"Async rate limiter initialized with {self.rate_limit_max_requests} requests per {self.rate_limit_window}s")
+        
+        # Index standards in search engine if available
+        if self.search is not None:
+            await self._index_standards_in_search()
 
+    async def _index_standards_in_search(self):
+        """Index all standards in the search engine."""
+        try:
+            # Get all available standards
+            standards_result = await self._list_available_standards(limit=1000)
+            standards_list = standards_result.get("standards", [])
+            
+            if not standards_list:
+                logger.warning("No standards found to index in search")
+                return
+                
+            # Prepare documents for indexing
+            documents = []
+            for std in standards_list:
+                try:
+                    # Get full standard details
+                    details = await self._get_standard_details(std["id"])
+                    
+                    # Create document for indexing (id, content, metadata)
+                    content = f"{details.get('name', std['name'])}\n{details.get('description', '')}"
+                    metadata = {
+                        "category": details.get("category", std.get("category")),
+                        "tags": details.get("tags", std.get("tags", [])),
+                        "id": std["id"],
+                        "name": std["name"],
+                    }
+                    
+                    documents.append((std["id"], content, metadata))
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to prepare {std['id']} for indexing: {e}")
+                    continue
+            
+            # Index documents in batch
+            if documents and hasattr(self.search, 'index_documents_batch'):
+                self.search.index_documents_batch(documents)
+                logger.info(f"Indexed {len(documents)} standards in search engine")
+            else:
+                logger.warning("Search engine does not support batch indexing")
+                
+        except Exception as e:
+            logger.error(f"Failed to index standards in search: {e}")
+    
     async def _cleanup_async_components(self):
         """Clean up async components."""
         if self._async_rate_limiter:
@@ -914,9 +961,11 @@ class MCPStandardsServer:
                 )
 
         return {
-            "standard": standard,
-            "passed": len(violations) == 0,
-            "violations": violations,
+            "validation_results": {
+                "standard": standard,
+                "compliant": len(violations) == 0,
+                "violations": violations,
+            }
         }
 
     async def _search_standards(
@@ -951,10 +1000,26 @@ class MCPStandardsServer:
 
     async def _get_standard_details(self, standard_id: str) -> dict[str, Any]:
         """Get detailed information about a specific standard."""
-        # Load standard from cache or repository
-        standard_path = self.synchronizer.cache_dir / f"{standard_id}.json"
-
-        if standard_path.exists():
+        # Try different case variations for the file
+        cache_dir = self.synchronizer.cache_dir
+        possible_paths = [
+            cache_dir / f"{standard_id}.json",
+            cache_dir / f"{standard_id.upper()}.json",
+            cache_dir / f"{standard_id.lower()}.json",
+        ]
+        
+        # Also check if standard_id needs transformation (e.g., underscores to uppercase)
+        if "_" in standard_id:
+            possible_paths.append(cache_dir / f"{standard_id.replace('_', '-')}.json")
+            possible_paths.append(cache_dir / f"{standard_id.upper().replace('-', '_')}.json")
+        
+        standard_path = None
+        for path in possible_paths:
+            if path.exists():
+                standard_path = path
+                break
+        
+        if standard_path:
             # Record cache hit
             self.metrics.record_cache_access("get_standard_details", True)
             async with aiofiles.open(standard_path, 'r') as f:

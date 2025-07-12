@@ -1,0 +1,158 @@
+{
+  "total_tests": 21,
+  "passed": 21,
+  "failed": 0,
+  "success_rate": 100.0,
+  "function_results": {
+    "get_applicable_standards": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "Web application context",
+          "status": "passed",
+          "standards_count": 2
+        },
+        {
+          "test": "Mobile app context",
+          "status": "passed",
+          "standards_count": 0
+        },
+        {
+          "test": "API service context",
+          "status": "passed",
+          "standards_count": 0
+        }
+      ]
+    },
+    "validate_against_standard": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "JavaScript security validation",
+          "status": "passed",
+          "compliant": true,
+          "violations": 0
+        },
+        {
+          "test": "Python code validation",
+          "status": "passed",
+          "compliant": true,
+          "violations": 0
+        },
+        {
+          "test": "React component validation",
+          "status": "passed",
+          "compliant": true,
+          "violations": 0
+        }
+      ]
+    },
+    "suggest_improvements": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "Improve JavaScript error handling",
+          "status": "passed",
+          "suggestions_count": 0
+        },
+        {
+          "test": "Improve Python function",
+          "status": "passed",
+          "suggestions_count": 0
+        },
+        {
+          "test": "Improve React component",
+          "status": "passed",
+          "suggestions_count": 0
+        }
+      ]
+    },
+    "search_standards": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "Search for security standards",
+          "status": "passed",
+          "results_count": 0
+        },
+        {
+          "test": "Search for React patterns",
+          "status": "passed",
+          "results_count": 0
+        },
+        {
+          "test": "Search for API design",
+          "status": "passed",
+          "results_count": 15
+        }
+      ]
+    },
+    "get_standard_details": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "Get seo_web_marketing_standards",
+          "status": "passed",
+          "has_content": true
+        },
+        {
+          "test": "Get project_management_standards",
+          "status": "passed",
+          "has_content": true
+        },
+        {
+          "test": "Get data_engineering_standards",
+          "status": "passed",
+          "has_content": true
+        }
+      ]
+    },
+    "list_available_standards": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "List all standards",
+          "status": "passed",
+          "count": 31
+        },
+        {
+          "test": "List by category",
+          "status": "passed",
+          "count": 1
+        },
+        {
+          "test": "Limited listing",
+          "status": "passed",
+          "count": 10
+        }
+      ]
+    },
+    "get_compliance_mapping": {
+      "passed": 3,
+      "failed": 0,
+      "details": [
+        {
+          "test": "NIST 800-53 mapping",
+          "status": "passed",
+          "control_count": 0
+        },
+        {
+          "test": "SOC2 mapping",
+          "status": "passed",
+          "control_count": 0
+        },
+        {
+          "test": "ISO 27001 mapping",
+          "status": "passed",
+          "control_count": 0
+        }
+      ]
+    }
+  }
+}
