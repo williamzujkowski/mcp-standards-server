@@ -669,7 +669,7 @@ class MCPStandardsServer:
 
                     if server_instance._async_rate_limiter is None:
                         raise RuntimeError("Rate limiter not initialized")
-                    
+
                     is_allowed, limit_info = (
                         await server_instance._async_rate_limiter.check_rate_limit(
                             user_key
