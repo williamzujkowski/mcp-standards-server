@@ -308,7 +308,9 @@ class BenchmarkSuite:
 
         # Save individual benchmark results
         for name, results in self.results.items():
-            filepath = directory / f"{name.replace(' ', '_')}.json"
+            # Sanitize filename by replacing problematic characters
+            safe_name = self._sanitize_filename(name)
+            filepath = directory / f"{safe_name}.json"
             with open(filepath, "w") as f:
                 json.dump([r.to_dict() for r in results], f, indent=2)
 
@@ -332,3 +334,25 @@ class BenchmarkSuite:
 
         with open(directory / "summary.json", "w") as f:
             json.dump(summary, f, indent=2)
+
+    def _sanitize_filename(self, name: str) -> str:
+        """Sanitize a string to be safe for use as a filename."""
+        import re
+        
+        # Replace spaces with underscores
+        sanitized = name.replace(' ', '_')
+        
+        # Replace forward slashes with dashes
+        sanitized = sanitized.replace('/', '-')
+        
+        # Replace other problematic characters with underscores
+        sanitized = re.sub(r'[<>:"|?*\\]', '_', sanitized)
+        
+        # Remove any leading/trailing dots or spaces
+        sanitized = sanitized.strip('. ')
+        
+        # Ensure it's not empty
+        if not sanitized:
+            sanitized = "unnamed_benchmark"
+            
+        return sanitized

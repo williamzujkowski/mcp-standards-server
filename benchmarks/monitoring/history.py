@@ -11,6 +11,29 @@ from scipy import stats as scipy_stats
 from ..framework import BenchmarkResult
 
 
+def sanitize_filename(name: str) -> str:
+    """Sanitize a string to be safe for use as a filename."""
+    import re
+    
+    # Replace spaces with underscores
+    sanitized = name.replace(' ', '_')
+    
+    # Replace forward slashes with dashes
+    sanitized = sanitized.replace('/', '-')
+    
+    # Replace other problematic characters with underscores
+    sanitized = re.sub(r'[<>:"|?*\\]', '_', sanitized)
+    
+    # Remove any leading/trailing dots or spaces
+    sanitized = sanitized.strip('. ')
+    
+    # Ensure it's not empty
+    if not sanitized:
+        sanitized = "unnamed_benchmark"
+        
+    return sanitized
+
+
 class HistoricalAnalyzer:
     """Analyze historical performance trends."""
 
@@ -32,7 +55,8 @@ class HistoricalAnalyzer:
     def _save_result(self, result: BenchmarkResult):
         """Save result to disk."""
         # Create directory for benchmark
-        benchmark_dir = self.data_dir / result.name.replace(" ", "_")
+        safe_name = sanitize_filename(result.name)
+        benchmark_dir = self.data_dir / safe_name
         benchmark_dir.mkdir(exist_ok=True)
 
         # Save with timestamp
@@ -48,7 +72,8 @@ class HistoricalAnalyzer:
 
         # Load all benchmarks or specific one
         if benchmark_name:
-            benchmark_dirs = [self.data_dir / benchmark_name.replace(" ", "_")]
+            safe_name = sanitize_filename(benchmark_name)
+            benchmark_dirs = [self.data_dir / safe_name]
         else:
             benchmark_dirs = [d for d in self.data_dir.iterdir() if d.is_dir()]
 
@@ -56,7 +81,15 @@ class HistoricalAnalyzer:
             if not benchmark_dir.exists():
                 continue
 
-            benchmark_name = benchmark_dir.name.replace("_", " ")
+            # Try to recover original benchmark name
+            # This is a best-effort reverse mapping
+            benchmark_name_from_dir = benchmark_dir.name.replace("_", " ").replace("-", "/")
+            if benchmark_name:
+                # Use provided name if loading specific benchmark
+                actual_benchmark_name = benchmark_name
+            else:
+                # Use directory-derived name for discovery
+                actual_benchmark_name = benchmark_name_from_dir
             results = []
 
             # Load all result files
@@ -69,7 +102,7 @@ class HistoricalAnalyzer:
                     print(f"Error loading {filepath}: {e}")
 
             if results:
-                self.benchmark_history[benchmark_name] = results
+                self.benchmark_history[actual_benchmark_name] = results
 
     def analyze_trends(
         self, benchmark_name: str, metric: str = "mean_time", days: int = 7

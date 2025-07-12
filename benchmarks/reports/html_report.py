@@ -8,6 +8,36 @@ from typing import Any
 from ..framework import BenchmarkResult
 
 
+def sanitize_html_id(name: str) -> str:
+    """Sanitize a string to be safe for use as an HTML ID."""
+    import re
+    
+    # Replace spaces with dashes
+    sanitized = name.replace(' ', '-')
+    
+    # Replace forward slashes with dashes
+    sanitized = sanitized.replace('/', '-')
+    
+    # Replace other problematic characters with dashes
+    sanitized = re.sub(r'[^a-zA-Z0-9_-]', '-', sanitized)
+    
+    # Remove multiple consecutive dashes
+    sanitized = re.sub(r'-+', '-', sanitized)
+    
+    # Remove leading/trailing dashes
+    sanitized = sanitized.strip('-')
+    
+    # Ensure it starts with a letter or underscore (HTML ID requirement)
+    if sanitized and not sanitized[0].isalpha() and sanitized[0] != '_':
+        sanitized = 'id-' + sanitized
+    
+    # Ensure it's not empty
+    if not sanitized:
+        sanitized = "unnamed-benchmark"
+        
+    return sanitized
+
+
 class HTMLReportGenerator:
     """Generate detailed HTML performance reports."""
 
@@ -204,7 +234,7 @@ class HTMLReportGenerator:
             </div>
 
             <div class="charts">
-                <canvas id="chart-{name.replace(' ', '-')}" width="800" height="400"></canvas>
+                <canvas id="chart-{sanitize_html_id(name)}" width="800" height="400"></canvas>
             </div>
         </section>
         """

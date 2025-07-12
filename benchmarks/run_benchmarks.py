@@ -23,6 +23,29 @@ from benchmarks.memory import (
 from benchmarks.monitoring import AlertSystem, MetricsCollector, PerformanceDashboard
 
 
+def sanitize_filename(name: str) -> str:
+    """Sanitize a string to be safe for use as a filename."""
+    import re
+    
+    # Replace spaces with underscores
+    sanitized = name.replace(' ', '_')
+    
+    # Replace forward slashes with dashes
+    sanitized = sanitized.replace('/', '-')
+    
+    # Replace other problematic characters with underscores
+    sanitized = re.sub(r'[<>:"|?*\\]', '_', sanitized)
+    
+    # Remove any leading/trailing dots or spaces
+    sanitized = sanitized.strip('. ')
+    
+    # Ensure it's not empty
+    if not sanitized:
+        sanitized = "unnamed_benchmark"
+        
+    return sanitized
+
+
 async def run_quick_benchmarks():
     """Run quick benchmarks for CI/CD."""
     print("Running quick benchmarks...")
@@ -100,9 +123,8 @@ async def run_full_benchmarks():
             # Create dashboard
             fig = visualizer.create_dashboard(latest_result)
             if fig:  # Only save if visualization is available
-                fig.savefig(
-                    output_dir / f"{benchmark_name.replace(' ', '_')}_dashboard.png"
-                )
+                safe_name = sanitize_filename(benchmark_name)
+                fig.savefig(output_dir / f"{safe_name}_dashboard.png")
 
     visualizer.close_all()
 
