@@ -204,7 +204,9 @@ class EmbeddingCache:
         if cache_dir is None:
             self.cache_dir = Path.home() / ".mcp_search_cache"
         else:
-            self.cache_dir = Path(cache_dir) if isinstance(cache_dir, str) else cache_dir
+            self.cache_dir = (
+                Path(cache_dir) if isinstance(cache_dir, str) else cache_dir
+            )
         self.cache_dir.mkdir(exist_ok=True)
 
         # In-memory cache with TTL
@@ -1140,11 +1142,18 @@ class SemanticSearch:
         return highlights
 
     def _get_result_cache_key(
-        self, query: str, top_k: int, filters: dict | None, rerank: bool = True, use_fuzzy: bool = True
+        self,
+        query: str,
+        top_k: int,
+        filters: dict | None,
+        rerank: bool = True,
+        use_fuzzy: bool = True,
     ) -> str:
         """Generate cache key for results."""
         filter_str = json.dumps(filters, sort_keys=True) if filters else ""
-        return hashlib.sha256(f"{query}:{top_k}:{filter_str}:{rerank}:{use_fuzzy}".encode()).hexdigest()
+        return hashlib.sha256(
+            f"{query}:{top_k}:{filter_str}:{rerank}:{use_fuzzy}".encode()
+        ).hexdigest()
 
     def get_analytics_report(self) -> dict[str, Any]:
         """Generate analytics report."""
