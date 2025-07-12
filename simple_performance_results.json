@@ -1,0 +1,101 @@
+{
+  "timestamp": "2025-07-11 21:51:53",
+  "basic_endpoints": [
+    {
+      "label": "Health Check",
+      "url": "http://localhost:8000/health",
+      "iterations": 10,
+      "avg_response_ms": 215.09,
+      "min_response_ms": 0.76,
+      "max_response_ms": 2142.58,
+      "std_response_ms": 677.25,
+      "success_rate": 100.0,
+      "errors": 0
+    },
+    {
+      "label": "List All Standards",
+      "url": "http://localhost:8000/api/standards",
+      "iterations": 10,
+      "avg_response_ms": 481.61,
+      "min_response_ms": 431.28,
+      "max_response_ms": 628.48,
+      "std_response_ms": 62.31,
+      "success_rate": 100.0,
+      "errors": 0
+    },
+    {
+      "label": "Server Info",
+      "url": "http://localhost:8000/info",
+      "iterations": 10,
+      "avg_response_ms": 0.61,
+      "min_response_ms": 0.57,
+      "max_response_ms": 0.79,
+      "std_response_ms": 0.07,
+      "success_rate": 100.0,
+      "errors": 0
+    },
+    {
+      "label": "Metrics Endpoint",
+      "url": "http://localhost:8000/metrics",
+      "iterations": 10,
+      "avg_response_ms": 1.15,
+      "min_response_ms": 0.97,
+      "max_response_ms": 1.66,
+      "std_response_ms": 0.19,
+      "success_rate": 100.0,
+      "errors": 0
+    }
+  ],
+  "concurrent_tests": [
+    {
+      "concurrent_users": 1,
+      "total_requests": 1,
+      "successful_requests": 1,
+      "success_rate": 100.0,
+      "total_time_ms": 697.72,
+      "avg_response_ms": 697.63,
+      "min_response_ms": 697.63,
+      "max_response_ms": 697.63,
+      "requests_per_second": 1.43
+    },
+    {
+      "concurrent_users": 5,
+      "total_requests": 5,
+      "successful_requests": 5,
+      "success_rate": 100.0,
+      "total_time_ms": 2202.98,
+      "avg_response_ms": 2179.41,
+      "min_response_ms": 2155.21,
+      "max_response_ms": 2202.37,
+      "requests_per_second": 2.27
+    },
+    {
+      "concurrent_users": 10,
+      "total_requests": 10,
+      "successful_requests": 10,
+      "success_rate": 100.0,
+      "total_time_ms": 4188.33,
+      "avg_response_ms": 4137.81,
+      "min_response_ms": 4081.79,
+      "max_response_ms": 4187.18,
+      "requests_per_second": 2.39
+    },
+    {
+      "concurrent_users": 20,
+      "total_requests": 20,
+      "successful_requests": 20,
+      "success_rate": 100.0,
+      "total_time_ms": 79392.99,
+      "avg_response_ms": 79209.34,
+      "min_response_ms": 79065.21,
+      "max_response_ms": 79391.77,
+      "requests_per_second": 0.25
+    }
+  ],
+  "summary": {
+    "total_tests": 8,
+    "avg_response_time": 174.62,
+    "max_concurrent_users_tested": 20,
+    "overall_success_rate": 100.0
+  }
+}
