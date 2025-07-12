@@ -1,0 +1,185 @@
+{
+  "timestamp": "2025-07-11 22:10:45",
+  "summary": {
+    "total_workflows": 4,
+    "successful_workflows": 4,
+    "total_steps": 15,
+    "completed_steps": 15,
+    "success_rate": 100.0,
+    "total_execution_time": 5.99,
+    "assessment": "\u2705 EXCELLENT - All workflows completed successfully"
+  },
+  "workflows": [
+    {
+      "name": "Developer Getting Started",
+      "success": true,
+      "steps_completed": 4,
+      "total_steps": 4,
+      "execution_time": 3.9,
+      "step_results": [
+        {
+          "step_name": "check_server_health",
+          "url": "http://localhost:8000/health",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2998.61,
+          "content_length": 1758,
+          "error": null
+        },
+        {
+          "step_name": "get_server_info",
+          "url": "http://localhost:8000/info",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 1.72,
+          "content_length": 413,
+          "error": null
+        },
+        {
+          "step_name": "list_all_standards",
+          "url": "http://localhost:8000/api/standards",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 496.93,
+          "content_length": 3733,
+          "error": null
+        },
+        {
+          "step_name": "check_metrics",
+          "url": "http://localhost:8000/metrics",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.17,
+          "content_length": 3107,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "Standards Explorer",
+      "success": true,
+      "steps_completed": 3,
+      "total_steps": 3,
+      "execution_time": 0.8,
+      "step_results": [
+        {
+          "step_name": "browse_standards",
+          "url": "http://localhost:8000/api/standards",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 492.77,
+          "content_length": 3733,
+          "error": null
+        },
+        {
+          "step_name": "health_check",
+          "url": "http://localhost:8000/health",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.64,
+          "content_length": 1758,
+          "error": null
+        },
+        {
+          "step_name": "get_system_status",
+          "url": "http://localhost:8000/status",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 1.47,
+          "content_length": 212,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "System Administrator",
+      "success": true,
+      "steps_completed": 5,
+      "total_steps": 5,
+      "execution_time": 0.51,
+      "step_results": [
+        {
+          "step_name": "system_health_check",
+          "url": "http://localhost:8000/health",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.74,
+          "content_length": 1758,
+          "error": null
+        },
+        {
+          "step_name": "liveness_probe",
+          "url": "http://localhost:8000/health/live",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.1,
+          "content_length": 100,
+          "error": null
+        },
+        {
+          "step_name": "readiness_probe",
+          "url": "http://localhost:8000/health/ready",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.11,
+          "content_length": 542,
+          "error": null
+        },
+        {
+          "step_name": "performance_metrics",
+          "url": "http://localhost:8000/metrics",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.09,
+          "content_length": 3107,
+          "error": null
+        },
+        {
+          "step_name": "service_status",
+          "url": "http://localhost:8000/status",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 1.64,
+          "content_length": 212,
+          "error": null
+        }
+      ]
+    },
+    {
+      "name": "API Integration Test",
+      "success": true,
+      "steps_completed": 3,
+      "total_steps": 3,
+      "execution_time": 0.78,
+      "step_results": [
+        {
+          "step_name": "root_endpoint",
+          "url": "http://localhost:8000/",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 2.55,
+          "content_length": 226,
+          "error": null
+        },
+        {
+          "step_name": "standards_api",
+          "url": "http://localhost:8000/api/standards",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 470.94,
+          "content_length": 3733,
+          "error": null
+        },
+        {
+          "step_name": "info_endpoint",
+          "url": "http://localhost:8000/info",
+          "status": 200,
+          "success": true,
+          "execution_time_ms": 1.28,
+          "content_length": 413,
+          "error": null
+        }
+      ]
+    }
+  ]
+}
