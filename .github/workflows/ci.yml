@@ -63,23 +63,17 @@ jobs:
           fi
           echo "✅ All YAML files are valid"
 
-  test:
-    name: Test Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+  test-linux:
+    name: Test Python ${{ matrix.python-version }} (Linux)
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.12"]
-        exclude:
-          # Only test Windows with Python 3.12 to save CI resources
-          - os: windows-latest
-            python-version: "3.11"
     
     services:
       redis:
-        # Only run Redis service on Linux runners
-        image: ${{ runner.os == 'Linux' && 'redis:7.2-alpine' || '' }}
+        image: redis:7.2-alpine
         ports:
           - 6379:6379
         options: >-
@@ -106,7 +100,6 @@ jobs:
             ${{ runner.os }}-pip-
       
       - name: Install system dependencies (Ubuntu)
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential
@@ -124,13 +117,12 @@ jobs:
       - name: Run unit tests
         timeout-minutes: 15
         env:
-          REDIS_URL: ${{ runner.os == 'Linux' && 'redis://localhost:6379' || '' }}
+          REDIS_URL: redis://localhost:6379
           MCP_TEST_MODE: "true"
         run: |
           pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term-missing
       
       - name: Run integration tests
-        if: matrix.os == 'ubuntu-latest'  # Only run on Ubuntu to save time
         timeout-minutes: 20
         env:
           REDIS_URL: redis://localhost:6379
@@ -139,7 +131,7 @@ jobs:
           pytest tests/integration -v --cov=src --cov-append --cov-report=xml --cov-report=term-missing
       
       - name: Upload coverage reports
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == env.PYTHON_VERSION_DEFAULT
+        if: matrix.python-version == env.PYTHON_VERSION_DEFAULT
         timeout-minutes: 10
         uses: codecov/codecov-action@v4
         with:
@@ -149,10 +141,52 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  test-windows:
+    name: Test Python ${{ matrix.python-version }} (Windows)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]  # Only test Python 3.12 on Windows
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-test-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-test-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+      
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('stopwords')"
+      
+      - name: Run unit tests (without Redis)
+        timeout-minutes: 15
+        env:
+          MCP_TEST_MODE: "true"
+        run: |
+          pytest tests/unit -v --cov=src --cov-report=xml --cov-report=term-missing
+
   test-e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test-linux]
     
     services:
       redis:
@@ -345,14 +379,15 @@ jobs:
   all-checks-pass:
     name: All Checks Pass
     runs-on: ubuntu-latest
-    needs: [lint, test, test-e2e, build, docker, check-standards]
+    needs: [lint, test-linux, test-windows, test-e2e, build, docker, check-standards]
     if: always()
     
     steps:
       - name: Check results
         run: |
           if [ "${{ needs.lint.result }}" != "success" ] || \
-             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.test-linux.result }}" != "success" ] || \
+             [ "${{ needs.test-windows.result }}" != "success" ] || \
              [ "${{ needs.test-e2e.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ] || \
              [ "${{ needs.docker.result }}" != "success" ] || \
