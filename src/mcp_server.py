@@ -30,6 +30,7 @@ from .core.errors import (
     ToolNotFoundError,
     ValidationError,
 )
+from .core.rate_limiter import get_async_rate_limiter
 
 # Import metrics module
 from .core.metrics import get_mcp_metrics
@@ -77,10 +78,11 @@ class MCPStandardsServer:
         self.privacy_filter = get_privacy_filter()
         self.privacy_filter.config = privacy_config
 
-        # Initialize rate limiting (simple in-memory implementation)
-        self._rate_limit_store: dict[str, list[float]] = {}
+        # Initialize async rate limiting with request queuing
         self.rate_limit_window = self.config.get("rate_limit_window", 60)  # seconds
         self.rate_limit_max_requests = self.config.get("rate_limit_max_requests", 100)
+        self.rate_limit_enable_queuing = self.config.get("rate_limit_enable_queuing", True)
+        self._async_rate_limiter: Optional[Any] = None  # Will be initialized in startup
 
         # Initialize components
         # Get data directory
@@ -131,6 +133,23 @@ class MCPStandardsServer:
 
         # Register tools
         self._register_tools()
+
+    async def _initialize_async_components(self):
+        """Initialize async components that require async context."""
+        if self._async_rate_limiter is None:
+            self._async_rate_limiter = await get_async_rate_limiter(
+                max_requests=self.rate_limit_max_requests,
+                window_seconds=self.rate_limit_window,
+                enable_queuing=self.rate_limit_enable_queuing,
+            )
+            logger.info(f"Async rate limiter initialized with {self.rate_limit_max_requests} requests per {self.rate_limit_window}s")
+
+    async def _cleanup_async_components(self):
+        """Clean up async components."""
+        if self._async_rate_limiter:
+            await self._async_rate_limiter.cleanup()
+            self._async_rate_limiter = None
+            logger.info("Async rate limiter cleaned up")
 
     def _register_tools(self) -> None:
         """Register all MCP tools."""
@@ -591,17 +610,38 @@ class MCPStandardsServer:
                         if not is_valid:
                             raise AuthenticationError(error_msg or "Invalid API key")
 
-                    # Check rate limits
+                    # Check rate limits using async rate limiter
                     user_key = credential if credential else "anonymous"
-                    if not server_instance._check_rate_limit(user_key):
+                    
+                    # Initialize async rate limiter if needed
+                    if server_instance._async_rate_limiter is None:
+                        await server_instance._initialize_async_components()
+                    
+                    is_allowed, limit_info = await server_instance._async_rate_limiter.check_rate_limit(user_key)
+                    if not is_allowed:
                         server_instance.metrics.record_rate_limit_hit(
                             user_key, "standard"
                         )
-                        raise RateLimitError(
-                            limit=server_instance.rate_limit_max_requests,
-                            window=f"{server_instance.rate_limit_window}s",
-                            retry_after=server_instance.rate_limit_window,
-                        )
+                        
+                        # Handle different types of rate limit responses
+                        if limit_info and limit_info.get("error") == "circuit_breaker_open":
+                            raise RateLimitError(
+                                limit=server_instance.rate_limit_max_requests,
+                                window=f"{server_instance.rate_limit_window}s",
+                                retry_after=limit_info.get("retry_after", 60),
+                                message="Circuit breaker open - too many failures",
+                            )
+                        elif limit_info and limit_info.get("queued"):
+                            # Request was queued - this is actually success
+                            logger.info(f"Request queued for {user_key}, estimated wait: {limit_info.get('estimated_wait', 0):.1f}s")
+                        else:
+                            # Standard rate limit exceeded
+                            retry_after = limit_info.get("retry_after", server_instance.rate_limit_window) if limit_info else server_instance.rate_limit_window
+                            raise RateLimitError(
+                                limit=server_instance.rate_limit_max_requests,
+                                window=f"{server_instance.rate_limit_window}s",
+                                retry_after=retry_after,
+                            )
 
                 # Validate tool exists
                 if name not in [
@@ -1469,30 +1509,12 @@ class MCPStandardsServer:
         """Get rate limiter for backwards compatibility."""
         return self
 
-    def _check_rate_limit(self, user_key: str) -> bool:
-        """Check if user is within rate limits."""
-        now = time.time()
-
-        # Clean up old entries
-        if user_key in self._rate_limit_store:
-            self._rate_limit_store[user_key] = [
-                timestamp
-                for timestamp in self._rate_limit_store[user_key]
-                if now - timestamp < self.rate_limit_window
-            ]
-        else:
-            self._rate_limit_store[user_key] = []
-
-        # Check if limit exceeded
-        if len(self._rate_limit_store[user_key]) >= self.rate_limit_max_requests:
-            return False
-
-        # Add current request
-        self._rate_limit_store[user_key].append(now)
-        return True
 
     async def run(self) -> None:
         """Run the MCP server."""
+        # Initialize async components
+        await self._initialize_async_components()
+        
         # Start metrics export task
         await self.metrics.collector.start_export_task()
 
@@ -1505,6 +1527,9 @@ class MCPStandardsServer:
                 init_options = self.server.create_initialization_options()
                 await self.server.run(read_stream, write_stream, init_options)
         finally:
+            # Clean up async components
+            await self._cleanup_async_components()
+            
             # Stop metrics export task
             await self.metrics.collector.stop_export_task()
 
