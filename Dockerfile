@@ -17,11 +17,13 @@ RUN apt-get update && apt-get install -y \
 # Create and set the working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy pyproject.toml and minimal files for dependency installation
+COPY pyproject.toml .
+COPY README.md .
+COPY src/ ./src/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies using pyproject.toml
+RUN pip install --no-cache-dir .
 
 # Production stage
 FROM python:3.12-slim as production
