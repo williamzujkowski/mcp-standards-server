@@ -1,6 +1,7 @@
 """Visualization tools for benchmark results."""
 
 from pathlib import Path
+from typing import Union, Optional
 
 from .base import BenchmarkResult
 
@@ -32,7 +33,7 @@ class BenchmarkVisualizer:
 
         if style in plt.style.available:
             plt.style.use(style)
-        self.figures: list[Figure] = []
+        self.figures: list["Figure"] = []
 
     def _check_matplotlib_available(self) -> bool:
         """Check if matplotlib is available and warn if not."""
@@ -46,7 +47,7 @@ class BenchmarkVisualizer:
         result: BenchmarkResult,
         bins: int = 50,
         figsize: tuple[int, int] = (10, 6),
-    ) -> Figure | None:
+    ) -> Optional["Figure"]:
         """Plot timing distribution histogram."""
         if not self._check_matplotlib_available():
             return None
@@ -94,7 +95,7 @@ class BenchmarkVisualizer:
 
     def plot_memory_usage(
         self, result: BenchmarkResult, figsize: tuple[int, int] = (12, 6)
-    ) -> Figure | None:
+    ) -> Optional["Figure"]:
         """Plot memory usage over time."""
         if not self._check_matplotlib_available():
             return None
@@ -147,7 +148,7 @@ class BenchmarkVisualizer:
         results: list[BenchmarkResult],
         metric: str = "mean_time",
         figsize: tuple[int, int] = (12, 8),
-    ) -> Figure | None:
+    ) -> Optional["Figure"]:
         """Compare multiple benchmark results."""
         if not self._check_matplotlib_available():
             return None
@@ -246,7 +247,7 @@ class BenchmarkVisualizer:
         results: list[BenchmarkResult],
         metrics: list[str] = None,
         figsize: tuple[int, int] = (14, 10),
-    ) -> Figure | None:
+    ) -> Optional["Figure"]:
         """Plot performance trends over time."""
         if not self._check_matplotlib_available():
             return None
@@ -310,7 +311,7 @@ class BenchmarkVisualizer:
         result: BenchmarkResult,
         percentiles: list[int] = None,
         figsize: tuple[int, int] = (10, 6),
-    ) -> Figure | None:
+    ) -> Optional["Figure"]:
         """Plot latency percentiles."""
         if not self._check_matplotlib_available():
             return None
@@ -362,7 +363,7 @@ class BenchmarkVisualizer:
         results: BenchmarkResult | list[BenchmarkResult],
         output_path: Path | None = None,
         figsize: tuple[int, int] = (16, 12),
-    ) -> Figure | None:
+    ) -> Optional["Figure"]:
         """Create a comprehensive dashboard with multiple plots."""
         if not self._check_matplotlib_available():
             return None
