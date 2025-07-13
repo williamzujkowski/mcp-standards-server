@@ -268,7 +268,6 @@ class StandardsHandler:
 
                 # Validate code using analyzer infrastructure
                 try:
-                    import tempfile
                     from pathlib import Path
 
                     from ...analyzers.base import AnalyzerPlugin
