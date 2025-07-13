@@ -80,17 +80,18 @@ jobs:
 
     - name: Run E2E tests with coverage
       run: |
-        # Clear any existing coverage data
+        set -e
+        echo "Clearing any existing coverage data..."
         coverage erase || true
         rm -f .coverage* 2>/dev/null || true
         
-        # Run tests with coverage in subprocess mode
+        echo "Running E2E tests with coverage..."
         coverage run --parallel-mode -m pytest tests/e2e/ --timeout=300 -v
         
-        # Combine coverage data from parallel runs
+        echo "Combining coverage data..."
         coverage combine
         
-        # Generate reports (E2E tests focus on integration, not full code coverage)
+        echo "Generating coverage reports..."
         coverage report --fail-under=5
         coverage xml
         coverage html
