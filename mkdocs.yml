@@ -5,11 +5,11 @@ repo_url: https://github.com/williamzujkowski/mcp-standards-server
 repo_name: williamzujkowski/mcp-standards-server
 
 nav:
-  - Home: index.md
-  - Installation: guides/installation.md
+  - Home: site/index.md
+  - Installation: site/guides/installation.md
   - API Reference:
-      - MCP Tools: api/mcp-tools.md
-  - Reference: reference/
+      - MCP Tools: site/api/mcp-tools.md
+  - Reference: site/reference/
 
 theme:
   name: material
