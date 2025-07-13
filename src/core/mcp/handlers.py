@@ -401,7 +401,11 @@ class StandardsHandler:
                     }
 
                     # Clean up temporary file if created
-                    if code and file_path and file_path.startswith(tempfile.gettempdir()):
+                    if (
+                        code
+                        and file_path
+                        and file_path.startswith(tempfile.gettempdir())
+                    ):
                         try:
                             Path(file_path).unlink()
                         except OSError:
