@@ -70,6 +70,9 @@ jobs:
           REDIS_URL: redis://localhost:6379
           MCP_TEST_MODE: "true"
         run: |
+          # Create benchmark results directory
+          mkdir -p benchmark-results
+          
           # Run all benchmarks
           python -m benchmarks.run_benchmarks --output benchmark-results
           

@@ -17,13 +17,18 @@ RUN apt-get update && apt-get install -y \
 # Create and set the working directory
 WORKDIR /app
 
-# Copy pyproject.toml and minimal files for dependency installation
+# Copy only files needed for dependency installation first (better caching)
 COPY pyproject.toml .
 COPY README.md .
-COPY src/ ./src/
 
-# Install Python dependencies using pyproject.toml
+# Create minimal src structure for editable install
+RUN mkdir -p src && touch src/__init__.py
+
+# Install Python dependencies using pyproject.toml (this layer will be cached)
 RUN pip install --no-cache-dir .
+
+# Now copy the actual source code (this will invalidate cache less frequently)
+COPY src/ ./src/
 
 # Production stage
 FROM python:3.12-slim as production

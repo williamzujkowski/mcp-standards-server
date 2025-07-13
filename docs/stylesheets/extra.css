@@ -1,0 +1,22 @@
+/* Extra styles for MCP Standards Server documentation */
+
+/* Custom styling for the documentation */
+.md-content {
+    max-width: none;
+}
+
+/* Code blocks styling */
+.highlight {
+    margin: 1em 0;
+}
+
+/* Table styling */
+.md-typeset table:not([class]) {
+    border: 1px solid var(--md-default-fg-color--lighter);
+    border-radius: 0.1rem;
+}
+
+/* Custom admonition styling */
+.md-typeset .admonition {
+    margin: 1.5625em 0;
+}

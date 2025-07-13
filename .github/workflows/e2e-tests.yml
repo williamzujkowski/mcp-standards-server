@@ -40,6 +40,7 @@ jobs:
   e2e-tests:
     name: End-to-End Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # Prevent runaway tests
     strategy:
       matrix:
         python-version: ['3.11', '3.12']
@@ -79,6 +80,8 @@ jobs:
         redis-cli ping
 
     - name: Run E2E tests with coverage
+      env:
+        CI: "true"  # Mark as CI environment for test skipping
       run: |
         set -e
         echo "Clearing any existing coverage data..."

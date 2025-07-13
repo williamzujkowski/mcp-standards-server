@@ -9,6 +9,8 @@ test-samples/
 # Benchmark and test files that may contain mock vulnerabilities
 benchmarks/
 tests/
+evaluation/fixtures/
+evaluation/fixtures/code_samples/
 
 # Generated or third-party files
 node_modules/
