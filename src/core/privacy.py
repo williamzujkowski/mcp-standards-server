@@ -24,8 +24,8 @@ class PIIType(str, Enum):
     IP_ADDRESS = "ip_address"
     AWS_KEY = "aws_key"
     API_KEY = "api_key"
-    JWT_TOKEN = "jwt_token"
-    PASSWORD = "password"
+    JWT_TOKEN = "jwt_token"  # nosec B105
+    PASSWORD = "password"  # nosec B105
     PERSON_NAME = "person_name"
     ADDRESS = "address"
     DATE_OF_BIRTH = "date_of_birth"

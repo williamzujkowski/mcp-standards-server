@@ -1,6 +1,7 @@
 """MCP handlers for standards operations."""
 
 import logging
+import tempfile
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -401,7 +402,7 @@ class StandardsHandler:
                     }
 
                     # Clean up temporary file if created
-                    if code and file_path and file_path.startswith("/tmp"):
+                    if code and file_path and file_path.startswith(tempfile.gettempdir()):
                         try:
                             Path(file_path).unlink()
                         except OSError:

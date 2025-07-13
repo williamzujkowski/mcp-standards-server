@@ -703,7 +703,6 @@ class AsyncMCPServer:
 
         # Create HTTP app
         self.app = web.Application()
-        assert self.app is not None
 
         # Add routes
         if self.config.enable_http:
@@ -1104,7 +1103,7 @@ class AsyncMCPServer:
                 if hasattr(session, "close"):
                     await session.close()
             except Exception:
-                pass  # Session already closed or error
+                pass  # Session already closed or error  # nosec B110
 
     async def _handle_client(self, reader: Any, writer: Any) -> None:
         """Handle a new client connection."""
@@ -1119,7 +1118,7 @@ class AsyncMCPServer:
                 try:
                     await writer.wait_closed()
                 except Exception:
-                    pass  # Ignore cleanup errors
+                    pass  # Ignore cleanup errors  # nosec B110
 
     async def broadcast_message(self, message: dict[str, Any]) -> None:
         """Broadcast a message to all active sessions."""

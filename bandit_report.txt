@@ -1,0 +1,266 @@
+Working... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:01
+Run started:2025-07-13 00:40:36.223177
+
+Test results:
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'AUTH_002'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b105_hardcoded_password_string.html
+   Location: src/core/errors.py:23:25
+22	    AUTH_REQUIRED = "AUTH_001"
+23	    AUTH_INVALID_TOKEN = "AUTH_002"
+24	    AUTH_EXPIRED_TOKEN = "AUTH_003"
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'AUTH_003'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b105_hardcoded_password_string.html
+   Location: src/core/errors.py:24:25
+23	    AUTH_INVALID_TOKEN = "AUTH_002"
+24	    AUTH_EXPIRED_TOKEN = "AUTH_003"
+25	    AUTH_INVALID_API_KEY = "AUTH_004"
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/errors.py:288:12
+287	                return format_validation_errors(exc.errors())
+288	            except Exception:
+289	                pass
+290	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b101_assert_used.html
+   Location: src/core/mcp/async_server.py:706:8
+705	        self.app = web.Application()
+706	        assert self.app is not None
+707	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/mcp/async_server.py:1106:12
+1105	                    await session.close()
+1106	            except Exception:
+1107	                pass  # Session already closed or error
+1108	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/mcp/async_server.py:1121:16
+1120	                    await writer.wait_closed()
+1121	                except Exception:
+1122	                    pass  # Ignore cleanup errors
+1123	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/core/mcp/handlers.py:404:67
+403	                    # Clean up temporary file if created
+404	                    if code and file_path and file_path.startswith("/tmp"):
+405	                        try:
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'jwt_token'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b105_hardcoded_password_string.html
+   Location: src/core/privacy.py:27:16
+26	    API_KEY = "api_key"
+27	    JWT_TOKEN = "jwt_token"
+28	    PASSWORD = "password"
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'password'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b105_hardcoded_password_string.html
+   Location: src/core/privacy.py:28:15
+27	    JWT_TOKEN = "jwt_token"
+28	    PASSWORD = "password"
+29	    PERSON_NAME = "person_name"
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/blacklists/blacklist_calls.html#b311-random
+   Location: src/core/retry.py:87:21
+86	            jitter_range = delay * self.config.jitter_factor
+87	            jitter = random.uniform(-jitter_range, jitter_range)
+88	            delay += jitter
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/analytics.py:818:12
+817	                    maintenance = max(0.5, 1 - (days_old - 365) / 1000)
+818	            except Exception:
+819	                pass
+820	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b101_assert_used.html
+   Location: src/core/standards/async_semantic_search.py:397:8
+396	        self.vector_cache = VectorIndexCache(vector_config, self.redis_cache)
+397	        assert self.vector_cache is not None
+398	        await self.vector_cache.start()
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/search_integration.py:341:12
+340	                    return False
+341	            except Exception:
+342	                pass
+343	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:43:0
+42	    nltk.download("wordnet", quiet=True)
+43	except Exception:
+44	    pass
+45	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:271:16
+270	                        return self._deserialize_embedding(cached)
+271	                except Exception:
+272	                    pass
+273	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:279:16
+278	                    return cast(np.ndarray, np.load(cache_file))
+279	                except Exception:
+280	                    pass
+281	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:357:12
+356	                    return self._deserialize_embedding(cached)
+357	            except Exception:
+358	                pass
+359	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:365:12
+364	                return cast(np.ndarray, np.load(cache_file))
+365	            except Exception:
+366	                pass
+367	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:383:12
+382	                )
+383	            except Exception:
+384	                pass
+385	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:390:8
+389	            np.save(cache_file, embedding)
+390	        except Exception:
+391	            pass
+392	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:401:12
+400	                    self.redis_client.delete(key)
+401	            except Exception:
+402	                pass
+403	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/core/standards/semantic_search.py:409:16
+408	                    cache_file.unlink()
+409	                except Exception:
+410	                    pass
+411	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b101_assert_used.html
+   Location: src/core/standards/vector_index_cache.py:188:8
+187	        # After the conditional above, pca_model is guaranteed to be not None
+188	        assert self.pca_model is not None
+189	        return cast(np.ndarray, self.pca_model.transform(vectors))
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 24829
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 22
+		Medium: 1
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 5
+		High: 18
+Files skipped (0):

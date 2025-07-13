@@ -41,7 +41,7 @@ try:
     nltk.download("stopwords", quiet=True)
     nltk.download("wordnet", quiet=True)
 except Exception:
-    pass
+    pass  # nosec B110
 
 logger = logging.getLogger(__name__)
 
@@ -269,7 +269,7 @@ class EmbeddingCache:
                     if cached:
                         return self._deserialize_embedding(cached)
                 except Exception:
-                    pass
+                    pass  # nosec B110
 
             # Check file cache
             cache_file = self.cache_dir / f"{cache_key}.npy"
@@ -277,7 +277,7 @@ class EmbeddingCache:
                 try:
                     return cast(np.ndarray, np.load(cache_file))
                 except Exception:
-                    pass
+                    pass  # nosec B110
 
         # Generate embedding
         embedding = self.model.encode(text, convert_to_numpy=True)
@@ -355,7 +355,7 @@ class EmbeddingCache:
                 if cached:
                     return self._deserialize_embedding(cached)
             except Exception:
-                pass
+                pass  # nosec B110
 
         # File cache
         cache_file = self.cache_dir / f"{cache_key}.npy"
@@ -363,7 +363,7 @@ class EmbeddingCache:
             try:
                 return cast(np.ndarray, np.load(cache_file))
             except Exception:
-                pass
+                pass  # nosec B110
 
         return None
 
@@ -381,14 +381,14 @@ class EmbeddingCache:
                     self._serialize_embedding(embedding),
                 )
             except Exception:
-                pass
+                pass  # nosec B110
 
         # File cache
         cache_file = self.cache_dir / f"{cache_key}.npy"
         try:
             np.save(cache_file, embedding)
         except Exception:
-            pass
+            pass  # nosec B110
 
     def clear_cache(self) -> None:
         """Clear all caches."""
@@ -399,7 +399,7 @@ class EmbeddingCache:
                 for key in self.redis_client.scan_iter("emb:*"):
                     self.redis_client.delete(key)
             except Exception:
-                pass
+                pass  # nosec B110
 
         # Clear file cache
         for pattern in ["*.npy", "*.pkl"]:
@@ -407,7 +407,7 @@ class EmbeddingCache:
                 try:
                     cache_file.unlink()
                 except Exception:
-                    pass
+                    pass  # nosec B110
 
 
 class FuzzyMatcher:

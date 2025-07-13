@@ -84,7 +84,7 @@ class RetryManager:
         # Add jitter if enabled
         if self.config.jitter:
             jitter_range = delay * self.config.jitter_factor
-            jitter = random.uniform(-jitter_range, jitter_range)
+            jitter = random.uniform(-jitter_range, jitter_range)  # nosec B311
             delay += jitter
 
         return max(0, delay)  # Ensure non-negative

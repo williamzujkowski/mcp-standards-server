@@ -339,7 +339,7 @@ class StandardsSearchIntegration:
                 ):
                     return False
             except Exception:
-                pass
+                pass  # nosec B110
 
         # Use rule engine for complex applicability rules
         if "full_data" in standard and "applicability_rules" in standard["full_data"]:

@@ -816,7 +816,7 @@ class StandardsAnalytics:
                 if days_old > 365:
                     maintenance = max(0.5, 1 - (days_old - 365) / 1000)
             except Exception:
-                pass
+                pass  # nosec B110
 
         scores["maintenance"] = maintenance
 

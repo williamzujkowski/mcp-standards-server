@@ -185,7 +185,7 @@ class VectorIndexBuilder:
             self.pca_model.fit(vectors)
 
         # After the conditional above, pca_model is guaranteed to be not None
-        assert self.pca_model is not None
+        assert self.pca_model is not None  # nosec B101
         return cast(np.ndarray, self.pca_model.transform(vectors))
 
     def optimize_index(self, index: faiss.Index, vectors: np.ndarray) -> faiss.Index:

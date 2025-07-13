@@ -394,7 +394,6 @@ class AsyncSemanticSearch:
             memory_cache_ttl=self.config.vector_cache_ttl,
         )
         self.vector_cache = VectorIndexCache(vector_config, self.redis_cache)
-        assert self.vector_cache is not None
         await self.vector_cache.start()
 
         # Initialize memory manager

@@ -20,8 +20,8 @@ class ErrorCode(str, Enum):
 
     # Authentication errors (1000-1099)
     AUTH_REQUIRED = "AUTH_001"
-    AUTH_INVALID_TOKEN = "AUTH_002"
-    AUTH_EXPIRED_TOKEN = "AUTH_003"
+    AUTH_INVALID_TOKEN = "AUTH_002"  # nosec B105
+    AUTH_EXPIRED_TOKEN = "AUTH_003"  # nosec B105
     AUTH_INVALID_API_KEY = "AUTH_004"
     AUTH_INSUFFICIENT_PERMISSIONS = "AUTH_005"
 
@@ -285,8 +285,10 @@ class SecureErrorHandler:
             # Pydantic validation error
             try:
                 return format_validation_errors(exc.errors())
-            except Exception:
-                pass
+            except Exception as format_err:
+                logger.warning(f"Failed to format validation errors: {format_err}")
+                # Fallback to basic error message
+                return {"error": str(exc), "type": "validation_error"}
 
         # Handle security-related errors
         if any(
