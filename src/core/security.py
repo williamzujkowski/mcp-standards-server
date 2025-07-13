@@ -252,7 +252,7 @@ class SecurityValidator:
                 r"(?i)<script[^>]*>",
                 r"(?i)javascript:",
                 r"(?i)vbscript:",
-                r"(?i)on\w+\s*=",
+                r"(?i)\bon[a-z]+\s*=",  # Match event handlers like onclick= but not const
                 r"(?i)eval\s*\(",
                 r"(?i)exec\s*\(",
                 r"(?i)system\s*\(",

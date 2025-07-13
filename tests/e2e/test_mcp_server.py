@@ -36,7 +36,7 @@ class TestMCPServerStartupShutdown:
         """Test graceful server shutdown."""
         # Create client connection
         client = MCPTestClient(mcp_server)
-        async with client.connect() as connected_client:
+        async with client as connected_client:
             # Verify connection
             assert connected_client.session is not None
 
@@ -51,7 +51,7 @@ class TestMCPServerStartupShutdown:
         # Create multiple clients
         for _i in range(3):
             client = MCPTestClient(mcp_server)
-            async with client.connect() as connected_client:
+            async with client as connected_client:
                 clients.append(connected_client)
 
         # All clients should have connected successfully
@@ -109,9 +109,12 @@ class TestMCPTools:
             },
         )
 
-        assert "violations" in result
-        assert "passed" in result
-        assert isinstance(result["violations"], list)
+        # Check for validation_results structure
+        assert "validation_results" in result
+        validation_results = result["validation_results"]
+        assert "violations" in validation_results
+        assert "compliant" in validation_results
+        assert isinstance(validation_results["violations"], list)
 
     @pytest.mark.asyncio
     async def test_search_standards(self, mcp_client):

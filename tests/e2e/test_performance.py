@@ -452,8 +452,11 @@ class TestResponseTimeBenchmarks:
 
         result = await benchmark(operation)
 
-        assert "violations" in result
-        assert "passed" in result
+        # Check for validation_results structure
+        assert "validation_results" in result
+        validation_results = result["validation_results"]
+        assert "violations" in validation_results
+        assert "compliant" in validation_results
 
 
 class TestScalabilityLimits:
@@ -471,7 +474,7 @@ class TestScalabilityLimits:
         async def create_client(i):
             try:
                 client = MCPTestClient(mcp_server)
-                async with client.connect() as connected:
+                async with client as connected:
                     return connected
             except Exception as e:
                 print(f"Failed to create client {i}: {e}")
