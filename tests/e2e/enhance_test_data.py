@@ -159,9 +159,11 @@ def enhance_standards():
 
     # Write enhanced standards to both locations - use cross-platform paths
     import tempfile
+
     locations = [
         Path(tempfile.gettempdir()) / "test_standards_data/standards/cache",
-        Path.cwd() / "data/standards/cache",  # Use current working directory instead of hardcoded path
+        Path.cwd()
+        / "data/standards/cache",  # Use current working directory instead of hardcoded path
     ]
 
     for location in locations:

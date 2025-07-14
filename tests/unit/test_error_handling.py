@@ -99,6 +99,7 @@ class TestSecureErrorHandler:
 
         # Test file path sanitization - use cross-platform path
         import tempfile
+
         temp_dir = tempfile.gettempdir()
         secret_path = Path(temp_dir) / "secret.txt"
         message = f"File not found: {secret_path}"

@@ -13,6 +13,7 @@ def main():
 
     # Create test data in cross-platform temporary directory
     import tempfile
+
     tmp_dir = Path(tempfile.gettempdir()) / "test_standards_data"
     print(f"Creating test data in {tmp_dir}")
     setup_test_data(tmp_dir)

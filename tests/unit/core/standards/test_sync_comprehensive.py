@@ -448,11 +448,15 @@ class TestFileFiltering:
         if sys.platform == "win32":
             # Windows is case-insensitive, so '*test*' pattern WILL match 'TEST.md'
             # Therefore TEST.md should be EXCLUDED (not in filtered_names)
-            assert "TEST.md" not in filtered_names, "On Windows, '*test*' pattern should match 'TEST.md' (case-insensitive)"
+            assert (
+                "TEST.md" not in filtered_names
+            ), "On Windows, '*test*' pattern should match 'TEST.md' (case-insensitive)"
         else:
             # Unix is case-sensitive, so '*test*' pattern should NOT match 'TEST.md'
             # Therefore TEST.md should be INCLUDED (in filtered_names)
-            assert "TEST.md" in filtered_names, "On Unix, '*test*' pattern should NOT match 'TEST.md' (case-sensitive)"
+            assert (
+                "TEST.md" in filtered_names
+            ), "On Unix, '*test*' pattern should NOT match 'TEST.md' (case-sensitive)"
 
     def test_unicode_pattern_matching(self, synchronizer):
         """Test pattern matching with Unicode characters."""
