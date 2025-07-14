@@ -8,15 +8,14 @@ simulating real-world usage scenarios.
 
 import asyncio
 import json
-import os
-import tempfile
 import shutil
-from pathlib import Path
-from typing import Dict, List, Any, Optional
+import tempfile
 from dataclasses import dataclass
-import pytest
-import aiohttp
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import aiohttp
 
 
 @dataclass
@@ -26,9 +25,9 @@ class WorkflowStep:
     description: str
     action: str
     expected_outcome: str
-    validation: Optional[callable] = None
-    
-    
+    validation: callable | None = None
+
+
 @dataclass
 class WorkflowResult:
     """Results from executing a workflow"""
@@ -36,28 +35,28 @@ class WorkflowResult:
     success: bool
     steps_completed: int
     total_steps: int
-    errors: List[str]
+    errors: list[str]
     execution_time: float
     timestamp: str
 
 
 class MCPWorkflowClient:
     """Client for executing MCP workflow operations"""
-    
+
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
         self.session = None
         self.context = {}  # Store context between steps
-        
+
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
         return self
-        
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.session:
             await self.session.close()
-            
-    async def execute_mcp_tool(self, tool: str, params: Dict) -> Dict:
+
+    async def execute_mcp_tool(self, tool: str, params: dict) -> dict:
         """Execute an MCP tool with parameters"""
         async with self.session.post(
             f"{self.base_url}/mcp/{tool}",
@@ -68,12 +67,12 @@ class MCPWorkflowClient:
 
 class UserWorkflowTests:
     """Test suite for end-to-end user workflows"""
-    
+
     def __init__(self, output_dir: Path = None):
         self.output_dir = output_dir or Path("./evaluation/results/workflows")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.results = []
-        
+
     async def test_new_project_setup_workflow(self, client: MCPWorkflowClient) -> WorkflowResult:
         """
         Workflow 1: New Project Setup
@@ -119,9 +118,9 @@ class UserWorkflowTests:
                 expected_outcome="All validations pass or only minor warnings remain"
             )
         ]
-        
+
         return await self._execute_workflow(client, workflow_name, steps)
-        
+
     async def test_security_audit_workflow(self, client: MCPWorkflowClient) -> WorkflowResult:
         """
         Workflow 2: Security Audit
@@ -173,9 +172,9 @@ class UserWorkflowTests:
                 expected_outcome="Actionable remediation plan with timelines"
             )
         ]
-        
+
         return await self._execute_workflow(client, workflow_name, steps)
-        
+
     async def test_performance_optimization_workflow(self, client: MCPWorkflowClient) -> WorkflowResult:
         """
         Workflow 3: Performance Optimization
@@ -227,9 +226,9 @@ class UserWorkflowTests:
                 expected_outcome="Performance optimization report with before/after metrics"
             )
         ]
-        
+
         return await self._execute_workflow(client, workflow_name, steps)
-        
+
     async def test_team_onboarding_workflow(self, client: MCPWorkflowClient) -> WorkflowResult:
         """
         Workflow 4: Team Onboarding
@@ -275,9 +274,9 @@ class UserWorkflowTests:
                 expected_outcome="Code review checklist based on standards"
             )
         ]
-        
+
         return await self._execute_workflow(client, workflow_name, steps)
-        
+
     async def test_compliance_verification_workflow(self, client: MCPWorkflowClient) -> WorkflowResult:
         """
         Workflow 5: Compliance Verification
@@ -323,9 +322,9 @@ class UserWorkflowTests:
                 expected_outcome="OSCAL-compliant assessment results"
             )
         ]
-        
+
         return await self._execute_workflow(client, workflow_name, steps)
-        
+
     async def test_continuous_improvement_workflow(self, client: MCPWorkflowClient) -> WorkflowResult:
         """
         Workflow 6: Continuous Improvement
@@ -371,24 +370,24 @@ class UserWorkflowTests:
                 expected_outcome="Dashboard for tracking code quality improvements"
             )
         ]
-        
+
         return await self._execute_workflow(client, workflow_name, steps)
-    
+
     async def _execute_workflow(
         self,
         client: MCPWorkflowClient,
         workflow_name: str,
-        steps: List[WorkflowStep]
+        steps: list[WorkflowStep]
     ) -> WorkflowResult:
         """Execute a complete workflow and track results"""
         start_time = datetime.now()
         errors = []
         completed_steps = 0
-        
+
         print(f"\n{'='*60}")
         print(f"Executing Workflow: {workflow_name}")
         print(f"{'='*60}")
-        
+
         # Create workflow context
         workflow_context = {
             "workflow_name": workflow_name,
@@ -398,12 +397,12 @@ class UserWorkflowTests:
             "validation_results": [],
             "artifacts": []
         }
-        
+
         try:
             for i, step in enumerate(steps, 1):
                 print(f"\nStep {i}/{len(steps)}: {step.name}")
                 print(f"  Description: {step.description}")
-                
+
                 try:
                     # Execute step action
                     result = await self._execute_step_action(
@@ -411,31 +410,31 @@ class UserWorkflowTests:
                         step,
                         workflow_context
                     )
-                    
+
                     # Validate outcome if validation function provided
                     if step.validation and not step.validation(result):
                         errors.append(f"Step {step.name}: Validation failed")
-                        print(f"  ❌ Validation failed")
+                        print("  ❌ Validation failed")
                     else:
                         completed_steps += 1
                         print(f"  ✅ {step.expected_outcome}")
-                        
+
                 except Exception as e:
                     error_msg = f"Step {step.name}: {str(e)}"
                     errors.append(error_msg)
                     print(f"  ❌ Error: {str(e)}")
-                    
+
                     # Decide whether to continue or abort
                     if i < 3:  # Abort if early steps fail
-                        print(f"  🛑 Aborting workflow due to early failure")
+                        print("  🛑 Aborting workflow due to early failure")
                         break
-                        
+
         except Exception as e:
             errors.append(f"Workflow execution error: {str(e)}")
-            
+
         # Calculate execution time
         execution_time = (datetime.now() - start_time).total_seconds()
-        
+
         # Create result
         result = WorkflowResult(
             workflow_name=workflow_name,
@@ -446,24 +445,24 @@ class UserWorkflowTests:
             execution_time=execution_time,
             timestamp=datetime.now().isoformat()
         )
-        
+
         # Save workflow results
         self._save_workflow_results(result, workflow_context)
-        
+
         return result
-    
+
     async def _execute_step_action(
         self,
         client: MCPWorkflowClient,
         step: WorkflowStep,
-        context: Dict
+        context: dict
     ) -> Any:
         """Execute a specific workflow step action"""
-        
+
         # Map actions to implementations
         if step.action == "create_sample_react_project":
             return await self._create_sample_project(context, "react")
-            
+
         elif step.action == "get_applicable_standards":
             params = {
                 "project_context": {
@@ -476,7 +475,7 @@ class UserWorkflowTests:
             result = await client.execute_mcp_tool("get_applicable_standards", params)
             context["standards"] = result.get("standards", [])
             return result
-            
+
         elif step.action == "filter_and_prioritize_standards":
             # Simulate filtering and prioritizing standards
             standards = context.get("standards", [])
@@ -486,11 +485,11 @@ class UserWorkflowTests:
             )[:5]  # Top 5 standards
             context["prioritized_standards"] = prioritized
             return {"prioritized_standards": prioritized}
-            
+
         elif step.action == "validate_against_standard":
             if not context.get("project_path"):
                 context["project_path"] = await self._create_sample_project(context, "react")
-                
+
             params = {
                 "code_path": str(context["project_path"]),
                 "standard_id": context.get("prioritized_standards", [{"id": "react-18-patterns"}])[0]["id"]
@@ -498,27 +497,27 @@ class UserWorkflowTests:
             result = await client.execute_mcp_tool("validate_against_standard", params)
             context["validation_results"].append(result)
             return result
-            
+
         elif step.action == "search_standards":
             query = {
                 "security_audit": "security",
                 "performance_optimization": "performance optimization caching",
                 "continuous_improvement": "best practices latest"
             }.get(context["workflow_name"], "standards")
-            
+
             params = {"query": query}
             return await client.execute_mcp_tool("search_standards", params)
-            
+
         elif step.action == "get_compliance_mapping":
             params = {}
             if context.get("standards"):
                 params["standard_id"] = context["standards"][0].get("id")
             return await client.execute_mcp_tool("get_compliance_mapping", params)
-            
+
         elif step.action == "list_available_standards":
             params = {}
             return await client.execute_mcp_tool("list_available_standards", params)
-            
+
         elif step.action == "get_optimized_standard":
             standard_id = context.get("standards", [{"id": "performance-tuning-optimization"}])[0]["id"]
             params = {
@@ -526,7 +525,7 @@ class UserWorkflowTests:
                 "token_limit": 4000
             }
             return await client.execute_mcp_tool("get_optimized_standard", params)
-            
+
         elif step.action == "get_standard":
             standard_id = context.get("prioritized_standards", [{"id": "documentation-writing"}])[0]["id"]
             params = {
@@ -534,21 +533,21 @@ class UserWorkflowTests:
                 "format": "condensed"
             }
             return await client.execute_mcp_tool("get_standard", params)
-            
+
         else:
             # Simulate other actions
             return await self._simulate_action(step.action, context)
-    
-    async def _create_sample_project(self, context: Dict, project_type: str) -> Path:
+
+    async def _create_sample_project(self, context: dict, project_type: str) -> Path:
         """Create a sample project for testing"""
         project_dir = Path(tempfile.mkdtemp(prefix=f"mcp_test_{project_type}_"))
-        
+
         if project_type == "react":
             # Create basic React project structure
             (project_dir / "src").mkdir()
             (project_dir / "public").mkdir()
             (project_dir / "src" / "components").mkdir()
-            
+
             # Create sample files
             (project_dir / "package.json").write_text(json.dumps({
                 "name": "test-react-app",
@@ -558,7 +557,7 @@ class UserWorkflowTests:
                     "react-dom": "^18.0.0"
                 }
             }, indent=2))
-            
+
             (project_dir / "src" / "App.js").write_text("""
 import React from 'react';
 
@@ -572,7 +571,7 @@ function App() {
 
 export default App;
 """)
-            
+
             (project_dir / "src" / "index.js").write_text("""
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -581,12 +580,12 @@ import App from './App';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 """)
-        
+
         context["project_path"] = project_dir
         context["artifacts"].append(str(project_dir))
         return project_dir
-    
-    async def _simulate_action(self, action: str, context: Dict) -> Dict:
+
+    async def _simulate_action(self, action: str, context: dict) -> dict:
         """Simulate workflow actions that don't directly call MCP tools"""
         simulated_results = {
             "analyze_project_structure": {
@@ -691,19 +690,19 @@ root.render(<App />);
                 "alerts_setup": 5
             }
         }
-        
+
         # Add some delay to simulate processing
         await asyncio.sleep(0.5)
-        
+
         result = simulated_results.get(action, {"status": "completed"})
         context["artifacts"].append(result)
         return result
-    
-    def _save_workflow_results(self, result: WorkflowResult, context: Dict):
+
+    def _save_workflow_results(self, result: WorkflowResult, context: dict):
         """Save workflow execution results"""
         # Save detailed results
         result_file = self.output_dir / f"{result.workflow_name}_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        
+
         with open(result_file, 'w') as f:
             json.dump({
                 "result": {
@@ -723,12 +722,12 @@ root.render(<App />);
                     "artifacts_created": len(context.get("artifacts", []))
                 }
             }, f, indent=2)
-            
+
         # Clean up temporary artifacts
         if context.get("project_path") and Path(context["project_path"]).exists():
             shutil.rmtree(context["project_path"])
-    
-    async def run_all_workflows(self) -> List[WorkflowResult]:
+
+    async def run_all_workflows(self) -> list[WorkflowResult]:
         """Execute all workflow tests"""
         workflows = [
             self.test_new_project_setup_workflow,
@@ -738,9 +737,9 @@ root.render(<App />);
             self.test_compliance_verification_workflow,
             self.test_continuous_improvement_workflow
         ]
-        
+
         all_results = []
-        
+
         async with MCPWorkflowClient() as client:
             for workflow_test in workflows:
                 try:
@@ -760,23 +759,23 @@ root.render(<App />);
                         timestamp=datetime.now().isoformat()
                     )
                     all_results.append(result)
-        
+
         # Generate summary report
         self._generate_summary_report(all_results)
-        
+
         return all_results
-    
-    def _generate_summary_report(self, results: List[WorkflowResult]):
+
+    def _generate_summary_report(self, results: list[WorkflowResult]):
         """Generate a summary report of all workflow tests"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         report_path = self.output_dir / f"workflow_summary_{timestamp}.md"
-        
+
         total_workflows = len(results)
         successful_workflows = sum(1 for r in results if r.success)
         total_steps = sum(r.total_steps for r in results)
         completed_steps = sum(r.steps_completed for r in results)
         total_time = sum(r.execution_time for r in results)
-        
+
         report = f"""# MCP User Workflow Test Summary
 
 **Generated:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -794,22 +793,22 @@ root.render(<App />);
 | Workflow | Success | Steps Completed | Execution Time | Errors |
 |----------|---------|-----------------|----------------|--------|
 """
-        
+
         for result in results:
             status = "✅" if result.success else "❌"
             errors = len(result.errors)
             report += f"| {result.workflow_name} | {status} | {result.steps_completed}/{result.total_steps} | "
             report += f"{result.execution_time:.2f}s | {errors} |\n"
-        
+
         report += "\n## Detailed Error Summary\n\n"
-        
+
         for result in results:
             if result.errors:
                 report += f"### {result.workflow_name}\n"
                 for error in result.errors:
                     report += f"- {error}\n"
                 report += "\n"
-        
+
         report += """
 ## Recommendations
 
@@ -825,10 +824,10 @@ root.render(<App />);
 3. Improve workflow resilience to handle partial failures
 4. Enhance validation logic for better test coverage
 """
-        
+
         with open(report_path, 'w') as f:
             f.write(report)
-        
+
         print(f"\n📄 Summary report saved to: {report_path}")
 
 
@@ -836,19 +835,19 @@ async def main():
     """Run all user workflow tests"""
     print("🚀 Starting MCP User Workflow Tests")
     print("=" * 60)
-    
+
     test_suite = UserWorkflowTests()
-    
+
     try:
         results = await test_suite.run_all_workflows()
-        
+
         # Print summary
         successful = sum(1 for r in results if r.success)
         print(f"\n{'='*60}")
-        print(f"✅ Workflow Tests Complete")
+        print("✅ Workflow Tests Complete")
         print(f"   Successful: {successful}/{len(results)}")
         print(f"   Results saved to: {test_suite.output_dir}")
-        
+
     except Exception as e:
         print(f"\n❌ Workflow tests failed: {str(e)}")
         raise

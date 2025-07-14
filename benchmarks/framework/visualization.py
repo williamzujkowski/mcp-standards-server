@@ -1,7 +1,7 @@
 """Visualization tools for benchmark results."""
 
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional
 
 from .base import BenchmarkResult
 
@@ -33,7 +33,7 @@ class BenchmarkVisualizer:
 
         if style in plt.style.available:
             plt.style.use(style)
-        self.figures: list["Figure"] = []
+        self.figures: list[Figure] = []
 
     def _check_matplotlib_available(self) -> bool:
         """Check if matplotlib is available and warn if not."""

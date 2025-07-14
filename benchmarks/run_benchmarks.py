@@ -26,23 +26,23 @@ from benchmarks.monitoring import AlertSystem, MetricsCollector, PerformanceDash
 def sanitize_filename(name: str) -> str:
     """Sanitize a string to be safe for use as a filename."""
     import re
-    
+
     # Replace spaces with underscores
     sanitized = name.replace(' ', '_')
-    
+
     # Replace forward slashes with dashes
     sanitized = sanitized.replace('/', '-')
-    
+
     # Replace other problematic characters with underscores
     sanitized = re.sub(r'[<>:"|?*\\]', '_', sanitized)
-    
+
     # Remove any leading/trailing dots or spaces
     sanitized = sanitized.strip('. ')
-    
+
     # Ensure it's not empty
     if not sanitized:
         sanitized = "unnamed_benchmark"
-        
+
     return sanitized
 
 

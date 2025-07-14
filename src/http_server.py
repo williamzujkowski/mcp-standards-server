@@ -320,7 +320,7 @@ class HTTPServer:
             },
             {
                 "path": "/health",
-                "method": "GET", 
+                "method": "GET",
                 "description": "Health check endpoint"
             },
             {
@@ -329,7 +329,7 @@ class HTTPServer:
                 "description": "Liveness probe endpoint"
             },
             {
-                "path": "/health/ready", 
+                "path": "/health/ready",
                 "method": "GET",
                 "description": "Readiness probe endpoint"
             },
@@ -340,7 +340,7 @@ class HTTPServer:
             },
             {
                 "path": "/status",
-                "method": "GET", 
+                "method": "GET",
                 "description": "Server status information"
             },
             {

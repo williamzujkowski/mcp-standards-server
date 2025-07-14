@@ -267,27 +267,27 @@ def mock_ml_dependencies():
 
         def try_to_load_from_cache(*args, **kwargs):
             return None
-        
+
         def cached_download(*args, **kwargs):
             return "/tmp/mock_file"
-        
+
         def get_hf_file_metadata(*args, **kwargs):
             return {"etag": "mock_etag"}
-    
+
     # Mock torch to prevent CUDA checks and model loading
     class MockTorch:
         cuda = type("cuda", (), {"is_available": lambda: False})()
         device = lambda x: x
         no_grad = lambda: type("no_grad", (), {"__enter__": lambda self: None, "__exit__": lambda self, *args: None})()
-        
+
         class FloatTensor:
             pass
-        
+
         @staticmethod
         def tensor(data):
             import numpy as np
             return np.array(data)
-        
+
         @staticmethod
         def load(*args, **kwargs):
             return {"model": "mock"}
@@ -302,24 +302,25 @@ def mock_ml_dependencies():
                     "decode": lambda self, tokens: "mock text",
                     "tokenize": lambda self, text: ["mock", "tokens"]
                 })()
-        
+
         class AutoModel:
             @staticmethod
             def from_pretrained(*args, **kwargs):
+                import numpy as np
                 return type("MockModel", (), {
                     "eval": lambda self: None,
                     "encode": lambda self, *args, **kwargs: np.random.randn(1, 384)
                 })()
-        
+
         class AutoConfig:
             @staticmethod
             def from_pretrained(*args, **kwargs):
                 return type("MockConfig", (), {"hidden_size": 384})()
-    
+
     # Aggressively set HuggingFace offline environment variables
     import os
     os.environ["HF_DATASETS_OFFLINE"] = "1"
-    os.environ["TRANSFORMERS_OFFLINE"] = "1" 
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TORCH_HOME"] = "/tmp/torch_cache"
     os.environ["HF_HOME"] = "/tmp/hf_cache"

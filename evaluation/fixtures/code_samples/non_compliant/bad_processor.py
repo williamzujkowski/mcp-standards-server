@@ -11,7 +11,7 @@ def process(d):
 class processor:
     def __init__(self, c):
         self.c = c  # no validation
-    
+
     def run(self, data):
         global result  # global variable
         result = []

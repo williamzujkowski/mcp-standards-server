@@ -452,12 +452,12 @@ class TestEmbeddingCacheComprehensive:
         original_test_mode = os.environ.get("MCP_TEST_MODE")
         original_ci = os.environ.get("CI")
         original_pytest = os.environ.get("PYTEST_CURRENT_TEST")
-        
+
         try:
             os.environ.pop("MCP_TEST_MODE", None)
-            os.environ.pop("CI", None) 
+            os.environ.pop("CI", None)
             os.environ.pop("PYTEST_CURRENT_TEST", None)
-            
+
             with patch("src.core.standards.semantic_search.SentenceTransformer") as mock_st:
                 # Create a function that raises when called - use rate limit error
                 # to trigger retry and eventual fallback
@@ -469,15 +469,15 @@ class TestEmbeddingCacheComprehensive:
                 # With our new implementation, it should fall back to minimal mock
                 # after retries fail
                 cache = EmbeddingCache()
-                
+
                 # Verify it uses the minimal mock fallback
                 assert cache.model is not None, "Should create a fallback mock model"
-                
+
                 # Test that the mock can generate embeddings
                 embedding = cache.get_embedding("test text")
                 assert embedding is not None, "Fallback mock should generate embeddings"
                 assert len(embedding.shape) > 0, "Should return valid numpy array"
-                
+
         finally:
             # Restore original environment
             if original_test_mode:

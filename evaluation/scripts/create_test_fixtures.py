@@ -7,25 +7,22 @@ to enable thorough testing of MCP functionality.
 """
 
 import json
-import yaml
-import os
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Any
-import hashlib
 import random
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 
 class TestFixtureGenerator:
     """Generates test fixtures for standards testing"""
-    
+
     def __init__(self, project_root: Path):
         self.project_root = project_root
         self.fixtures_dir = project_root / "evaluation" / "fixtures"
         self.standards_dir = self.fixtures_dir / "standards"
         self.code_samples_dir = self.fixtures_dir / "code_samples"
         self.test_projects_dir = self.fixtures_dir / "test_projects"
-        
+
         # Standard categories for project-generated standards
         self.standard_categories = {
             "specialty_domain": [
@@ -66,7 +63,7 @@ class TestFixtureGenerator:
                 "developer-experience-dx"
             ]
         }
-        
+
         # Synchronized standards from GitHub
         self.github_standards = [
             "CLOUD_NATIVE_STANDARDS",
@@ -91,18 +88,18 @@ class TestFixtureGenerator:
             "UNIFIED_STANDARDS",
             "WEB_DESIGN_UX_STANDARDS"
         ]
-        
+
         self.fixtures_created = 0
         self.errors = []
-    
+
     def run(self):
         """Generate all test fixtures"""
         print("🔧 Creating Test Data Fixtures for Standards")
         print("=" * 60)
-        
+
         # Create directory structure
         self._create_directories()
-        
+
         # Generate fixtures
         self._generate_standard_fixtures()
         self._generate_code_samples()
@@ -110,12 +107,12 @@ class TestFixtureGenerator:
         self._generate_validation_scenarios()
         self._generate_edge_case_standards()
         self._generate_fixture_manifest()
-        
-        print(f"\n✅ Fixture generation complete!")
+
+        print("\n✅ Fixture generation complete!")
         print(f"   Fixtures created: {self.fixtures_created}")
         if self.errors:
             print(f"   Errors: {len(self.errors)}")
-    
+
     def _create_directories(self):
         """Create fixture directory structure"""
         directories = [
@@ -133,23 +130,23 @@ class TestFixtureGenerator:
             self.test_projects_dir / "ml_project",
             self.test_projects_dir / "blockchain_app"
         ]
-        
+
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
-    
+
     def _generate_standard_fixtures(self):
         """Generate fixture versions of all standards"""
         print("\n📋 Generating standard fixtures...")
-        
+
         # Generate fixtures for project standards
         for category, standards in self.standard_categories.items():
             for standard_id in standards:
                 self._create_standard_fixture(standard_id, category)
-        
+
         # Generate fixtures for GitHub standards
         for standard_id in self.github_standards:
             self._create_github_standard_fixture(standard_id)
-    
+
     def _create_standard_fixture(self, standard_id: str, category: str):
         """Create fixture for a single project standard"""
         # Minimal version
@@ -167,12 +164,12 @@ class TestFixtureGenerator:
                 }
             ]
         }
-        
+
         minimal_path = self.standards_dir / "minimal" / f"{standard_id}.json"
         with open(minimal_path, 'w') as f:
             json.dump(minimal, f, indent=2)
         self.fixtures_created += 1
-        
+
         # Full version with comprehensive content
         full = {
             "id": standard_id,
@@ -198,12 +195,12 @@ class TestFixtureGenerator:
             "compliance": self._generate_compliance_mapping(standard_id),
             "tools": self._generate_tool_recommendations(standard_id)
         }
-        
+
         full_path = self.standards_dir / "full" / f"{standard_id}.json"
         with open(full_path, 'w') as f:
             json.dump(full, f, indent=2)
         self.fixtures_created += 1
-    
+
     def _create_github_standard_fixture(self, standard_id: str):
         """Create fixture for a GitHub synchronized standard"""
         fixture = {
@@ -220,16 +217,16 @@ class TestFixtureGenerator:
             },
             "sections": self._generate_standard_sections(standard_id)
         }
-        
+
         fixture_path = self.standards_dir / "full" / f"{standard_id.lower()}.json"
         with open(fixture_path, 'w') as f:
             json.dump(fixture, f, indent=2)
         self.fixtures_created += 1
-    
-    def _generate_tags(self, standard_id: str) -> List[str]:
+
+    def _generate_tags(self, standard_id: str) -> list[str]:
         """Generate relevant tags for a standard"""
         base_tags = ["test", "fixture"]
-        
+
         # Add category-specific tags
         if "security" in standard_id:
             base_tags.extend(["security", "compliance", "audit"])
@@ -241,14 +238,14 @@ class TestFixtureGenerator:
             base_tags.extend(["api", "rest", "graphql"])
         elif "ml" in standard_id or "ai" in standard_id:
             base_tags.extend(["machine-learning", "ai", "mlops"])
-        
+
         return base_tags
-    
-    def _generate_test_rules(self, standard_id: str, count: int) -> List[Dict]:
+
+    def _generate_test_rules(self, standard_id: str, count: int) -> list[dict]:
         """Generate test rules for a standard"""
         severities = ["error", "warning", "info"]
         rules = []
-        
+
         for i in range(count):
             rules.append({
                 "id": f"{standard_id}-rule-{i+1}",
@@ -261,10 +258,10 @@ class TestFixtureGenerator:
                     "frameworks": ["any"]
                 }
             })
-        
+
         return rules
-    
-    def _generate_examples(self, standard_id: str) -> Dict[str, Any]:
+
+    def _generate_examples(self, standard_id: str) -> dict[str, Any]:
         """Generate code examples for a standard"""
         return {
             "good": {
@@ -276,8 +273,8 @@ class TestFixtureGenerator:
                 "code": f"// This code violates {standard_id} standard\nfunction example() {{\n  return 'non-compliant';\n}}"
             }
         }
-    
-    def _generate_compliance_mapping(self, standard_id: str) -> Dict[str, List[str]]:
+
+    def _generate_compliance_mapping(self, standard_id: str) -> dict[str, list[str]]:
         """Generate NIST compliance mappings"""
         # Sample NIST controls for testing
         control_families = {
@@ -286,7 +283,7 @@ class TestFixtureGenerator:
             "SC": ["SC-7", "SC-8", "SC-13"],
             "SI": ["SI-2", "SI-3", "SI-4"]
         }
-        
+
         # Map based on standard type
         if "security" in standard_id:
             return {
@@ -303,11 +300,11 @@ class TestFixtureGenerator:
                 "nist_800_53": [control_families["AC"][0]],
                 "coverage": "minimal"
             }
-    
-    def _generate_tool_recommendations(self, standard_id: str) -> List[Dict]:
+
+    def _generate_tool_recommendations(self, standard_id: str) -> list[dict]:
         """Generate tool recommendations for a standard"""
         tools = []
-        
+
         if "testing" in standard_id:
             tools.extend([
                 {"name": "pytest", "purpose": "Unit testing", "language": "python"},
@@ -323,10 +320,10 @@ class TestFixtureGenerator:
                 {"name": "lighthouse", "purpose": "Performance testing", "language": "javascript"},
                 {"name": "py-spy", "purpose": "Performance profiling", "language": "python"}
             ])
-        
+
         return tools
-    
-    def _generate_standard_sections(self, standard_id: str) -> List[Dict]:
+
+    def _generate_standard_sections(self, standard_id: str) -> list[dict]:
         """Generate standard sections for GitHub standards"""
         return [
             {
@@ -350,11 +347,11 @@ class TestFixtureGenerator:
                 "order": 4
             }
         ]
-    
+
     def _generate_code_samples(self):
         """Generate code samples for validation testing"""
         print("\n💻 Generating code samples...")
-        
+
         languages = {
             "python": self._generate_python_samples,
             "javascript": self._generate_javascript_samples,
@@ -363,10 +360,10 @@ class TestFixtureGenerator:
             "rust": self._generate_rust_samples,
             "typescript": self._generate_typescript_samples
         }
-        
-        for lang, generator in languages.items():
+
+        for _lang, generator in languages.items():
             generator()
-    
+
     def _generate_python_samples(self):
         """Generate Python code samples"""
         # Compliant sample
@@ -381,18 +378,18 @@ logger = logging.getLogger(__name__)
 
 class DataProcessor:
     """Process data following standards."""
-    
+
     def __init__(self, config: dict):
         self.config = config
         self._validate_config()
-    
+
     def _validate_config(self) -> None:
         """Validate configuration."""
         required_keys = ['input_path', 'output_path']
         for key in required_keys:
             if key not in self.config:
                 raise ValueError(f"Missing required config: {key}")
-    
+
     def process(self, data: List[dict]) -> List[dict]:
         """Process data with error handling."""
         try:
@@ -401,7 +398,7 @@ class DataProcessor:
         except Exception as e:
             logger.error(f"Processing failed: {e}")
             raise
-    
+
     def _transform(self, item: dict) -> dict:
         """Transform single item."""
         return {
@@ -410,11 +407,11 @@ class DataProcessor:
             'timestamp': datetime.now().isoformat()
         }
 '''
-        
+
         compliant_path = self.code_samples_dir / "compliant" / "data_processor.py"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
-        
+
         # Non-compliant sample
         non_compliant_code = '''# bad code with no docs
 def process(d):
@@ -429,7 +426,7 @@ def process(d):
 class processor:
     def __init__(self, c):
         self.c = c  # no validation
-    
+
     def run(self, data):
         global result  # global variable
         result = []
@@ -437,11 +434,11 @@ class processor:
             result += [x]
         return result
 '''
-        
+
         non_compliant_path = self.code_samples_dir / "non_compliant" / "bad_processor.py"
         non_compliant_path.write_text(non_compliant_code)
         self.fixtures_created += 1
-    
+
     def _generate_javascript_samples(self):
         """Generate JavaScript code samples"""
         # Compliant sample
@@ -465,13 +462,13 @@ class UserService {
   async getUser(userId) {
     try {
       this.logger.info(`Fetching user: ${userId}`);
-      
+
       const user = await this.db.users.findById(userId);
-      
+
       if (!user) {
         throw new Error(`User not found: ${userId}`);
       }
-      
+
       return this.sanitizeUser(user);
     } catch (error) {
       this.logger.error(`Failed to get user: ${error.message}`);
@@ -491,11 +488,11 @@ class UserService {
 
 module.exports = UserService;
 '''
-        
+
         compliant_path = self.code_samples_dir / "compliant" / "user_service.js"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
-        
+
         # Non-compliant sample
         non_compliant_code = '''// no jsdoc
 function getUser(id) {
@@ -522,11 +519,11 @@ function updateUser(id, data, callback) {
 
 eval("console.log('unsafe')");  // security issue
 '''
-        
+
         non_compliant_path = self.code_samples_dir / "non_compliant" / "bad_service.js"
         non_compliant_path.write_text(non_compliant_code)
         self.fixtures_created += 1
-    
+
     def _generate_go_samples(self):
         """Generate Go code samples"""
         # Compliant sample
@@ -578,24 +575,24 @@ func (s *Service) GetUser(ctx context.Context, userID string) (*User, error) {
     }
 
     s.logger.Printf("Getting user: %s", userID)
-    
+
     user, err := s.repo.GetByID(ctx, userID)
     if err != nil {
         return nil, fmt.Errorf("failed to get user: %w", err)
     }
-    
+
     if user == nil {
         return nil, ErrUserNotFound
     }
-    
+
     return user, nil
 }
 '''
-        
+
         compliant_path = self.code_samples_dir / "compliant" / "user_service.go"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
-        
+
         # Non-compliant sample
         non_compliant_code = '''package main
 
@@ -605,10 +602,10 @@ import "fmt"
 func GetUser(id string) map[string]interface{} {
     // hardcoded connection
     db := connectDB("localhost:5432")
-    
+
     var user map[string]interface{}
     db.Query("SELECT * FROM users WHERE id = " + id)  // SQL injection
-    
+
     return user  // may be nil
 }
 
@@ -623,11 +620,11 @@ func init() {
     GlobalDB = &Database{}  // no error handling
 }
 '''
-        
+
         non_compliant_path = self.code_samples_dir / "non_compliant" / "bad_service.go"
         non_compliant_path.write_text(non_compliant_code)
         self.fixtures_created += 1
-    
+
     def _generate_java_samples(self):
         """Generate Java code samples"""
         # Compliant sample
@@ -643,15 +640,15 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class UserService {
-    
+
     private static final Logger LOGGER = Logger.getLogger(UserService.class.getName());
-    
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    
+
     /**
      * Constructs a new UserService.
-     * 
+     *
      * @param userRepository the user repository
      * @param passwordEncoder the password encoder
      */
@@ -659,10 +656,10 @@ public class UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
-    
+
     /**
      * Retrieves a user by ID.
-     * 
+     *
      * @param userId the user ID
      * @return the user if found
      * @throws UserNotFoundException if the user is not found
@@ -670,29 +667,29 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getUser(Long userId) {
         LOGGER.info("Fetching user with ID: " + userId);
-        
+
         return userRepository.findById(userId)
             .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
     }
-    
+
     /**
      * Creates a new user.
-     * 
+     *
      * @param userDto the user data
      * @return the created user
      */
     @Transactional
     public User createUser(CreateUserDto userDto) {
         validateUserDto(userDto);
-        
+
         User user = new User();
         user.setEmail(userDto.getEmail());
         user.setName(userDto.getName());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        
+
         return userRepository.save(user);
     }
-    
+
     private void validateUserDto(CreateUserDto userDto) {
         if (userDto.getEmail() == null || userDto.getEmail().isEmpty()) {
             throw new IllegalArgumentException("Email cannot be empty");
@@ -701,11 +698,11 @@ public class UserService {
     }
 }
 '''
-        
+
         compliant_path = self.code_samples_dir / "compliant" / "UserService.java"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
-    
+
     def _generate_rust_samples(self):
         """Generate Rust code samples"""
         # Compliant sample
@@ -721,10 +718,10 @@ use tracing::{info, error};
 pub enum UserError {
     #[error("User not found: {0}")]
     NotFound(String),
-    
+
     #[error("Invalid user ID")]
     InvalidId,
-    
+
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
 }
@@ -755,15 +752,15 @@ impl UserService {
     pub fn new(repository: Arc<dyn UserRepository>) -> Self {
         Self { repository }
     }
-    
+
     /// Gets a user by ID
     pub async fn get_user(&self, user_id: &str) -> Result<User, UserError> {
         if user_id.is_empty() {
             return Err(UserError::InvalidId);
         }
-        
+
         info!("Fetching user: {}", user_id);
-        
+
         match self.repository.find_by_id(user_id).await? {
             Some(user) => Ok(user),
             None => {
@@ -777,22 +774,22 @@ impl UserService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_get_user_empty_id() {
         // Test implementation
     }
 }
 '''
-        
+
         compliant_path = self.code_samples_dir / "compliant" / "user_service.rs"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
-    
+
     def _generate_typescript_samples(self):
         """Generate TypeScript code samples"""
         # Compliant sample
-        compliant_code = '''/**
+        compliant_code = r'''/**
  * User service for managing user operations
  */
 
@@ -817,13 +814,13 @@ export class UserService {
    */
   async getUser(userId: string): Promise<User> {
     this.logger.log(`Fetching user: ${userId}`);
-    
+
     const user = await this.userRepository.findById(userId);
-    
+
     if (!user) {
       throw new UserNotFoundError(`User not found: ${userId}`);
     }
-    
+
     return this.sanitizeUser(user);
   }
 
@@ -834,14 +831,14 @@ export class UserService {
    */
   async createUser(createUserDto: CreateUserDto): Promise<User> {
     this.validateCreateUserDto(createUserDto);
-    
+
     const hashedPassword = await this.hashPassword(createUserDto.password);
-    
+
     const user = await this.userRepository.create({
       ...createUserDto,
       password: hashedPassword,
     });
-    
+
     return this.sanitizeUser(user);
   }
 
@@ -860,7 +857,7 @@ export class UserService {
     if (!dto.email || !this.isValidEmail(dto.email)) {
       throw new ValidationError('Invalid email address');
     }
-    
+
     if (!dto.password || dto.password.length < 8) {
       throw new ValidationError('Password must be at least 8 characters');
     }
@@ -877,34 +874,34 @@ export class UserService {
   }
 }
 '''
-        
+
         compliant_path = self.code_samples_dir / "compliant" / "user.service.ts"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
-    
+
     def _generate_test_projects(self):
         """Generate test project structures"""
         print("\n🏗️  Generating test projects...")
-        
+
         # Web app project
         self._create_web_app_project()
-        
+
         # Microservice project
         self._create_microservice_project()
-        
+
         # Mobile app project
         self._create_mobile_app_project()
-        
+
         # ML project
         self._create_ml_project()
-        
+
         # Blockchain project
         self._create_blockchain_project()
-    
+
     def _create_web_app_project(self):
         """Create a web application test project"""
         project_dir = self.test_projects_dir / "web_app"
-        
+
         # package.json
         package_json = {
             "name": "test-web-app",
@@ -928,21 +925,21 @@ export class UserService {
                 "eslint": "^8.0.0"
             }
         }
-        
+
         with open(project_dir / "package.json", 'w') as f:
             json.dump(package_json, f, indent=2)
-        
+
         # Project structure
         (project_dir / "src" / "components").mkdir(parents=True, exist_ok=True)
         (project_dir / "src" / "services").mkdir(parents=True, exist_ok=True)
         (project_dir / "tests").mkdir(parents=True, exist_ok=True)
-        
+
         # Sample component
         component_code = '''import React from 'react';
 
 export const Button = ({ onClick, children, variant = 'primary' }) => {
   return (
-    <button 
+    <button
       className={`btn btn-${variant}`}
       onClick={onClick}
       aria-label={children}
@@ -952,14 +949,14 @@ export const Button = ({ onClick, children, variant = 'primary' }) => {
   );
 };
 '''
-        
+
         (project_dir / "src" / "components" / "Button.jsx").write_text(component_code)
         self.fixtures_created += 1
-    
+
     def _create_microservice_project(self):
         """Create a microservice test project"""
         project_dir = self.test_projects_dir / "microservice"
-        
+
         # Go module
         go_mod = '''module github.com/test/microservice
 
@@ -971,9 +968,9 @@ require (
     github.com/stretchr/testify v1.8.0
 )
 '''
-        
+
         (project_dir / "go.mod").write_text(go_mod)
-        
+
         # Main service file
         main_go = '''package main
 
@@ -985,24 +982,24 @@ import (
 func main() {
     logger := logrus.New()
     logger.Info("Starting microservice")
-    
+
     router := gin.Default()
-    
+
     router.GET("/health", func(c *gin.Context) {
         c.JSON(200, gin.H{"status": "healthy"})
     })
-    
+
     router.Run(":8080")
 }
 '''
-        
+
         (project_dir / "main.go").write_text(main_go)
         self.fixtures_created += 1
-    
+
     def _create_mobile_app_project(self):
         """Create a mobile app test project"""
         project_dir = self.test_projects_dir / "mobile_app"
-        
+
         # React Native package.json
         package_json = {
             "name": "TestMobileApp",
@@ -1020,10 +1017,10 @@ func main() {
                 "@react-navigation/native": "^6.0.0"
             }
         }
-        
+
         with open(project_dir / "package.json", 'w') as f:
             json.dump(package_json, f, indent=2)
-        
+
         # App component
         app_code = '''import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -1048,14 +1045,14 @@ const styles = StyleSheet.create({
   },
 });
 '''
-        
+
         (project_dir / "App.js").write_text(app_code)
         self.fixtures_created += 1
-    
+
     def _create_ml_project(self):
         """Create a machine learning test project"""
         project_dir = self.test_projects_dir / "ml_project"
-        
+
         # requirements.txt
         requirements = '''numpy==1.24.0
 pandas==2.0.0
@@ -1065,9 +1062,9 @@ mlflow==2.7.0
 pytest==7.4.0
 black==23.7.0
 '''
-        
+
         (project_dir / "requirements.txt").write_text(requirements)
-        
+
         # ML pipeline
         ml_code = '''"""
 ML Pipeline for testing
@@ -1081,43 +1078,43 @@ import mlflow
 
 class MLPipeline:
     """Machine learning pipeline for classification."""
-    
+
     def __init__(self, model_name="rf_classifier"):
         self.model_name = model_name
         self.model = None
         self.scaler = StandardScaler()
-        
+
     def train(self, X, y):
         """Train the model."""
         with mlflow.start_run():
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=0.2, random_state=42
             )
-            
+
             # Scale features
             X_train_scaled = self.scaler.fit_transform(X_train)
             X_test_scaled = self.scaler.transform(X_test)
-            
+
             # Train model
             self.model = RandomForestClassifier(n_estimators=100)
             self.model.fit(X_train_scaled, y_train)
-            
+
             # Log metrics
             accuracy = self.model.score(X_test_scaled, y_test)
             mlflow.log_metric("accuracy", accuracy)
             mlflow.sklearn.log_model(self.model, self.model_name)
-            
+
             return accuracy
 '''
-        
+
         (project_dir / "src").mkdir(exist_ok=True)
         (project_dir / "src" / "pipeline.py").write_text(ml_code)
         self.fixtures_created += 1
-    
+
     def _create_blockchain_project(self):
         """Create a blockchain test project"""
         project_dir = self.test_projects_dir / "blockchain_app"
-        
+
         # Solidity contract
         contract_code = '''// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -1125,45 +1122,45 @@ pragma solidity ^0.8.0;
 contract TestToken {
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
-    
+
     uint256 private _totalSupply;
     string public name = "Test Token";
     string public symbol = "TEST";
     uint8 public decimals = 18;
-    
+
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
-    
+
     constructor(uint256 _initialSupply) {
         _totalSupply = _initialSupply * 10**uint256(decimals);
         _balances[msg.sender] = _totalSupply;
         emit Transfer(address(0), msg.sender, _totalSupply);
     }
-    
+
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
-    
+
     function balanceOf(address account) public view returns (uint256) {
         return _balances[account];
     }
-    
+
     function transfer(address to, uint256 amount) public returns (bool) {
         require(to != address(0), "Transfer to zero address");
         require(_balances[msg.sender] >= amount, "Insufficient balance");
-        
+
         _balances[msg.sender] -= amount;
         _balances[to] += amount;
-        
+
         emit Transfer(msg.sender, to, amount);
         return true;
     }
 }
 '''
-        
+
         (project_dir / "contracts").mkdir(exist_ok=True)
         (project_dir / "contracts" / "TestToken.sol").write_text(contract_code)
-        
+
         # Hardhat config
         hardhat_config = '''require("@nomicfoundation/hardhat-toolbox");
 
@@ -1178,14 +1175,14 @@ module.exports = {
   }
 };
 '''
-        
+
         (project_dir / "hardhat.config.js").write_text(hardhat_config)
         self.fixtures_created += 1
-    
+
     def _generate_validation_scenarios(self):
         """Generate validation test scenarios"""
         print("\n🔍 Generating validation scenarios...")
-        
+
         scenarios = {
             "security_validation": {
                 "name": "Security Validation Scenarios",
@@ -1251,28 +1248,28 @@ module.exports = {
                 ]
             }
         }
-        
+
         scenarios_path = self.fixtures_dir / "validation_scenarios.json"
         with open(scenarios_path, 'w') as f:
             json.dump(scenarios, f, indent=2)
         self.fixtures_created += 1
-    
+
     def _generate_edge_case_standards(self):
         """Generate edge case standards for testing"""
         print("\n⚠️  Generating edge case standards...")
-        
+
         # Empty standard
         empty_standard = {
             "id": "empty-standard",
             "title": "Empty Standard",
             "rules": []
         }
-        
+
         empty_path = self.standards_dir / "edge_cases" / "empty_standard.json"
         with open(empty_path, 'w') as f:
             json.dump(empty_standard, f, indent=2)
         self.fixtures_created += 1
-        
+
         # Very large standard
         large_standard = {
             "id": "large-standard",
@@ -1285,12 +1282,12 @@ module.exports = {
                 } for i in range(1000)
             ]
         }
-        
+
         large_path = self.standards_dir / "edge_cases" / "large_standard.json"
         with open(large_path, 'w') as f:
             json.dump(large_standard, f, indent=2)
         self.fixtures_created += 1
-        
+
         # Circular reference standard
         circular_standard = {
             "id": "circular-standard",
@@ -1303,19 +1300,19 @@ module.exports = {
                 }
             ]
         }
-        
+
         circular_path = self.standards_dir / "edge_cases" / "circular_standard.json"
         with open(circular_path, 'w') as f:
             json.dump(circular_standard, f, indent=2)
         self.fixtures_created += 1
-        
+
         # Corrupted standard (invalid JSON)
         corrupted_content = '{"id": "corrupted-standard", "title": "Corrupted", "rules": [{'
-        
+
         corrupted_path = self.standards_dir / "corrupted" / "corrupted_standard.json"
         corrupted_path.write_text(corrupted_content)
         self.fixtures_created += 1
-        
+
         # Unicode-heavy standard
         unicode_standard = {
             "id": "unicode-standard",
@@ -1328,16 +1325,16 @@ module.exports = {
                 }
             ]
         }
-        
+
         unicode_path = self.standards_dir / "edge_cases" / "unicode_standard.json"
         with open(unicode_path, 'w') as f:
             json.dump(unicode_standard, f, indent=2, ensure_ascii=False)
         self.fixtures_created += 1
-    
+
     def _generate_fixture_manifest(self):
         """Generate a manifest of all created fixtures"""
         print("\n📋 Generating fixture manifest...")
-        
+
         manifest = {
             "generated": datetime.now().isoformat(),
             "total_fixtures": self.fixtures_created,
@@ -1356,11 +1353,11 @@ module.exports = {
             },
             "errors": self.errors
         }
-        
+
         manifest_path = self.fixtures_dir / "manifest.json"
         with open(manifest_path, 'w') as f:
             json.dump(manifest, f, indent=2)
-        
+
         # Create README
         readme_content = f"""# Test Fixtures
 
@@ -1405,7 +1402,7 @@ To regenerate fixtures, run:
 python evaluation/scripts/create_test_fixtures.py
 ```
 """
-        
+
         readme_path = self.fixtures_dir / "README.md"
         readme_path.write_text(readme_content)
 
@@ -1413,15 +1410,15 @@ python evaluation/scripts/create_test_fixtures.py
 def main():
     """Generate all test fixtures"""
     project_root = Path.cwd()
-    
+
     # Confirm we're in the right directory
     if not (project_root / "src" / "core" / "mcp").exists():
         print("❌ Error: This script must be run from the mcp-standards-server root directory")
         return
-    
+
     generator = TestFixtureGenerator(project_root)
     generator.run()
-    
+
     print("\n✨ Test fixture generation complete!")
     print(f"   Check fixtures at: {generator.fixtures_dir}")
 

@@ -1597,10 +1597,10 @@ class MCPStandardsServer:
 
     def _check_rate_limit(self, user_id: str) -> bool:
         """Check if user is within rate limits.
-        
+
         Args:
             user_id: User identifier for rate limiting
-            
+
         Returns:
             True if within limits, False if exceeded
         """
