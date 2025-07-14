@@ -30,6 +30,7 @@ dependencies = [
     "PyYAML>=6.0",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
+    "transformers>=4.53.2",  # Security update
     "tiktoken>=0.4.0",
     "tree-sitter>=0.20.0",
     "aiofiles>=23.0.0",
@@ -132,6 +133,8 @@ security-constraints = [
     "lxml>=5.0.0",  # XML parsing security fixes
     "setuptools>=70.0.0",  # Package installation security
     "certifi>=2024.8.30",  # CA bundle updates
+    "transformers>=4.53.2",  # Security updates
+    # Note: torch 2.7.1 has GHSA-887c-mr87-cxwp (DoS vulnerability) but no fix version available yet
 ]
 
 [tool.pytest.ini_options]
