@@ -161,12 +161,14 @@ class TestMCPStandardsServer:
 
             result = await server._validate_against_standard(code, standard, language)
 
-            assert "standard" in result
-            assert "passed" in result
-            assert "violations" in result
-            assert result["standard"] == "test-standard"
-            assert isinstance(result["passed"], bool)
-            assert isinstance(result["violations"], list)
+            assert "validation_results" in result
+            validation_results = result["validation_results"]
+            assert "standard" in validation_results
+            assert "compliant" in validation_results
+            assert "violations" in validation_results
+            assert validation_results["standard"] == "test-standard"
+            assert isinstance(validation_results["compliant"], bool)
+            assert isinstance(validation_results["violations"], list)
 
     async def test_search_standards_success(self, server):
         """Test successful search_standards operation."""
@@ -281,22 +283,22 @@ class TestMCPStandardsServer:
 
     async def test_input_validation(self, server):
         """Test input validation."""
-        server.input_validator.validate = Mock(return_value={"valid": True})
+        server.input_validator.validate_tool_input = Mock(return_value={"valid": True})
 
         context = {"languages": ["python"]}
-        result = server._validate_input(context)
+        result = server._validate_input("test_tool", context)
         assert result["valid"] is True
-        server.input_validator.validate.assert_called_once_with(context)
+        server.input_validator.validate_tool_input.assert_called_once_with("test_tool", context)
 
     async def test_privacy_filtering(self, server):
         """Test privacy filtering."""
-        server.privacy_filter.filter = Mock(return_value={"filtered": True})
+        server.privacy_filter.filter_dict = Mock(return_value=({"filtered": True}, None))
 
         response = {"data": "sensitive"}
         filtered = server._filter_response(response)
 
         assert filtered == {"filtered": True}
-        server.privacy_filter.filter.assert_called_once_with(response)
+        server.privacy_filter.filter_dict.assert_called_once_with(response)
 
     async def test_metrics_recording(self, server):
         """Test metrics recording."""
@@ -318,40 +320,44 @@ class TestMCPStandardsServer:
 
     async def test_cross_reference_standards(self, server):
         """Test cross_reference_standards operation."""
-        server.cross_referencer.get_references = AsyncMock(
-            return_value={
-                "references": [
-                    {
-                        "id": "related-standard",
-                        "title": "Related Standard",
-                        "relationship": "complementary",
-                        "confidence": 0.8,
-                    }
-                ]
-            }
+        server.cross_referencer.get_references_for_standard = Mock(
+            return_value=[
+                {
+                    "id": "related-standard",
+                    "title": "Related Standard",
+                    "relationship": "complementary",
+                    "confidence": 0.8,
+                }
+            ]
         )
 
         result = await server._cross_reference_standards(standard_id="test-standard")
 
-        assert "references" in result
-        assert len(result["references"]) == 1
-        assert result["references"][0]["id"] == "related-standard"
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["id"] == "related-standard"
 
     async def test_get_analytics(self, server):
         """Test get_analytics operation."""
-        server.analytics.get_analytics = AsyncMock(
+        server.analytics.get_usage_metrics = Mock(
             return_value={
                 "total_queries": 1000,
                 "top_standards": ["python-best-practices"],
-                "usage_trends": {"daily": [100, 120, 110]},
             }
+        )
+        server.analytics.get_popularity_metrics = Mock(
+            return_value={"usage_trends": {"daily": [100, 120, 110]}}
+        )
+        server.analytics.get_quality_recommendations = Mock(
+            return_value={"recommendations": []}
         )
 
         result = await server._get_analytics()
 
-        assert result["total_queries"] == 1000
-        assert "top_standards" in result
-        assert "usage_trends" in result
+        assert "usage_metrics" in result
+        assert "popularity_metrics" in result
+        assert "quality_recommendations" in result
+        assert result["usage_metrics"]["total_queries"] == 1000
 
     def test_get_semantic_search_engine(self, server):
         """Test semantic search engine initialization."""
