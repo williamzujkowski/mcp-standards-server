@@ -82,6 +82,9 @@ jobs:
     - name: Run E2E tests with coverage
       env:
         CI: "true"  # Mark as CI environment for test skipping
+        PYTHONPATH: ${{ github.workspace }}
+        MCP_TEST_MODE: "true"
+        COVERAGE_PROCESS_START: ".coveragerc"
       run: |
         set -e
         echo "Clearing any existing coverage data..."
@@ -98,10 +101,6 @@ jobs:
         coverage report --fail-under=5
         coverage xml
         coverage html
-      env:
-        PYTHONPATH: ${{ github.workspace }}
-        MCP_TEST_MODE: "true"
-        COVERAGE_PROCESS_START: ".coveragerc"
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4

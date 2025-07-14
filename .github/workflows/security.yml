@@ -214,9 +214,10 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --debug --json --output trufflehog-results.json
+          # On push to main, scan the whole repo. On PR, scan the diff.
+          base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          head: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+          extra_args: ${{ github.event_name == 'push' && '--branch HEAD' || '--debug' }} --json --output trufflehog-results.json
       
       - name: Scan for hardcoded secrets
         run: |

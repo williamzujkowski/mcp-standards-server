@@ -2,130 +2,246 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/API_DOCUMENTATION/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/CACHE_POPULATION_GUIDE/</loc>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/CONFIGURATION_GUIDE/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/CREATING_STANDARDS_GUIDE/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/EXPORT_FUNCTIONALITY/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/MCP_STANDARDS_IMPLEMENTATION/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/SECURITY_CONFIGURATION/</loc>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/WORKFLOW_FIXES/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/caching/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/token-optimization/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cache/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/configuration/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/troubleshooting/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/cache/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/config/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/generate/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/query/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/serve/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/status/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/sync/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/commands/validate/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/examples/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/tutorials/cicd-integration/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/tutorials/common-workflows/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/tutorials/getting-started/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/cli/tutorials/ide-integration/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/community/review-process/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/man/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/site/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/api/config-schema/</loc>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/site/api/mcp-tools/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/api/standards-format/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/api/validation-rules/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/architecture/mcp-integration/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/architecture/overview/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/architecture/standards-engine/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/architecture/token-optimization/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/contributing/setup/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/contributing/standards/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/contributing/testing/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/contributing/validators/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/examples/custom-standards/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/examples/project-setup/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/examples/scripts/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/examples/validation/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/guides/cicd-integration/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/guides/configuration/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/guides/ide-integration/</loc>
+         <lastmod>2025-07-14</lastmod>
     </url>
     <url>
          <loc>https://mcp-standards-server.readthedocs.io/site/guides/installation/</loc>
-         <lastmod>2025-07-09</lastmod>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/guides/quickstart/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/guides/workflows/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/caching/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/cli-commands/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/config-reference/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/performance/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/standards-format/</loc>
+         <lastmod>2025-07-14</lastmod>
+    </url>
+    <url>
+         <loc>https://mcp-standards-server.readthedocs.io/site/reference/troubleshooting/</loc>
+         <lastmod>2025-07-14</lastmod>
     </url>
 </urlset>

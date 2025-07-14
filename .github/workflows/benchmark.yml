@@ -188,7 +188,7 @@ jobs:
       - name: Analyze memory usage
         run: |
           echo "## Memory Usage Analysis" >> $GITHUB_STEP_SUMMARY
-          python - << 'EOF'
+          python - << 'EOF' >> $GITHUB_STEP_SUMMARY
           import json
           
           # Load memory profile
@@ -208,7 +208,7 @@ jobs:
                   print(f"- {leak['location']}: {leak['growth_mb']:.2f} MB growth")
           else:
               print("\n✅ No memory leaks detected")
-          EOF >> $GITHUB_STEP_SUMMARY
+          EOF
       
       - name: Upload memory reports
         uses: actions/upload-artifact@v4
@@ -280,7 +280,7 @@ jobs:
       - name: Generate load test report
         run: |
           echo "## Load Test Results" >> $GITHUB_STEP_SUMMARY
-          python - << 'EOF'
+          python - << 'EOF' >> $GITHUB_STEP_SUMMARY
           import json
           import glob
           
@@ -302,7 +302,7 @@ jobs:
           print(f"\n### Breaking Point Analysis")
           print(f"- Max sustainable users: {bp.get('max_users', 0)}")
           print(f"- Breaking point response time: {bp.get('breaking_response_time', 0):.2f}ms")
-          EOF >> $GITHUB_STEP_SUMMARY
+          EOF
       
       - name: Upload load test results
         uses: actions/upload-artifact@v4
