@@ -999,8 +999,21 @@ class RedisCache:
                 loop = asyncio.get_running_loop()
                 loop.create_task(_async_cleanup())
             except RuntimeError:
-                # No running loop - create one to close properly
-                asyncio.run(_async_cleanup())
+                # No running loop - try to close synchronously
+                try:
+                    asyncio.run(_async_cleanup())
+                except Exception:
+                    # If all else fails, force close synchronously
+                    try:
+                        if self._async_client:
+                            self._async_client.close()
+                    except Exception:
+                        pass
+                    try:
+                        if self._async_pool:
+                            self._async_pool.disconnect()
+                    except Exception:
+                        pass
             self._async_client = None
             self._async_pool = None
 
