@@ -84,7 +84,7 @@ _SentenceTransformerCls = _get_sentence_transformer_class()
 
 
 # Initialize NLTK data - only download if not already present
-def _initialize_nltk_data():
+def _initialize_nltk_data() -> None:
     """Initialize NLTK data with proper error handling and timeouts."""
     import signal
     from contextlib import contextmanager
@@ -94,10 +94,10 @@ def _initialize_nltk_data():
         return
 
     @contextmanager
-    def timeout(seconds):
+    def timeout(seconds: int) -> Any:
         """Context manager for timing out operations."""
 
-        def timeout_handler(signum, frame):
+        def timeout_handler(signum: int, frame: Any) -> None:
             raise TimeoutError("NLTK download timed out")
 
         # Set up signal alarm (Unix only)
