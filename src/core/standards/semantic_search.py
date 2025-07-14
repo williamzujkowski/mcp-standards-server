@@ -16,6 +16,7 @@ import base64
 import hashlib
 import json
 import logging
+import os
 import re
 import threading
 import time
@@ -81,15 +82,64 @@ def _get_sentence_transformer_class() -> Any:
 # Get the actual class to use
 _SentenceTransformerCls = _get_sentence_transformer_class()
 
-# Download required NLTK data
-try:
-    # Download NLTK data - punkt_tab is required for NLTK 3.9+
-    nltk.download("punkt_tab", quiet=True)
-    nltk.download("punkt", quiet=True)  # Fallback for older NLTK versions
-    nltk.download("stopwords", quiet=True)
-    nltk.download("wordnet", quiet=True)
-except Exception:
-    pass  # nosec B110
+# Initialize NLTK data - only download if not already present
+def _initialize_nltk_data():
+    """Initialize NLTK data with proper error handling and timeouts."""
+    import signal
+    from contextlib import contextmanager
+    
+    # Skip downloads in test mode
+    if os.environ.get("MCP_TEST_MODE") == "true":
+        return
+    
+    @contextmanager
+    def timeout(seconds):
+        """Context manager for timing out operations."""
+        def timeout_handler(signum, frame):
+            raise TimeoutError("NLTK download timed out")
+        
+        # Set up signal alarm (Unix only)
+        if hasattr(signal, 'SIGALRM'):
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+            try:
+                yield
+            finally:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old_handler)
+        else:
+            # On Windows or if SIGALRM not available, just yield
+            yield
+    
+    required_data = [
+        ("punkt_tab", "tokenizers/punkt_tab"),
+        ("punkt", "tokenizers/punkt"),
+        ("stopwords", "corpora/stopwords"),
+        ("wordnet", "corpora/wordnet"),
+    ]
+    
+    for data_name, data_path in required_data:
+        try:
+            # Check if data already exists
+            try:
+                nltk.data.find(data_path)
+                continue  # Already downloaded
+            except LookupError:
+                pass  # Need to download
+            
+            # Download with timeout
+            with timeout(30):  # 30 second timeout per download
+                nltk.download(data_name, quiet=True)
+        except Exception as e:
+            # Log but don't fail - NLTK will use fallback tokenization
+            logging.debug(f"Failed to download NLTK data '{data_name}': {e}")
+
+# Only initialize NLTK data if not in test mode
+if os.environ.get("MCP_TEST_MODE") != "true":
+    try:
+        _initialize_nltk_data()
+    except Exception:
+        pass  # nosec B110
 
 logger = logging.getLogger(__name__)
 

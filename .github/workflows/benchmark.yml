@@ -64,6 +64,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
       
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet')"
+      
       - name: Run benchmarks
         timeout-minutes: 30
         env:
@@ -188,6 +192,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
+      
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet')"
           pip install memory-profiler pympler
       
       - name: Run memory benchmarks
@@ -310,6 +318,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
+      
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet')"
           pip install locust==2.20.0
       
       - name: Start MCP server
@@ -425,6 +437,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[test,performance]"
+      
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('punkt_tab'); nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet')"
       
       - name: Run benchmarks on PR branch
         timeout-minutes: 20
