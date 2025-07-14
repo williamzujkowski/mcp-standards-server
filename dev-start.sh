@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 # Download NLTK data if needed
 echo "📚 Downloading NLTK data..."
-python -c "import nltk; nltk.download('punkt_tab', quiet=True); nltk.download('stopwords', quiet=True)" || true
+python -c "import nltk; nltk.download('punkt_tab', quiet=True); nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('wordnet', quiet=True)" || true
 
 # Set development environment variables
 export LOG_LEVEL=DEBUG

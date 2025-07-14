@@ -41,7 +41,9 @@ try:
         os.getenv("CI") is not None or 
         os.getenv("PYTEST_CURRENT_TEST") is not None):
         try:
-            from tests.mocks.semantic_search_mocks import MockSentenceTransformer as SentenceTransformer
+            from tests.mocks.semantic_search_mocks import (
+                MockSentenceTransformer as SentenceTransformer,
+            )
             print("INFO: Using MockSentenceTransformer due to test mode environment")
         except ImportError:
             from sentence_transformers import SentenceTransformer
@@ -55,7 +57,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Download required NLTK data
 try:
-    nltk.download("punkt", quiet=True)
+    # Download NLTK data - punkt_tab is required for NLTK 3.9+
+    nltk.download("punkt_tab", quiet=True)
+    nltk.download("punkt", quiet=True)  # Fallback for older NLTK versions
     nltk.download("stopwords", quiet=True)
     nltk.download("wordnet", quiet=True)
 except Exception:
@@ -220,7 +224,7 @@ class EmbeddingCache:
     ):
         # Check if we're in test/CI mode to avoid downloading models
         import os
-        
+
         is_test_mode = (
             os.getenv("MCP_TEST_MODE") == "true" or
             os.getenv("CI") is not None or
