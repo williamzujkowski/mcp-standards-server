@@ -87,17 +87,17 @@ def _initialize_nltk_data():
     """Initialize NLTK data with proper error handling and timeouts."""
     import signal
     from contextlib import contextmanager
-    
+
     # Skip downloads in test mode
     if os.environ.get("MCP_TEST_MODE") == "true":
         return
-    
+
     @contextmanager
     def timeout(seconds):
         """Context manager for timing out operations."""
         def timeout_handler(signum, frame):
             raise TimeoutError("NLTK download timed out")
-        
+
         # Set up signal alarm (Unix only)
         if hasattr(signal, 'SIGALRM'):
             old_handler = signal.signal(signal.SIGALRM, timeout_handler)
@@ -110,14 +110,14 @@ def _initialize_nltk_data():
         else:
             # On Windows or if SIGALRM not available, just yield
             yield
-    
+
     required_data = [
         ("punkt_tab", "tokenizers/punkt_tab"),
         ("punkt", "tokenizers/punkt"),
         ("stopwords", "corpora/stopwords"),
         ("wordnet", "corpora/wordnet"),
     ]
-    
+
     for data_name, data_path in required_data:
         try:
             # Check if data already exists
@@ -126,7 +126,7 @@ def _initialize_nltk_data():
                 continue  # Already downloaded
             except LookupError:
                 pass  # Need to download
-            
+
             # Download with timeout
             with timeout(30):  # 30 second timeout per download
                 nltk.download(data_name, quiet=True)

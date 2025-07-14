@@ -89,7 +89,7 @@ class StandardMetadata:
                 data["authors"] = [authors_value]
             elif isinstance(authors_value, list):
                 data["authors"] = authors_value
-            
+
         if "last_updated" in data and data["last_updated"]:
             if isinstance(data["last_updated"], str):
                 data["last_updated"] = datetime.fromisoformat(data["last_updated"])
