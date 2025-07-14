@@ -23,7 +23,6 @@ from src.core.standards.semantic_search import (
     AsyncSemanticSearch,
     SemanticSearch,
     create_search_engine,
-    _get_sentence_transformer_class,
 )
 from tests.mocks.semantic_search_mocks import (
     MockRedisClient,

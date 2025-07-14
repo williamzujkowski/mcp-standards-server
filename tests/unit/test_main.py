@@ -119,9 +119,14 @@ class TestCombinedServer:
         server.http_runner.cleanup = AsyncMock()
         server.mcp_server = AsyncMock()
 
+        # Store reference to runner before shutdown sets it to None
+        http_runner_mock = server.http_runner
+
         await server.shutdown()
 
-        server.http_runner.cleanup.assert_called_once()
+        # Verify cleanup was called and runner was set to None
+        http_runner_mock.cleanup.assert_called_once()
+        assert server.http_runner is None
 
     def test_signal_handler_functionality(self, server):
         """Test signal handler functionality."""
