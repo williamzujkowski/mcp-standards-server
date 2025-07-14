@@ -1003,17 +1003,8 @@ class RedisCache:
                 try:
                     asyncio.run(_async_cleanup())
                 except Exception:
-                    # If all else fails, force close synchronously
-                    try:
-                        if self._async_client:
-                            self._async_client.close()
-                    except Exception:
-                        pass
-                    try:
-                        if self._async_pool:
-                            self._async_pool.disconnect()
-                    except Exception:
-                        pass
+                    # If all else fails, just clear references without calling async methods
+                    pass
             self._async_client = None
             self._async_pool = None
 

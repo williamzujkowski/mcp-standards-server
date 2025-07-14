@@ -326,9 +326,9 @@ class EmbeddingCache:
                 # Return deterministic but realistic embeddings
                 embeddings = []
                 for text in texts:
-                    # Use hash of text for deterministic embeddings
+                    # Use hash of text for deterministic embeddings (not security-related)
                     import hashlib
-                    hash_val = int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+                    hash_val = int(hashlib.sha256(text.encode()).hexdigest()[:8], 16)
                     np.random.seed(hash_val % (2**31))  # Ensure positive seed
                     embedding = np.random.randn(self.embedding_dim).astype(np.float32)
                     embedding = embedding / (np.linalg.norm(embedding) + 1e-9)  # Normalize
