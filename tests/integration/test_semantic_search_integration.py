@@ -615,7 +615,11 @@ class TestSemanticSearchPerformanceIntegration:
         import os
 
         # Use smaller dataset in CI environments to avoid timeouts
-        corpus_size = 100 if os.environ.get("CI") or os.environ.get("MCP_TEST_MODE") == "true" else 5000
+        corpus_size = (
+            100
+            if os.environ.get("CI") or os.environ.get("MCP_TEST_MODE") == "true"
+            else 5000
+        )
 
         engine = create_search_engine()
 

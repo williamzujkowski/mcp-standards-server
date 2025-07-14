@@ -292,11 +292,17 @@ class StandardsSynchronizer:
             except ValueError:
                 # On Windows, handle short vs long path names by using string comparison
                 import sys
+
                 if sys.platform == "win32":
-                    base_str = str(base_resolved).lower().replace('\\', '/')
-                    resolved_str = str(resolved_path).lower().replace('\\', '/')
-                    if not resolved_str.startswith(base_str + '/') and resolved_str != base_str:
-                        raise ValueError(f"Path {resolved_path} is not within base {base_resolved}")
+                    base_str = str(base_resolved).lower().replace("\\", "/")
+                    resolved_str = str(resolved_path).lower().replace("\\", "/")
+                    if (
+                        not resolved_str.startswith(base_str + "/")
+                        and resolved_str != base_str
+                    ):
+                        raise ValueError(
+                            f"Path {resolved_path} is not within base {base_resolved}"
+                        )
                 else:
                     raise
 
@@ -760,16 +766,19 @@ class StandardsSynchronizer:
                 except ValueError:
                     # On Windows, handle short vs long path names
                     import sys
+
                     if sys.platform == "win32":
                         cache_resolved = self.cache_dir.resolve()
                         parent_resolved = parent_dir.resolve()
-                        cache_str = str(cache_resolved).lower().replace('\\', '/')
-                        parent_str = str(parent_resolved).lower().replace('\\', '/')
-                        if parent_str.startswith(cache_str + '/'):
+                        cache_str = str(cache_resolved).lower().replace("\\", "/")
+                        parent_str = str(parent_resolved).lower().replace("\\", "/")
+                        if parent_str.startswith(cache_str + "/"):
                             # Calculate relative path manually
-                            parent_relative = parent_str[len(cache_str + '/'):]
+                            parent_relative = parent_str[len(cache_str + "/") :]
                         else:
-                            logger.error(f"Parent directory {parent_dir} is outside cache {self.cache_dir}")
+                            logger.error(
+                                f"Parent directory {parent_dir} is outside cache {self.cache_dir}"
+                            )
                             return False
                     else:
                         raise

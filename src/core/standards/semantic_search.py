@@ -82,6 +82,7 @@ def _get_sentence_transformer_class() -> Any:
 # Get the actual class to use
 _SentenceTransformerCls = _get_sentence_transformer_class()
 
+
 # Initialize NLTK data - only download if not already present
 def _initialize_nltk_data():
     """Initialize NLTK data with proper error handling and timeouts."""
@@ -95,11 +96,12 @@ def _initialize_nltk_data():
     @contextmanager
     def timeout(seconds):
         """Context manager for timing out operations."""
+
         def timeout_handler(signum, frame):
             raise TimeoutError("NLTK download timed out")
 
         # Set up signal alarm (Unix only)
-        if hasattr(signal, 'SIGALRM'):
+        if hasattr(signal, "SIGALRM"):
             old_handler = signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(seconds)
             try:
@@ -133,6 +135,7 @@ def _initialize_nltk_data():
         except Exception as e:
             # Log but don't fail - NLTK will use fallback tokenization
             logging.debug(f"Failed to download NLTK data '{data_name}': {e}")
+
 
 # Only initialize NLTK data if not in test mode
 if os.environ.get("MCP_TEST_MODE") != "true":

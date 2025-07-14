@@ -376,7 +376,9 @@ class TestEnhancedPathTraversalProtection:
                 # Check if created directory is relative to cache directory
                 created_dir_resolved.relative_to(cache_dir_resolved)
             except ValueError:
-                pytest.fail(f"Directory {created_dir} created outside cache {cache_dir_resolved}")
+                pytest.fail(
+                    f"Directory {created_dir} created outside cache {cache_dir_resolved}"
+                )
 
     def test_windows_reserved_names(self, secure_sync):
         """Test handling of Windows reserved filenames."""
