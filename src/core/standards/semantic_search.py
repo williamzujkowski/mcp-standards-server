@@ -347,7 +347,9 @@ class EmbeddingCache:
                 self.model_name = model_name
                 self.embedding_dim = 384  # Standard dimension for most models
 
-            def encode(self, texts: Any, convert_to_numpy: bool = True, **kwargs: Any) -> Any:
+            def encode(
+                self, texts: Any, convert_to_numpy: bool = True, **kwargs: Any
+            ) -> Any:
                 if isinstance(texts, str):
                     texts = [texts]
                 # Return deterministic but realistic embeddings
