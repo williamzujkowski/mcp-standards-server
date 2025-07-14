@@ -189,7 +189,14 @@ class SemanticSearchBenchmark:
                     latencies.append(latency)
 
             avg_latency = statistics.mean(latencies)
-            p95_latency = np.percentile(latencies, 95)
+            # Use numpy percentile if available, else compute manually
+            if np is not None:
+                p95_latency = np.percentile(latencies, 95)
+            else:
+                # Manual percentile calculation
+                sorted_latencies = sorted(latencies)
+                index = int(0.95 * len(sorted_latencies))
+                p95_latency = sorted_latencies[min(index, len(sorted_latencies) - 1)]
 
             results[config_name] = {
                 "avg": avg_latency,
