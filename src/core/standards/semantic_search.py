@@ -24,7 +24,9 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, cast
+
+# Import SentenceTransformer with fallback for test environments
+from typing import TYPE_CHECKING, Any, cast
 
 import nltk
 import numpy as np
@@ -32,10 +34,17 @@ import redis
 from fuzzywuzzy import fuzz, process
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Import SentenceTransformer with fallback for test environments
-try:
-    # Check if we should use mock (redundant with class check, but ensures early detection)
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+else:
+    SentenceTransformer = None
+
+
+# Runtime import logic
+def _get_sentence_transformer_class() -> Any:
+    """Get SentenceTransformer class at runtime."""
     import os
 
     if (
@@ -43,21 +52,34 @@ try:
         or os.getenv("CI") is not None
         or os.getenv("PYTEST_CURRENT_TEST") is not None
     ):
+        # Use mock in test environments
         try:
-            from tests.mocks.semantic_search_mocks import (
-                MockSentenceTransformer as SentenceTransformer,
-            )
+            import sys
 
+            if "tests.mocks.semantic_search_mocks" in sys.modules:
+                mock_module = sys.modules["tests.mocks.semantic_search_mocks"]
+            else:
+                import importlib
+
+                mock_module = importlib.import_module(
+                    "tests.mocks.semantic_search_mocks"
+                )
             print("INFO: Using MockSentenceTransformer due to test mode environment")
+            return mock_module.MockSentenceTransformer
         except ImportError:
-            from sentence_transformers import SentenceTransformer  # type: ignore[no-redef]
-    else:
-        from sentence_transformers import SentenceTransformer  # type: ignore[no-redef]
-except ImportError:
-    # Ultimate fallback if sentence-transformers isn't available
-    SentenceTransformer = None  # type: ignore[misc,assignment]
+            pass
 
-from sklearn.metrics.pairwise import cosine_similarity
+    # Use real SentenceTransformer
+    try:
+        from sentence_transformers import SentenceTransformer as ST
+
+        return ST
+    except ImportError:
+        return None
+
+
+# Get the actual class to use
+SentenceTransformer = _get_sentence_transformer_class()
 
 # Download required NLTK data
 try:
@@ -238,8 +260,17 @@ class EmbeddingCache:
         if is_test_mode:
             # Use mock in test mode to prevent HuggingFace downloads
             try:
-                from tests.mocks.semantic_search_mocks import MockSentenceTransformer
+                import importlib
+                import sys
 
+                if "tests.mocks.semantic_search_mocks" in sys.modules:
+                    mock_module = sys.modules["tests.mocks.semantic_search_mocks"]
+                else:
+                    mock_module = importlib.import_module(
+                        "tests.mocks.semantic_search_mocks"
+                    )
+
+                MockSentenceTransformer = mock_module.MockSentenceTransformer
                 self.model = MockSentenceTransformer(model_name)
                 logger.info(
                     f"Using MockSentenceTransformer for model {model_name} in test mode"
@@ -361,7 +392,7 @@ class EmbeddingCache:
                     hash_val = int(hashlib.sha256(text.encode()).hexdigest()[:8], 16)
                     np.random.seed(hash_val % (2**31))  # Ensure positive seed
                     embedding = np.random.randn(self.embedding_dim).astype(np.float32)
-                    embedding = embedding / (
+                    embedding = cast(Any, embedding) / (
                         np.linalg.norm(embedding) + 1e-9
                     )  # Normalize
                     embeddings.append(embedding)
