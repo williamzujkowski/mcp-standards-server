@@ -343,10 +343,12 @@ class TestMCPServerToolExecution:
 
         result = await server._validate_against_standard(code, standard, language)
 
-        assert result["standard"] == standard
-        assert result["passed"] is False
-        assert len(result["violations"]) == 1
-        assert "functional components" in result["violations"][0]["message"]
+        # The result has a validation_results wrapper
+        validation_results = result["validation_results"]
+        assert validation_results["standard"] == standard
+        assert validation_results["compliant"] is False
+        assert len(validation_results["violations"]) == 1
+        assert "functional components" in validation_results["violations"][0]["message"]
 
     @pytest.mark.asyncio
     async def test_search_standards_with_search_enabled(self, server):
@@ -395,13 +397,17 @@ class TestMCPServerToolExecution:
 
         # Mock cache file exists
         server.synchronizer.cache_dir = Path("/test/cache")
-        server.synchronizer.cache_dir / f"{standard_id}.json"
-        with (
-            patch.object(Path, "exists", return_value=True),
-            patch("builtins.open", mock_open(read_data=json.dumps(standard_data))),
-        ):
-
-            result = await server._get_standard_details(standard_id)
+        
+        # Mock the path exists check
+        with patch.object(Path, "exists", return_value=True):
+            # Mock aiofiles.open with an async context manager
+            mock_file = AsyncMock()
+            mock_file.read = AsyncMock(return_value=json.dumps(standard_data))
+            mock_file.__aenter__ = AsyncMock(return_value=mock_file)
+            mock_file.__aexit__ = AsyncMock(return_value=None)
+            
+            with patch("aiofiles.open", return_value=mock_file):
+                result = await server._get_standard_details(standard_id)
 
             assert result == standard_data
             server.metrics.record_cache_access.assert_called_with(
@@ -438,14 +444,20 @@ class TestMCPServerToolExecution:
         standard1_data = {"id": "standard1", "name": "Standard 1", "category": "web"}
         standard2_data = {"id": "standard2", "name": "Standard 2", "category": "api"}
 
-        def mock_open_func(file_path, mode="r"):
+        # Create mocks for each file (not async function)
+        def mock_aiofiles_open(file_path, mode="r"):
+            mock_file = AsyncMock()
             if "standard1" in str(file_path):
-                return mock_open(read_data=json.dumps(standard1_data))()
+                mock_file.read = AsyncMock(return_value=json.dumps(standard1_data))
             elif "standard2" in str(file_path):
-                return mock_open(read_data=json.dumps(standard2_data))()
-            return mock_open(read_data="{}")()
+                mock_file.read = AsyncMock(return_value=json.dumps(standard2_data))
+            else:
+                mock_file.read = AsyncMock(return_value="{}")
+            mock_file.__aenter__ = AsyncMock(return_value=mock_file)
+            mock_file.__aexit__ = AsyncMock(return_value=None)
+            return mock_file
 
-        with patch("builtins.open", side_effect=mock_open_func):
+        with patch("aiofiles.open", side_effect=mock_aiofiles_open):
             result = await server._list_available_standards()
 
             assert len(result["standards"]) == 2
@@ -945,8 +957,10 @@ class TestMCPServerAdvancedToolExecution:
 
         with patch.object(server, "_get_standard_details", return_value=standard_data):
             server.token_optimizer.progressive_load.return_value = [
-                [("intro", 100), ("overview", 150)],
-                [("details", 300), ("examples", 200)],
+                ("intro", 100),
+                ("overview", 150),
+                ("details", 300),
+                ("examples", 200),
             ]
 
             result = await server._progressive_load_standard(
@@ -954,9 +968,9 @@ class TestMCPServerAdvancedToolExecution:
             )
 
             assert result["standard_id"] == standard_id
-            assert result["total_batches"] == 2
             assert result["total_sections"] == 4
             assert result["estimated_total_tokens"] == 750
+            assert len(result["loading_plan"]) == 4
 
     @pytest.mark.asyncio
     async def test_estimate_token_usage(self, server):
@@ -1104,23 +1118,23 @@ class TestMCPServerAdvancedToolExecution:
     @pytest.mark.asyncio
     async def test_list_templates(self, server):
         """Test list_templates tool."""
-        mock_template1 = Mock()
-        mock_template1.name = "api_template"
-        mock_template1.domain = "api"
-        mock_template1.description = "API template"
-        mock_template1.variables = []
-        mock_template1.features = []
+        template1 = {
+            "name": "api_template",
+            "domain": "api",
+            "description": "API template",
+            "variables": [],
+            "features": []
+        }
 
-        mock_template2 = Mock()
-        mock_template2.name = "web_template"
-        mock_template2.domain = "web"
-        mock_template2.description = "Web template"
-        mock_template2.variables = []
-        mock_template2.features = []
+        template2 = {
+            "name": "web_template",
+            "domain": "web",
+            "description": "Web template",
+            "variables": [],
+            "features": []
+        }
 
-        mock_templates = [mock_template1, mock_template2]
-
-        server.generator.list_templates.return_value = mock_templates
+        server.generator.list_templates.return_value = [template1, template2]
 
         result = await server._list_templates()
 
