@@ -15,6 +15,12 @@ env:
   PYTHON_VERSION_DEFAULT: "3.11"
   REDIS_VERSION: "7.2"
   NODE_VERSION: "18"
+  # HuggingFace offline mode to prevent model downloads and rate limiting
+  HF_DATASETS_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  HF_HUB_OFFLINE: "1"
+  SENTENCE_TRANSFORMERS_HOME: "/tmp/st_cache"
+  HF_HOME: "/tmp/hf_cache"
 
 jobs:
   lint:

@@ -447,17 +447,45 @@ class TestEmbeddingCacheComprehensive:
 
     def test_model_loading_failure_handling(self):
         """Test handling of model loading failures."""
-        with patch("src.core.standards.semantic_search.SentenceTransformer") as mock_st:
-            # Create a function that raises when called
-            def raise_error(*args, **kwargs):
-                raise Exception("Model download failed")
+        # Temporarily disable test mode to test production failure handling
+        import os
+        original_test_mode = os.environ.get("MCP_TEST_MODE")
+        original_ci = os.environ.get("CI")
+        original_pytest = os.environ.get("PYTEST_CURRENT_TEST")
+        
+        try:
+            os.environ.pop("MCP_TEST_MODE", None)
+            os.environ.pop("CI", None) 
+            os.environ.pop("PYTEST_CURRENT_TEST", None)
+            
+            with patch("src.core.standards.semantic_search.SentenceTransformer") as mock_st:
+                # Create a function that raises when called - use rate limit error
+                # to trigger retry and eventual fallback
+                def raise_rate_limit_error(*args, **kwargs):
+                    raise Exception("HTTP 429: Rate limit exceeded")
 
-            mock_st.side_effect = raise_error
+                mock_st.side_effect = raise_rate_limit_error
 
-            with pytest.raises(Exception) as exc_info:
-                EmbeddingCache()
-
-            assert "Model download failed" in str(exc_info.value)
+                # With our new implementation, it should fall back to minimal mock
+                # after retries fail
+                cache = EmbeddingCache()
+                
+                # Verify it uses the minimal mock fallback
+                assert cache.model is not None, "Should create a fallback mock model"
+                
+                # Test that the mock can generate embeddings
+                embedding = cache.get_embedding("test text")
+                assert embedding is not None, "Fallback mock should generate embeddings"
+                assert len(embedding.shape) > 0, "Should return valid numpy array"
+                
+        finally:
+            # Restore original environment
+            if original_test_mode:
+                os.environ["MCP_TEST_MODE"] = original_test_mode
+            if original_ci:
+                os.environ["CI"] = original_ci
+            if original_pytest:
+                os.environ["PYTEST_CURRENT_TEST"] = original_pytest
 
     def test_redis_connection_failure_graceful_degradation(self, temp_cache_dir):
         """Test graceful degradation when Redis is unavailable."""

@@ -118,6 +118,13 @@ full = [
     "annoy>=1.17.0",
     "matplotlib>=3.5.0",
 ]
+security-constraints = [
+    # Security constraints to avoid vulnerable packages
+    "PyPDF2!=1.28.6",  # CVE vulnerability in version 1.28.6
+    "langchain-community>=0.2.5",  # Multiple CVEs fixed in 0.2.5
+    "flask>=3.0.4",  # Security updates
+    "sqlitedict!=2.1.0",  # CVE-2024-35515 - insecure deserialization
+]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
