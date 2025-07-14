@@ -755,7 +755,24 @@ class StandardsSynchronizer:
             # Validate parent directory is still within cache
             # Special case: if parent is the cache directory itself, it's safe
             if parent_dir != self.cache_dir.resolve():
-                parent_relative = parent_dir.relative_to(self.cache_dir).as_posix()
+                try:
+                    parent_relative = parent_dir.relative_to(self.cache_dir).as_posix()
+                except ValueError:
+                    # On Windows, handle short vs long path names
+                    import sys
+                    if sys.platform == "win32":
+                        cache_resolved = self.cache_dir.resolve()
+                        parent_resolved = parent_dir.resolve()
+                        cache_str = str(cache_resolved).lower().replace('\\', '/')
+                        parent_str = str(parent_resolved).lower().replace('\\', '/')
+                        if parent_str.startswith(cache_str + '/'):
+                            # Calculate relative path manually
+                            parent_relative = parent_str[len(cache_str + '/'):]
+                        else:
+                            logger.error(f"Parent directory {parent_dir} is outside cache {self.cache_dir}")
+                            return False
+                    else:
+                        raise
                 if parent_relative != "." and not self._validate_and_resolve_path(
                     self.cache_dir, parent_relative
                 ):
