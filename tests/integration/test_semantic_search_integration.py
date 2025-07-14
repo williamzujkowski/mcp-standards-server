@@ -527,7 +527,10 @@ class TestSemanticSearchErrorRecovery:
                 super().__init__(*args, **kwargs)
 
         # Patch the sentence transformer class directly
-        with patch("src.core.standards.semantic_search._SentenceTransformerCls", FailingThenSucceedingModel):
+        with patch(
+            "src.core.standards.semantic_search._SentenceTransformerCls",
+            FailingThenSucceedingModel,
+        ):
             # First two attempts should fail
             for _i in range(2):
                 with pytest.raises(RuntimeError):
