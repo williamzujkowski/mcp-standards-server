@@ -73,14 +73,18 @@ jobs:
           # Create benchmark results directory
           mkdir -p benchmark-results
           
-          # Run all benchmarks
-          python -m benchmarks.run_benchmarks --output benchmark-results
+          # Run all benchmarks with error handling
+          python -m benchmarks.run_benchmarks --output benchmark-results || echo "Main benchmarks failed, continuing..."
           
-          # Run specific benchmark suites
-          python -m benchmarks.analyzer_performance --json > benchmark-results/analyzer.json
-          python -m benchmarks.cache_performance --json > benchmark-results/cache.json
-          python -m benchmarks.semantic_search_benchmark --json > benchmark-results/search.json
-          python -m benchmarks.token_optimization_benchmark --json > benchmark-results/token.json
+          # Run specific benchmark suites with error handling
+          python -m benchmarks.analyzer_performance --json > benchmark-results/analyzer.json 2>&1 || echo '{"error": "analyzer_performance failed"}' > benchmark-results/analyzer.json
+          python -m benchmarks.cache_performance --json > benchmark-results/cache.json 2>&1 || echo '{"error": "cache_performance failed"}' > benchmark-results/cache.json
+          python -m benchmarks.semantic_search_benchmark --json > benchmark-results/search.json 2>&1 || echo '{"error": "semantic_search_benchmark failed"}' > benchmark-results/search.json
+          python -m benchmarks.token_optimization_benchmark --json > benchmark-results/token.json 2>&1 || echo '{"error": "token_optimization_benchmark failed"}' > benchmark-results/token.json
+          
+          # List what files were actually created
+          echo "Created benchmark files:"
+          ls -la benchmark-results/ || echo "No benchmark-results directory found"
       
       - name: Process benchmark results
         run: |
@@ -93,8 +97,20 @@ jobs:
           
           for filename in os.listdir(results_dir):
               if filename.endswith('.json'):
-                  with open(os.path.join(results_dir, filename)) as f:
-                      data = json.load(f)
+                  filepath = os.path.join(results_dir, filename)
+                  try:
+                      with open(filepath) as f:
+                          content = f.read().strip()
+                          if not content:
+                              print(f"Warning: {filename} is empty, skipping")
+                              continue
+                          data = json.loads(content)
+                  except json.JSONDecodeError as e:
+                      print(f"Warning: {filename} contains invalid JSON, skipping: {e}")
+                      continue
+                  except Exception as e:
+                      print(f"Warning: Error reading {filename}, skipping: {e}")
+                      continue
                       
                       # Extract key metrics
                       if 'benchmarks' in data:

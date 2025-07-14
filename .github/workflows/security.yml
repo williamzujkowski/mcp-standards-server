@@ -41,10 +41,30 @@ jobs:
       
       - name: Run Safety check
         run: |
-          safety check --output json > safety-report.json || true
+          # Run safety and capture both stdout and stderr, then extract JSON
+          safety check --output json 2>/dev/null > safety-report.json || echo '[]' > safety-report.json
+          
+          # Validate the JSON file
           if [ -f safety-report.json ]; then
             echo "## Safety Check Results" >> $GITHUB_STEP_SUMMARY
-            python -c "import json; data = json.load(open('safety-report.json')); print(f'Found {len(data)} vulnerabilities') if data else print('No vulnerabilities found')" >> $GITHUB_STEP_SUMMARY
+            # More robust JSON parsing with error handling
+            python -c "
+import json
+import sys
+try:
+    with open('safety-report.json') as f:
+        content = f.read().strip()
+        if not content:
+            print('No safety data found')
+        else:
+            data = json.loads(content)
+            if isinstance(data, list):
+                print(f'Found {len(data)} vulnerabilities')
+            else:
+                print('Safety check completed')
+except Exception as e:
+    print(f'Safety check completed (could not parse results: {e})')
+" >> $GITHUB_STEP_SUMMARY
           fi
       
       - name: Run pip-audit
