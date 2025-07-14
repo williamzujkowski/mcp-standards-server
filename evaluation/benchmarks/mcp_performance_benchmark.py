@@ -622,7 +622,7 @@ This report presents comprehensive performance testing results for the MCP Stand
 
         # Combine legends
         lines = line1 + line2
-        labels = [l.get_label() for l in lines]
+        labels = [line.get_label() for line in lines]
         ax3.legend(lines, labels, loc='upper left')
         ax3.grid(True, alpha=0.3)
 

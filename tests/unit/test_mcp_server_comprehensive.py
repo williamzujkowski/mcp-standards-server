@@ -52,7 +52,7 @@ Test Structure:
 import asyncio
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, mock_open, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -397,7 +397,7 @@ class TestMCPServerToolExecution:
 
         # Mock cache file exists
         server.synchronizer.cache_dir = Path("/test/cache")
-        
+
         # Mock the path exists check
         with patch.object(Path, "exists", return_value=True):
             # Mock aiofiles.open with an async context manager
@@ -405,7 +405,7 @@ class TestMCPServerToolExecution:
             mock_file.read = AsyncMock(return_value=json.dumps(standard_data))
             mock_file.__aenter__ = AsyncMock(return_value=mock_file)
             mock_file.__aexit__ = AsyncMock(return_value=None)
-            
+
             with patch("aiofiles.open", return_value=mock_file):
                 result = await server._get_standard_details(standard_id)
 

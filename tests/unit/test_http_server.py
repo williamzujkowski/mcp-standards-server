@@ -90,13 +90,13 @@ class TestHTTPServer(AioHTTPTestCase):
         """Test readiness endpoint."""
         # The endpoint might fail due to Redis not being available in test env
         resp = await self.client.request("GET", "/health/ready")
-        
+
         # In test environment, readiness might return 503 if Redis is not available
         # but the response should still have the expected structure
         data = await resp.json()
         assert "ready" in data
         assert "timestamp" in data
-        
+
         # If Redis is available, status should be 200
         # If not, it might be 503 but that's acceptable in test env
         assert resp.status in [200, 503]
@@ -124,7 +124,7 @@ class TestHTTPServer(AioHTTPTestCase):
             sys.modules["src.core.standards"] = Mock()
         if "src.core.standards.engine" not in sys.modules:
             sys.modules["src.core.standards.engine"] = Mock()
-            
+
         with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
             # Create mock standard objects
@@ -133,7 +133,7 @@ class TestHTTPServer(AioHTTPTestCase):
             mock_standard.title = "Test Standard"
             mock_standard.category = "testing"
             mock_standard.description = "A test standard for testing purposes"
-            
+
             mock_instance.list_standards = AsyncMock(
                 return_value=[mock_standard]
             )
@@ -154,7 +154,7 @@ class TestHTTPServer(AioHTTPTestCase):
             sys.modules["src.core.standards"] = Mock()
         if "src.core.standards.engine" not in sys.modules:
             sys.modules["src.core.standards.engine"] = Mock()
-            
+
         with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
             mock_instance.get_standard = AsyncMock(
@@ -180,7 +180,7 @@ class TestHTTPServer(AioHTTPTestCase):
             sys.modules["src.core.standards"] = Mock()
         if "src.core.standards.engine" not in sys.modules:
             sys.modules["src.core.standards.engine"] = Mock()
-            
+
         with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_instance = Mock()
             mock_instance.get_standard = AsyncMock(return_value=None)
@@ -308,7 +308,7 @@ class TestHTTPServerUnit:
             sys.modules["src.core.standards"] = Mock()
         if "src.core.standards.engine" not in sys.modules:
             sys.modules["src.core.standards.engine"] = Mock()
-            
+
         with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             mock_engine.side_effect = Exception("Engine failed")
 

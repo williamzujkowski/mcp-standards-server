@@ -162,7 +162,7 @@ class ArtifactOrganizer:
             file_groups[base_name].append(file_path)
 
         # Archive older versions
-        for base_name, files in file_groups.items():
+        for _base_name, files in file_groups.items():
             if len(files) > 1:
                 # Sort by modification time, keep the newest
                 files.sort(key=lambda x: x.stat().st_mtime, reverse=True)

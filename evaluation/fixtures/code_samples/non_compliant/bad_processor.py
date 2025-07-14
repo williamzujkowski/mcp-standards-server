@@ -4,7 +4,7 @@ def process(d):
     for i in d:
         try:
             r.append({'id': i['id'], 'done': 1})
-        except:
+        except Exception:
             pass  # ignore errors
     return r
 
