@@ -258,18 +258,20 @@ def mock_ml_dependencies():
         process = MockProcess()
 
     # Mock huggingface_hub to prevent downloads
+    import tempfile
+    
     class MockHuggingFaceHub:
         def snapshot_download(*args, **kwargs):
-            return "/tmp/mock_model"
+            return str(Path(tempfile.gettempdir()) / "mock_model")
 
         def hf_hub_download(*args, **kwargs):
-            return "/tmp/mock_file"
+            return str(Path(tempfile.gettempdir()) / "mock_file")
 
         def try_to_load_from_cache(*args, **kwargs):
             return None
 
         def cached_download(*args, **kwargs):
-            return "/tmp/mock_file"
+            return str(Path(tempfile.gettempdir()) / "mock_file")
 
         def get_hf_file_metadata(*args, **kwargs):
             return {"etag": "mock_etag"}
@@ -343,9 +345,11 @@ def mock_ml_dependencies():
     os.environ["HF_DATASETS_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_HUB_OFFLINE"] = "1"
-    os.environ["TORCH_HOME"] = "/tmp/torch_cache"
-    os.environ["HF_HOME"] = "/tmp/hf_cache"
-    os.environ["SENTENCE_TRANSFORMERS_HOME"] = "/tmp/st_cache"
+    # Use cross-platform temp directory for cache locations
+    temp_dir = tempfile.gettempdir()
+    os.environ["TORCH_HOME"] = str(Path(temp_dir) / "torch_cache")
+    os.environ["HF_HOME"] = str(Path(temp_dir) / "hf_cache")
+    os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(Path(temp_dir) / "st_cache")
 
     # Store and replace modules BEFORE any imports happen
     modules_to_mock = {

@@ -11,8 +11,9 @@ from test_data_setup import setup_test_data
 def main():
     """Create test data in multiple locations for E2E tests."""
 
-    # Create test data in temporary directory
-    tmp_dir = Path("/tmp/test_standards_data")
+    # Create test data in cross-platform temporary directory
+    import tempfile
+    tmp_dir = Path(tempfile.gettempdir()) / "test_standards_data"
     print(f"Creating test data in {tmp_dir}")
     setup_test_data(tmp_dir)
 

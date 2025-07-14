@@ -8,6 +8,7 @@ decorators, and middleware components.
 import asyncio
 import logging
 import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -96,10 +97,13 @@ class TestSecureErrorHandler:
         """Test error message sanitization."""
         handler = SecureErrorHandler(mask_errors=True)
 
-        # Test file path sanitization
-        message = "File not found: /home/user/secret.txt"
+        # Test file path sanitization - use cross-platform path
+        import tempfile
+        temp_dir = tempfile.gettempdir()
+        secret_path = Path(temp_dir) / "secret.txt"
+        message = f"File not found: {secret_path}"
         sanitized = handler.sanitize_error_message(message)
-        assert "/home/user/secret.txt" not in sanitized
+        assert str(secret_path) not in sanitized
         assert "[REDACTED]" in sanitized
 
         # Test email sanitization
@@ -146,11 +150,18 @@ class TestLoggingConfig:
 
     def test_logging_config_creation(self):
         """Test LoggingConfig creation."""
-        config = LoggingConfig(level="DEBUG", format="json", log_dir="/tmp/logs")
+        import tempfile
+        from pathlib import Path
+        
+        # Use cross-platform temp directory
+        temp_dir = tempfile.gettempdir()
+        log_dir = Path(temp_dir) / "logs"
+        
+        config = LoggingConfig(level="DEBUG", format="json", log_dir=str(log_dir))
 
         assert config.level == logging.DEBUG
         assert config.format == "json"
-        assert str(config.log_dir) == "/tmp/logs"
+        assert str(config.log_dir) == str(log_dir)
 
     def test_setup_logging(self):
         """Test logging setup."""
@@ -162,11 +173,22 @@ class TestLoggingConfig:
                 enable_error_tracking=True,
             )
 
-            error_handler = setup_logging(config)
+            # Store initial handler count to clean up properly
+            initial_handlers = list(logging.getLogger().handlers)
+            
+            try:
+                error_handler = setup_logging(config)
 
-            assert isinstance(error_handler, ErrorTrackingHandler)
-            assert logging.getLogger().level == logging.INFO
-            assert len(logging.getLogger().handlers) > 0
+                assert isinstance(error_handler, ErrorTrackingHandler)
+                assert logging.getLogger().level == logging.INFO
+                assert len(logging.getLogger().handlers) > 0
+            finally:
+                # Clean up handlers to prevent Windows file locking issues
+                root_logger = logging.getLogger()
+                for handler in list(root_logger.handlers):
+                    if handler not in initial_handlers:
+                        handler.close()
+                        root_logger.removeHandler(handler)
 
     def test_context_filter(self):
         """Test context filter functionality."""
@@ -369,52 +391,74 @@ class TestIntegration:
                 enable_error_tracking=True,
             )
 
-            error_handler = setup_logging(config)
+            # Store initial handler count to clean up properly
+            initial_handlers = list(logging.getLogger().handlers)
+            
+            try:
+                error_handler = setup_logging(config)
 
-            # Create function with error handling
-            @with_error_handling(
-                error_code=ErrorCode.TOOL_EXECUTION_FAILED, log_errors=True
-            )
-            def test_function():
-                raise ValueError("Test error")
+                # Create function with error handling
+                @with_error_handling(
+                    error_code=ErrorCode.TOOL_EXECUTION_FAILED, log_errors=True
+                )
+                def test_function():
+                    raise ValueError("Test error")
 
-            # Execute and verify error is handled
-            with pytest.raises(MCPError) as exc_info:
-                test_function()
+                # Execute and verify error is handled
+                with pytest.raises(MCPError) as exc_info:
+                    test_function()
 
-            assert exc_info.value.code == ErrorCode.TOOL_EXECUTION_FAILED
+                assert exc_info.value.code == ErrorCode.TOOL_EXECUTION_FAILED
 
-            # Check error was tracked
-            stats = error_handler.get_error_stats()
-            assert stats["total_errors"] > 0
+                # Check error was tracked
+                stats = error_handler.get_error_stats()
+                assert stats["total_errors"] > 0
+            finally:
+                # Clean up handlers to prevent Windows file locking issues
+                root_logger = logging.getLogger()
+                for handler in list(root_logger.handlers):
+                    if handler not in initial_handlers:
+                        handler.close()
+                        root_logger.removeHandler(handler)
 
     def test_logging_context_propagation(self):
         """Test that logging context is properly propagated."""
         with tempfile.TemporaryDirectory() as temp_dir:
             config = LoggingConfig(level="DEBUG", format="json", log_dir=temp_dir)
 
-            setup_logging(config)
+            # Store initial handler count to clean up properly
+            initial_handlers = list(logging.getLogger().handlers)
+            
+            try:
+                setup_logging(config)
 
-            # Set context and log
-            ContextFilter.set_context(request_id="test-123")
+                # Set context and log
+                ContextFilter.set_context(request_id="test-123")
 
-            # Create a test record directly
-            record = logging.LogRecord(
-                name="test",
-                level=logging.INFO,
-                pathname="test.py",
-                lineno=1,
-                msg="Test message",
-                args=(),
-                exc_info=None,
-            )
+                # Create a test record directly
+                record = logging.LogRecord(
+                    name="test",
+                    level=logging.INFO,
+                    pathname="test.py",
+                    lineno=1,
+                    msg="Test message",
+                    args=(),
+                    exc_info=None,
+                )
 
-            # Create and test the context filter
-            context_filter = ContextFilter()
-            context_filter.filter(record)
+                # Create and test the context filter
+                context_filter = ContextFilter()
+                context_filter.filter(record)
 
-            assert hasattr(record, "request_id")
-            assert record.request_id == "test-123"
+                assert hasattr(record, "request_id")
+                assert record.request_id == "test-123"
+            finally:
+                # Clean up handlers to prevent Windows file locking issues
+                root_logger = logging.getLogger()
+                for handler in list(root_logger.handlers):
+                    if handler not in initial_handlers:
+                        handler.close()
+                        root_logger.removeHandler(handler)
 
 
 if __name__ == "__main__":

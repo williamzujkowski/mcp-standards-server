@@ -429,6 +429,8 @@ class TestFileFiltering:
 
     def test_case_sensitivity(self, synchronizer):
         """Test case sensitivity in file patterns."""
+        import sys
+        
         files = [
             {"name": "README.MD", "size": 100, "path": "README.MD"},
             {"name": "readme.md", "size": 200, "path": "readme.md"},
@@ -437,13 +439,20 @@ class TestFileFiltering:
         ]
 
         filtered = synchronizer._filter_files(files)
-
-        # Patterns are case-sensitive on Unix platforms
         filtered_names = {f["name"] for f in filtered}
-        # '*test*' pattern should not match 'TEST.md' (case-sensitive)
-        assert "TEST.md" in filtered_names  # NOT excluded due to case sensitivity
-        # But 'readme.md' should be included (matches *.md pattern)
+        
+        # Always check that readme.md is included (matches *.md pattern)
         assert "readme.md" in filtered_names
+        
+        # Platform-specific case sensitivity behavior
+        if sys.platform == "win32":
+            # Windows is case-insensitive, so '*test*' pattern WILL match 'TEST.md'
+            # Therefore TEST.md should be EXCLUDED (not in filtered_names)
+            assert "TEST.md" not in filtered_names, "On Windows, '*test*' pattern should match 'TEST.md' (case-insensitive)"
+        else:
+            # Unix is case-sensitive, so '*test*' pattern should NOT match 'TEST.md'
+            # Therefore TEST.md should be INCLUDED (in filtered_names)
+            assert "TEST.md" in filtered_names, "On Unix, '*test*' pattern should NOT match 'TEST.md' (case-sensitive)"
 
     def test_unicode_pattern_matching(self, synchronizer):
         """Test pattern matching with Unicode characters."""

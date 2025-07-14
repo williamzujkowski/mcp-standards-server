@@ -499,15 +499,21 @@ Here we have extensive implementation details with code examples and explanation
             "tokens"
         ]
 
+        # Debug output for CI troubleshooting
+        print(f"Token counts - Full: {full_tokens}, Condensed: {condensed_tokens}, Summary: {summary_tokens}")
+        
         # In CI environments, tiktoken may fail to initialize, causing fallback token counting
         # that doesn't preserve the expected relationship. Allow some flexibility.
         if full_tokens <= condensed_tokens:
             # This can happen when tiktoken fails - just check that summary is smallest
-            assert summary_tokens <= condensed_tokens
-            assert summary_tokens <= full_tokens
+            # and that we have reasonable token counts
+            assert summary_tokens <= min(condensed_tokens, full_tokens), f"Summary ({summary_tokens}) should be <= min(condensed({condensed_tokens}), full({full_tokens}))"
+            assert all(count > 0 for count in [full_tokens, condensed_tokens, summary_tokens]), "All token counts should be positive"
+            print("Using fallback token counting logic due to tiktoken initialization failure")
         else:
             # Normal case: progressive compression
-            assert full_tokens > condensed_tokens > summary_tokens
+            assert full_tokens > condensed_tokens > summary_tokens, f"Expected full({full_tokens}) > condensed({condensed_tokens}) > summary({summary_tokens})"
+            print("Using normal progressive compression logic")
 
 
 class TestIntegrationScenarios:

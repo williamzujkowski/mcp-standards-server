@@ -1330,7 +1330,7 @@ def test_factory_function_comprehensive():
                                         async_engine = create_search_engine(
                                             embedding_model="all-mpnet-base-v2",
                                             enable_analytics=False,
-                                            cache_dir=Path("/tmp/test_cache"),
+                                            cache_dir=Path(tempfile.gettempdir()) / "test_cache",
                                             async_mode=True,
                                         )
                                         assert isinstance(

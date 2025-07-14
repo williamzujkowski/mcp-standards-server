@@ -27,12 +27,19 @@ class TestFileMetadata:
 
     def test_to_dict(self):
         """Test converting FileMetadata to dictionary."""
+        import tempfile
+        import os
+        
+        # Use cross-platform temp directory and file path
+        temp_dir = tempfile.gettempdir()
+        local_path = Path(temp_dir) / "test.md"
+        
         metadata = FileMetadata(
             path="docs/standards/test.md",
             sha="abc123",
             size=1024,
             last_modified="2024-01-01T00:00:00Z",
-            local_path=Path("/tmp/test.md"),
+            local_path=local_path,
             version="1.0.0",
             content_hash="def456",
             sync_time=datetime(2024, 1, 1, 12, 0, 0),
@@ -44,19 +51,24 @@ class TestFileMetadata:
         assert result["sha"] == "abc123"
         assert result["size"] == 1024
         assert result["last_modified"] == "2024-01-01T00:00:00Z"
-        assert result["local_path"] == "/tmp/test.md"
+        # Use cross-platform path comparison to handle Windows vs Unix differences
+        assert Path(result["local_path"]).resolve() == local_path.resolve()
         assert result["version"] == "1.0.0"
         assert result["content_hash"] == "def456"
         assert result["sync_time"] == "2024-01-01T12:00:00"
 
     def test_from_dict(self):
         """Test creating FileMetadata from dictionary."""
+        # Use cross-platform temp directory instead of hardcoded Unix path
+        temp_dir = tempfile.gettempdir()
+        test_local_path = Path(temp_dir) / "test.md"
+        
         data = {
             "path": "docs/standards/test.md",
             "sha": "abc123",
             "size": 1024,
             "last_modified": "2024-01-01T00:00:00Z",
-            "local_path": "/tmp/test.md",
+            "local_path": str(test_local_path),
             "version": "1.0.0",
             "content_hash": "def456",
             "sync_time": "2024-01-01T12:00:00",
@@ -68,7 +80,7 @@ class TestFileMetadata:
         assert metadata.sha == "abc123"
         assert metadata.size == 1024
         assert metadata.last_modified == "2024-01-01T00:00:00Z"
-        assert metadata.local_path == Path("/tmp/test.md")
+        assert metadata.local_path == test_local_path
         assert metadata.version == "1.0.0"
         assert metadata.content_hash == "def456"
         assert metadata.sync_time == datetime(2024, 1, 1, 12, 0, 0)
