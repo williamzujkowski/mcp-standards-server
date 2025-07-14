@@ -79,7 +79,7 @@ def _get_sentence_transformer_class() -> Any:
 
 
 # Get the actual class to use
-SentenceTransformer = _get_sentence_transformer_class()
+_SentenceTransformerCls = _get_sentence_transformer_class()
 
 # Download required NLTK data
 try:
@@ -331,7 +331,7 @@ class EmbeddingCache:
                 logger.info(
                     f"Attempting to load SentenceTransformer model {model_name} (attempt {attempt + 1}/{max_retries})"
                 )
-                return SentenceTransformer(model_name)
+                return _SentenceTransformerCls(model_name)
 
             except Exception as e:
                 if "429" in str(e) or "rate limit" in str(e).lower():
@@ -413,7 +413,7 @@ class EmbeddingCache:
         )
         return serialized_str.encode("utf-8")
 
-    def _deserialize_embedding(self, data: str | bytes) -> np.ndarray:
+    def _deserialize_embedding(self, data: str | bytes) -> Any:
         """Deserialize bytes to numpy array safely."""
         if isinstance(data, bytes):
             data = data.decode("ascii")
@@ -430,7 +430,7 @@ class EmbeddingCache:
         # Reconstruct the array
         return np.frombuffer(array_bytes, dtype=dtype).reshape(shape)
 
-    def get_embedding(self, text: str, use_cache: bool = True) -> np.ndarray:
+    def get_embedding(self, text: str, use_cache: bool = True) -> Any:
         """Get embedding for text with caching."""
         # Generate cache key
         cache_key = hashlib.sha256(text.encode()).hexdigest()
@@ -468,9 +468,7 @@ class EmbeddingCache:
 
         return embedding
 
-    def get_embeddings_batch(
-        self, texts: list[str], use_cache: bool = True
-    ) -> np.ndarray:
+    def get_embeddings_batch(self, texts: list[str], use_cache: bool = True) -> Any:
         """Get embeddings for multiple texts with batching."""
         if not use_cache:
             return self.model.encode(texts, convert_to_numpy=True)
@@ -520,7 +518,7 @@ class EmbeddingCache:
                 # Default dimension if model not properly initialized
                 return np.empty((0, 384), dtype=np.float32)
 
-    def _get_cached_embedding(self, cache_key: str) -> np.ndarray | None:
+    def _get_cached_embedding(self, cache_key: str) -> Any:
         """Try to get embedding from various cache layers."""
         # Memory cache
         if cache_key in self.memory_cache:
