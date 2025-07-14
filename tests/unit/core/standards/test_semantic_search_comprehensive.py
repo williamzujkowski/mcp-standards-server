@@ -647,8 +647,8 @@ class TestFuzzyMatcherComprehensive:
                 # Should complete quickly even with large vocabulary
                 # Allow more time in CI environments (GitHub Actions, or any CI)
                 is_ci = (
-                    os.environ.get("CI") 
-                    or os.environ.get("GITHUB_ACTIONS") 
+                    os.environ.get("CI")
+                    or os.environ.get("GITHUB_ACTIONS")
                     or os.environ.get("PYTEST_CURRENT_TEST")
                 )
                 time_limit = 1.5 if is_ci else 1.0
@@ -1283,8 +1283,8 @@ class TestSearchIntegrationComprehensive:
         print(f"Average search time: {avg_search_time*1000:.2f}ms")
         # Allow more time in CI environments (GitHub Actions, or any CI)
         is_ci = (
-            os.environ.get("CI") 
-            or os.environ.get("GITHUB_ACTIONS") 
+            os.environ.get("CI")
+            or os.environ.get("GITHUB_ACTIONS")
             or os.environ.get("PYTEST_CURRENT_TEST")
         )
         time_limit = 1.5 if is_ci else 1.0
