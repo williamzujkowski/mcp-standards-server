@@ -310,6 +310,57 @@ class HTTPServer:
         logger.info(f"HTTP server started on http://{self.host}:{self.port}")
         return runner
 
+    def _get_endpoint_info(self) -> list[dict[str, str]]:
+        """Get endpoint documentation for the info endpoint."""
+        return [
+            {
+                "path": "/",
+                "method": "GET",
+                "description": "Root endpoint with server information"
+            },
+            {
+                "path": "/health",
+                "method": "GET", 
+                "description": "Health check endpoint"
+            },
+            {
+                "path": "/health/live",
+                "method": "GET",
+                "description": "Liveness probe endpoint"
+            },
+            {
+                "path": "/health/ready", 
+                "method": "GET",
+                "description": "Readiness probe endpoint"
+            },
+            {
+                "path": "/metrics",
+                "method": "GET",
+                "description": "Prometheus metrics endpoint"
+            },
+            {
+                "path": "/status",
+                "method": "GET", 
+                "description": "Server status information"
+            },
+            {
+                "path": "/api/standards",
+                "method": "GET",
+                "description": "List available standards"
+            }
+        ]
+
+    def _add_cors_headers(self, response: Response) -> None:
+        """Add CORS headers to response."""
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+
+    @property
+    def health(self) -> Any:
+        """Health check method alias for compatibility."""
+        return self.health_check
+
     async def stop(self, runner: web.AppRunner) -> None:
         """Stop the HTTP server."""
         await runner.cleanup()
