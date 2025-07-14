@@ -23,6 +23,7 @@ from src.core.standards.semantic_search import (
     AsyncSemanticSearch,
     SemanticSearch,
     create_search_engine,
+    _get_sentence_transformer_class,
 )
 from tests.mocks.semantic_search_mocks import (
     MockRedisClient,
@@ -526,9 +527,8 @@ class TestSemanticSearchErrorRecovery:
                     raise RuntimeError("Model loading failed")
                 super().__init__(*args, **kwargs)
 
-        with patch(
-            "sentence_transformers.SentenceTransformer", FailingThenSucceedingModel
-        ):
+        # Patch the sentence transformer class directly
+        with patch("src.core.standards.semantic_search._SentenceTransformerCls", FailingThenSucceedingModel):
             # First two attempts should fail
             for _i in range(2):
                 with pytest.raises(RuntimeError):

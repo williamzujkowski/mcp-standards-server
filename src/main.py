@@ -108,9 +108,11 @@ class CombinedServer:
         if self.http_runner:
             try:
                 await self.http_runner.cleanup()
+                self.http_runner = None
                 logger.info("HTTP server stopped")
             except Exception as e:
                 logger.error(f"Error stopping HTTP server: {e}")
+                self.http_runner = None  # Set to None even on error
 
         # MCP server shutdown is handled by its own cleanup
         logger.info("Shutdown complete")
