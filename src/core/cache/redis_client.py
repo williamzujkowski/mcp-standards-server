@@ -983,23 +983,26 @@ class RedisCache:
         if self._sync_client:
             self._sync_client.close()
             self._sync_client = None
-        if self._async_client:
+        if self._sync_pool:
+            self._sync_pool.disconnect()
+
+        # Handle async cleanup
+        async def _async_cleanup():
+            if self._async_client:
+                await self._async_client.aclose()
+            if self._async_pool:
+                await self._async_pool.disconnect()
+
+        if self._async_client or self._async_pool:
             try:
                 # Try to get running loop
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._async_client.aclose())
+                loop.create_task(_async_cleanup())
             except RuntimeError:
                 # No running loop - create one to close properly
-                asyncio.run(self._async_client.aclose())
+                asyncio.run(_async_cleanup())
             self._async_client = None
-        if self._sync_pool:
-            self._sync_pool.disconnect()
-        if self._async_pool:
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self._async_pool.disconnect())
-            except RuntimeError:
-                asyncio.run(self._async_pool.disconnect())
+            self._async_pool = None
 
     async def async_close(self) -> None:
         """Close connection pools and clients (async)."""

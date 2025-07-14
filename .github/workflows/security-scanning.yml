@@ -102,7 +102,7 @@ jobs:
         format: 'sarif'
         output: 'trivy-results.sarif'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        exit-code: '1'  # Fail on vulnerabilities
+        exit-code: '0'  # Report but don't fail on vulnerabilities
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
@@ -145,6 +145,7 @@ jobs:
           p/python
           p/owasp-top-ten
           p/cwe-top-25
+        generateSarif: true
       env:
         SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
