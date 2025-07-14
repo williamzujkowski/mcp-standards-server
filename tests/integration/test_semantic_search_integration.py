@@ -506,6 +506,13 @@ class TestSemanticSearchCrossComponent:
 class TestSemanticSearchErrorRecovery:
     """Test error recovery and resilience in integration scenarios."""
 
+    @pytest.fixture
+    def temp_dir(self):
+        """Create temporary directory."""
+        temp_dir = tempfile.mkdtemp()
+        yield Path(temp_dir)
+        shutil.rmtree(temp_dir)
+
     @patch_ml_dependencies()
     def test_model_loading_failure_recovery(self):
         """Test recovery from model loading failures."""

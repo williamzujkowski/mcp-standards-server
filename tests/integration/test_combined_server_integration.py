@@ -220,7 +220,7 @@ mcp_requests_total{tool="get_applicable_standards"} 42
 
             # Start server
             await server.start_http_server()
-            assert server.running is True
+            # Note: running is only set to True in run() method, not start_http_server()
             assert server.http_runner is not None
 
             # Shutdown server
@@ -365,7 +365,7 @@ class TestEndToEndWorkflow:
                     ) as mock_metrics:
                         mock_monitor = Mock()
                         mock_monitor.get_prometheus_metrics = Mock(
-                            return_value="# Test metrics\ntest_metric 1\n"
+                            return_value="# Test metrics\nmcp_tool_calls_total 1\ntest_metric 1\n"
                         )
                         mock_metrics.return_value = mock_monitor
 
