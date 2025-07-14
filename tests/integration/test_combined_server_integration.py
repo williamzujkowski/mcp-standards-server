@@ -112,15 +112,18 @@ class TestCombinedServerIntegration:
         """Test standards API endpoints."""
         # Mock standards engine
         with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
+            from src.core.standards.models import Standard
+            
             mock_instance = Mock()
             mock_instance.list_standards = AsyncMock(
                 return_value=[
-                    {
-                        "id": "test-standard",
-                        "title": "Test Standard",
-                        "category": "testing",
-                        "description": "A test standard for integration testing",
-                    }
+                    Standard(
+                        id="test-standard",
+                        title="Test Standard",
+                        category="testing",
+                        description="A test standard for integration testing",
+                        content="# Test Standard\n\nThis is a test standard.",
+                    )
                 ]
             )
             mock_instance.get_standard = AsyncMock(
@@ -307,15 +310,18 @@ class TestEndToEndWorkflow:
                     with patch(
                         "src.core.standards.engine.StandardsEngine"
                     ) as mock_engine:
+                        from src.core.standards.models import Standard
+                        
                         mock_instance = Mock()
                         mock_instance.list_standards = AsyncMock(
                             return_value=[
-                                {
-                                    "id": "test-workflow-standard",
-                                    "title": "Test Workflow Standard",
-                                    "category": "testing",
-                                    "description": "Standard for testing end-to-end workflow",
-                                }
+                                Standard(
+                                    id="test-workflow-standard",
+                                    title="Test Workflow Standard",
+                                    category="testing",
+                                    description="Standard for testing end-to-end workflow",
+                                    content="# Test Workflow Standard\n\nThis is a test standard.",
+                                )
                             ]
                         )
                         mock_engine.return_value = mock_instance
