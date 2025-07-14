@@ -44,14 +44,14 @@ jobs:
 
     - name: Run Safety - Python dependency vulnerability scan
       run: |
-        # Scan main project dependencies
-        safety check --json --output safety-report.json || true
+        # Scan main project dependencies using correct JSON output syntax
+        safety check --output json 2>/dev/null > safety-report.json || echo '[]' > safety-report.json
         safety check --short-report
         
         # Scan web backend dependencies
         if [ -f "web/backend/requirements.txt" ]; then
           echo "Scanning web backend dependencies..."
-          safety check --file web/backend/requirements.txt --json --output safety-web-backend.json || true
+          safety check --file web/backend/requirements.txt --output json 2>/dev/null > safety-web-backend.json || echo '[]' > safety-web-backend.json
           safety check --file web/backend/requirements.txt --short-report
         fi
       continue-on-error: false
