@@ -15,7 +15,9 @@ from typing import Any
 import aiohttp
 
 
-async def single_request(session: aiohttp.ClientSession, url: str, user_id: int) -> dict[str, Any]:
+async def single_request(
+    session: aiohttp.ClientSession, url: str, user_id: int
+) -> dict[str, Any]:
     """Make a single request and record metrics."""
     start_time = time.time()
     try:
@@ -29,7 +31,7 @@ async def single_request(session: aiohttp.ClientSession, url: str, user_id: int)
                 "status": response.status,
                 "success": response.status == 200,
                 "content_size": len(content),
-                "timestamp": start_time
+                "timestamp": start_time,
             }
     except Exception as e:
         end_time = time.time()
@@ -40,10 +42,13 @@ async def single_request(session: aiohttp.ClientSession, url: str, user_id: int)
             "success": False,
             "error": str(e),
             "content_size": 0,
-            "timestamp": start_time
+            "timestamp": start_time,
         }
 
-async def test_concurrent_users(base_url: str, concurrent_users: int, requests_per_user: int = 3) -> dict[str, Any]:
+
+async def test_concurrent_users(
+    base_url: str, concurrent_users: int, requests_per_user: int = 3
+) -> dict[str, Any]:
     """Test with specified number of concurrent users."""
     print(f"\n🚀 Testing {concurrent_users} Concurrent Users")
     print("=" * 60)
@@ -55,12 +60,12 @@ async def test_concurrent_users(base_url: str, concurrent_users: int, requests_p
         limit=concurrent_users * 2,  # Total connection pool size
         limit_per_host=concurrent_users * 2,  # Per-host limit
         ttl_dns_cache=300,
-        use_dns_cache=True
+        use_dns_cache=True,
     )
 
     async with aiohttp.ClientSession(
         connector=connector,
-        timeout=aiohttp.ClientTimeout(total=60)  # 60 second timeout
+        timeout=aiohttp.ClientTimeout(total=60),  # 60 second timeout
     ) as session:
 
         # Prepare all tasks
@@ -70,7 +75,9 @@ async def test_concurrent_users(base_url: str, concurrent_users: int, requests_p
                 task = single_request(session, test_url, user)
                 tasks.append(task)
 
-        print(f"  Launching {len(tasks)} total requests ({concurrent_users} users × {requests_per_user} requests each)...")
+        print(
+            f"  Launching {len(tasks)} total requests ({concurrent_users} users × {requests_per_user} requests each)..."
+        )
 
         # Execute all requests concurrently
         start_time = time.time()
@@ -98,14 +105,24 @@ async def test_concurrent_users(base_url: str, concurrent_users: int, requests_p
             min_response = min(response_times)
             max_response = max(response_times)
             median_response = median(response_times)
-            p95_response = sorted(response_times)[int(len(response_times) * 0.95)] if len(response_times) > 20 else max_response
-            p99_response = sorted(response_times)[int(len(response_times) * 0.99)] if len(response_times) > 100 else max_response
+            p95_response = (
+                sorted(response_times)[int(len(response_times) * 0.95)]
+                if len(response_times) > 20
+                else max_response
+            )
+            p99_response = (
+                sorted(response_times)[int(len(response_times) * 0.99)]
+                if len(response_times) > 100
+                else max_response
+            )
 
             # Throughput metrics
             total_requests = len(valid_results)
             successful_count = len(successful_requests)
             failed_count = len(failed_requests)
-            success_rate = (successful_count / total_requests) * 100 if total_requests > 0 else 0
+            success_rate = (
+                (successful_count / total_requests) * 100 if total_requests > 0 else 0
+            )
             requests_per_second = total_requests / total_duration
 
             metrics = {
@@ -125,8 +142,10 @@ async def test_concurrent_users(base_url: str, concurrent_users: int, requests_p
                     "median_ms": round(median_response, 2),
                     "p95_ms": round(p95_response, 2),
                     "p99_ms": round(p99_response, 2),
-                    "std_dev": round(stdev(response_times) if len(response_times) > 1 else 0, 2)
-                }
+                    "std_dev": round(
+                        stdev(response_times) if len(response_times) > 1 else 0, 2
+                    ),
+                },
             }
         else:
             metrics = {
@@ -146,17 +165,19 @@ async def test_concurrent_users(base_url: str, concurrent_users: int, requests_p
                     "median_ms": 0,
                     "p95_ms": 0,
                     "p99_ms": 0,
-                    "std_dev": 0
+                    "std_dev": 0,
                 },
-                "errors": errors[:10]  # Include first 10 errors for debugging
+                "errors": errors[:10],  # Include first 10 errors for debugging
             }
 
         # Print results
         print(f"  ⏱️  Total Duration: {metrics['total_duration_seconds']}s")
         print(f"  📊 Total Requests: {metrics['total_requests']}")
-        print(f"  ✅ Successful: {metrics['successful_requests']} ({metrics['success_rate_percent']}%)")
+        print(
+            f"  ✅ Successful: {metrics['successful_requests']} ({metrics['success_rate_percent']}%)"
+        )
         print(f"  ❌ Failed: {metrics['failed_requests']}")
-        if metrics['exception_count'] > 0:
+        if metrics["exception_count"] > 0:
             print(f"  🚨 Exceptions: {metrics['exception_count']}")
         print(f"  🚀 RPS: {metrics['requests_per_second']}")
         print("  📈 Response Times:")
@@ -167,6 +188,7 @@ async def test_concurrent_users(base_url: str, concurrent_users: int, requests_p
         print(f"     P99: {metrics['response_times']['p99_ms']}ms")
 
         return metrics
+
 
 async def main():
     """Run concurrent user tests."""
@@ -191,29 +213,31 @@ async def main():
 
         except Exception as e:
             print(f"❌ Test with {users} users failed: {e}")
-            all_results.append({
-                "concurrent_users": users,
-                "error": str(e),
-                "success_rate_percent": 0
-            })
+            all_results.append(
+                {"concurrent_users": users, "error": str(e), "success_rate_percent": 0}
+            )
 
     # Generate summary report
     print("\n" + "=" * 80)
     print("📊 CONCURRENT USER TEST SUMMARY")
     print("=" * 80)
 
-    print(f"\n{'Users':<8} {'Success %':<12} {'Avg (ms)':<12} {'P95 (ms)':<12} {'RPS':<8} {'Status'}")
+    print(
+        f"\n{'Users':<8} {'Success %':<12} {'Avg (ms)':<12} {'P95 (ms)':<12} {'RPS':<8} {'Status'}"
+    )
     print("-" * 72)
 
     for result in all_results:
-        if 'error' in result:
-            print(f"{result['concurrent_users']:<8} {'0.0':<12} {'N/A':<12} {'N/A':<12} {'0.0':<8} ❌ ERROR")
+        if "error" in result:
+            print(
+                f"{result['concurrent_users']:<8} {'0.0':<12} {'N/A':<12} {'N/A':<12} {'0.0':<8} ❌ ERROR"
+            )
         else:
-            users = result['concurrent_users']
-            success_rate = result['success_rate_percent']
-            avg_ms = result['response_times']['avg_ms']
-            p95_ms = result['response_times']['p95_ms']
-            rps = result['requests_per_second']
+            users = result["concurrent_users"]
+            success_rate = result["success_rate_percent"]
+            avg_ms = result["response_times"]["avg_ms"]
+            p95_ms = result["response_times"]["p95_ms"]
+            rps = result["requests_per_second"]
 
             # Determine status
             if success_rate >= 95 and avg_ms <= 1000:
@@ -223,36 +247,48 @@ async def main():
             else:
                 status = "❌ POOR"
 
-            print(f"{users:<8} {success_rate:<12} {avg_ms:<12} {p95_ms:<12} {rps:<8} {status}")
+            print(
+                f"{users:<8} {success_rate:<12} {avg_ms:<12} {p95_ms:<12} {rps:<8} {status}"
+            )
 
     # Performance analysis
     print("\n🔍 Performance Analysis:")
 
-    successful_tests = [r for r in all_results if 'error' not in r and r['success_rate_percent'] >= 80]
+    successful_tests = [
+        r for r in all_results if "error" not in r and r["success_rate_percent"] >= 80
+    ]
 
     if successful_tests:
-        max_successful_users = max(r['concurrent_users'] for r in successful_tests)
-        print(f"   Maximum concurrent users handled successfully: {max_successful_users}")
+        max_successful_users = max(r["concurrent_users"] for r in successful_tests)
+        print(
+            f"   Maximum concurrent users handled successfully: {max_successful_users}"
+        )
 
         # Find performance degradation point
         if len(successful_tests) >= 2:
             degradation_factor = 2.0  # 2x response time increase
-            baseline = successful_tests[0]['response_times']['avg_ms']
+            baseline = successful_tests[0]["response_times"]["avg_ms"]
             degradation_point = None
 
             for result in successful_tests[1:]:
-                if result['response_times']['avg_ms'] > baseline * degradation_factor:
-                    degradation_point = result['concurrent_users']
+                if result["response_times"]["avg_ms"] > baseline * degradation_factor:
+                    degradation_point = result["concurrent_users"]
                     break
 
             if degradation_point:
-                print(f"   Performance degradation starts at: {degradation_point} users")
+                print(
+                    f"   Performance degradation starts at: {degradation_point} users"
+                )
             else:
                 print("   No significant performance degradation observed")
 
         # Throughput analysis
-        max_rps = max(r['requests_per_second'] for r in successful_tests)
-        max_rps_users = next(r['concurrent_users'] for r in successful_tests if r['requests_per_second'] == max_rps)
+        max_rps = max(r["requests_per_second"] for r in successful_tests)
+        max_rps_users = next(
+            r["concurrent_users"]
+            for r in successful_tests
+            if r["requests_per_second"] == max_rps
+        )
         print(f"   Peak throughput: {max_rps} RPS at {max_rps_users} users")
 
     else:
@@ -264,7 +300,7 @@ async def main():
         print("   ✅ Server handles all tested concurrent loads")
         print("   📈 Consider testing higher user counts")
     elif successful_tests:
-        max_users = max(r['concurrent_users'] for r in successful_tests)
+        max_users = max(r["concurrent_users"] for r in successful_tests)
         print(f"   ⚠️  Server degrades significantly above {max_users} users")
         print("   🔧 Consider optimizing for higher concurrent loads")
     else:
@@ -280,9 +316,17 @@ async def main():
         "summary": {
             "total_tests": len(all_results),
             "successful_tests": len(successful_tests),
-            "max_concurrent_users": max([r['concurrent_users'] for r in successful_tests]) if successful_tests else 0,
-            "peak_rps": max([r['requests_per_second'] for r in successful_tests]) if successful_tests else 0
-        }
+            "max_concurrent_users": (
+                max([r["concurrent_users"] for r in successful_tests])
+                if successful_tests
+                else 0
+            ),
+            "peak_rps": (
+                max([r["requests_per_second"] for r in successful_tests])
+                if successful_tests
+                else 0
+            ),
+        },
     }
 
     with open("concurrent_user_test_results.json", "w") as f:
@@ -290,6 +334,7 @@ async def main():
 
     print("\n📄 Results saved to: concurrent_user_test_results.json")
     print("\n✅ Concurrent user testing completed!")
+
 
 if __name__ == "__main__":
     try:

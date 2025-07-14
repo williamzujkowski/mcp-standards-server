@@ -445,7 +445,9 @@ class TestEmbeddingCacheComprehensive:
             # Check reconstruction
             np.testing.assert_array_almost_equal(test_array, deserialized)
 
-    @pytest.mark.skip(reason="Skipping due to transformers library compatibility issues")
+    @pytest.mark.skip(
+        reason="Skipping due to transformers library compatibility issues"
+    )
     def test_model_loading_failure_handling(self):
         """Test handling of model loading failures."""
         # Temporarily disable test mode to test production failure handling
@@ -1263,7 +1265,9 @@ class TestSearchIntegrationComprehensive:
             min_results = query_spec.get("min_results", 0)
             if min_results > 0 and len(results) == 0:
                 # In test mode, queries might not match mock data
-                print(f"Warning: Query '{query_spec['query']}' returned no results in test mode")
+                print(
+                    f"Warning: Query '{query_spec['query']}' returned no results in test mode"
+                )
             else:
                 assert len(results) >= min_results
 

@@ -25,7 +25,7 @@ async def test_search_standards():
         enable_semantic_search=True,
         enable_rule_engine=True,
         enable_token_optimization=True,
-        enable_caching=True
+        enable_caching=True,
     )
 
     print("🚀 Initializing Standards Engine...")
@@ -41,37 +41,37 @@ async def test_search_standards():
             "name": "Security Search",
             "query": "authentication security best practices",
             "max_results": 5,
-            "expected_domains": ["security", "authentication", "auth"]
+            "expected_domains": ["security", "authentication", "auth"],
         },
         {
             "name": "Performance Search",
             "query": "database optimization performance tuning",
             "max_results": 3,
-            "expected_domains": ["database", "performance", "optimization"]
+            "expected_domains": ["database", "performance", "optimization"],
         },
         {
             "name": "Accessibility Search",
             "query": "WCAG accessibility guidelines screen readers",
             "max_results": 5,
-            "expected_domains": ["accessibility", "wcag", "a11y"]
+            "expected_domains": ["accessibility", "wcag", "a11y"],
         },
         {
             "name": "AI/ML Search",
             "query": "machine learning model deployment mlops",
             "max_results": 5,
-            "expected_domains": ["ml", "ai", "mlops", "machine learning"]
+            "expected_domains": ["ml", "ai", "mlops", "machine learning"],
         },
         {
             "name": "Fuzzy Search",
             "query": "reactjs component patterns hooks",
             "max_results": 3,
-            "expected_domains": ["react", "javascript", "frontend"]
-        }
+            "expected_domains": ["react", "javascript", "frontend"],
+        },
     ]
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("🔍 SEARCH STANDARDS TEST RESULTS")
-    print("="*80)
+    print("=" * 80)
 
     overall_results = []
 
@@ -86,8 +86,7 @@ async def test_search_standards():
         try:
             # Perform search using the engine's search_standards method
             results = await engine.search_standards(
-                query=test_case['query'],
-                limit=test_case['max_results']
+                query=test_case["query"], limit=test_case["max_results"]
             )
 
             end_time = time.time()
@@ -116,9 +115,7 @@ async def test_search_standards():
 
                 # Evaluate semantic understanding
                 semantic_score = evaluate_semantic_understanding(
-                    test_case['query'],
-                    results,
-                    test_case['expected_domains']
+                    test_case["query"], results, test_case["expected_domains"]
                 )
 
                 print(f"🧠 Semantic Understanding Score: {semantic_score}/10")
@@ -127,49 +124,56 @@ async def test_search_standards():
                 diversity_score = evaluate_result_diversity(results)
                 print(f"🎯 Result Diversity Score: {diversity_score}/10")
 
-                overall_results.append({
-                    "test_case": test_case['name'],
-                    "query": test_case['query'],
-                    "results_count": len(results),
-                    "response_time_ms": response_time_ms,
-                    "semantic_score": semantic_score,
-                    "diversity_score": diversity_score,
-                    "results": results
-                })
+                overall_results.append(
+                    {
+                        "test_case": test_case["name"],
+                        "query": test_case["query"],
+                        "results_count": len(results),
+                        "response_time_ms": response_time_ms,
+                        "semantic_score": semantic_score,
+                        "diversity_score": diversity_score,
+                        "results": results,
+                    }
+                )
 
             else:
                 print("❌ No results found")
-                overall_results.append({
-                    "test_case": test_case['name'],
-                    "query": test_case['query'],
-                    "results_count": 0,
-                    "response_time_ms": response_time_ms,
-                    "semantic_score": 0,
-                    "diversity_score": 0,
-                    "results": []
-                })
+                overall_results.append(
+                    {
+                        "test_case": test_case["name"],
+                        "query": test_case["query"],
+                        "results_count": 0,
+                        "response_time_ms": response_time_ms,
+                        "semantic_score": 0,
+                        "diversity_score": 0,
+                        "results": [],
+                    }
+                )
 
         except Exception as e:
             print(f"❌ Error during search: {e}")
-            overall_results.append({
-                "test_case": test_case['name'],
-                "query": test_case['query'],
-                "error": str(e),
-                "results_count": 0,
-                "response_time_ms": 0,
-                "semantic_score": 0,
-                "diversity_score": 0
-            })
+            overall_results.append(
+                {
+                    "test_case": test_case["name"],
+                    "query": test_case["query"],
+                    "error": str(e),
+                    "results_count": 0,
+                    "response_time_ms": 0,
+                    "semantic_score": 0,
+                    "diversity_score": 0,
+                }
+            )
 
     # Generate summary report
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("📊 OVERALL ANALYSIS & RECOMMENDATIONS")
-    print("="*80)
+    print("=" * 80)
 
     generate_analysis_report(overall_results)
 
     # Cleanup
     await engine.close()
+
 
 def evaluate_semantic_understanding(query, results, expected_domains):
     """Evaluate how well the search understood the semantic intent."""
@@ -185,7 +189,9 @@ def evaluate_semantic_understanding(query, results, expected_domains):
         if not standard:
             continue
 
-        content_text = f"{standard.title} {standard.description} {' '.join(standard.tags)}".lower()
+        content_text = (
+            f"{standard.title} {standard.description} {' '.join(standard.tags)}".lower()
+        )
 
         # Check for direct query terms
         query_terms = query_lower.split()
@@ -197,13 +203,18 @@ def evaluate_semantic_understanding(query, results, expected_domains):
         domain_score = (domain_matches / len(expected_domains)) * 4
 
         # Category relevance
-        category_score = 2 if any(domain in standard.category.lower() for domain in expected_domains) else 0
+        category_score = (
+            2
+            if any(domain in standard.category.lower() for domain in expected_domains)
+            else 0
+        )
 
         # Combine scores for this result
         result_score = min(term_score + domain_score + category_score, 10)
         score = max(score, result_score)  # Take the best result as the overall score
 
     return min(score, 10)
+
 
 def evaluate_result_diversity(results):
     """Evaluate diversity of search results."""
@@ -222,21 +233,34 @@ def evaluate_result_diversity(results):
 
     # Diversity based on unique categories and subcategories
     category_diversity = min(len(categories) * 3, 6)  # Up to 6 points for categories
-    subcategory_diversity = min(len(subcategories) * 2, 4)  # Up to 4 points for subcategories
+    subcategory_diversity = min(
+        len(subcategories) * 2, 4
+    )  # Up to 4 points for subcategories
 
     return min(category_diversity + subcategory_diversity, 10)
+
 
 def generate_analysis_report(results):
     """Generate analysis and recommendations."""
 
     successful_tests = [r for r in results if r.get("results_count", 0) > 0]
-    failed_tests = [r for r in results if r.get("results_count", 0) == 0 or "error" in r]
+    failed_tests = [
+        r for r in results if r.get("results_count", 0) == 0 or "error" in r
+    ]
 
     if successful_tests:
-        avg_response_time = sum(r["response_time_ms"] for r in successful_tests) / len(successful_tests)
-        avg_semantic_score = sum(r["semantic_score"] for r in successful_tests) / len(successful_tests)
-        avg_diversity_score = sum(r["diversity_score"] for r in successful_tests) / len(successful_tests)
-        avg_results_count = sum(r["results_count"] for r in successful_tests) / len(successful_tests)
+        avg_response_time = sum(r["response_time_ms"] for r in successful_tests) / len(
+            successful_tests
+        )
+        avg_semantic_score = sum(r["semantic_score"] for r in successful_tests) / len(
+            successful_tests
+        )
+        avg_diversity_score = sum(r["diversity_score"] for r in successful_tests) / len(
+            successful_tests
+        )
+        avg_results_count = sum(r["results_count"] for r in successful_tests) / len(
+            successful_tests
+        )
 
         print(f"✅ Successful Tests: {len(successful_tests)}/{len(results)}")
         print(f"⏱️  Average Response Time: {avg_response_time:.2f}ms")
@@ -305,6 +329,7 @@ def generate_analysis_report(results):
         print("  ✅ Semantic search appears to be working effectively")
     else:
         print("  ⚠️  May be falling back to keyword search - check embedding quality")
+
 
 if __name__ == "__main__":
     print("🔍 Testing MCP Standards Server Search Functionality")

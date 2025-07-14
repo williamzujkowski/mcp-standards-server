@@ -44,12 +44,14 @@ def cache_middleware():
     middleware = MCPCacheMiddleware()
 
     # Mock the Redis client's async_delete_pattern to avoid the async iterator issue
-    if hasattr(middleware.cache, 'redis') and middleware.cache.redis:
+    if hasattr(middleware.cache, "redis") and middleware.cache.redis:
         # Mock async_delete_pattern to return success
         async def mock_async_delete_pattern(pattern):
             return 0  # Return 0 deleted keys
 
-        middleware.cache.redis.async_delete_pattern = AsyncMock(side_effect=mock_async_delete_pattern)
+        middleware.cache.redis.async_delete_pattern = AsyncMock(
+            side_effect=mock_async_delete_pattern
+        )
 
         # Mock clear_all method
         async def mock_clear_all():

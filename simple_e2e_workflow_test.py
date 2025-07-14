@@ -23,6 +23,7 @@ class WorkflowStep:
     payload: dict = None
     expected_status: int = 200
 
+
 @dataclass
 class WorkflowResult:
     workflow_name: str
@@ -32,11 +33,14 @@ class WorkflowResult:
     execution_time: float
     step_results: list[dict]
 
+
 class SimpleE2EClient:
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
 
-    async def execute_step(self, session: aiohttp.ClientSession, step: WorkflowStep) -> dict[str, Any]:
+    async def execute_step(
+        self, session: aiohttp.ClientSession, step: WorkflowStep
+    ) -> dict[str, Any]:
         """Execute a single workflow step."""
         start_time = time.time()
         url = f"{self.base_url}{step.endpoint}"
@@ -54,11 +58,17 @@ class SimpleE2EClient:
                         "success": response.status == step.expected_status,
                         "execution_time_ms": round(execution_time, 2),
                         "content_length": len(content),
-                        "error": None if response.status == step.expected_status else f"Expected {step.expected_status}, got {response.status}"
+                        "error": (
+                            None
+                            if response.status == step.expected_status
+                            else f"Expected {step.expected_status}, got {response.status}"
+                        ),
                     }
             else:
                 # POST/PUT requests (for future use)
-                async with session.request(step.method, url, json=step.payload) as response:
+                async with session.request(
+                    step.method, url, json=step.payload
+                ) as response:
                     content = await response.text()
                     execution_time = (time.time() - start_time) * 1000
 
@@ -69,7 +79,11 @@ class SimpleE2EClient:
                         "success": response.status == step.expected_status,
                         "execution_time_ms": round(execution_time, 2),
                         "content_length": len(content),
-                        "error": None if response.status == step.expected_status else f"Expected {step.expected_status}, got {response.status}"
+                        "error": (
+                            None
+                            if response.status == step.expected_status
+                            else f"Expected {step.expected_status}, got {response.status}"
+                        ),
                     }
 
         except Exception as e:
@@ -81,10 +95,12 @@ class SimpleE2EClient:
                 "success": False,
                 "execution_time_ms": round(execution_time, 2),
                 "content_length": 0,
-                "error": str(e)
+                "error": str(e),
             }
 
-    async def execute_workflow(self, workflow_name: str, steps: list[WorkflowStep]) -> WorkflowResult:
+    async def execute_workflow(
+        self, workflow_name: str, steps: list[WorkflowStep]
+    ) -> WorkflowResult:
         """Execute a complete workflow."""
         print(f"\n🔄 Executing Workflow: {workflow_name}")
         print("=" * 60)
@@ -120,7 +136,7 @@ class SimpleE2EClient:
             steps_completed=steps_completed,
             total_steps=len(steps),
             execution_time=round(total_time, 2),
-            step_results=step_results
+            step_results=step_results,
         )
 
         print("\n📊 Workflow Summary:")
@@ -129,6 +145,7 @@ class SimpleE2EClient:
         print(f"   Status: {'✅ SUCCESS' if success else '❌ PARTIAL/FAILED'}")
 
         return result
+
 
 async def main():
     """Run simplified E2E workflow tests."""
@@ -144,26 +161,28 @@ async def main():
         WorkflowStep(
             name="check_server_health",
             description="Verify server is healthy and responsive",
-            endpoint="/health"
+            endpoint="/health",
         ),
         WorkflowStep(
             name="get_server_info",
             description="Get server version and available endpoints",
-            endpoint="/info"
+            endpoint="/info",
         ),
         WorkflowStep(
             name="list_all_standards",
             description="Get complete list of available standards",
-            endpoint="/api/standards"
+            endpoint="/api/standards",
         ),
         WorkflowStep(
             name="check_metrics",
             description="View server metrics and performance data",
-            endpoint="/metrics"
-        )
+            endpoint="/metrics",
+        ),
     ]
 
-    result1 = await client.execute_workflow("Developer Getting Started", developer_workflow)
+    result1 = await client.execute_workflow(
+        "Developer Getting Started", developer_workflow
+    )
     all_results.append(result1)
 
     # Workflow 2: Standards Explorer
@@ -171,18 +190,18 @@ async def main():
         WorkflowStep(
             name="browse_standards",
             description="Browse available standards catalog",
-            endpoint="/api/standards"
+            endpoint="/api/standards",
         ),
         WorkflowStep(
             name="health_check",
             description="Verify system health during browsing",
-            endpoint="/health"
+            endpoint="/health",
         ),
         WorkflowStep(
             name="get_system_status",
             description="Check overall system status",
-            endpoint="/status"
-        )
+            endpoint="/status",
+        ),
     ]
 
     result2 = await client.execute_workflow("Standards Explorer", explorer_workflow)
@@ -193,28 +212,28 @@ async def main():
         WorkflowStep(
             name="system_health_check",
             description="Comprehensive system health verification",
-            endpoint="/health"
+            endpoint="/health",
         ),
         WorkflowStep(
             name="liveness_probe",
             description="Kubernetes-style liveness probe",
-            endpoint="/health/live"
+            endpoint="/health/live",
         ),
         WorkflowStep(
             name="readiness_probe",
             description="Kubernetes-style readiness probe",
-            endpoint="/health/ready"
+            endpoint="/health/ready",
         ),
         WorkflowStep(
             name="performance_metrics",
             description="Collect performance and operational metrics",
-            endpoint="/metrics"
+            endpoint="/metrics",
         ),
         WorkflowStep(
             name="service_status",
             description="Get detailed service status information",
-            endpoint="/status"
-        )
+            endpoint="/status",
+        ),
     ]
 
     result3 = await client.execute_workflow("System Administrator", admin_workflow)
@@ -225,21 +244,23 @@ async def main():
         WorkflowStep(
             name="root_endpoint",
             description="Test root API endpoint discovery",
-            endpoint="/"
+            endpoint="/",
         ),
         WorkflowStep(
             name="standards_api",
             description="Test main standards API endpoint",
-            endpoint="/api/standards"
+            endpoint="/api/standards",
         ),
         WorkflowStep(
             name="info_endpoint",
             description="Test service information endpoint",
-            endpoint="/info"
-        )
+            endpoint="/info",
+        ),
     ]
 
-    result4 = await client.execute_workflow("API Integration Test", integration_workflow)
+    result4 = await client.execute_workflow(
+        "API Integration Test", integration_workflow
+    )
     all_results.append(result4)
 
     # Generate comprehensive summary
@@ -254,8 +275,12 @@ async def main():
     total_time = sum(r.execution_time for r in all_results)
 
     print("\n🎯 Overall Results:")
-    print(f"   Workflows: {successful_workflows}/{total_workflows} successful ({(successful_workflows/total_workflows)*100:.1f}%)")
-    print(f"   Steps: {completed_steps}/{total_steps} completed ({(completed_steps/total_steps)*100:.1f}%)")
+    print(
+        f"   Workflows: {successful_workflows}/{total_workflows} successful ({(successful_workflows/total_workflows)*100:.1f}%)"
+    )
+    print(
+        f"   Steps: {completed_steps}/{total_steps} completed ({(completed_steps/total_steps)*100:.1f}%)"
+    )
     print(f"   Total Time: {total_time:.2f}s")
     print(f"   Average Time per Workflow: {total_time/total_workflows:.2f}s")
 
@@ -263,7 +288,9 @@ async def main():
     for result in all_results:
         status_icon = "✅" if result.success else "❌"
         success_rate = (result.steps_completed / result.total_steps) * 100
-        print(f"   {status_icon} {result.workflow_name}: {result.steps_completed}/{result.total_steps} steps ({success_rate:.0f}%) in {result.execution_time:.2f}s")
+        print(
+            f"   {status_icon} {result.workflow_name}: {result.steps_completed}/{result.total_steps} steps ({success_rate:.0f}%) in {result.execution_time:.2f}s"
+        )
 
     # Analyze step performance
     all_step_results = []
@@ -274,7 +301,9 @@ async def main():
     failed_steps = [s for s in all_step_results if not s["success"]]
 
     if successful_steps:
-        avg_response_time = sum(s["execution_time_ms"] for s in successful_steps) / len(successful_steps)
+        avg_response_time = sum(s["execution_time_ms"] for s in successful_steps) / len(
+            successful_steps
+        )
         max_response_time = max(s["execution_time_ms"] for s in successful_steps)
         min_response_time = min(s["execution_time_ms"] for s in successful_steps)
 
@@ -335,7 +364,7 @@ async def main():
             "completed_steps": completed_steps,
             "success_rate": (completed_steps / total_steps) * 100,
             "total_execution_time": total_time,
-            "assessment": assessment
+            "assessment": assessment,
         },
         "workflows": [
             {
@@ -344,10 +373,10 @@ async def main():
                 "steps_completed": r.steps_completed,
                 "total_steps": r.total_steps,
                 "execution_time": r.execution_time,
-                "step_results": r.step_results
+                "step_results": r.step_results,
             }
             for r in all_results
-        ]
+        ],
     }
 
     with open("simple_e2e_workflow_results.json", "w") as f:
@@ -355,6 +384,7 @@ async def main():
 
     print("\n📄 Results saved to: simple_e2e_workflow_results.json")
     print("✅ End-to-end workflow testing completed!")
+
 
 if __name__ == "__main__":
     try:
@@ -364,4 +394,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ E2E test failed: {e}")
         import traceback
+
         traceback.print_exc()

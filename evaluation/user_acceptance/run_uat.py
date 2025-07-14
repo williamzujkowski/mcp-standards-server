@@ -18,6 +18,7 @@ import aiohttp
 
 class TestStatus(Enum):
     """UAT test status enumeration"""
+
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     PASSED = "passed"
@@ -28,6 +29,7 @@ class TestStatus(Enum):
 @dataclass
 class UATResult:
     """Result of a single UAT scenario"""
+
     scenario_id: str
     scenario_name: str
     persona: str
@@ -66,28 +68,28 @@ class UATExecutor:
             "junior_developer": {
                 "name": "Alex Junior",
                 "experience": "1 year",
-                "focus": "React development"
+                "focus": "React development",
             },
             "senior_developer": {
                 "name": "Sam Senior",
                 "experience": "8 years",
-                "focus": "Microservices architecture"
+                "focus": "Microservices architecture",
             },
             "team_lead": {
                 "name": "Taylor Lead",
                 "experience": "10 years",
-                "focus": "Team management and code quality"
+                "focus": "Team management and code quality",
             },
             "security_engineer": {
                 "name": "Chris Security",
                 "experience": "6 years",
-                "focus": "Security compliance"
+                "focus": "Security compliance",
             },
             "devops_engineer": {
                 "name": "Jordan Ops",
                 "experience": "5 years",
-                "focus": "Performance and monitoring"
-            }
+                "focus": "Performance and monitoring",
+            },
         }
 
         print("✅ Test environment ready")
@@ -101,7 +103,7 @@ class UATExecutor:
             scenario_name="First-Time User Experience",
             persona="junior_developer",
             status=TestStatus.IN_PROGRESS,
-            start_time=datetime.now().isoformat()
+            start_time=datetime.now().isoformat(),
         )
 
         print(f"\n🧪 Executing {result.scenario_name}...")
@@ -113,10 +115,14 @@ class UATExecutor:
                 print("   Step 1: Listing available standards...")
                 start = datetime.now()
 
-                async with session.get(f"{self.base_url}/mcp/list_available_standards") as response:
+                async with session.get(
+                    f"{self.base_url}/mcp/list_available_standards"
+                ) as response:
                     if response.status == 200:
                         standards = await response.json()
-                        print(f"   ✓ Found {len(standards.get('standards', []))} standards")
+                        print(
+                            f"   ✓ Found {len(standards.get('standards', []))} standards"
+                        )
                     else:
                         raise Exception(f"Failed to list standards: {response.status}")
 
@@ -127,12 +133,13 @@ class UATExecutor:
                 search_params = {"query": "React development"}
 
                 async with session.post(
-                    f"{self.base_url}/mcp/search_standards",
-                    json=search_params
+                    f"{self.base_url}/mcp/search_standards", json=search_params
                 ) as response:
                     if response.status == 200:
                         results = await response.json()
-                        print(f"   ✓ Found {len(results.get('results', []))} React-related standards")
+                        print(
+                            f"   ✓ Found {len(results.get('results', []))} React-related standards"
+                        )
                     else:
                         raise Exception(f"Search failed: {response.status}")
 
@@ -142,7 +149,9 @@ class UATExecutor:
 
                 # Record feedback
                 if list_time > 30:
-                    result.issues_encountered.append("Listing standards took longer than 30 seconds")
+                    result.issues_encountered.append(
+                        "Listing standards took longer than 30 seconds"
+                    )
 
                 result.suggestions.append("Add quick-start guide for new users")
                 result.would_use_in_production = True
@@ -153,7 +162,9 @@ class UATExecutor:
             print(f"   ❌ Scenario failed: {str(e)}")
 
         result.end_time = datetime.now().isoformat()
-        result.duration_minutes = self._calculate_duration(result.start_time, result.end_time)
+        result.duration_minutes = self._calculate_duration(
+            result.start_time, result.end_time
+        )
 
         self.results[scenario_id] = result
         return result
@@ -166,7 +177,7 @@ class UATExecutor:
             scenario_name="Project-Specific Standard Discovery",
             persona="senior_developer",
             status=TestStatus.IN_PROGRESS,
-            start_time=datetime.now().isoformat()
+            start_time=datetime.now().isoformat(),
         )
 
         print(f"\n🧪 Executing {result.scenario_name}...")
@@ -179,32 +190,38 @@ class UATExecutor:
                     "project_type": "microservice",
                     "languages": ["go", "python"],
                     "frameworks": ["gin", "fastapi"],
-                    "requirements": ["security", "performance", "observability"]
+                    "requirements": ["security", "performance", "observability"],
                 }
 
                 print("   Step 1: Getting applicable standards...")
                 async with session.post(
                     f"{self.base_url}/mcp/get_applicable_standards",
-                    json={"project_context": project_context}
+                    json={"project_context": project_context},
                 ) as response:
                     if response.status == 200:
                         standards = await response.json()
-                        applicable = standards.get('standards', [])
+                        applicable = standards.get("standards", [])
                         print(f"   ✓ Found {len(applicable)} applicable standards")
 
                         # Verify coverage
                         categories_covered = set()
                         for std in applicable:
-                            categories_covered.add(std.get('category', 'unknown'))
+                            categories_covered.add(std.get("category", "unknown"))
 
-                        print(f"   ✓ Categories covered: {', '.join(categories_covered)}")
+                        print(
+                            f"   ✓ Categories covered: {', '.join(categories_covered)}"
+                        )
 
                         # Check if all requirements are addressed
-                        for req in project_context['requirements']:
+                        for req in project_context["requirements"]:
                             if not any(req in str(std).lower() for std in applicable):
-                                result.issues_encountered.append(f"Missing standards for {req}")
+                                result.issues_encountered.append(
+                                    f"Missing standards for {req}"
+                                )
                     else:
-                        raise Exception(f"Failed to get applicable standards: {response.status}")
+                        raise Exception(
+                            f"Failed to get applicable standards: {response.status}"
+                        )
 
                 result.ease_of_use_rating = 5
                 result.status = TestStatus.PASSED
@@ -217,7 +234,9 @@ class UATExecutor:
             print(f"   ❌ Scenario failed: {str(e)}")
 
         result.end_time = datetime.now().isoformat()
-        result.duration_minutes = self._calculate_duration(result.start_time, result.end_time)
+        result.duration_minutes = self._calculate_duration(
+            result.start_time, result.end_time
+        )
 
         self.results[scenario_id] = result
         return result
@@ -230,7 +249,7 @@ class UATExecutor:
             scenario_name="Code Validation Workflow",
             persona="team_lead",
             status=TestStatus.IN_PROGRESS,
-            start_time=datetime.now().isoformat()
+            start_time=datetime.now().isoformat(),
         )
 
         print(f"\n🧪 Executing {result.scenario_name}...")
@@ -245,18 +264,20 @@ class UATExecutor:
 
                 validation_params = {
                     "code_path": test_project,
-                    "standard_id": "coding-standards"
+                    "standard_id": "coding-standards",
                 }
 
                 start = datetime.now()
                 async with session.post(
                     f"{self.base_url}/mcp/validate_against_standard",
-                    json=validation_params
+                    json=validation_params,
                 ) as response:
                     if response.status == 200:
                         validation_results = await response.json()
-                        issues = validation_results.get('issues', [])
-                        print(f"   ✓ Validation completed with {len(issues)} issues found")
+                        issues = validation_results.get("issues", [])
+                        print(
+                            f"   ✓ Validation completed with {len(issues)} issues found"
+                        )
 
                         # Check validation time
                         validation_time = (datetime.now() - start).total_seconds()
@@ -270,7 +291,9 @@ class UATExecutor:
                 result.ease_of_use_rating = 4
                 result.status = TestStatus.PASSED
                 result.would_use_in_production = True
-                result.suggestions.append("Add IDE integration for real-time validation")
+                result.suggestions.append(
+                    "Add IDE integration for real-time validation"
+                )
 
         except Exception as e:
             result.status = TestStatus.FAILED
@@ -278,7 +301,9 @@ class UATExecutor:
             print(f"   ❌ Scenario failed: {str(e)}")
 
         result.end_time = datetime.now().isoformat()
-        result.duration_minutes = self._calculate_duration(result.start_time, result.end_time)
+        result.duration_minutes = self._calculate_duration(
+            result.start_time, result.end_time
+        )
 
         self.results[scenario_id] = result
         return result
@@ -315,7 +340,10 @@ class UATExecutor:
 
     def _generate_uat_report(self):
         """Generate detailed UAT report"""
-        report_path = self.results_dir / f"uat_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        report_path = (
+            self.results_dir
+            / f"uat_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        )
 
         report = """# UAT Execution Report
 
@@ -329,8 +357,12 @@ class UATExecutor:
 """.format(
             date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             total=len(self.results),
-            passed=sum(1 for r in self.results.values() if r.status == TestStatus.PASSED),
-            failed=sum(1 for r in self.results.values() if r.status == TestStatus.FAILED)
+            passed=sum(
+                1 for r in self.results.values() if r.status == TestStatus.PASSED
+            ),
+            failed=sum(
+                1 for r in self.results.values() if r.status == TestStatus.FAILED
+            ),
         )
 
         for _scenario_id, result in self.results.items():
@@ -362,7 +394,7 @@ class UATExecutor:
 
             report += "\n---\n\n"
 
-        with open(report_path, 'w') as f:
+        with open(report_path, "w") as f:
             f.write(report)
 
         print(f"\n📄 UAT report saved to: {report_path}")
@@ -372,23 +404,54 @@ class UATExecutor:
         metrics = {
             "execution_date": datetime.now().isoformat(),
             "total_scenarios": len(self.results),
-            "passed": sum(1 for r in self.results.values() if r.status == TestStatus.PASSED),
-            "failed": sum(1 for r in self.results.values() if r.status == TestStatus.FAILED),
-            "average_duration_minutes": sum(r.duration_minutes for r in self.results.values() if r.duration_minutes) / len(self.results) if self.results else 0,
-            "average_ease_of_use": sum(r.ease_of_use_rating for r in self.results.values() if r.ease_of_use_rating) / sum(1 for r in self.results.values() if r.ease_of_use_rating) if any(r.ease_of_use_rating for r in self.results.values()) else 0,
-            "production_ready_percentage": sum(1 for r in self.results.values() if r.would_use_in_production) / len(self.results) * 100 if self.results else 0,
+            "passed": sum(
+                1 for r in self.results.values() if r.status == TestStatus.PASSED
+            ),
+            "failed": sum(
+                1 for r in self.results.values() if r.status == TestStatus.FAILED
+            ),
+            "average_duration_minutes": (
+                sum(
+                    r.duration_minutes
+                    for r in self.results.values()
+                    if r.duration_minutes
+                )
+                / len(self.results)
+                if self.results
+                else 0
+            ),
+            "average_ease_of_use": (
+                sum(
+                    r.ease_of_use_rating
+                    for r in self.results.values()
+                    if r.ease_of_use_rating
+                )
+                / sum(1 for r in self.results.values() if r.ease_of_use_rating)
+                if any(r.ease_of_use_rating for r in self.results.values())
+                else 0
+            ),
+            "production_ready_percentage": (
+                sum(1 for r in self.results.values() if r.would_use_in_production)
+                / len(self.results)
+                * 100
+                if self.results
+                else 0
+            ),
             "scenarios": {
                 scenario_id: {
                     "status": result.status.value,
                     "duration": result.duration_minutes,
-                    "rating": result.ease_of_use_rating
+                    "rating": result.ease_of_use_rating,
                 }
                 for scenario_id, result in self.results.items()
-            }
+            },
         }
 
-        metrics_path = self.results_dir / f"uat_metrics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(metrics_path, 'w') as f:
+        metrics_path = (
+            self.results_dir
+            / f"uat_metrics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        with open(metrics_path, "w") as f:
             json.dump(metrics, f, indent=2)
 
         print(f"📊 UAT metrics saved to: {metrics_path}")
@@ -398,7 +461,9 @@ class UATExecutor:
         print("UAT EXECUTION SUMMARY")
         print("=" * 60)
         print(f"Total Scenarios: {metrics['total_scenarios']}")
-        print(f"Passed: {metrics['passed']} ({metrics['passed']/metrics['total_scenarios']*100:.1f}%)")
+        print(
+            f"Passed: {metrics['passed']} ({metrics['passed']/metrics['total_scenarios']*100:.1f}%)"
+        )
         print(f"Failed: {metrics['failed']}")
         print(f"Average Duration: {metrics['average_duration_minutes']:.1f} minutes")
         print(f"Average Ease of Use: {metrics['average_ease_of_use']:.1f}/5")

@@ -24,7 +24,7 @@ async def test_users(users: int, requests_each: int = 1):
                     "user": user_id,
                     "time": (time.time() - start) * 1000,
                     "status": response.status,
-                    "success": response.status == 200
+                    "success": response.status == 200,
                 }
         except Exception as e:
             return {
@@ -32,12 +32,12 @@ async def test_users(users: int, requests_each: int = 1):
                 "time": (time.time() - start) * 1000,
                 "status": 0,
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     async with aiohttp.ClientSession(
         connector=aiohttp.TCPConnector(limit=users + 10),
-        timeout=aiohttp.ClientTimeout(total=30)
+        timeout=aiohttp.ClientTimeout(total=30),
     ) as session:
 
         start_time = time.time()
@@ -74,11 +74,12 @@ async def test_users(users: int, requests_each: int = 1):
                 "successful": len(successful),
                 "success_rate": success_rate,
                 "avg_response_ms": avg_response,
-                "rps": rps
+                "rps": rps,
             }
         else:
             print("   ❌ All requests failed")
             return {"users": users, "success_rate": 0}
+
 
 async def main():
     """Run quick concurrent tests."""
@@ -95,7 +96,9 @@ async def main():
 
             # If success rate drops below 80%, stop testing higher loads
             if result.get("success_rate", 0) < 80:
-                print(f"\n⚠️  Success rate dropped to {result['success_rate']:.1f}% at {users} users")
+                print(
+                    f"\n⚠️  Success rate dropped to {result['success_rate']:.1f}% at {users} users"
+                )
                 break
 
             await asyncio.sleep(2)  # Cool down
@@ -117,18 +120,22 @@ async def main():
     print("\n📊 Summary:")
     for result in results:
         if "success_rate" in result and result["success_rate"] > 0:
-            print(f"   {result['users']} users: {result['success_rate']:.1f}% success, {result['avg_response_ms']:.1f}ms avg")
+            print(
+                f"   {result['users']} users: {result['success_rate']:.1f}% success, {result['avg_response_ms']:.1f}ms avg"
+            )
         else:
             print(f"   {result['users']} users: FAILED")
 
     # Save results
     with open("quick_concurrent_results.json", "w") as f:
-        json.dump({
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "results": results
-        }, f, indent=2)
+        json.dump(
+            {"timestamp": time.strftime("%Y-%m-%d %H:%M:%S"), "results": results},
+            f,
+            indent=2,
+        )
 
     print("\n💾 Results saved to quick_concurrent_results.json")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,6 +1,7 @@
 """
 Module following best practices
 """
+
 import logging
 from datetime import datetime
 
@@ -16,7 +17,7 @@ class DataProcessor:
 
     def _validate_config(self) -> None:
         """Validate configuration."""
-        required_keys = ['input_path', 'output_path']
+        required_keys = ["input_path", "output_path"]
         for key in required_keys:
             if key not in self.config:
                 raise ValueError(f"Missing required config: {key}")
@@ -33,7 +34,7 @@ class DataProcessor:
     def _transform(self, item: dict) -> dict:
         """Transform single item."""
         return {
-            'id': item.get('id'),
-            'processed': True,
-            'timestamp': datetime.now().isoformat()
+            "id": item.get("id"),
+            "processed": True,
+            "timestamp": datetime.now().isoformat(),
         }

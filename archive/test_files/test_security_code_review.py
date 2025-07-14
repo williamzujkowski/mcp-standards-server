@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from src.core.standards.engine import StandardsEngine
 
 # Vulnerable Python API code with multiple security issues
-VULNERABLE_API_CODE = '''
+VULNERABLE_API_CODE = """
 import os
 import sqlite3
 from flask import Flask, request, jsonify
@@ -71,11 +71,13 @@ def debug():
 if __name__ == '__main__':
     # Debug mode in production
     app.run(debug=True, host='0.0.0.0')
-'''
+"""
+
 
 @dataclass
 class SecurityFinding:
     """Represents a security vulnerability finding."""
+
     vulnerability_type: str
     cwe_id: str
     severity: str
@@ -85,12 +87,14 @@ class SecurityFinding:
     remediation: str
     nist_controls: list[str]
 
+
 class VulnerabilitySeverity(Enum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
     INFO = "INFO"
+
 
 class SecurityCodeReviewSimulator:
     """Simulates a security engineer using the MCP Standards Server."""
@@ -108,7 +112,7 @@ class SecurityCodeReviewSimulator:
             "timestamp": time.time(),
             "workflow_steps": {},
             "findings": [],
-            "metrics": {}
+            "metrics": {},
         }
 
         # Step 1: Security Standards Discovery
@@ -136,7 +140,9 @@ class SecurityCodeReviewSimulator:
         print("\n✅ Step 3: Validate Against Security Standards")
         print("-" * 60)
 
-        validation_results = await self._validate_against_standards(code, applicable_standards)
+        validation_results = await self._validate_against_standards(
+            code, applicable_standards
+        )
         results["workflow_steps"]["standards_validation"] = validation_results
 
         # Step 4: Get Security Improvement Suggestions
@@ -150,7 +156,9 @@ class SecurityCodeReviewSimulator:
         print("\n🏛️ Step 5: NIST Compliance Mapping")
         print("-" * 60)
 
-        compliance_mapping = await self._map_to_nist_controls(vulnerability_analysis["findings"])
+        compliance_mapping = await self._map_to_nist_controls(
+            vulnerability_analysis["findings"]
+        )
         results["workflow_steps"]["compliance_mapping"] = compliance_mapping
 
         # Calculate metrics
@@ -168,7 +176,7 @@ class SecurityCodeReviewSimulator:
             "SQL injection prevention secure coding",
             "authentication authorization best practices",
             "secure file upload validation",
-            "command injection prevention"
+            "command injection prevention",
         ]
 
         all_results = []
@@ -198,7 +206,7 @@ class SecurityCodeReviewSimulator:
             "queries_executed": len(queries),
             "total_results": len(all_results),
             "unique_standards": len(unique_standards),
-            "standards": list(unique_standards.values())
+            "standards": list(unique_standards.values()),
         }
 
     async def _get_applicable_security_standards(self) -> dict[str, Any]:
@@ -207,9 +215,14 @@ class SecurityCodeReviewSimulator:
             "project_type": "web_application",
             "framework": "flask",
             "language": "python",
-            "requirements": ["security", "authentication", "api_security", "owasp_compliance"],
+            "requirements": [
+                "security",
+                "authentication",
+                "api_security",
+                "owasp_compliance",
+            ],
             "deployment": "production",
-            "compliance_requirements": ["nist_800-53", "owasp_top_10"]
+            "compliance_requirements": ["nist_800-53", "owasp_top_10"],
         }
 
         print("📋 Getting applicable standards for security context:")
@@ -223,7 +236,9 @@ class SecurityCodeReviewSimulator:
                 project_context=security_context
             )
 
-            print(f"\n   ✅ Found {len(result.get('standards', []))} applicable standards")
+            print(
+                f"\n   ✅ Found {len(result.get('standards', []))} applicable standards"
+            )
 
             return result
 
@@ -239,112 +254,132 @@ class SecurityCodeReviewSimulator:
         findings = []
 
         # CWE-89: SQL Injection
-        if "f\"SELECT * FROM" in code or "'{username}'" in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="SQL Injection",
-                cwe_id="CWE-89",
-                severity=VulnerabilitySeverity.CRITICAL.value,
-                line_number=18,
-                code_snippet='query = f"SELECT * FROM users WHERE username=\'{username}\' AND password=\'{password}\'"',
-                description="User input is directly concatenated into SQL query without parameterization",
-                remediation="Use parameterized queries or prepared statements",
-                nist_controls=["SI-10", "SC-18", "AC-3"]
-            ))
+        if 'f"SELECT * FROM' in code or "'{username}'" in code:
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="SQL Injection",
+                    cwe_id="CWE-89",
+                    severity=VulnerabilitySeverity.CRITICAL.value,
+                    line_number=18,
+                    code_snippet="query = f\"SELECT * FROM users WHERE username='{username}' AND password='{password}'\"",
+                    description="User input is directly concatenated into SQL query without parameterization",
+                    remediation="Use parameterized queries or prepared statements",
+                    nist_controls=["SI-10", "SC-18", "AC-3"],
+                )
+            )
 
         # CWE-78: OS Command Injection
         if "os.system(f" in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="OS Command Injection",
-                cwe_id="CWE-78",
-                severity=VulnerabilitySeverity.CRITICAL.value,
-                line_number=37,
-                code_snippet='os.system(f"file {filepath}")',
-                description="User-controlled input passed to os.system() allowing command execution",
-                remediation="Use subprocess with proper argument escaping or avoid shell commands",
-                nist_controls=["SI-10", "AC-3", "CM-7"]
-            ))
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="OS Command Injection",
+                    cwe_id="CWE-78",
+                    severity=VulnerabilitySeverity.CRITICAL.value,
+                    line_number=37,
+                    code_snippet='os.system(f"file {filepath}")',
+                    description="User-controlled input passed to os.system() allowing command execution",
+                    remediation="Use subprocess with proper argument escaping or avoid shell commands",
+                    nist_controls=["SI-10", "AC-3", "CM-7"],
+                )
+            )
 
         # CWE-22: Path Traversal
         if "os.path.join('./uploads/', filename)" in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="Path Traversal",
-                cwe_id="CWE-22",
-                severity=VulnerabilitySeverity.HIGH.value,
-                line_number=33,
-                code_snippet="filepath = os.path.join('./uploads/', filename)",
-                description="User-provided filename not sanitized, allowing directory traversal",
-                remediation="Validate and sanitize filenames, use secure_filename() function",
-                nist_controls=["AC-3", "AC-6", "SI-10"]
-            ))
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="Path Traversal",
+                    cwe_id="CWE-22",
+                    severity=VulnerabilitySeverity.HIGH.value,
+                    line_number=33,
+                    code_snippet="filepath = os.path.join('./uploads/', filename)",
+                    description="User-provided filename not sanitized, allowing directory traversal",
+                    remediation="Validate and sanitize filenames, use secure_filename() function",
+                    nist_controls=["AC-3", "AC-6", "SI-10"],
+                )
+            )
 
         # CWE-798: Hardcoded Credentials
         if 'SECRET_KEY = "' in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="Hardcoded Credentials",
-                cwe_id="CWE-798",
-                severity=VulnerabilitySeverity.HIGH.value,
-                line_number=8,
-                code_snippet='SECRET_KEY = "my_super_secret_key_12345"',
-                description="Secret key hardcoded in source code",
-                remediation="Use environment variables or secure key management service",
-                nist_controls=["IA-5", "SC-28", "AC-3"]
-            ))
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="Hardcoded Credentials",
+                    cwe_id="CWE-798",
+                    severity=VulnerabilitySeverity.HIGH.value,
+                    line_number=8,
+                    code_snippet='SECRET_KEY = "my_super_secret_key_12345"',
+                    description="Secret key hardcoded in source code",
+                    remediation="Use environment variables or secure key management service",
+                    nist_controls=["IA-5", "SC-28", "AC-3"],
+                )
+            )
 
         # CWE-200: Information Exposure
         if "dict(os.environ)" in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="Information Exposure",
-                cwe_id="CWE-200",
-                severity=VulnerabilitySeverity.HIGH.value,
-                line_number=46,
-                code_snippet='"env_vars": dict(os.environ)',
-                description="Exposing all environment variables including sensitive data",
-                remediation="Remove debug endpoints in production, limit exposed information",
-                nist_controls=["AC-3", "SC-8", "AU-9"]
-            ))
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="Information Exposure",
+                    cwe_id="CWE-200",
+                    severity=VulnerabilitySeverity.HIGH.value,
+                    line_number=46,
+                    code_snippet='"env_vars": dict(os.environ)',
+                    description="Exposing all environment variables including sensitive data",
+                    remediation="Remove debug endpoints in production, limit exposed information",
+                    nist_controls=["AC-3", "SC-8", "AU-9"],
+                )
+            )
 
         # CWE-732: Incorrect Permission Assignment
         if "host='0.0.0.0'" in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="Incorrect Permission Assignment",
-                cwe_id="CWE-732",
-                severity=VulnerabilitySeverity.MEDIUM.value,
-                line_number=53,
-                code_snippet="app.run(debug=True, host='0.0.0.0')",
-                description="Application listening on all interfaces with debug mode enabled",
-                remediation="Bind to localhost only, disable debug mode in production",
-                nist_controls=["AC-3", "CM-7", "SC-7"]
-            ))
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="Incorrect Permission Assignment",
+                    cwe_id="CWE-732",
+                    severity=VulnerabilitySeverity.MEDIUM.value,
+                    line_number=53,
+                    code_snippet="app.run(debug=True, host='0.0.0.0')",
+                    description="Application listening on all interfaces with debug mode enabled",
+                    remediation="Bind to localhost only, disable debug mode in production",
+                    nist_controls=["AC-3", "CM-7", "SC-7"],
+                )
+            )
 
         # CWE-117: Improper Output Neutralization for Logs
         if "return jsonify" in code and "admin" in code:
-            findings.append(SecurityFinding(
-                vulnerability_type="Improper Output Neutralization",
-                cwe_id="CWE-117",
-                severity=VulnerabilitySeverity.MEDIUM.value,
-                line_number=22,
-                code_snippet='return jsonify({"success": True, "admin": result[3]})',
-                description="Potentially exposing sensitive user role information",
-                remediation="Limit information in responses, implement proper access controls",
-                nist_controls=["AC-3", "AC-6", "AU-10"]
-            ))
+            findings.append(
+                SecurityFinding(
+                    vulnerability_type="Improper Output Neutralization",
+                    cwe_id="CWE-117",
+                    severity=VulnerabilitySeverity.MEDIUM.value,
+                    line_number=22,
+                    code_snippet='return jsonify({"success": True, "admin": result[3]})',
+                    description="Potentially exposing sensitive user role information",
+                    remediation="Limit information in responses, implement proper access controls",
+                    nist_controls=["AC-3", "AC-6", "AU-10"],
+                )
+            )
 
         print(f"\n   🚨 Found {len(findings)} security vulnerabilities:")
 
         severity_counts = {}
         for finding in findings:
-            severity_counts[finding.severity] = severity_counts.get(finding.severity, 0) + 1
-            print(f"   • {finding.vulnerability_type} ({finding.cwe_id}) - {finding.severity}")
+            severity_counts[finding.severity] = (
+                severity_counts.get(finding.severity, 0) + 1
+            )
+            print(
+                f"   • {finding.vulnerability_type} ({finding.cwe_id}) - {finding.severity}"
+            )
 
         return {
             "total_vulnerabilities": len(findings),
             "findings": [vars(f) for f in findings],
             "severity_distribution": severity_counts,
             "critical_count": severity_counts.get("CRITICAL", 0),
-            "high_count": severity_counts.get("HIGH", 0)
+            "high_count": severity_counts.get("HIGH", 0),
         }
 
-    async def _validate_against_standards(self, code: str, applicable_standards: dict) -> dict[str, Any]:
+    async def _validate_against_standards(
+        self, code: str, applicable_standards: dict
+    ) -> dict[str, Any]:
         """Validate code against security standards."""
         print("✅ Validating code against security standards...")
 
@@ -361,44 +396,44 @@ class SecurityCodeReviewSimulator:
                 print(f"   📋 Validating against: {standard_id}")
 
                 # Simulate validation
-                result = {
-                    "standard": standard_id,
-                    "passed": False,
-                    "violations": []
-                }
+                result = {"standard": standard_id, "passed": False, "violations": []}
 
                 # Check for specific violations based on standard type
                 if "security" in standard_id.lower():
-                    result["violations"].extend([
-                        {
-                            "rule": "secure_sql_queries",
-                            "line": 18,
-                            "message": "SQL queries must use parameterization",
-                            "severity": "critical"
-                        },
-                        {
-                            "rule": "no_hardcoded_secrets",
-                            "line": 8,
-                            "message": "Secrets must not be hardcoded",
-                            "severity": "high"
-                        }
-                    ])
+                    result["violations"].extend(
+                        [
+                            {
+                                "rule": "secure_sql_queries",
+                                "line": 18,
+                                "message": "SQL queries must use parameterization",
+                                "severity": "critical",
+                            },
+                            {
+                                "rule": "no_hardcoded_secrets",
+                                "line": 8,
+                                "message": "Secrets must not be hardcoded",
+                                "severity": "high",
+                            },
+                        ]
+                    )
 
                 if "owasp" in standard_id.lower():
-                    result["violations"].extend([
-                        {
-                            "rule": "a03_injection",
-                            "line": 18,
-                            "message": "OWASP A03:2021 - Injection vulnerability",
-                            "severity": "critical"
-                        },
-                        {
-                            "rule": "a01_broken_access_control",
-                            "line": 46,
-                            "message": "OWASP A01:2021 - Broken Access Control",
-                            "severity": "high"
-                        }
-                    ])
+                    result["violations"].extend(
+                        [
+                            {
+                                "rule": "a03_injection",
+                                "line": 18,
+                                "message": "OWASP A03:2021 - Injection vulnerability",
+                                "severity": "critical",
+                            },
+                            {
+                                "rule": "a01_broken_access_control",
+                                "line": 46,
+                                "message": "OWASP A01:2021 - Broken Access Control",
+                                "severity": "high",
+                            },
+                        ]
+                    )
 
                 result["passed"] = len(result["violations"]) == 0
                 validation_results.append(result)
@@ -409,19 +444,24 @@ class SecurityCodeReviewSimulator:
         passed_count = sum(1 for r in validation_results if r["passed"])
         failed_count = len(validation_results) - passed_count
 
-        print(f"\n   📊 Validation Summary: {passed_count} passed, {failed_count} failed")
+        print(
+            f"\n   📊 Validation Summary: {passed_count} passed, {failed_count} failed"
+        )
 
         return {
             "validations": validation_results,
             "passed": passed_count,
             "failed": failed_count,
-            "compliance_rate": (passed_count / len(validation_results) * 100) if validation_results else 0
+            "compliance_rate": (
+                (passed_count / len(validation_results) * 100)
+                if validation_results
+                else 0
+            ),
         }
 
     async def _get_security_improvements(self, code: str) -> dict[str, Any]:
         """Get security improvement suggestions."""
         print("💡 Getting security improvement suggestions...")
-
 
         try:
             # Simulate getting improvement suggestions
@@ -432,7 +472,7 @@ class SecurityCodeReviewSimulator:
                     "description": "Replace string concatenation with parameterized queries",
                     "example": "cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))",
                     "impact": "Prevents SQL injection attacks",
-                    "effort": "Low"
+                    "effort": "Low",
                 },
                 {
                     "priority": "CRITICAL",
@@ -440,7 +480,7 @@ class SecurityCodeReviewSimulator:
                     "description": "Replace os.system with subprocess.run with proper escaping",
                     "example": "subprocess.run(['file', filepath], check=True)",
                     "impact": "Prevents arbitrary command execution",
-                    "effort": "Low"
+                    "effort": "Low",
                 },
                 {
                     "priority": "HIGH",
@@ -448,7 +488,7 @@ class SecurityCodeReviewSimulator:
                     "description": "Implement filename validation and sanitization",
                     "example": "from werkzeug.utils import secure_filename\nfilename = secure_filename(filename)",
                     "impact": "Prevents directory traversal attacks",
-                    "effort": "Low"
+                    "effort": "Low",
                 },
                 {
                     "priority": "HIGH",
@@ -456,7 +496,7 @@ class SecurityCodeReviewSimulator:
                     "description": "Use environment variables for sensitive configuration",
                     "example": "SECRET_KEY = os.environ.get('SECRET_KEY')",
                     "impact": "Prevents exposure of secrets in code",
-                    "effort": "Low"
+                    "effort": "Low",
                 },
                 {
                     "priority": "HIGH",
@@ -464,7 +504,7 @@ class SecurityCodeReviewSimulator:
                     "description": "Implement proper authentication and authorization",
                     "example": "Use Flask-Login or Flask-JWT-Extended for session management",
                     "impact": "Prevents unauthorized access",
-                    "effort": "Medium"
+                    "effort": "Medium",
                 },
                 {
                     "priority": "MEDIUM",
@@ -472,8 +512,8 @@ class SecurityCodeReviewSimulator:
                     "description": "Add security headers to responses",
                     "example": "Use Flask-Talisman to add security headers automatically",
                     "impact": "Prevents various client-side attacks",
-                    "effort": "Low"
-                }
+                    "effort": "Low",
+                },
             ]
 
             print(f"\n   📝 Generated {len(suggestions)} improvement suggestions")
@@ -492,7 +532,9 @@ class SecurityCodeReviewSimulator:
             return {
                 "total_suggestions": len(suggestions),
                 "suggestions": suggestions,
-                "priority_distribution": {k: len(v) for k, v in priority_groups.items()}
+                "priority_distribution": {
+                    k: len(v) for k, v in priority_groups.items()
+                },
             }
 
         except Exception as e:
@@ -509,41 +551,41 @@ class SecurityCodeReviewSimulator:
                 "control_names": {
                     "SI-10": "Information Input Validation",
                     "SC-18": "Mobile Code",
-                    "AC-3": "Access Enforcement"
-                }
+                    "AC-3": "Access Enforcement",
+                },
             },
             "CWE-78": {  # Command Injection
                 "controls": ["SI-10", "AC-3", "CM-7"],
                 "control_names": {
                     "SI-10": "Information Input Validation",
                     "AC-3": "Access Enforcement",
-                    "CM-7": "Least Functionality"
-                }
+                    "CM-7": "Least Functionality",
+                },
             },
             "CWE-22": {  # Path Traversal
                 "controls": ["AC-3", "AC-6", "SI-10"],
                 "control_names": {
                     "AC-3": "Access Enforcement",
                     "AC-6": "Least Privilege",
-                    "SI-10": "Information Input Validation"
-                }
+                    "SI-10": "Information Input Validation",
+                },
             },
             "CWE-798": {  # Hardcoded Credentials
                 "controls": ["IA-5", "SC-28", "AC-3"],
                 "control_names": {
                     "IA-5": "Authenticator Management",
                     "SC-28": "Protection of Information at Rest",
-                    "AC-3": "Access Enforcement"
-                }
+                    "AC-3": "Access Enforcement",
+                },
             },
             "CWE-200": {  # Information Exposure
                 "controls": ["AC-3", "SC-8", "AU-9"],
                 "control_names": {
                     "AC-3": "Access Enforcement",
                     "SC-8": "Transmission Confidentiality and Integrity",
-                    "AU-9": "Protection of Audit Information"
-                }
-            }
+                    "AU-9": "Protection of Audit Information",
+                },
+            },
         }
 
         control_coverage = {}
@@ -557,14 +599,18 @@ class SecurityCodeReviewSimulator:
                     all_controls.add(control)
                     if control not in control_coverage:
                         control_coverage[control] = {
-                            "name": nist_mapping[cwe_id]["control_names"].get(control, control),
-                            "findings": []
+                            "name": nist_mapping[cwe_id]["control_names"].get(
+                                control, control
+                            ),
+                            "findings": [],
                         }
-                    control_coverage[control]["findings"].append({
-                        "vulnerability": finding["vulnerability_type"],
-                        "cwe": cwe_id,
-                        "severity": finding["severity"]
-                    })
+                    control_coverage[control]["findings"].append(
+                        {
+                            "vulnerability": finding["vulnerability_type"],
+                            "cwe": cwe_id,
+                            "severity": finding["severity"],
+                        }
+                    )
 
         print("\n   📊 NIST Control Coverage:")
         for control, data in sorted(control_coverage.items()):
@@ -576,8 +622,9 @@ class SecurityCodeReviewSimulator:
             "compliance_summary": {
                 "controls_affected": list(all_controls),
                 "high_priority_controls": ["SI-10", "AC-3", "IA-5"],
-                "coverage_percentage": (len(control_coverage) / 50) * 100  # Assuming 50 relevant controls
-            }
+                "coverage_percentage": (len(control_coverage) / 50)
+                * 100,  # Assuming 50 relevant controls
+            },
         }
 
     def _calculate_security_metrics(self, results: dict[str, Any]) -> dict[str, Any]:
@@ -591,7 +638,7 @@ class SecurityCodeReviewSimulator:
             "HIGH": 2.0,
             "MEDIUM": 1.0,
             "LOW": 0.5,
-            "INFO": 0.1
+            "INFO": 0.1,
         }
 
         for finding in findings:
@@ -606,16 +653,26 @@ class SecurityCodeReviewSimulator:
 
         # Standards coverage
         results["workflow_steps"]["standards_discovery"]["unique_standards"]
-        applied_standards = results["workflow_steps"]["standards_validation"]["validations"]
+        applied_standards = results["workflow_steps"]["standards_validation"][
+            "validations"
+        ]
 
         return {
             "risk_score": round(risk_score, 2),
-            "risk_level": "CRITICAL" if risk_score >= 7 else "HIGH" if risk_score >= 5 else "MEDIUM",
+            "risk_level": (
+                "CRITICAL"
+                if risk_score >= 7
+                else "HIGH" if risk_score >= 5 else "MEDIUM"
+            ),
             "detection_rate": round(detection_rate, 1),
-            "severity_distribution": results["workflow_steps"]["vulnerability_analysis"]["severity_distribution"],
+            "severity_distribution": results["workflow_steps"][
+                "vulnerability_analysis"
+            ]["severity_distribution"],
             "standards_coverage": len(applied_standards),
             "remediation_effort": "HIGH",  # Based on findings
-            "compliance_gaps": len(results["workflow_steps"]["compliance_mapping"]["control_coverage"])
+            "compliance_gaps": len(
+                results["workflow_steps"]["compliance_mapping"]["control_coverage"]
+            ),
         }
 
     def _generate_security_report(self, results: dict[str, Any]):
@@ -635,7 +692,9 @@ class SecurityCodeReviewSimulator:
         print(f"   Medium: {metrics['severity_distribution'].get('MEDIUM', 0)}")
 
         print("\n🚨 TOP SECURITY ISSUES")
-        critical_findings = [f for f in results['findings'] if f['severity'] == 'CRITICAL']
+        critical_findings = [
+            f for f in results["findings"] if f["severity"] == "CRITICAL"
+        ]
         for i, finding in enumerate(critical_findings[:3], 1):
             print(f"   {i}. {finding['vulnerability_type']} ({finding['cwe_id']})")
             print(f"      Line {finding['line_number']}: {finding['description']}")
@@ -645,21 +704,25 @@ class SecurityCodeReviewSimulator:
         print(f"   Standards Checked: {len(validation['validations'])}")
         print(f"   Passed: {validation['passed']}")
         print(f"   Failed: {validation['failed']}")
-        if 'compliance_rate' in validation:
+        if "compliance_rate" in validation:
             print(f"   Compliance Rate: {validation['compliance_rate']:.1f}%")
         else:
             # Calculate compliance rate if not present
-            total = len(validation.get('validations', []))
+            total = len(validation.get("validations", []))
             if total > 0:
-                passed = validation.get('passed', 0)
+                passed = validation.get("passed", 0)
                 rate = (passed / total) * 100
                 print(f"   Compliance Rate: {rate:.1f}%")
 
         print("\n🏛️ NIST COMPLIANCE")
         compliance = results["workflow_steps"]["compliance_mapping"]
         print(f"   Controls Affected: {compliance['total_controls']}")
-        print(f"   Coverage: {compliance['compliance_summary']['coverage_percentage']:.1f}%")
-        print(f"   High Priority Controls: {', '.join(compliance['compliance_summary']['high_priority_controls'])}")
+        print(
+            f"   Coverage: {compliance['compliance_summary']['coverage_percentage']:.1f}%"
+        )
+        print(
+            f"   High Priority Controls: {', '.join(compliance['compliance_summary']['high_priority_controls'])}"
+        )
 
         print("\n💡 RECOMMENDATIONS")
         improvements = results["workflow_steps"]["improvements"]
@@ -669,10 +732,10 @@ class SecurityCodeReviewSimulator:
         print(f"   Medium Priority: {priority_dist.get('MEDIUM', 0)}")
 
         print("\n🎯 OVERALL ASSESSMENT")
-        if metrics['risk_score'] >= 7:
+        if metrics["risk_score"] >= 7:
             print("   ❌ CRITICAL: Immediate remediation required")
             print("   ⚠️  Do NOT deploy to production")
-        elif metrics['risk_score'] >= 5:
+        elif metrics["risk_score"] >= 5:
             print("   ⚠️  HIGH RISK: Significant security issues")
             print("   🔧 Address critical issues before deployment")
         else:
@@ -680,10 +743,18 @@ class SecurityCodeReviewSimulator:
 
         print("\n📈 TOOL EFFECTIVENESS")
         print(f"   Security Issue Detection: {metrics['detection_rate']:.0f}%")
-        print(f"   Severity Assessment: {'✅ Accurate' if metrics['detection_rate'] > 80 else '⚠️ Partial'}")
-        print(f"   Remediation Guidance: {'✅ Comprehensive' if improvements['total_suggestions'] > 5 else '⚠️ Limited'}")
-        print(f"   NIST Mapping: {'✅ Complete' if compliance['total_controls'] > 5 else '⚠️ Partial'}")
-        print(f"   Workflow Effectiveness: {self._calculate_effectiveness_score(results)}/10")
+        print(
+            f"   Severity Assessment: {'✅ Accurate' if metrics['detection_rate'] > 80 else '⚠️ Partial'}"
+        )
+        print(
+            f"   Remediation Guidance: {'✅ Comprehensive' if improvements['total_suggestions'] > 5 else '⚠️ Limited'}"
+        )
+        print(
+            f"   NIST Mapping: {'✅ Complete' if compliance['total_controls'] > 5 else '⚠️ Partial'}"
+        )
+        print(
+            f"   Workflow Effectiveness: {self._calculate_effectiveness_score(results)}/10"
+        )
 
     def _calculate_effectiveness_score(self, results: dict[str, Any]) -> float:
         """Calculate overall tool effectiveness score."""
@@ -719,6 +790,7 @@ class SecurityCodeReviewSimulator:
 
         return round(score, 1)
 
+
 async def main():
     """Main function to run the security code review simulation."""
     print("🔒 MCP Standards Server - Security Code Review Simulation")
@@ -731,7 +803,7 @@ async def main():
         enable_semantic_search=True,
         enable_rule_engine=True,
         enable_token_optimization=True,
-        enable_caching=True
+        enable_caching=True,
     )
 
     print("🚀 Initializing Standards Engine...")
@@ -748,7 +820,9 @@ async def main():
         # Perform security review
         print("\n📝 Reviewing vulnerable Python API code...")
         print(f"   Code size: {len(VULNERABLE_API_CODE)} characters")
-        print("   Expected vulnerabilities: 7 (CWE-89, CWE-78, CWE-22, CWE-798, CWE-200, CWE-732, CWE-117)")
+        print(
+            "   Expected vulnerabilities: 7 (CWE-89, CWE-78, CWE-22, CWE-798, CWE-200, CWE-732, CWE-117)"
+        )
 
         results = await reviewer.perform_security_review(VULNERABLE_API_CODE)
 
@@ -761,10 +835,12 @@ async def main():
     except Exception as e:
         print(f"\n❌ Error during security review: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         # Cleanup
         await engine.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -16,16 +16,16 @@ def sanitize_filename(name: str) -> str:
     import re
 
     # Replace spaces with underscores
-    sanitized = name.replace(' ', '_')
+    sanitized = name.replace(" ", "_")
 
     # Replace forward slashes with dashes
-    sanitized = sanitized.replace('/', '-')
+    sanitized = sanitized.replace("/", "-")
 
     # Replace other problematic characters with underscores
-    sanitized = re.sub(r'[<>:"|?*\\]', '_', sanitized)
+    sanitized = re.sub(r'[<>:"|?*\\]', "_", sanitized)
 
     # Remove any leading/trailing dots or spaces
-    sanitized = sanitized.strip('. ')
+    sanitized = sanitized.strip(". ")
 
     # Ensure it's not empty
     if not sanitized:
@@ -83,7 +83,9 @@ class HistoricalAnalyzer:
 
             # Try to recover original benchmark name
             # This is a best-effort reverse mapping
-            benchmark_name_from_dir = benchmark_dir.name.replace("_", " ").replace("-", "/")
+            benchmark_name_from_dir = benchmark_dir.name.replace("_", " ").replace(
+                "-", "/"
+            )
             if benchmark_name:
                 # Use provided name if loading specific benchmark
                 actual_benchmark_name = benchmark_name

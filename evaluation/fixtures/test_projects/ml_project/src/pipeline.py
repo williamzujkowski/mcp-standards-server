@@ -1,6 +1,7 @@
 """
 ML Pipeline for testing
 """
+
 import mlflow
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split

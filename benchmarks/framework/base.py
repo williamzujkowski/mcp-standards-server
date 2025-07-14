@@ -340,16 +340,16 @@ class BenchmarkSuite:
         import re
 
         # Replace spaces with underscores
-        sanitized = name.replace(' ', '_')
+        sanitized = name.replace(" ", "_")
 
         # Replace forward slashes with dashes
-        sanitized = sanitized.replace('/', '-')
+        sanitized = sanitized.replace("/", "-")
 
         # Replace other problematic characters with underscores
-        sanitized = re.sub(r'[<>:"|?*\\]', '_', sanitized)
+        sanitized = re.sub(r'[<>:"|?*\\]', "_", sanitized)
 
         # Remove any leading/trailing dots or spaces
-        sanitized = sanitized.strip('. ')
+        sanitized = sanitized.strip(". ")
 
         # Ensure it's not empty
         if not sanitized:

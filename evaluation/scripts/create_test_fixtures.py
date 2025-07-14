@@ -33,35 +33,35 @@ class TestFixtureGenerator:
                 "ar-vr-development",
                 "advanced-api-design",
                 "database-design-optimization",
-                "sustainability-green-computing"
+                "sustainability-green-computing",
             ],
             "testing_quality": [
                 "advanced-testing-methodologies",
                 "code-review-best-practices",
-                "performance-tuning-optimization"
+                "performance-tuning-optimization",
             ],
             "security_compliance": [
                 "security-review-audit-process",
                 "data-privacy-compliance",
-                "business-continuity-disaster-recovery"
+                "business-continuity-disaster-recovery",
             ],
             "documentation_communication": [
                 "technical-content-creation",
                 "documentation-writing",
                 "team-collaboration-communication",
-                "project-planning-estimation"
+                "project-planning-estimation",
             ],
             "operations_infrastructure": [
                 "deployment-release-management",
                 "monitoring-incident-response",
                 "site-reliability-engineering-sre",
-                "technical-debt-management"
+                "technical-debt-management",
             ],
             "user_experience": [
                 "advanced-accessibility",
                 "internationalization-localization",
-                "developer-experience-dx"
-            ]
+                "developer-experience-dx",
+            ],
         }
 
         # Synchronized standards from GitHub
@@ -86,7 +86,7 @@ class TestFixtureGenerator:
             "TESTING_STANDARDS",
             "TOOLCHAIN_STANDARDS",
             "UNIFIED_STANDARDS",
-            "WEB_DESIGN_UX_STANDARDS"
+            "WEB_DESIGN_UX_STANDARDS",
         ]
 
         self.fixtures_created = 0
@@ -128,7 +128,7 @@ class TestFixtureGenerator:
             self.test_projects_dir / "microservice",
             self.test_projects_dir / "mobile_app",
             self.test_projects_dir / "ml_project",
-            self.test_projects_dir / "blockchain_app"
+            self.test_projects_dir / "blockchain_app",
         ]
 
         for directory in directories:
@@ -160,13 +160,13 @@ class TestFixtureGenerator:
                 {
                     "id": f"{standard_id}-rule-1",
                     "description": "Primary rule for testing",
-                    "severity": "error"
+                    "severity": "error",
                 }
-            ]
+            ],
         }
 
         minimal_path = self.standards_dir / "minimal" / f"{standard_id}.json"
-        with open(minimal_path, 'w') as f:
+        with open(minimal_path, "w") as f:
             json.dump(minimal, f, indent=2)
         self.fixtures_created += 1
 
@@ -184,20 +184,26 @@ class TestFixtureGenerator:
                 "updated": datetime.now().isoformat(),
                 "authors": ["Test Generator"],
                 "reviewers": ["QA Team"],
-                "status": "active"
+                "status": "active",
             },
             "rules": self._generate_test_rules(standard_id, 5),
             "examples": self._generate_examples(standard_id),
             "references": [
-                {"title": "Official Docs", "url": f"https://docs.example.com/{standard_id}"},
-                {"title": "Best Practices", "url": f"https://best.example.com/{standard_id}"}
+                {
+                    "title": "Official Docs",
+                    "url": f"https://docs.example.com/{standard_id}",
+                },
+                {
+                    "title": "Best Practices",
+                    "url": f"https://best.example.com/{standard_id}",
+                },
             ],
             "compliance": self._generate_compliance_mapping(standard_id),
-            "tools": self._generate_tool_recommendations(standard_id)
+            "tools": self._generate_tool_recommendations(standard_id),
         }
 
         full_path = self.standards_dir / "full" / f"{standard_id}.json"
-        with open(full_path, 'w') as f:
+        with open(full_path, "w") as f:
             json.dump(full, f, indent=2)
         self.fixtures_created += 1
 
@@ -213,13 +219,13 @@ class TestFixtureGenerator:
             "metadata": {
                 "sync_date": datetime.now().isoformat(),
                 "format": "markdown",
-                "size": random.randint(1000, 50000)
+                "size": random.randint(1000, 50000),
             },
-            "sections": self._generate_standard_sections(standard_id)
+            "sections": self._generate_standard_sections(standard_id),
         }
 
         fixture_path = self.standards_dir / "full" / f"{standard_id.lower()}.json"
-        with open(fixture_path, 'w') as f:
+        with open(fixture_path, "w") as f:
             json.dump(fixture, f, indent=2)
         self.fixtures_created += 1
 
@@ -247,17 +253,19 @@ class TestFixtureGenerator:
         rules = []
 
         for i in range(count):
-            rules.append({
-                "id": f"{standard_id}-rule-{i+1}",
-                "name": f"Test Rule {i+1}",
-                "description": f"Test rule {i+1} for {standard_id}",
-                "severity": severities[i % len(severities)],
-                "category": "test",
-                "implementation": {
-                    "languages": ["python", "javascript", "go"],
-                    "frameworks": ["any"]
+            rules.append(
+                {
+                    "id": f"{standard_id}-rule-{i+1}",
+                    "name": f"Test Rule {i+1}",
+                    "description": f"Test rule {i+1} for {standard_id}",
+                    "severity": severities[i % len(severities)],
+                    "category": "test",
+                    "implementation": {
+                        "languages": ["python", "javascript", "go"],
+                        "frameworks": ["any"],
+                    },
                 }
-            })
+            )
 
         return rules
 
@@ -266,12 +274,12 @@ class TestFixtureGenerator:
         return {
             "good": {
                 "description": "Example of compliant code",
-                "code": f"// This code follows {standard_id} standard\nfunction example() {{\n  return 'compliant';\n}}"
+                "code": f"// This code follows {standard_id} standard\nfunction example() {{\n  return 'compliant';\n}}",
             },
             "bad": {
                 "description": "Example of non-compliant code",
-                "code": f"// This code violates {standard_id} standard\nfunction example() {{\n  return 'non-compliant';\n}}"
-            }
+                "code": f"// This code violates {standard_id} standard\nfunction example() {{\n  return 'non-compliant';\n}}",
+            },
         }
 
     def _generate_compliance_mapping(self, standard_id: str) -> dict[str, list[str]]:
@@ -281,71 +289,87 @@ class TestFixtureGenerator:
             "AC": ["AC-2", "AC-3", "AC-4"],
             "AU": ["AU-2", "AU-3", "AU-4"],
             "SC": ["SC-7", "SC-8", "SC-13"],
-            "SI": ["SI-2", "SI-3", "SI-4"]
+            "SI": ["SI-2", "SI-3", "SI-4"],
         }
 
         # Map based on standard type
         if "security" in standard_id:
             return {
                 "nist_800_53": control_families["SC"] + control_families["SI"],
-                "coverage": "partial"
+                "coverage": "partial",
             }
         elif "audit" in standard_id:
-            return {
-                "nist_800_53": control_families["AU"],
-                "coverage": "full"
-            }
+            return {"nist_800_53": control_families["AU"], "coverage": "full"}
         else:
-            return {
-                "nist_800_53": [control_families["AC"][0]],
-                "coverage": "minimal"
-            }
+            return {"nist_800_53": [control_families["AC"][0]], "coverage": "minimal"}
 
     def _generate_tool_recommendations(self, standard_id: str) -> list[dict]:
         """Generate tool recommendations for a standard"""
         tools = []
 
         if "testing" in standard_id:
-            tools.extend([
-                {"name": "pytest", "purpose": "Unit testing", "language": "python"},
-                {"name": "jest", "purpose": "Unit testing", "language": "javascript"}
-            ])
+            tools.extend(
+                [
+                    {"name": "pytest", "purpose": "Unit testing", "language": "python"},
+                    {
+                        "name": "jest",
+                        "purpose": "Unit testing",
+                        "language": "javascript",
+                    },
+                ]
+            )
         elif "security" in standard_id:
-            tools.extend([
-                {"name": "bandit", "purpose": "Security linting", "language": "python"},
-                {"name": "eslint-plugin-security", "purpose": "Security linting", "language": "javascript"}
-            ])
+            tools.extend(
+                [
+                    {
+                        "name": "bandit",
+                        "purpose": "Security linting",
+                        "language": "python",
+                    },
+                    {
+                        "name": "eslint-plugin-security",
+                        "purpose": "Security linting",
+                        "language": "javascript",
+                    },
+                ]
+            )
         elif "performance" in standard_id:
-            tools.extend([
-                {"name": "lighthouse", "purpose": "Performance testing", "language": "javascript"},
-                {"name": "py-spy", "purpose": "Performance profiling", "language": "python"}
-            ])
+            tools.extend(
+                [
+                    {
+                        "name": "lighthouse",
+                        "purpose": "Performance testing",
+                        "language": "javascript",
+                    },
+                    {
+                        "name": "py-spy",
+                        "purpose": "Performance profiling",
+                        "language": "python",
+                    },
+                ]
+            )
 
         return tools
 
     def _generate_standard_sections(self, standard_id: str) -> list[dict]:
         """Generate standard sections for GitHub standards"""
         return [
-            {
-                "title": "Overview",
-                "content": f"Overview of {standard_id}",
-                "order": 1
-            },
+            {"title": "Overview", "content": f"Overview of {standard_id}", "order": 1},
             {
                 "title": "Key Principles",
                 "content": f"Core principles of {standard_id}",
-                "order": 2
+                "order": 2,
             },
             {
                 "title": "Implementation Guide",
                 "content": f"How to implement {standard_id}",
-                "order": 3
+                "order": 3,
             },
             {
                 "title": "Tools and Resources",
                 "content": f"Recommended tools for {standard_id}",
-                "order": 4
-            }
+                "order": 4,
+            },
         ]
 
     def _generate_code_samples(self):
@@ -358,7 +382,7 @@ class TestFixtureGenerator:
             "go": self._generate_go_samples,
             "java": self._generate_java_samples,
             "rust": self._generate_rust_samples,
-            "typescript": self._generate_typescript_samples
+            "typescript": self._generate_typescript_samples,
         }
 
         for _lang, generator in languages.items():
@@ -413,7 +437,7 @@ class DataProcessor:
         self.fixtures_created += 1
 
         # Non-compliant sample
-        non_compliant_code = '''# bad code with no docs
+        non_compliant_code = """# bad code with no docs
 def process(d):
     r = []
     for i in d:
@@ -433,16 +457,18 @@ class processor:
         for x in data:
             result += [x]
         return result
-'''
+"""
 
-        non_compliant_path = self.code_samples_dir / "non_compliant" / "bad_processor.py"
+        non_compliant_path = (
+            self.code_samples_dir / "non_compliant" / "bad_processor.py"
+        )
         non_compliant_path.write_text(non_compliant_code)
         self.fixtures_created += 1
 
     def _generate_javascript_samples(self):
         """Generate JavaScript code samples"""
         # Compliant sample
-        compliant_code = '''/**
+        compliant_code = """/**
  * User service following standards
  * @module UserService
  */
@@ -487,14 +513,14 @@ class UserService {
 }
 
 module.exports = UserService;
-'''
+"""
 
         compliant_path = self.code_samples_dir / "compliant" / "user_service.js"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
 
         # Non-compliant sample
-        non_compliant_code = '''// no jsdoc
+        non_compliant_code = """// no jsdoc
 function getUser(id) {
   var user = db.users.find(function(u) { return u.id == id });  // == instead of ===
   return user;  // returns password too
@@ -518,7 +544,7 @@ function updateUser(id, data, callback) {
 }
 
 eval("console.log('unsafe')");  // security issue
-'''
+"""
 
         non_compliant_path = self.code_samples_dir / "non_compliant" / "bad_service.js"
         non_compliant_path.write_text(non_compliant_code)
@@ -527,7 +553,7 @@ eval("console.log('unsafe')");  // security issue
     def _generate_go_samples(self):
         """Generate Go code samples"""
         # Compliant sample
-        compliant_code = '''// Package user provides user management functionality
+        compliant_code = """// Package user provides user management functionality
 package user
 
 import (
@@ -587,14 +613,14 @@ func (s *Service) GetUser(ctx context.Context, userID string) (*User, error) {
 
     return user, nil
 }
-'''
+"""
 
         compliant_path = self.code_samples_dir / "compliant" / "user_service.go"
         compliant_path.write_text(compliant_code)
         self.fixtures_created += 1
 
         # Non-compliant sample
-        non_compliant_code = '''package main
+        non_compliant_code = """package main
 
 import "fmt"
 
@@ -619,7 +645,7 @@ var GlobalDB *Database
 func init() {
     GlobalDB = &Database{}  // no error handling
 }
-'''
+"""
 
         non_compliant_path = self.code_samples_dir / "non_compliant" / "bad_service.go"
         non_compliant_path.write_text(non_compliant_code)
@@ -628,7 +654,7 @@ func init() {
     def _generate_java_samples(self):
         """Generate Java code samples"""
         # Compliant sample
-        compliant_code = '''package com.example.service;
+        compliant_code = """package com.example.service;
 
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -697,7 +723,7 @@ public class UserService {
         // Additional validation...
     }
 }
-'''
+"""
 
         compliant_path = self.code_samples_dir / "compliant" / "UserService.java"
         compliant_path.write_text(compliant_code)
@@ -706,7 +732,7 @@ public class UserService {
     def _generate_rust_samples(self):
         """Generate Rust code samples"""
         # Compliant sample
-        compliant_code = '''//! User service module
+        compliant_code = """//! User service module
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -780,7 +806,7 @@ mod tests {
         // Test implementation
     }
 }
-'''
+"""
 
         compliant_path = self.code_samples_dir / "compliant" / "user_service.rs"
         compliant_path.write_text(compliant_code)
@@ -789,7 +815,7 @@ mod tests {
     def _generate_typescript_samples(self):
         """Generate TypeScript code samples"""
         # Compliant sample
-        compliant_code = r'''/**
+        compliant_code = r"""/**
  * User service for managing user operations
  */
 
@@ -873,7 +899,7 @@ export class UserService {
     return `hashed_${password}`;
   }
 }
-'''
+"""
 
         compliant_path = self.code_samples_dir / "compliant" / "user.service.ts"
         compliant_path.write_text(compliant_code)
@@ -911,22 +937,22 @@ export class UserService {
                 "dev": "vite",
                 "build": "vite build",
                 "test": "jest",
-                "lint": "eslint src"
+                "lint": "eslint src",
             },
             "dependencies": {
                 "react": "^18.2.0",
                 "react-dom": "^18.2.0",
                 "react-router-dom": "^6.0.0",
-                "axios": "^1.0.0"
+                "axios": "^1.0.0",
             },
             "devDependencies": {
                 "vite": "^4.0.0",
                 "jest": "^29.0.0",
-                "eslint": "^8.0.0"
-            }
+                "eslint": "^8.0.0",
+            },
         }
 
-        with open(project_dir / "package.json", 'w') as f:
+        with open(project_dir / "package.json", "w") as f:
             json.dump(package_json, f, indent=2)
 
         # Project structure
@@ -935,7 +961,7 @@ export class UserService {
         (project_dir / "tests").mkdir(parents=True, exist_ok=True)
 
         # Sample component
-        component_code = '''import React from 'react';
+        component_code = """import React from 'react';
 
 export const Button = ({ onClick, children, variant = 'primary' }) => {
   return (
@@ -948,7 +974,7 @@ export const Button = ({ onClick, children, variant = 'primary' }) => {
     </button>
   );
 };
-'''
+"""
 
         (project_dir / "src" / "components" / "Button.jsx").write_text(component_code)
         self.fixtures_created += 1
@@ -958,7 +984,7 @@ export const Button = ({ onClick, children, variant = 'primary' }) => {
         project_dir = self.test_projects_dir / "microservice"
 
         # Go module
-        go_mod = '''module github.com/test/microservice
+        go_mod = """module github.com/test/microservice
 
 go 1.21
 
@@ -967,12 +993,12 @@ require (
     github.com/sirupsen/logrus v1.9.0
     github.com/stretchr/testify v1.8.0
 )
-'''
+"""
 
         (project_dir / "go.mod").write_text(go_mod)
 
         # Main service file
-        main_go = '''package main
+        main_go = """package main
 
 import (
     "github.com/gin-gonic/gin"
@@ -991,7 +1017,7 @@ func main() {
 
     router.Run(":8080")
 }
-'''
+"""
 
         (project_dir / "main.go").write_text(main_go)
         self.fixtures_created += 1
@@ -1008,21 +1034,21 @@ func main() {
                 "start": "expo start",
                 "android": "expo start --android",
                 "ios": "expo start --ios",
-                "test": "jest"
+                "test": "jest",
             },
             "dependencies": {
                 "expo": "~49.0.0",
                 "react": "18.2.0",
                 "react-native": "0.72.0",
-                "@react-navigation/native": "^6.0.0"
-            }
+                "@react-navigation/native": "^6.0.0",
+            },
         }
 
-        with open(project_dir / "package.json", 'w') as f:
+        with open(project_dir / "package.json", "w") as f:
             json.dump(package_json, f, indent=2)
 
         # App component
-        app_code = '''import React from 'react';
+        app_code = """import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 export default function App() {
@@ -1044,7 +1070,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-'''
+"""
 
         (project_dir / "App.js").write_text(app_code)
         self.fixtures_created += 1
@@ -1054,14 +1080,14 @@ const styles = StyleSheet.create({
         project_dir = self.test_projects_dir / "ml_project"
 
         # requirements.txt
-        requirements = '''numpy==1.24.0
+        requirements = """numpy==1.24.0
 pandas==2.0.0
 scikit-learn==1.3.0
 tensorflow==2.13.0
 mlflow==2.7.0
 pytest==7.4.0
 black==23.7.0
-'''
+"""
 
         (project_dir / "requirements.txt").write_text(requirements)
 
@@ -1116,7 +1142,7 @@ class MLPipeline:
         project_dir = self.test_projects_dir / "blockchain_app"
 
         # Solidity contract
-        contract_code = '''// SPDX-License-Identifier: MIT
+        contract_code = """// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 contract TestToken {
@@ -1156,13 +1182,13 @@ contract TestToken {
         return true;
     }
 }
-'''
+"""
 
         (project_dir / "contracts").mkdir(exist_ok=True)
         (project_dir / "contracts" / "TestToken.sol").write_text(contract_code)
 
         # Hardhat config
-        hardhat_config = '''require("@nomicfoundation/hardhat-toolbox");
+        hardhat_config = """require("@nomicfoundation/hardhat-toolbox");
 
 module.exports = {
   solidity: "0.8.19",
@@ -1174,7 +1200,7 @@ module.exports = {
     }
   }
 };
-'''
+"""
 
         (project_dir / "hardhat.config.js").write_text(hardhat_config)
         self.fixtures_created += 1
@@ -1193,11 +1219,11 @@ module.exports = {
                         "standard": "security-review-audit-process",
                         "test_cases": [
                             {
-                                "code": "query = f\"SELECT * FROM users WHERE id = {user_id}\"",
+                                "code": 'query = f"SELECT * FROM users WHERE id = {user_id}"',
                                 "expected": "error",
-                                "message": "SQL injection vulnerability"
+                                "message": "SQL injection vulnerability",
                             }
-                        ]
+                        ],
                     },
                     {
                         "id": "hardcoded_secrets",
@@ -1207,11 +1233,11 @@ module.exports = {
                             {
                                 "code": "API_KEY = 'sk-1234567890abcdef'",
                                 "expected": "error",
-                                "message": "Hardcoded secret detected"
+                                "message": "Hardcoded secret detected",
                             }
-                        ]
-                    }
-                ]
+                        ],
+                    },
+                ],
             },
             "performance_validation": {
                 "name": "Performance Validation Scenarios",
@@ -1222,13 +1248,13 @@ module.exports = {
                         "standard": "performance-tuning-optimization",
                         "test_cases": [
                             {
-                                "code": "for user in users:\n    user.posts = db.query(f\"SELECT * FROM posts WHERE user_id = {user.id}\")",
+                                "code": 'for user in users:\n    user.posts = db.query(f"SELECT * FROM posts WHERE user_id = {user.id}")',
                                 "expected": "warning",
-                                "message": "N+1 query pattern detected"
+                                "message": "N+1 query pattern detected",
                             }
-                        ]
+                        ],
                     }
-                ]
+                ],
             },
             "accessibility_validation": {
                 "name": "Accessibility Validation Scenarios",
@@ -1239,18 +1265,18 @@ module.exports = {
                         "standard": "advanced-accessibility",
                         "test_cases": [
                             {
-                                "code": "<img src=\"logo.png\" />",
+                                "code": '<img src="logo.png" />',
                                 "expected": "error",
-                                "message": "Missing alt attribute for image"
+                                "message": "Missing alt attribute for image",
                             }
-                        ]
+                        ],
                     }
-                ]
-            }
+                ],
+            },
         }
 
         scenarios_path = self.fixtures_dir / "validation_scenarios.json"
-        with open(scenarios_path, 'w') as f:
+        with open(scenarios_path, "w") as f:
             json.dump(scenarios, f, indent=2)
         self.fixtures_created += 1
 
@@ -1262,11 +1288,11 @@ module.exports = {
         empty_standard = {
             "id": "empty-standard",
             "title": "Empty Standard",
-            "rules": []
+            "rules": [],
         }
 
         empty_path = self.standards_dir / "edge_cases" / "empty_standard.json"
-        with open(empty_path, 'w') as f:
+        with open(empty_path, "w") as f:
             json.dump(empty_standard, f, indent=2)
         self.fixtures_created += 1
 
@@ -1276,15 +1302,13 @@ module.exports = {
             "title": "Very Large Standard",
             "description": "A" * 100000,  # 100KB of text
             "rules": [
-                {
-                    "id": f"rule-{i}",
-                    "description": f"Rule {i} " * 100
-                } for i in range(1000)
-            ]
+                {"id": f"rule-{i}", "description": f"Rule {i} " * 100}
+                for i in range(1000)
+            ],
         }
 
         large_path = self.standards_dir / "edge_cases" / "large_standard.json"
-        with open(large_path, 'w') as f:
+        with open(large_path, "w") as f:
             json.dump(large_standard, f, indent=2)
         self.fixtures_created += 1
 
@@ -1296,18 +1320,20 @@ module.exports = {
             "rules": [
                 {
                     "id": "circular-rule",
-                    "depends_on": ["circular-rule"]  # Self-dependency
+                    "depends_on": ["circular-rule"],  # Self-dependency
                 }
-            ]
+            ],
         }
 
         circular_path = self.standards_dir / "edge_cases" / "circular_standard.json"
-        with open(circular_path, 'w') as f:
+        with open(circular_path, "w") as f:
             json.dump(circular_standard, f, indent=2)
         self.fixtures_created += 1
 
         # Corrupted standard (invalid JSON)
-        corrupted_content = '{"id": "corrupted-standard", "title": "Corrupted", "rules": [{'
+        corrupted_content = (
+            '{"id": "corrupted-standard", "title": "Corrupted", "rules": [{'
+        )
 
         corrupted_path = self.standards_dir / "corrupted" / "corrupted_standard.json"
         corrupted_path.write_text(corrupted_content)
@@ -1321,13 +1347,13 @@ module.exports = {
             "rules": [
                 {
                     "id": "unicode-rule",
-                    "description": "Check for proper UTF-8 handling: ✓ ✗ ⚠️"
+                    "description": "Check for proper UTF-8 handling: ✓ ✗ ⚠️",
                 }
-            ]
+            ],
         }
 
         unicode_path = self.standards_dir / "edge_cases" / "unicode_standard.json"
-        with open(unicode_path, 'w') as f:
+        with open(unicode_path, "w") as f:
             json.dump(unicode_standard, f, indent=2, ensure_ascii=False)
         self.fixtures_created += 1
 
@@ -1340,22 +1366,32 @@ module.exports = {
             "total_fixtures": self.fixtures_created,
             "categories": {
                 "standards": {
-                    "minimal": len(list((self.standards_dir / "minimal").glob("*.json"))),
+                    "minimal": len(
+                        list((self.standards_dir / "minimal").glob("*.json"))
+                    ),
                     "full": len(list((self.standards_dir / "full").glob("*.json"))),
-                    "edge_cases": len(list((self.standards_dir / "edge_cases").glob("*.json"))),
-                    "corrupted": len(list((self.standards_dir / "corrupted").glob("*")))
+                    "edge_cases": len(
+                        list((self.standards_dir / "edge_cases").glob("*.json"))
+                    ),
+                    "corrupted": len(
+                        list((self.standards_dir / "corrupted").glob("*"))
+                    ),
                 },
                 "code_samples": {
-                    "compliant": len(list((self.code_samples_dir / "compliant").glob("*"))),
-                    "non_compliant": len(list((self.code_samples_dir / "non_compliant").glob("*")))
+                    "compliant": len(
+                        list((self.code_samples_dir / "compliant").glob("*"))
+                    ),
+                    "non_compliant": len(
+                        list((self.code_samples_dir / "non_compliant").glob("*"))
+                    ),
                 },
-                "test_projects": len(list(self.test_projects_dir.glob("*")))
+                "test_projects": len(list(self.test_projects_dir.glob("*"))),
             },
-            "errors": self.errors
+            "errors": self.errors,
         }
 
         manifest_path = self.fixtures_dir / "manifest.json"
-        with open(manifest_path, 'w') as f:
+        with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
 
         # Create README
@@ -1413,7 +1449,9 @@ def main():
 
     # Confirm we're in the right directory
     if not (project_root / "src" / "core" / "mcp").exists():
-        print("❌ Error: This script must be run from the mcp-standards-server root directory")
+        print(
+            "❌ Error: This script must be run from the mcp-standards-server root directory"
+        )
         return
 
     generator = TestFixtureGenerator(project_root)

@@ -24,29 +24,34 @@ class ArtifactOrganizer:
         # Define file categories and their destinations
         self.file_mappings = {
             "test_reports": {
-                "pattern": ["*_REPORT.md", "*_report.json", "*_report.md", "*_results.json"],
-                "destination": self.reports_dir / "historical"
+                "pattern": [
+                    "*_REPORT.md",
+                    "*_report.json",
+                    "*_report.md",
+                    "*_results.json",
+                ],
+                "destination": self.reports_dir / "historical",
             },
             "analysis_files": {
                 "pattern": ["*_ANALYSIS_*.md", "*_analysis.json", "analyze_*.py"],
-                "destination": self.reports_dir / "analysis"
+                "destination": self.reports_dir / "analysis",
             },
             "test_files": {
                 "pattern": ["test_*.py"],
-                "destination": self.archive_dir / "test_files"
+                "destination": self.archive_dir / "test_files",
             },
             "performance_data": {
                 "pattern": ["*benchmark*.json", "*performance*.json"],
-                "destination": self.reports_dir / "performance"
+                "destination": self.reports_dir / "performance",
             },
             "compliance_data": {
                 "pattern": ["*compliance*.json", "*security*.json"],
-                "destination": self.reports_dir / "compliance"
+                "destination": self.reports_dir / "compliance",
             },
             "workflow_data": {
                 "pattern": ["*workflow*.md", "*USER_WORKFLOW*.md"],
-                "destination": self.reports_dir / "workflows"
-            }
+                "destination": self.reports_dir / "workflows",
+            },
         }
 
         self.summary = {
@@ -54,7 +59,7 @@ class ArtifactOrganizer:
             "files_archived": 0,
             "duplicates_removed": 0,
             "directories_created": 0,
-            "errors": []
+            "errors": [],
         }
 
     def run(self):
@@ -97,7 +102,7 @@ class ArtifactOrganizer:
             self.evaluation_dir / "results" / "benchmarks",
             self.evaluation_dir / "fixtures",
             self.evaluation_dir / "fixtures" / "standards",
-            self.evaluation_dir / "fixtures" / "code_samples"
+            self.evaluation_dir / "fixtures" / "code_samples",
         ]
 
         for directory in directories:
@@ -139,7 +144,10 @@ class ArtifactOrganizer:
                 # Determine destination based on content
                 if "performance" in report.name.lower():
                     dest = self.reports_dir / "performance"
-                elif "compliance" in report.name.lower() or "security" in report.name.lower():
+                elif (
+                    "compliance" in report.name.lower()
+                    or "security" in report.name.lower()
+                ):
                     dest = self.reports_dir / "compliance"
                 else:
                     dest = self.reports_dir / "historical"
@@ -185,10 +193,10 @@ class ArtifactOrganizer:
                 index = {
                     "files": [f.name for f in npy_files],
                     "count": len(npy_files),
-                    "updated": datetime.now().isoformat()
+                    "updated": datetime.now().isoformat(),
                 }
 
-                with open(search_dir / "index.json", 'w') as f:
+                with open(search_dir / "index.json", "w") as f:
                     json.dump(index, f, indent=2)
 
                 print(f"  ✓ Indexed {len(npy_files)} search vector files")
@@ -208,7 +216,9 @@ class ArtifactOrganizer:
 
             shutil.move(str(source), str(dest_file))
             self.summary["files_moved"] += 1
-            print(f"  ✓ Moved {source.name} to {destination.relative_to(self.project_root)}")
+            print(
+                f"  ✓ Moved {source.name} to {destination.relative_to(self.project_root)}"
+            )
 
         except Exception as e:
             error_msg = f"Failed to move {source.name}: {str(e)}"
@@ -287,9 +297,9 @@ mcp-standards-server/
 
 """
 
-        if self.summary['errors']:
+        if self.summary["errors"]:
             report += "\n## Errors Encountered\n\n"
-            for error in self.summary['errors']:
+            for error in self.summary["errors"]:
                 report += f"- {error}\n"
 
         report += r"""
@@ -319,23 +329,35 @@ find . -type f -size +10M -exec ls -lh {} \;
 ```
 """
 
-        with open(report_path, 'w') as f:
+        with open(report_path, "w") as f:
             f.write(report)
 
-        print(f"\n📄 Organization report saved to: {report_path.relative_to(self.project_root)}")
+        print(
+            f"\n📄 Organization report saved to: {report_path.relative_to(self.project_root)}"
+        )
 
         # Also create a summary JSON for programmatic access
         summary_path = self.reports_dir / "current" / "organization_summary.json"
-        with open(summary_path, 'w') as f:
-            json.dump({
-                "timestamp": datetime.now().isoformat(),
-                "summary": self.summary,
-                "new_structure": {
-                    "reports_dir": str(self.reports_dir.relative_to(self.project_root)),
-                    "evaluation_dir": str(self.evaluation_dir.relative_to(self.project_root)),
-                    "archive_dir": str(self.archive_dir.relative_to(self.project_root))
-                }
-            }, f, indent=2)
+        with open(summary_path, "w") as f:
+            json.dump(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "summary": self.summary,
+                    "new_structure": {
+                        "reports_dir": str(
+                            self.reports_dir.relative_to(self.project_root)
+                        ),
+                        "evaluation_dir": str(
+                            self.evaluation_dir.relative_to(self.project_root)
+                        ),
+                        "archive_dir": str(
+                            self.archive_dir.relative_to(self.project_root)
+                        ),
+                    },
+                },
+                f,
+                indent=2,
+            )
 
 
 def find_and_remove_pycache(root_dir: Path):
@@ -393,7 +415,7 @@ python evaluation/scripts/organize_artifacts.py
 """
 
     readme_path = evaluation_dir / "README.md"
-    with open(readme_path, 'w') as f:
+    with open(readme_path, "w") as f:
         f.write(readme_content)
 
     print(f"✓ Created evaluation README at {readme_path}")
@@ -405,7 +427,9 @@ def main():
 
     # Confirm we're in the right directory
     if not (project_root / "src" / "core" / "mcp").exists():
-        print("❌ Error: This script must be run from the mcp-standards-server root directory")
+        print(
+            "❌ Error: This script must be run from the mcp-standards-server root directory"
+        )
         return
 
     # Run organization

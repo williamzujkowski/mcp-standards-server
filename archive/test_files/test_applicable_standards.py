@@ -26,16 +26,26 @@ class ApplicableStandardsTester:
 
         # Monkey patch StandardMetadata to handle 'author' field
         original_init = StandardMetadata.__init__
+
         def patched_init(self, **kwargs):
             # Convert 'author' to 'authors' if present
-            if 'author' in kwargs and 'authors' not in kwargs:
-                kwargs['authors'] = [kwargs['author']]
-                del kwargs['author']
+            if "author" in kwargs and "authors" not in kwargs:
+                kwargs["authors"] = [kwargs["author"]]
+                del kwargs["author"]
 
             # Filter out unknown fields
             known_fields = {
-                'version', 'last_updated', 'authors', 'source', 'compliance_frameworks',
-                'nist_controls', 'tags', 'dependencies', 'language', 'scope', 'applicability'
+                "version",
+                "last_updated",
+                "authors",
+                "source",
+                "compliance_frameworks",
+                "nist_controls",
+                "tags",
+                "dependencies",
+                "language",
+                "scope",
+                "applicability",
             }
             filtered_kwargs = {k: v for k, v in kwargs.items() if k in known_fields}
             original_init(self, **filtered_kwargs)
@@ -47,15 +57,18 @@ class ApplicableStandardsTester:
             enable_semantic_search=True,
             enable_rule_engine=True,
             enable_token_optimization=True,
-            enable_caching=True
+            enable_caching=True,
         )
 
         await self.engine.initialize()
-        print(f"✅ Engine initialized with {len(self.engine._standards_cache)} standards")
+        print(
+            f"✅ Engine initialized with {len(self.engine._standards_cache)} standards"
+        )
 
         # Load rules from the enhanced rules file AFTER initialization
         if self.engine.rule_engine:
             from pathlib import Path
+
             rules_path = Path("./data/standards/meta/enhanced-selection-rules.json")
             if rules_path.exists():
                 try:
@@ -76,9 +89,9 @@ class ApplicableStandardsTester:
                     "technologies": ["react", "javascript", "npm"],
                     "requirements": ["accessibility", "security", "performance"],
                     "framework": "react",
-                    "language": "javascript"
+                    "language": "javascript",
                 },
-                "expected_domains": ["frontend", "web", "javascript", "react"]
+                "expected_domains": ["frontend", "web", "javascript", "react"],
             },
             {
                 "name": "Python API",
@@ -87,9 +100,9 @@ class ApplicableStandardsTester:
                     "technologies": ["python", "fastapi", "postgresql"],
                     "requirements": ["security", "database", "authentication"],
                     "language": "python",
-                    "framework": "fastapi"
+                    "framework": "fastapi",
                 },
-                "expected_domains": ["backend", "api", "python", "database"]
+                "expected_domains": ["backend", "api", "python", "database"],
             },
             {
                 "name": "Mobile IoT",
@@ -98,9 +111,9 @@ class ApplicableStandardsTester:
                     "technologies": ["react-native", "iot", "bluetooth"],
                     "requirements": ["privacy", "iot", "edge_computing"],
                     "framework": "react-native",
-                    "language": "javascript"
+                    "language": "javascript",
                 },
-                "expected_domains": ["mobile", "iot", "privacy", "edge"]
+                "expected_domains": ["mobile", "iot", "privacy", "edge"],
             },
             {
                 "name": "AI/ML Project",
@@ -109,10 +122,10 @@ class ApplicableStandardsTester:
                     "technologies": ["python", "tensorflow", "docker"],
                     "requirements": ["mlops", "ethics", "monitoring"],
                     "language": "python",
-                    "domain": "ai_ml"
+                    "domain": "ai_ml",
                 },
-                "expected_domains": ["ai", "ml", "mlops", "ethics", "python"]
-            }
+                "expected_domains": ["ai", "ml", "mlops", "ethics", "python"],
+            },
         ]
 
     async def test_case(self, test_case: dict[str, Any]) -> dict[str, Any]:
@@ -125,7 +138,9 @@ class ApplicableStandardsTester:
 
         try:
             # Call get_applicable_standards
-            results = await self.engine.get_applicable_standards(test_case['project_context'])
+            results = await self.engine.get_applicable_standards(
+                test_case["project_context"]
+            )
             response_time = time.time() - start_time
 
             print(f"⏱️ Response time: {response_time:.3f}s")
@@ -134,47 +149,55 @@ class ApplicableStandardsTester:
             # Analyze results
             standards_found = []
             for result in results:
-                standard = result.get('standard')
+                standard = result.get("standard")
                 if standard:
-                    standards_found.append({
-                        'id': standard.id,
-                        'title': standard.title,
-                        'category': standard.category,
-                        'tags': list(standard.tags),
-                        'confidence': result.get('confidence', 0.0),
-                        'reasoning': result.get('reasoning', ''),
-                        'priority': result.get('priority', 99)
-                    })
-                    print(f"  📋 {standard.id}: {standard.title} (confidence: {result.get('confidence', 0.0)})")
+                    standards_found.append(
+                        {
+                            "id": standard.id,
+                            "title": standard.title,
+                            "category": standard.category,
+                            "tags": list(standard.tags),
+                            "confidence": result.get("confidence", 0.0),
+                            "reasoning": result.get("reasoning", ""),
+                            "priority": result.get("priority", 99),
+                        }
+                    )
+                    print(
+                        f"  📋 {standard.id}: {standard.title} (confidence: {result.get('confidence', 0.0)})"
+                    )
 
             # Calculate relevance score
             relevance_score = self._calculate_relevance(standards_found, test_case)
 
             # Check if requirements are addressed
             requirements_addressed = self._check_requirements_coverage(
-                standards_found, test_case['project_context'].get('requirements', [])
+                standards_found, test_case["project_context"].get("requirements", [])
             )
 
             test_result = {
-                'test_case': test_case['name'],
-                'context': test_case['project_context'],
-                'response_time': response_time,
-                'standards_count': len(standards_found),
-                'standards_found': standards_found,
-                'relevance_score': relevance_score,
-                'requirements_addressed': requirements_addressed,
-                'success': len(standards_found) > 0,
-                'issues': [],
-                'recommendations': []
+                "test_case": test_case["name"],
+                "context": test_case["project_context"],
+                "response_time": response_time,
+                "standards_count": len(standards_found),
+                "standards_found": standards_found,
+                "relevance_score": relevance_score,
+                "requirements_addressed": requirements_addressed,
+                "success": len(standards_found) > 0,
+                "issues": [],
+                "recommendations": [],
             }
 
             # Add issues and recommendations
             if len(standards_found) == 0:
-                test_result['issues'].append("No standards returned")
+                test_result["issues"].append("No standards returned")
             if relevance_score < 5:
-                test_result['issues'].append(f"Low relevance score: {relevance_score}/10")
+                test_result["issues"].append(
+                    f"Low relevance score: {relevance_score}/10"
+                )
             if response_time > 1.0:
-                test_result['issues'].append(f"Slow response time: {response_time:.3f}s")
+                test_result["issues"].append(
+                    f"Slow response time: {response_time:.3f}s"
+                )
 
             return test_result
 
@@ -182,17 +205,17 @@ class ApplicableStandardsTester:
             response_time = time.time() - start_time
             print(f"❌ Error: {e}")
             return {
-                'test_case': test_case['name'],
-                'context': test_case['project_context'],
-                'response_time': response_time,
-                'standards_count': 0,
-                'standards_found': [],
-                'relevance_score': 0,
-                'requirements_addressed': {},
-                'success': False,
-                'error': str(e),
-                'issues': [f"Exception occurred: {e}"],
-                'recommendations': ["Fix the underlying error"]
+                "test_case": test_case["name"],
+                "context": test_case["project_context"],
+                "response_time": response_time,
+                "standards_count": 0,
+                "standards_found": [],
+                "relevance_score": 0,
+                "requirements_addressed": {},
+                "success": False,
+                "error": str(e),
+                "issues": [f"Exception occurred: {e}"],
+                "recommendations": ["Fix the underlying error"],
             }
 
     def _calculate_relevance(self, standards: list[dict], test_case: dict) -> float:
@@ -201,30 +224,32 @@ class ApplicableStandardsTester:
             return 0.0
 
         total_score = 0.0
-        expected_domains = set(test_case.get('expected_domains', []))
+        expected_domains = set(test_case.get("expected_domains", []))
 
         for standard in standards:
             score = 0.0
 
             # Check category match
-            category_words = standard['category'].lower().split()
+            category_words = standard["category"].lower().split()
             if any(word in expected_domains for word in category_words):
                 score += 3.0
 
             # Check tags match
-            tags = [tag.lower() for tag in standard['tags']]
+            tags = [tag.lower() for tag in standard["tags"]]
             matching_tags = len(set(tags) & expected_domains)
             score += min(matching_tags * 2.0, 4.0)
 
             # Use confidence if available
-            confidence = standard.get('confidence', 0.5)
+            confidence = standard.get("confidence", 0.5)
             score *= confidence
 
             total_score += min(score, 10.0)
 
         return min(total_score / len(standards), 10.0)
 
-    def _check_requirements_coverage(self, standards: list[dict], requirements: list[str]) -> dict:
+    def _check_requirements_coverage(
+        self, standards: list[dict], requirements: list[str]
+    ) -> dict:
         """Check how well the standards address the stated requirements."""
         coverage = {}
 
@@ -237,11 +262,11 @@ class ApplicableStandardsTester:
                 standard_text = f"{standard['title']} {standard['category']} {' '.join(standard['tags'])}".lower()
                 if requirement.lower() in standard_text:
                     covered = True
-                    covering_standards.append(standard['id'])
+                    covering_standards.append(standard["id"])
 
             coverage[requirement] = {
-                'covered': covered,
-                'standards': covering_standards
+                "covered": covered,
+                "standards": covering_standards,
             }
 
         return coverage
@@ -268,9 +293,15 @@ class ApplicableStandardsTester:
         print("📊 TEST SUMMARY")
         print("=" * 60)
 
-        successful_tests = [r for r in self.test_results if r['success']]
-        avg_response_time = sum(r['response_time'] for r in self.test_results) / len(self.test_results)
-        avg_relevance = sum(r['relevance_score'] for r in successful_tests) / len(successful_tests) if successful_tests else 0
+        successful_tests = [r for r in self.test_results if r["success"]]
+        avg_response_time = sum(r["response_time"] for r in self.test_results) / len(
+            self.test_results
+        )
+        avg_relevance = (
+            sum(r["relevance_score"] for r in successful_tests) / len(successful_tests)
+            if successful_tests
+            else 0
+        )
 
         print(f"✅ Successful tests: {len(successful_tests)}/{len(self.test_results)}")
         print(f"⏱️ Average response time: {avg_response_time:.3f}s")
@@ -279,11 +310,13 @@ class ApplicableStandardsTester:
         # Individual test results
         print("\n📋 Individual Test Results:")
         for result in self.test_results:
-            status = "✅" if result['success'] else "❌"
-            print(f"{status} {result['test_case']}: {result['standards_count']} standards, relevance {result['relevance_score']:.1f}/10")
+            status = "✅" if result["success"] else "❌"
+            print(
+                f"{status} {result['test_case']}: {result['standards_count']} standards, relevance {result['relevance_score']:.1f}/10"
+            )
 
-            if result['issues']:
-                for issue in result['issues']:
+            if result["issues"]:
+                for issue in result["issues"]:
                     print(f"    ⚠️ {issue}")
 
         # Requirements coverage analysis
@@ -292,14 +325,18 @@ class ApplicableStandardsTester:
         covered_requirements = set()
 
         for result in successful_tests:
-            for req, coverage in result['requirements_addressed'].items():
+            for req, coverage in result["requirements_addressed"].items():
                 all_requirements.add(req)
-                if coverage['covered']:
+                if coverage["covered"]:
                     covered_requirements.add(req)
 
         if all_requirements:
-            coverage_percentage = len(covered_requirements) / len(all_requirements) * 100
-            print(f"Overall coverage: {coverage_percentage:.1f}% ({len(covered_requirements)}/{len(all_requirements)})")
+            coverage_percentage = (
+                len(covered_requirements) / len(all_requirements) * 100
+            )
+            print(
+                f"Overall coverage: {coverage_percentage:.1f}% ({len(covered_requirements)}/{len(all_requirements)})"
+            )
 
             uncovered = all_requirements - covered_requirements
             if uncovered:
@@ -321,7 +358,7 @@ class ApplicableStandardsTester:
         # Look for patterns in issues
         all_issues = []
         for result in self.test_results:
-            all_issues.extend(result['issues'])
+            all_issues.extend(result["issues"])
 
         if "No standards returned" in str(all_issues):
             print("  • Investigate why some contexts return no standards")
@@ -336,7 +373,9 @@ class ApplicableStandardsTester:
 
         # Show sample of available standards
         print("\n📚 Sample of Available Standards:")
-        for i, (std_id, standard) in enumerate(list(self.engine._standards_cache.items())[:10]):
+        for i, (std_id, standard) in enumerate(
+            list(self.engine._standards_cache.items())[:10]
+        ):
             print(f"  {i+1}. {std_id}: {standard.title} [{standard.category}]")
         if len(self.engine._standards_cache) > 10:
             print(f"  ... and {len(self.engine._standards_cache) - 10} more")
@@ -353,12 +392,12 @@ class ApplicableStandardsTester:
             sample_context = {
                 "project_type": "web_application",
                 "framework": "react",
-                "language": "javascript"
+                "language": "javascript",
             }
             evaluation = self.engine.rule_engine.evaluate(sample_context)
             print(f"  Sample context: {sample_context}")
             print(f"  Matched rules: {len(evaluation.get('matched_rules', []))}")
-            for matched in evaluation.get('matched_rules', []):
+            for matched in evaluation.get("matched_rules", []):
                 print(f"    - {matched.get('rule_name')} -> {matched.get('standards')}")
 
 

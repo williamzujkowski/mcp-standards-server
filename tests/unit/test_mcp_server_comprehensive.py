@@ -1123,7 +1123,7 @@ class TestMCPServerAdvancedToolExecution:
             "domain": "api",
             "description": "API template",
             "variables": [],
-            "features": []
+            "features": [],
         }
 
         template2 = {
@@ -1131,7 +1131,7 @@ class TestMCPServerAdvancedToolExecution:
             "domain": "web",
             "description": "Web template",
             "variables": [],
-            "features": []
+            "features": [],
         }
 
         server.generator.list_templates.return_value = [template1, template2]

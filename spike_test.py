@@ -15,7 +15,9 @@ from typing import Any
 import aiohttp
 
 
-async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict[str, Any]:
+async def spike_test_single_level(
+    users: int, timeout_seconds: int = 30
+) -> dict[str, Any]:
     """Test a single user level with timeout protection."""
     print(f"  📊 Testing {users} users...")
 
@@ -28,7 +30,7 @@ async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict
                     "user": user_id,
                     "response_time": (time.time() - start) * 1000,
                     "status": response.status,
-                    "success": response.status == 200
+                    "success": response.status == 200,
                 }
         except Exception as e:
             return {
@@ -36,13 +38,13 @@ async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict
                 "response_time": (time.time() - start) * 1000,
                 "status": 0,
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     try:
         async with aiohttp.ClientSession(
             connector=aiohttp.TCPConnector(limit=users + 5),
-            timeout=aiohttp.ClientTimeout(total=timeout_seconds)
+            timeout=aiohttp.ClientTimeout(total=timeout_seconds),
         ) as session:
 
             start_time = time.time()
@@ -52,8 +54,7 @@ async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict
 
             # Execute with timeout
             results = await asyncio.wait_for(
-                asyncio.gather(*tasks, return_exceptions=True),
-                timeout=timeout_seconds
+                asyncio.gather(*tasks, return_exceptions=True), timeout=timeout_seconds
             )
 
             total_time = time.time() - start_time
@@ -80,7 +81,7 @@ async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict
                     "min_response_ms": round(min_response, 1),
                     "max_response_ms": round(max_response, 1),
                     "requests_per_second": round(rps, 2),
-                    "status": "completed"
+                    "status": "completed",
                 }
             else:
                 result = {
@@ -92,7 +93,7 @@ async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict
                     "avg_response_ms": 0,
                     "requests_per_second": 0,
                     "status": "failed",
-                    "error": "No valid results"
+                    "error": "No valid results",
                 }
 
     except asyncio.TimeoutError:
@@ -100,25 +101,23 @@ async def spike_test_single_level(users: int, timeout_seconds: int = 30) -> dict
             "users": users,
             "status": "timeout",
             "success_rate": 0,
-            "error": f"Test timed out after {timeout_seconds}s"
+            "error": f"Test timed out after {timeout_seconds}s",
         }
     except Exception as e:
-        result = {
-            "users": users,
-            "status": "error",
-            "success_rate": 0,
-            "error": str(e)
-        }
+        result = {"users": users, "status": "error", "success_rate": 0, "error": str(e)}
 
     # Print result
     if result["status"] == "completed":
-        print(f"     ✅ {result['success_rate']}% success, {result['avg_response_ms']}ms avg, {result['requests_per_second']} RPS")
+        print(
+            f"     ✅ {result['success_rate']}% success, {result['avg_response_ms']}ms avg, {result['requests_per_second']} RPS"
+        )
     elif result["status"] == "timeout":
         print(f"     ⏰ TIMEOUT after {timeout_seconds}s")
     else:
         print(f"     ❌ FAILED: {result.get('error', 'Unknown error')}")
 
     return result
+
 
 async def main():
     """Run spike testing."""
@@ -149,7 +148,9 @@ async def main():
             print(f"     🔴 Level {users} failed - performance degraded")
 
             # If we hit 3 consecutive failures or very low success rate, stop testing higher levels
-            recent_failures = sum(1 for r in results[-3:] if r.get("success_rate", 0) < 50)
+            recent_failures = sum(
+                1 for r in results[-3:] if r.get("success_rate", 0) < 50
+            )
             if recent_failures >= 2 or result.get("success_rate", 0) < 20:
                 print("     🛑 Stopping spike test - consistent failures detected")
                 break
@@ -168,7 +169,9 @@ async def main():
     for result in results:
         status_icon = "✅" if result.get("success_rate", 0) >= 80 else "❌"
         if result["status"] == "completed":
-            print(f"   {status_icon} {result['users']} users: {result['success_rate']}% success, {result['avg_response_ms']}ms avg")
+            print(
+                f"   {status_icon} {result['users']} users: {result['success_rate']}% success, {result['avg_response_ms']}ms avg"
+            )
         else:
             print(f"   ❌ {result['users']} users: {result['status'].upper()}")
 
@@ -186,7 +189,11 @@ async def main():
         print("   ⚠️  Breaking point not clearly identified")
 
     # Performance pattern analysis
-    successful_results = [r for r in results if r.get("success_rate", 0) >= 80 and r.get("avg_response_ms", 0) > 0]
+    successful_results = [
+        r
+        for r in results
+        if r.get("success_rate", 0) >= 80 and r.get("avg_response_ms", 0) > 0
+    ]
 
     if len(successful_results) >= 2:
         baseline_response = successful_results[0]["avg_response_ms"]
@@ -194,7 +201,9 @@ async def main():
 
         for result in successful_results[1:]:
             if result["avg_response_ms"] > baseline_response * 2:  # 2x increase
-                print(f"   📊 Significant response time degradation at {result['users']} users")
+                print(
+                    f"   📊 Significant response time degradation at {result['users']} users"
+                )
                 degradation_detected = True
                 break
 
@@ -205,15 +214,21 @@ async def main():
     print("\n💡 Spike Test Recommendations:")
 
     if last_successful_level and last_successful_level >= 5:
-        print(f"   ✅ Server can handle light concurrent loads ({last_successful_level} users)")
+        print(
+            f"   ✅ Server can handle light concurrent loads ({last_successful_level} users)"
+        )
         print("   📈 Consider optimizing for higher concurrent loads")
     elif last_successful_level and last_successful_level >= 2:
-        print(f"   ⚠️  Server has limited concurrency ({last_successful_level} users max)")
+        print(
+            f"   ⚠️  Server has limited concurrency ({last_successful_level} users max)"
+        )
         print("   🔧 Significant optimization needed for production use")
     else:
         print("   🚨 Critical: Server cannot handle concurrent users effectively")
         print("   🛠️  Major architectural changes required")
-        print("   📋 Consider: async processing, connection pooling, caching, load balancing")
+        print(
+            "   📋 Consider: async processing, connection pooling, caching, load balancing"
+        )
 
     # Overall spike test verdict
     print("\n🏁 Spike Test Verdict:")
@@ -236,9 +251,11 @@ async def main():
             "last_successful_level": last_successful_level,
             "breaking_point": breaking_point,
             "total_levels_tested": len(results),
-            "successful_levels": len([r for r in results if r.get("success_rate", 0) >= 80]),
-            "verdict": verdict
-        }
+            "successful_levels": len(
+                [r for r in results if r.get("success_rate", 0) >= 80]
+            ),
+            "verdict": verdict,
+        },
     }
 
     with open("spike_test_results.json", "w") as f:
@@ -246,6 +263,7 @@ async def main():
 
     print("\n📄 Results saved to: spike_test_results.json")
     print("✅ Spike testing completed!")
+
 
 if __name__ == "__main__":
     try:
@@ -255,4 +273,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Spike test failed: {e}")
         import traceback
+
         traceback.print_exc()

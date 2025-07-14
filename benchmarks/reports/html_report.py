@@ -13,23 +13,23 @@ def sanitize_html_id(name: str) -> str:
     import re
 
     # Replace spaces with dashes
-    sanitized = name.replace(' ', '-')
+    sanitized = name.replace(" ", "-")
 
     # Replace forward slashes with dashes
-    sanitized = sanitized.replace('/', '-')
+    sanitized = sanitized.replace("/", "-")
 
     # Replace other problematic characters with dashes
-    sanitized = re.sub(r'[^a-zA-Z0-9_-]', '-', sanitized)
+    sanitized = re.sub(r"[^a-zA-Z0-9_-]", "-", sanitized)
 
     # Remove multiple consecutive dashes
-    sanitized = re.sub(r'-+', '-', sanitized)
+    sanitized = re.sub(r"-+", "-", sanitized)
 
     # Remove leading/trailing dashes
-    sanitized = sanitized.strip('-')
+    sanitized = sanitized.strip("-")
 
     # Ensure it starts with a letter or underscore (HTML ID requirement)
-    if sanitized and not sanitized[0].isalpha() and sanitized[0] != '_':
-        sanitized = 'id-' + sanitized
+    if sanitized and not sanitized[0].isalpha() and sanitized[0] != "_":
+        sanitized = "id-" + sanitized
 
     # Ensure it's not empty
     if not sanitized:

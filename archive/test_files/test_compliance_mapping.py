@@ -25,44 +25,45 @@ class ComplianceMappingTester:
                 "name": "Test Case 1 - Security Standards",
                 "args": {
                     "standard_ids": ["security-review-audit-process"],
-                    "framework": "nist-800-53"
-                }
+                    "framework": "nist-800-53",
+                },
             },
             {
                 "name": "Test Case 2 - Data Privacy Standards",
                 "args": {
                     "standard_ids": ["data-privacy-compliance"],
-                    "framework": "nist-800-53"
-                }
+                    "framework": "nist-800-53",
+                },
             },
             {
                 "name": "Test Case 3 - Multiple Standards",
                 "args": {
-                    "standard_ids": ["security-review-audit-process", "data-privacy-compliance", "authentication-authorization"],
-                    "framework": "nist-800-53"
-                }
+                    "standard_ids": [
+                        "security-review-audit-process",
+                        "data-privacy-compliance",
+                        "authentication-authorization",
+                    ],
+                    "framework": "nist-800-53",
+                },
             },
             {
                 "name": "Test Case 4 - Technology Standards",
                 "args": {
                     "standard_ids": ["react-18-patterns", "typescript-5-guidelines"],
-                    "framework": "nist-800-53"
-                }
+                    "framework": "nist-800-53",
+                },
             },
             {
                 "name": "Test Case 5 - Invalid Framework Test",
                 "args": {
                     "standard_ids": ["security-review-audit-process"],
-                    "framework": "iso-27001"
-                }
+                    "framework": "iso-27001",
+                },
             },
             {
                 "name": "Test Case 6 - Empty Standards List",
-                "args": {
-                    "standard_ids": [],
-                    "framework": "nist-800-53"
-                }
-            }
+                "args": {"standard_ids": [], "framework": "nist-800-53"},
+            },
         ]
 
     async def setup(self):
@@ -88,7 +89,9 @@ class ComplianceMappingTester:
 
         try:
             # Call the get_compliance_mapping handler directly
-            result = await self.handler.handle_tool("get_compliance_mapping", test_case["args"])
+            result = await self.handler.handle_tool(
+                "get_compliance_mapping", test_case["args"]
+            )
 
             end_time = time.time()
             response_time = end_time - start_time
@@ -99,22 +102,32 @@ class ComplianceMappingTester:
                 "success": True,
                 "response_time_ms": round(response_time * 1000, 2),
                 "result": result,
-                "error": None
+                "error": None,
             }
 
             # Analyze the result
             if result and "result" in result:
                 mappings = result["result"]
                 test_result["mapping_count"] = len(mappings)
-                test_result["control_families"] = list({m.get("control_id", "").split("-")[0] for m in mappings if m.get("control_id")})
-                test_result["standards_covered"] = list({m.get("standard_id") for m in mappings})
+                test_result["control_families"] = list(
+                    {
+                        m.get("control_id", "").split("-")[0]
+                        for m in mappings
+                        if m.get("control_id")
+                    }
+                )
+                test_result["standards_covered"] = list(
+                    {m.get("standard_id") for m in mappings}
+                )
 
                 print(f"   📊 Found {len(mappings)} NIST control mappings")
                 print(f"   ⏱️  Response time: {response_time*1000:.2f}ms")
 
                 # Show some sample mappings
                 for i, mapping in enumerate(mappings[:3]):
-                    print(f"   📋 Mapping {i+1}: {mapping.get('standard_id')} → {mapping.get('control_id')}")
+                    print(
+                        f"   📋 Mapping {i+1}: {mapping.get('standard_id')} → {mapping.get('control_id')}"
+                    )
 
                 if len(mappings) > 3:
                     print(f"   📋 ... and {len(mappings) - 3} more mappings")
@@ -138,7 +151,7 @@ class ComplianceMappingTester:
                 "success": False,
                 "response_time_ms": round(response_time * 1000, 2),
                 "result": None,
-                "error": str(e)
+                "error": str(e),
             }
 
             print(f"   ❌ Exception: {e}")
@@ -151,7 +164,9 @@ class ComplianceMappingTester:
 
         try:
             # First get all available standards
-            standards_result = await self.handler.handle_tool("list_available_standards", {})
+            standards_result = await self.handler.handle_tool(
+                "list_available_standards", {}
+            )
 
             if standards_result and "result" in standards_result:
                 all_standards = standards_result["result"]
@@ -161,10 +176,10 @@ class ComplianceMappingTester:
 
                 # Test compliance mapping for all standards
                 start_time = time.time()
-                result = await self.handler.handle_tool("get_compliance_mapping", {
-                    "standard_ids": standard_ids,
-                    "framework": "nist-800-53"
-                })
+                result = await self.handler.handle_tool(
+                    "get_compliance_mapping",
+                    {"standard_ids": standard_ids, "framework": "nist-800-53"},
+                )
                 end_time = time.time()
 
                 test_result = {
@@ -174,18 +189,30 @@ class ComplianceMappingTester:
                     "response_time_ms": round((end_time - start_time) * 1000, 2),
                     "result": result,
                     "standards_tested": len(standard_ids),
-                    "standards_list": standard_ids[:10]  # First 10 for brevity
+                    "standards_list": standard_ids[:10],  # First 10 for brevity
                 }
 
                 if result and "result" in result:
                     mappings = result["result"]
                     test_result["mapping_count"] = len(mappings)
-                    test_result["control_families"] = list({m.get("control_id", "").split("-")[0] for m in mappings if m.get("control_id")})
-                    test_result["standards_with_mappings"] = list({m.get("standard_id") for m in mappings})
+                    test_result["control_families"] = list(
+                        {
+                            m.get("control_id", "").split("-")[0]
+                            for m in mappings
+                            if m.get("control_id")
+                        }
+                    )
+                    test_result["standards_with_mappings"] = list(
+                        {m.get("standard_id") for m in mappings}
+                    )
 
                     print(f"   📊 Found {len(mappings)} total NIST control mappings")
-                    print(f"   📋 Standards with mappings: {len(test_result['standards_with_mappings'])}")
-                    print(f"   🏷️  Control families covered: {test_result['control_families']}")
+                    print(
+                        f"   📋 Standards with mappings: {len(test_result['standards_with_mappings'])}"
+                    )
+                    print(
+                        f"   🏷️  Control families covered: {test_result['control_families']}"
+                    )
                     print(f"   ⏱️  Response time: {(end_time - start_time)*1000:.2f}ms")
 
                 return test_result
@@ -194,7 +221,7 @@ class ComplianceMappingTester:
             return {
                 "test_case": "All Available Standards",
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     async def run_all_tests(self):
@@ -268,22 +295,32 @@ class ComplianceMappingTester:
             if result.get("error"):
                 print(f"     Error: {result['error']}")
             elif result.get("mapping_count") is not None:
-                print(f"     Mappings: {result['mapping_count']}, Time: {result.get('response_time_ms', 0):.2f}ms")
+                print(
+                    f"     Mappings: {result['mapping_count']}, Time: {result.get('response_time_ms', 0):.2f}ms"
+                )
 
         # Recommendations
         print("\n💡 Recommendations:")
 
         if failed_tests:
-            print("   • Investigate failed test cases for potential data or implementation issues")
+            print(
+                "   • Investigate failed test cases for potential data or implementation issues"
+            )
 
         if total_mappings == 0:
-            print("   • No NIST control mappings found - verify standards have compliance metadata")
+            print(
+                "   • No NIST control mappings found - verify standards have compliance metadata"
+            )
 
         if len(all_control_families) < 5:
-            print("   • Limited NIST control family coverage - consider expanding compliance mappings")
+            print(
+                "   • Limited NIST control family coverage - consider expanding compliance mappings"
+            )
 
         if response_times and max(response_times) > 1000:
-            print("   • Some queries are slow (>1s) - consider performance optimization")
+            print(
+                "   • Some queries are slow (>1s) - consider performance optimization"
+            )
 
         # Save detailed report to file
         report_data = {
@@ -291,32 +328,37 @@ class ComplianceMappingTester:
                 "total_tests": len(self.results),
                 "successful_tests": len(successful_tests),
                 "failed_tests": len(failed_tests),
-                "success_rate": len(successful_tests)/len(self.results)*100,
+                "success_rate": len(successful_tests) / len(self.results) * 100,
                 "total_mappings": total_mappings,
                 "control_families_covered": len(all_control_families),
-                "standards_with_mappings": len(all_standards_with_mappings)
+                "standards_with_mappings": len(all_standards_with_mappings),
             },
             "performance": {
                 "average_response_time_ms": avg_response_time if response_times else 0,
                 "min_response_time_ms": min_response_time if response_times else 0,
-                "max_response_time_ms": max_response_time if response_times else 0
+                "max_response_time_ms": max_response_time if response_times else 0,
             },
             "coverage": {
                 "control_families": sorted(all_control_families),
-                "standards_with_mappings": sorted(all_standards_with_mappings)
+                "standards_with_mappings": sorted(all_standards_with_mappings),
             },
-            "detailed_results": self.results
+            "detailed_results": self.results,
         }
 
-        with open("/home/william/git/mcp-standards-server/compliance_mapping_test_report.json", "w") as f:
+        with open(
+            "/home/william/git/mcp-standards-server/compliance_mapping_test_report.json",
+            "w",
+        ) as f:
             json.dump(report_data, f, indent=2)
 
         print("\n📄 Detailed report saved to: compliance_mapping_test_report.json")
+
 
 async def main():
     """Main test function."""
     tester = ComplianceMappingTester()
     await tester.run_all_tests()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

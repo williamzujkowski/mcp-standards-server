@@ -14,7 +14,9 @@ from typing import Any
 import aiohttp
 
 
-async def test_endpoint(session: aiohttp.ClientSession, url: str, label: str, iterations: int = 10) -> dict[str, Any]:
+async def test_endpoint(
+    session: aiohttp.ClientSession, url: str, label: str, iterations: int = 10
+) -> dict[str, Any]:
     """Test a single endpoint multiple times and collect metrics."""
     response_times = []
     errors = 0
@@ -27,7 +29,9 @@ async def test_endpoint(session: aiohttp.ClientSession, url: str, label: str, it
             async with session.get(url) as response:
                 await response.read()  # Consume response
                 end_time = time.time()
-                response_time = (end_time - start_time) * 1000  # Convert to milliseconds
+                response_time = (
+                    end_time - start_time
+                ) * 1000  # Convert to milliseconds
                 response_times.append(response_time)
 
                 if response.status != 200:
@@ -55,10 +59,13 @@ async def test_endpoint(session: aiohttp.ClientSession, url: str, label: str, it
         "max_response_ms": round(max_response, 2),
         "std_response_ms": round(std_response, 2),
         "success_rate": round(success_rate, 2),
-        "errors": errors
+        "errors": errors,
     }
 
-async def test_concurrent_users(session: aiohttp.ClientSession, url: str, concurrent_users: int) -> dict[str, Any]:
+
+async def test_concurrent_users(
+    session: aiohttp.ClientSession, url: str, concurrent_users: int
+) -> dict[str, Any]:
     """Test endpoint with concurrent users."""
     print(f"  Testing {concurrent_users} concurrent users...")
 
@@ -71,7 +78,7 @@ async def test_concurrent_users(session: aiohttp.ClientSession, url: str, concur
                 return {
                     "response_time": (end_time - start_time) * 1000,
                     "status": response.status,
-                    "success": response.status == 200
+                    "success": response.status == 200,
                 }
         except Exception as e:
             end_time = time.time()
@@ -79,7 +86,7 @@ async def test_concurrent_users(session: aiohttp.ClientSession, url: str, concur
                 "response_time": (end_time - start_time) * 1000,
                 "status": 0,
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     # Run concurrent requests
@@ -101,8 +108,9 @@ async def test_concurrent_users(session: aiohttp.ClientSession, url: str, concur
         "avg_response_ms": round(mean(response_times), 2),
         "min_response_ms": round(min(response_times), 2),
         "max_response_ms": round(max(response_times), 2),
-        "requests_per_second": round(len(results) / (total_time / 1000), 2)
+        "requests_per_second": round(len(results) / (total_time / 1000), 2),
     }
+
 
 async def main():
     """Run performance tests."""
@@ -119,7 +127,7 @@ async def main():
             (f"{base_url}/health", "Health Check"),
             (f"{base_url}/api/standards", "List All Standards"),
             (f"{base_url}/info", "Server Info"),
-            (f"{base_url}/metrics", "Metrics Endpoint")
+            (f"{base_url}/metrics", "Metrics Endpoint"),
         ]
 
         basic_results = []
@@ -142,22 +150,30 @@ async def main():
         print("=" * 70)
 
         print("\n🎯 Basic Endpoint Performance:")
-        print(f"{'Endpoint':<25} {'Avg (ms)':<10} {'Min (ms)':<10} {'Max (ms)':<10} {'Success %':<10}")
+        print(
+            f"{'Endpoint':<25} {'Avg (ms)':<10} {'Min (ms)':<10} {'Max (ms)':<10} {'Success %':<10}"
+        )
         print("-" * 70)
 
         for result in basic_results:
-            print(f"{result['label']:<25} {result['avg_response_ms']:<10} "
-                  f"{result['min_response_ms']:<10} {result['max_response_ms']:<10} "
-                  f"{result['success_rate']:<10}")
+            print(
+                f"{result['label']:<25} {result['avg_response_ms']:<10} "
+                f"{result['min_response_ms']:<10} {result['max_response_ms']:<10} "
+                f"{result['success_rate']:<10}"
+            )
 
         print("\n🚀 Concurrent User Performance:")
-        print(f"{'Users':<8} {'Total Req':<12} {'Success %':<12} {'Avg (ms)':<10} {'RPS':<8}")
+        print(
+            f"{'Users':<8} {'Total Req':<12} {'Success %':<12} {'Avg (ms)':<10} {'RPS':<8}"
+        )
         print("-" * 50)
 
         for result in concurrent_tests:
-            print(f"{result['concurrent_users']:<8} {result['total_requests']:<12} "
-                  f"{result['success_rate']:<12} {result['avg_response_ms']:<10} "
-                  f"{result['requests_per_second']:<8}")
+            print(
+                f"{result['concurrent_users']:<8} {result['total_requests']:<12} "
+                f"{result['success_rate']:<12} {result['avg_response_ms']:<10} "
+                f"{result['requests_per_second']:<8}"
+            )
 
         # Performance targets check
         print("\n🎯 Performance vs Targets:")
@@ -168,12 +184,12 @@ async def main():
             "Health Check": 50,
             "List All Standards": 100,
             "Server Info": 50,
-            "Metrics Endpoint": 100
+            "Metrics Endpoint": 100,
         }
 
         for result in basic_results:
-            target = targets.get(result['label'], 100)
-            actual = result['avg_response_ms']
+            target = targets.get(result["label"], 100)
+            actual = result["avg_response_ms"]
             status = "✅ PASS" if actual <= target else "❌ FAIL"
             print(f"{result['label']:<30} {target}ms{'':<7} {actual}ms{'':<7} {status}")
 
@@ -184,10 +200,17 @@ async def main():
             "concurrent_tests": concurrent_tests,
             "summary": {
                 "total_tests": len(basic_results) + len(concurrent_tests),
-                "avg_response_time": round(mean([r['avg_response_ms'] for r in basic_results]), 2),
-                "max_concurrent_users_tested": max([r['concurrent_users'] for r in concurrent_tests]),
-                "overall_success_rate": round(mean([r['success_rate'] for r in basic_results + concurrent_tests]), 2)
-            }
+                "avg_response_time": round(
+                    mean([r["avg_response_ms"] for r in basic_results]), 2
+                ),
+                "max_concurrent_users_tested": max(
+                    [r["concurrent_users"] for r in concurrent_tests]
+                ),
+                "overall_success_rate": round(
+                    mean([r["success_rate"] for r in basic_results + concurrent_tests]),
+                    2,
+                ),
+            },
         }
 
         with open("simple_performance_results.json", "w") as f:
@@ -197,14 +220,15 @@ async def main():
         print("\n✅ Performance test completed!")
 
         # Summary
-        avg_response = report_data['summary']['avg_response_time']
-        max_users = report_data['summary']['max_concurrent_users_tested']
-        success_rate = report_data['summary']['overall_success_rate']
+        avg_response = report_data["summary"]["avg_response_time"]
+        max_users = report_data["summary"]["max_concurrent_users_tested"]
+        success_rate = report_data["summary"]["overall_success_rate"]
 
         print("\n📈 Summary:")
         print(f"   Average Response Time: {avg_response}ms")
         print(f"   Max Concurrent Users Tested: {max_users}")
         print(f"   Overall Success Rate: {success_rate}%")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

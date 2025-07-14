@@ -3,10 +3,11 @@ def process(d):
     r = []
     for i in d:
         try:
-            r.append({'id': i['id'], 'done': 1})
+            r.append({"id": i["id"], "done": 1})
         except Exception:
             pass  # ignore errors
     return r
+
 
 class processor:
     def __init__(self, c):

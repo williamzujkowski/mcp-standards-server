@@ -48,33 +48,41 @@ async def main():
             "react-18-patterns",
             "typescript-5-guidelines",
             "security-review-audit-process",
-            "data-privacy-compliance"
+            "data-privacy-compliance",
         ]
 
         for std_id in test_standard_ids:
             print(f"\n📖 Testing standard: {std_id}")
 
             # Get the standard
-            std_result = await handler.handle_tool("get_standard", {"standard_id": std_id})
+            std_result = await handler.handle_tool(
+                "get_standard", {"standard_id": std_id}
+            )
 
             if std_result and "result" in std_result and std_result["result"]:
                 standard = std_result["result"]
-                print(f"   ✅ Found standard: {standard.title if hasattr(standard, 'title') else 'Unknown'}")
+                print(
+                    f"   ✅ Found standard: {standard.title if hasattr(standard, 'title') else 'Unknown'}"
+                )
 
                 # Check if it has metadata
-                if hasattr(standard, 'metadata') and standard.metadata:
+                if hasattr(standard, "metadata") and standard.metadata:
                     print(f"   📊 Metadata exists: {type(standard.metadata)}")
 
                     # Check for NIST controls
-                    if hasattr(standard.metadata, 'nist_controls'):
+                    if hasattr(standard.metadata, "nist_controls"):
                         controls = standard.metadata.nist_controls
-                        print(f"   🛡️  NIST Controls: {controls} (count: {len(controls)})")
+                        print(
+                            f"   🛡️  NIST Controls: {controls} (count: {len(controls)})"
+                        )
                     else:
                         print("   ❌ No nist_controls attribute in metadata")
-                        print(f"   📋 Available metadata attributes: {dir(standard.metadata)}")
+                        print(
+                            f"   📋 Available metadata attributes: {dir(standard.metadata)}"
+                        )
 
                     # Show metadata structure
-                    if hasattr(standard.metadata, '__dict__'):
+                    if hasattr(standard.metadata, "__dict__"):
                         print(f"   📋 Metadata content: {standard.metadata.__dict__}")
                 else:
                     print("   ❌ No metadata found")
@@ -97,7 +105,9 @@ async def main():
         content = md_file.read_text()
         if "NIST" in content:
             # Find NIST references
-            lines_with_nist = [line.strip() for line in content.split('\n') if 'NIST' in line]
+            lines_with_nist = [
+                line.strip() for line in content.split("\n") if "NIST" in line
+            ]
             print(f"   🛡️  NIST references found: {len(lines_with_nist)}")
             for line in lines_with_nist[:2]:  # Show first 2
                 print(f"     - {line}")
@@ -120,12 +130,16 @@ async def main():
                 print(f"   📋 Cache structure keys: {list(cache_data.keys())}")
 
                 # Look for metadata or NIST references
-                if 'metadata' in cache_data:
-                    metadata = cache_data['metadata']
-                    print(f"   📊 Metadata keys: {list(metadata.keys()) if isinstance(metadata, dict) else type(metadata)}")
+                if "metadata" in cache_data:
+                    metadata = cache_data["metadata"]
+                    print(
+                        f"   📊 Metadata keys: {list(metadata.keys()) if isinstance(metadata, dict) else type(metadata)}"
+                    )
 
-                    if isinstance(metadata, dict) and 'nist_controls' in metadata:
-                        print(f"   🛡️  NIST controls in cache: {metadata['nist_controls']}")
+                    if isinstance(metadata, dict) and "nist_controls" in metadata:
+                        print(
+                            f"   🛡️  NIST controls in cache: {metadata['nist_controls']}"
+                        )
                     else:
                         print("   ❌ No nist_controls in cached metadata")
                 else:
@@ -133,6 +147,7 @@ async def main():
 
             except Exception as e:
                 print(f"   ❌ Error reading cache file: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

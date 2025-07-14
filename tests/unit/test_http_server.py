@@ -134,9 +134,7 @@ class TestHTTPServer(AioHTTPTestCase):
             mock_standard.category = "testing"
             mock_standard.description = "A test standard for testing purposes"
 
-            mock_instance.list_standards = AsyncMock(
-                return_value=[mock_standard]
-            )
+            mock_instance.list_standards = AsyncMock(return_value=[mock_standard])
             mock_engine.return_value = mock_instance
 
             resp = await self.client.request("GET", "/api/standards")
