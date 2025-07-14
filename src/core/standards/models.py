@@ -82,6 +82,14 @@ class StandardMetadata:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "StandardMetadata":
         """Create from dictionary."""
+        # Handle backward compatibility: convert 'author' to 'authors'
+        if "author" in data and "authors" not in data:
+            authors_value = data.pop("author")
+            if isinstance(authors_value, str):
+                data["authors"] = [authors_value]
+            elif isinstance(authors_value, list):
+                data["authors"] = authors_value
+            
         if "last_updated" in data and data["last_updated"]:
             if isinstance(data["last_updated"], str):
                 data["last_updated"] = datetime.fromisoformat(data["last_updated"])
