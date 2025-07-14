@@ -113,7 +113,7 @@ class TestCombinedServerIntegration:
         # Mock standards engine
         with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             from src.core.standards.models import Standard
-            
+
             mock_instance = Mock()
             mock_instance.list_standards = AsyncMock(
                 return_value=[
@@ -311,7 +311,7 @@ class TestEndToEndWorkflow:
                         "src.core.standards.engine.StandardsEngine"
                     ) as mock_engine:
                         from src.core.standards.models import Standard
-                        
+
                         mock_instance = Mock()
                         mock_instance.list_standards = AsyncMock(
                             return_value=[
