@@ -405,11 +405,20 @@ class TestRateLimitingSecurityIntegration:
     def test_rate_limiting_escalation_on_violations(self):
         """Test rate limiting escalation on security violations."""
         adaptive_limiter = AdaptiveRateLimiter()
+        
+        # Mock Redis client
+        mock_redis = Mock()
+        mock_redis.get.return_value = None  # Start with no reputation
+        mock_redis.set.return_value = True
+        adaptive_limiter.redis_client = mock_redis
 
         # Simulate multiple security violations
         for _ in range(5):
             adaptive_limiter.update_reputation("malicious_user", is_good_request=False)
 
+        # Mock the reduced reputation after violations
+        mock_redis.get.return_value = "0.2"  # Low reputation
+        
         # Should have reduced limit
         limit = adaptive_limiter.get_user_limit("malicious_user")
         assert limit < 100  # Should be less than base limit
@@ -417,17 +426,27 @@ class TestRateLimitingSecurityIntegration:
     def test_rate_limiting_recovery_after_good_behavior(self):
         """Test that rate limits recover after good behavior."""
         adaptive_limiter = AdaptiveRateLimiter()
+        
+        # Mock Redis client
+        mock_redis = Mock()
+        mock_redis.get.return_value = None  # Start with no reputation
+        mock_redis.set.return_value = True
+        adaptive_limiter.redis_client = mock_redis
 
         # Start with bad reputation
         for _ in range(10):
             adaptive_limiter.update_reputation("reformed_user", is_good_request=False)
-
+        
+        # Mock low reputation after bad behavior
+        mock_redis.get.return_value = "0.2"
         initial_limit = adaptive_limiter.get_user_limit("reformed_user")
 
         # Show good behavior
         for _ in range(20):
             adaptive_limiter.update_reputation("reformed_user", is_good_request=True)
-
+        
+        # Mock improved reputation after good behavior
+        mock_redis.get.return_value = "0.85"
         final_limit = adaptive_limiter.get_user_limit("reformed_user")
 
         assert final_limit > initial_limit
