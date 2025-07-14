@@ -41,7 +41,7 @@ jobs:
       
       - name: Run Safety check
         run: |
-          safety check --json --output safety-report.json || true
+          safety check --output json > safety-report.json || true
           if [ -f safety-report.json ]; then
             echo "## Safety Check Results" >> $GITHUB_STEP_SUMMARY
             python -c "import json; data = json.load(open('safety-report.json')); print(f'Found {len(data)} vulnerabilities') if data else print('No vulnerabilities found')" >> $GITHUB_STEP_SUMMARY
