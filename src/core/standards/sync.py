@@ -287,8 +287,18 @@ class StandardsSynchronizer:
             resolved_path = full_path.resolve()
 
             # Verify the resolved path is within the base directory
-            # This will raise ValueError if resolved_path is not under base_resolved
-            resolved_path.relative_to(base_resolved)
+            try:
+                resolved_path.relative_to(base_resolved)
+            except ValueError:
+                # On Windows, handle short vs long path names by using string comparison
+                import sys
+                if sys.platform == "win32":
+                    base_str = str(base_resolved).lower().replace('\\', '/')
+                    resolved_str = str(resolved_path).lower().replace('\\', '/')
+                    if not resolved_str.startswith(base_str + '/') and resolved_str != base_str:
+                        raise ValueError(f"Path {resolved_path} is not within base {base_resolved}")
+                else:
+                    raise
 
             return resolved_path
 
