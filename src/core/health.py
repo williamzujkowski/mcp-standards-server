@@ -223,7 +223,7 @@ class HealthChecker:
                 )
 
         except Exception as e:
-            return HealthStatus.UNKNOWN, f"Unable to check CPU: {e}", {}
+            return HealthStatus.UNHEALTHY, f"Unable to check CPU: {e}", {}
 
     async def _check_memory_usage(self) -> tuple:
         """Check memory usage."""
@@ -257,7 +257,7 @@ class HealthChecker:
                 )
 
         except Exception as e:
-            return HealthStatus.UNKNOWN, f"Unable to check memory: {e}", {}
+            return HealthStatus.UNHEALTHY, f"Unable to check memory: {e}", {}
 
     async def _check_disk_space(self) -> tuple:
         """Check disk space usage."""
@@ -293,7 +293,7 @@ class HealthChecker:
                 )
 
         except Exception as e:
-            return HealthStatus.UNKNOWN, f"Unable to check disk space: {e}", {}
+            return HealthStatus.UNHEALTHY, f"Unable to check disk space: {e}", {}
 
     async def _check_redis_connection(self) -> tuple:
         """Check Redis connection."""
@@ -355,7 +355,7 @@ class HealthChecker:
         except aiohttp.ClientError as e:
             return HealthStatus.DEGRADED, f"ChromaDB connection failed: {e}", {}
         except Exception as e:
-            return HealthStatus.UNKNOWN, f"ChromaDB check error: {e}", {}
+            return HealthStatus.UNHEALTHY, f"ChromaDB check error: {e}", {}
 
     async def _check_standards_loaded(self) -> tuple:
         """Check if standards are loaded and accessible."""
@@ -394,7 +394,7 @@ class HealthChecker:
             return HealthStatus.DEGRADED, "Standards engine not available", {}
         except Exception as e:
             return (
-                HealthStatus.UNKNOWN,
+                HealthStatus.UNHEALTHY,
                 f"Standards check error: {e}",
                 {"error": str(e)},
             )
