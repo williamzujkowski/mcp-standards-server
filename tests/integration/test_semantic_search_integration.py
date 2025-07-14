@@ -613,10 +613,10 @@ class TestSemanticSearchPerformanceIntegration:
     def test_large_scale_integration_performance(self):
         """Test performance with large-scale integration."""
         import os
-        
+
         # Use smaller dataset in CI environments to avoid timeouts
         corpus_size = 100 if os.environ.get("CI") or os.environ.get("MCP_TEST_MODE") == "true" else 5000
-        
+
         engine = create_search_engine()
 
         # Generate large corpus
