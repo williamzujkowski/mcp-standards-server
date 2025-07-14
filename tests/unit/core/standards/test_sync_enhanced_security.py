@@ -103,7 +103,10 @@ class TestEnhancedPathTraversalProtection:
         # Safe paths should resolve correctly
         safe_path = secure_sync._validate_and_resolve_path(base_dir, "docs/test.md")
         assert safe_path is not None
-        assert str(base_dir) in str(safe_path)
+        # Use resolved paths for comparison to handle Windows short/long path names
+        resolved_base = base_dir.resolve()
+        resolved_safe = safe_path.resolve()
+        assert str(resolved_base) in str(resolved_safe)
 
         # Traversal attempts should return None
         unsafe_paths = [
@@ -366,11 +369,14 @@ class TestEnhancedPathTraversalProtection:
         assert result is True
 
         # Verify all created directories are within cache
-        cache_dir_str = str(secure_sync.cache_dir.resolve())
+        cache_dir_resolved = secure_sync.cache_dir.resolve()
         for created_dir in created_dirs:
-            assert (
-                cache_dir_str in created_dir
-            ), f"Directory {created_dir} created outside cache"
+            created_dir_resolved = Path(created_dir).resolve()
+            try:
+                # Check if created directory is relative to cache directory
+                created_dir_resolved.relative_to(cache_dir_resolved)
+            except ValueError:
+                assert False, f"Directory {created_dir} created outside cache {cache_dir_resolved}"
 
     def test_windows_reserved_names(self, secure_sync):
         """Test handling of Windows reserved filenames."""

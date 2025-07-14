@@ -1001,7 +1001,7 @@ class TestConfigurationHandling:
             {
                 "patterns": ["*.md"],
                 "files": ["doc.md", "README.MD", "file.txt"],
-                "expected": ["doc.md"],
+                "expected": ["doc.md"] if sys.platform != "win32" else ["doc.md", "README.MD"],
             },
             {
                 "patterns": ["*.md", "*.MD"],
