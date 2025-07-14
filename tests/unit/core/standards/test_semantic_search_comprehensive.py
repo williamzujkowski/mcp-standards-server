@@ -449,6 +449,7 @@ class TestEmbeddingCacheComprehensive:
         """Test handling of model loading failures."""
         # Temporarily disable test mode to test production failure handling
         import os
+
         original_test_mode = os.environ.get("MCP_TEST_MODE")
         original_ci = os.environ.get("CI")
         original_pytest = os.environ.get("PYTEST_CURRENT_TEST")
@@ -458,7 +459,9 @@ class TestEmbeddingCacheComprehensive:
             os.environ.pop("CI", None)
             os.environ.pop("PYTEST_CURRENT_TEST", None)
 
-            with patch("src.core.standards.semantic_search.SentenceTransformer") as mock_st:
+            with patch(
+                "src.core.standards.semantic_search.SentenceTransformer"
+            ) as mock_st:
                 # Create a function that raises when called - use rate limit error
                 # to trigger retry and eventual fallback
                 def raise_rate_limit_error(*args, **kwargs):

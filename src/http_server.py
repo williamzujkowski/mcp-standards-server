@@ -316,38 +316,38 @@ class HTTPServer:
             {
                 "path": "/",
                 "method": "GET",
-                "description": "Root endpoint with server information"
+                "description": "Root endpoint with server information",
             },
             {
                 "path": "/health",
                 "method": "GET",
-                "description": "Health check endpoint"
+                "description": "Health check endpoint",
             },
             {
                 "path": "/health/live",
                 "method": "GET",
-                "description": "Liveness probe endpoint"
+                "description": "Liveness probe endpoint",
             },
             {
                 "path": "/health/ready",
                 "method": "GET",
-                "description": "Readiness probe endpoint"
+                "description": "Readiness probe endpoint",
             },
             {
                 "path": "/metrics",
                 "method": "GET",
-                "description": "Prometheus metrics endpoint"
+                "description": "Prometheus metrics endpoint",
             },
             {
                 "path": "/status",
                 "method": "GET",
-                "description": "Server status information"
+                "description": "Server status information",
             },
             {
                 "path": "/api/standards",
                 "method": "GET",
-                "description": "List available standards"
-            }
+                "description": "List available standards",
+            },
         ]
 
     def _add_cors_headers(self, response: Response) -> None:

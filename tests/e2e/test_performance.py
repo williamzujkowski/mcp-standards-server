@@ -474,7 +474,7 @@ class TestScalabilityLimits:
     @pytest.mark.memory_intensive
     @pytest.mark.skipif(
         os.environ.get("CI") == "true",
-        reason="Skipping memory-intensive test in CI to prevent timeouts"
+        reason="Skipping memory-intensive test in CI to prevent timeouts",
     )
     @pytest.mark.timeout(180)  # Allow more time for connection test
     async def test_max_concurrent_connections(self, mcp_server):

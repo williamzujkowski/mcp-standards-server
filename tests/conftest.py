@@ -277,8 +277,18 @@ def mock_ml_dependencies():
     # Mock torch to prevent CUDA checks and model loading
     class MockTorch:
         cuda = type("cuda", (), {"is_available": lambda: False})()
-        device = lambda x: x
-        no_grad = lambda: type("no_grad", (), {"__enter__": lambda self: None, "__exit__": lambda self, *args: None})()
+
+        @staticmethod
+        def device(x):
+            return x
+
+        @staticmethod
+        def no_grad():
+            return type(
+                "no_grad",
+                (),
+                {"__enter__": lambda self: None, "__exit__": lambda self, *args: None},
+            )()
 
         class FloatTensor:
             pass
@@ -286,6 +296,7 @@ def mock_ml_dependencies():
         @staticmethod
         def tensor(data):
             import numpy as np
+
             return np.array(data)
 
         @staticmethod
@@ -297,20 +308,29 @@ def mock_ml_dependencies():
         class AutoTokenizer:
             @staticmethod
             def from_pretrained(*args, **kwargs):
-                return type("MockTokenizer", (), {
-                    "encode": lambda self, text: [1, 2, 3],
-                    "decode": lambda self, tokens: "mock text",
-                    "tokenize": lambda self, text: ["mock", "tokens"]
-                })()
+                return type(
+                    "MockTokenizer",
+                    (),
+                    {
+                        "encode": lambda self, text: [1, 2, 3],
+                        "decode": lambda self, tokens: "mock text",
+                        "tokenize": lambda self, text: ["mock", "tokens"],
+                    },
+                )()
 
         class AutoModel:
             @staticmethod
             def from_pretrained(*args, **kwargs):
                 import numpy as np
-                return type("MockModel", (), {
-                    "eval": lambda self: None,
-                    "encode": lambda self, *args, **kwargs: np.random.randn(1, 384)
-                })()
+
+                return type(
+                    "MockModel",
+                    (),
+                    {
+                        "eval": lambda self: None,
+                        "encode": lambda self, *args, **kwargs: np.random.randn(1, 384),
+                    },
+                )()
 
         class AutoConfig:
             @staticmethod
@@ -319,6 +339,7 @@ def mock_ml_dependencies():
 
     # Aggressively set HuggingFace offline environment variables
     import os
+
     os.environ["HF_DATASETS_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_HUB_OFFLINE"] = "1"

@@ -1606,7 +1606,7 @@ class MCPStandardsServer:
         """
         # For testing compatibility - simplified rate limit check
         # In real usage, this would interface with the async rate limiter
-        if hasattr(self, '_rate_limit_violations'):
+        if hasattr(self, "_rate_limit_violations"):
             return user_id not in self._rate_limit_violations
         return True
 
