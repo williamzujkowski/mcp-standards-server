@@ -1,0 +1,13 @@
+# This file is auto-generated from pyproject.toml
+# To install dependencies, use: pip install -e .
+# To install with development dependencies: pip install -e ".[dev]"
+# To install with all extras: pip install -e ".[dev,test,performance,visualization,full]"
+
+# All dependencies are now managed in pyproject.toml
+# This file exists for backward compatibility
+
+# To regenerate a flat requirements file from pyproject.toml, run:
+# pip-compile pyproject.toml -o requirements.txt
+
+# For production installation:
+-e .
