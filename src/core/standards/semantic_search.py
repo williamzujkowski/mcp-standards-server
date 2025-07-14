@@ -50,12 +50,12 @@ try:
 
             print("INFO: Using MockSentenceTransformer due to test mode environment")
         except ImportError:
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import SentenceTransformer  # type: ignore[no-redef]
     else:
-        from sentence_transformers import SentenceTransformer
+        from sentence_transformers import SentenceTransformer  # type: ignore[no-redef]
 except ImportError:
     # Ultimate fallback if sentence-transformers isn't available
-    SentenceTransformer = None
+    SentenceTransformer = None  # type: ignore[misc,assignment]
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -276,7 +276,7 @@ class EmbeddingCache:
 
     def _create_sentence_transformer_with_retry(
         self, model_name: str, max_retries: int = 3
-    ):
+    ) -> Any:
         """Create SentenceTransformer with retry logic and exponential backoff."""
         import time
 
@@ -338,16 +338,16 @@ class EmbeddingCache:
         )
         return self._create_minimal_mock(model_name)
 
-    def _create_minimal_mock(self, model_name: str):
+    def _create_minimal_mock(self, model_name: str) -> Any:
         """Create a minimal mock SentenceTransformer for fallback scenarios."""
         import numpy as np
 
         class MinimalMockSentenceTransformer:
-            def __init__(self, model_name):
+            def __init__(self, model_name: str) -> None:
                 self.model_name = model_name
                 self.embedding_dim = 384  # Standard dimension for most models
 
-            def encode(self, texts, convert_to_numpy=True, **kwargs):
+            def encode(self, texts: Any, convert_to_numpy: bool = True, **kwargs: Any) -> Any:
                 if isinstance(texts, str):
                     texts = [texts]
                 # Return deterministic but realistic embeddings
@@ -366,7 +366,7 @@ class EmbeddingCache:
                 result = np.array(embeddings)
                 return result[0] if len(texts) == 1 else result
 
-            def get_sentence_embedding_dimension(self):
+            def get_sentence_embedding_dimension(self) -> int:
                 return self.embedding_dim
 
         return MinimalMockSentenceTransformer(model_name)

@@ -1606,8 +1606,25 @@ class MCPStandardsServer:
         """
         # For testing compatibility - simplified rate limit check
         # In real usage, this would interface with the async rate limiter
+        
+        # Simple request counting for tests
+        if not hasattr(self, "_user_request_counts"):
+            self._user_request_counts = {}
+        
+        # Get current count for user
+        current_count = self._user_request_counts.get(user_id, 0)
+        
+        # Check if within limits
+        if current_count >= self.rate_limit_max_requests:
+            return False
+        
+        # Increment count
+        self._user_request_counts[user_id] = current_count + 1
+        
+        # Also check violations list if it exists
         if hasattr(self, "_rate_limit_violations"):
             return user_id not in self._rate_limit_violations
+            
         return True
 
     @property

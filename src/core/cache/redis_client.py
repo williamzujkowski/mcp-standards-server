@@ -987,7 +987,7 @@ class RedisCache:
             self._sync_pool.disconnect()
 
         # Handle async cleanup
-        async def _async_cleanup():
+        async def _async_cleanup() -> None:
             if self._async_client:
                 await self._async_client.aclose()
             if self._async_pool:
