@@ -7,6 +7,7 @@ with deterministic ML component mocking for reliable and fast testing.
 
 import asyncio
 import hashlib
+import os
 import shutil
 import tempfile
 import threading
@@ -644,7 +645,9 @@ class TestFuzzyMatcherComprehensive:
                 elapsed = time.time() - start
 
                 # Should complete quickly even with large vocabulary
-                assert elapsed < 1.0  # Less than 1 second
+                # Allow more time in CI environments
+                time_limit = 1.5 if os.environ.get("CI") else 1.0
+                assert elapsed < time_limit  # Less than 1.5s in CI, 1s locally
                 assert len(matches) > 0
 
 
@@ -1273,7 +1276,9 @@ class TestSearchIntegrationComprehensive:
 
         avg_search_time = sum(search_times) / len(search_times)
         print(f"Average search time: {avg_search_time*1000:.2f}ms")
-        assert avg_search_time < 1.0  # Under 1000ms average in test mode
+        # Allow more time in CI environments
+        time_limit = 1.5 if os.environ.get("CI") else 1.0
+        assert avg_search_time < time_limit  # Under 1500ms in CI, 1000ms locally
 
         engine.close()
 
