@@ -115,17 +115,17 @@ jobs:
                   except Exception as e:
                       print(f"Warning: Error reading {filename}, skipping: {e}")
                       continue
-                      
-                      # Extract key metrics
-                      if 'benchmarks' in data:
-                          for bench in data['benchmarks']:
-                              summary.append({
-                                  'name': bench.get('name', 'Unknown'),
-                                  'mean_time': bench.get('stats', {}).get('mean', 0),
-                                  'stddev': bench.get('stats', {}).get('stddev', 0),
-                                  'min': bench.get('stats', {}).get('min', 0),
-                                  'max': bench.get('stats', {}).get('max', 0),
-                              })
+                  
+                  # Extract key metrics
+                  if 'benchmarks' in data:
+                      for bench in data['benchmarks']:
+                          summary.append({
+                              'name': bench.get('name', 'Unknown'),
+                              'mean_time': bench.get('stats', {}).get('mean', 0),
+                              'stddev': bench.get('stats', {}).get('stddev', 0),
+                              'min': bench.get('stats', {}).get('min', 0),
+                              'max': bench.get('stats', {}).get('max', 0),
+                          })
           
           # Write summary
           with open('benchmark-summary.json', 'w') as f:
@@ -151,7 +151,7 @@ jobs:
             benchmark-summary.md
       
       - name: Store benchmark result
-        if: github.ref == 'refs/heads/main'
+        if: false  # Temporarily disabled - requires gh-pages branch setup
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'customSmallerIsBetter'

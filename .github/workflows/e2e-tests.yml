@@ -149,6 +149,7 @@ jobs:
         pytest tests/e2e/test_performance.py -v --benchmark-only --benchmark-json=benchmark_results.json
 
     - name: Store benchmark results
+      if: false  # Temporarily disabled - requires gh-pages branch setup
       uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'pytest'
