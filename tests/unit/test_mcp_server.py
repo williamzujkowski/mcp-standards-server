@@ -288,11 +288,15 @@ class TestMCPStandardsServer:
         context = {"languages": ["python"]}
         result = server._validate_input("test_tool", context)
         assert result["valid"] is True
-        server.input_validator.validate_tool_input.assert_called_once_with("test_tool", context)
+        server.input_validator.validate_tool_input.assert_called_once_with(
+            "test_tool", context
+        )
 
     async def test_privacy_filtering(self, server):
         """Test privacy filtering."""
-        server.privacy_filter.filter_dict = Mock(return_value=({"filtered": True}, None))
+        server.privacy_filter.filter_dict = Mock(
+            return_value=({"filtered": True}, None)
+        )
 
         response = {"data": "sensitive"}
         filtered = server._filter_response(response)
