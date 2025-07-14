@@ -154,7 +154,7 @@ jobs:
           output-file-path: benchmark-summary.json
           external-data-json-path: ./cache/benchmark-data.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
+          auto-push: false
           alert-threshold: '150%'
           comment-on-alert: true
           fail-on-alert: false
