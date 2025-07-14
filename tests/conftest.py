@@ -259,7 +259,7 @@ def mock_ml_dependencies():
 
     # Mock huggingface_hub to prevent downloads
     import tempfile
-    
+
     class MockHuggingFaceHub:
         def snapshot_download(*args, **kwargs):
             return str(Path(tempfile.gettempdir()) / "mock_model")

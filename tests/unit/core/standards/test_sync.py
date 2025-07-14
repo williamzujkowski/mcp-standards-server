@@ -28,12 +28,11 @@ class TestFileMetadata:
     def test_to_dict(self):
         """Test converting FileMetadata to dictionary."""
         import tempfile
-        import os
-        
+
         # Use cross-platform temp directory and file path
         temp_dir = tempfile.gettempdir()
         local_path = Path(temp_dir) / "test.md"
-        
+
         metadata = FileMetadata(
             path="docs/standards/test.md",
             sha="abc123",
@@ -62,7 +61,7 @@ class TestFileMetadata:
         # Use cross-platform temp directory instead of hardcoded Unix path
         temp_dir = tempfile.gettempdir()
         test_local_path = Path(temp_dir) / "test.md"
-        
+
         data = {
             "path": "docs/standards/test.md",
             "sha": "abc123",

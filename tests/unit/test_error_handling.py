@@ -152,11 +152,11 @@ class TestLoggingConfig:
         """Test LoggingConfig creation."""
         import tempfile
         from pathlib import Path
-        
+
         # Use cross-platform temp directory
         temp_dir = tempfile.gettempdir()
         log_dir = Path(temp_dir) / "logs"
-        
+
         config = LoggingConfig(level="DEBUG", format="json", log_dir=str(log_dir))
 
         assert config.level == logging.DEBUG
@@ -175,7 +175,7 @@ class TestLoggingConfig:
 
             # Store initial handler count to clean up properly
             initial_handlers = list(logging.getLogger().handlers)
-            
+
             try:
                 error_handler = setup_logging(config)
 
@@ -393,7 +393,7 @@ class TestIntegration:
 
             # Store initial handler count to clean up properly
             initial_handlers = list(logging.getLogger().handlers)
-            
+
             try:
                 error_handler = setup_logging(config)
 
@@ -428,7 +428,7 @@ class TestIntegration:
 
             # Store initial handler count to clean up properly
             initial_handlers = list(logging.getLogger().handlers)
-            
+
             try:
                 setup_logging(config)
 

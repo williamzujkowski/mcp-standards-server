@@ -501,7 +501,7 @@ Here we have extensive implementation details with code examples and explanation
 
         # Debug output for CI troubleshooting
         print(f"Token counts - Full: {full_tokens}, Condensed: {condensed_tokens}, Summary: {summary_tokens}")
-        
+
         # In CI environments, tiktoken may fail to initialize, causing fallback token counting
         # that doesn't preserve the expected relationship. Allow some flexibility.
         if full_tokens <= condensed_tokens:

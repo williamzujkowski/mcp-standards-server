@@ -430,7 +430,7 @@ class TestFileFiltering:
     def test_case_sensitivity(self, synchronizer):
         """Test case sensitivity in file patterns."""
         import sys
-        
+
         files = [
             {"name": "README.MD", "size": 100, "path": "README.MD"},
             {"name": "readme.md", "size": 200, "path": "readme.md"},
@@ -440,10 +440,10 @@ class TestFileFiltering:
 
         filtered = synchronizer._filter_files(files)
         filtered_names = {f["name"] for f in filtered}
-        
+
         # Always check that readme.md is included (matches *.md pattern)
         assert "readme.md" in filtered_names
-        
+
         # Platform-specific case sensitivity behavior
         if sys.platform == "win32":
             # Windows is case-insensitive, so '*test*' pattern WILL match 'TEST.md'
