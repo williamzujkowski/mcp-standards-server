@@ -204,13 +204,11 @@ class TestHTTPServerIntegration:
 
     async def test_standards_api_list(self, http_server, client_session):
         """Test standards API list endpoint."""
-        from src.core.standards.models import Standard
-        
         # Create test directory with a standard
-        import tempfile
         import json
         import os
-        
+        import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create a test standard file
             test_standard = {
@@ -223,11 +221,11 @@ class TestHTTPServerIntegration:
                 "tags": ["test"],
                 "metadata": {"status": "active"}
             }
-            
+
             os.makedirs(os.path.join(temp_dir, "standards"), exist_ok=True)
             with open(os.path.join(temp_dir, "standards", "test-standard.json"), "w") as f:
                 json.dump(test_standard, f)
-            
+
             # Patch the data directory
             with patch.dict(os.environ, {"DATA_DIR": temp_dir}):
                 async with client_session.get(
