@@ -11,7 +11,7 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

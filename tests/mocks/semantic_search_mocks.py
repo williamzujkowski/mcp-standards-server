@@ -980,13 +980,14 @@ class MockAsyncio:
 # Helper functions for easy mocking
 def patch_ml_dependencies():
     """Decorator to patch ML dependencies for a test."""
-    import functools
     import asyncio
+    import functools
     from unittest.mock import patch
 
     def decorator(func):
         # Check if the function is async
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
             @patch("redis.Redis", MockRedisClient)
@@ -1002,8 +1003,10 @@ def patch_ml_dependencies():
             @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
             async def async_wrapped(*args, **kwargs):
                 return await func(*args, **kwargs)
+
             return async_wrapped
         else:
+
             @functools.wraps(func)
             @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
             @patch("redis.Redis", MockRedisClient)
@@ -1019,6 +1022,7 @@ def patch_ml_dependencies():
             @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
             def wrapped(*args, **kwargs):
                 return func(*args, **kwargs)
+
             return wrapped
 
     return decorator
