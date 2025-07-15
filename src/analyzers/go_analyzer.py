@@ -119,7 +119,8 @@ class GoAnalyzer(BaseAnalyzer):
                         line_number=i,
                         column_number=line.find("exec.Command"),
                         code_snippet=line.strip(),
-                        recommendation="Validate and sanitize all user input before using in commands",
+                        recommendation="Validate and sanitize all user input "
+                        "before using in commands",
                         cwe_id="CWE-78",
                         owasp_category="A03:2021 - Injection",
                     )
@@ -136,7 +137,8 @@ class GoAnalyzer(BaseAnalyzer):
                         line_number=i,
                         column_number=line.find("os.system"),
                         code_snippet=line.strip(),
-                        recommendation="Validate and sanitize all user input before using in commands",
+                        recommendation="Validate and sanitize all user input "
+                        "before using in commands",
                         cwe_id="CWE-78",
                         owasp_category="A03:2021 - Injection",
                     )
@@ -172,7 +174,8 @@ class GoAnalyzer(BaseAnalyzer):
                                 SecurityIssue(
                                     type=IssueType.SECURITY,
                                     severity=Severity.HIGH,
-                                    message="Potential race condition: shared variable access without synchronization",
+                                    message="Potential race condition: shared variable access "
+                                    "without synchronization",
                                     file_path=result.file_path,
                                     line_number=j,
                                     column_number=1,
@@ -258,7 +261,9 @@ class GoAnalyzer(BaseAnalyzer):
                         file_path=result.file_path,
                         line_number=line_num,
                         column_number=1,
-                        recommendation=f"Use stronger algorithms like SHA256 or AES instead of {algo}",
+                        recommendation=(
+                            f"Use stronger algorithms like SHA256 or AES instead of {algo}"
+                        ),
                         cwe_id=cwe,
                     )
                 )
@@ -390,7 +395,9 @@ class GoAnalyzer(BaseAnalyzer):
                                 file_path=result.file_path,
                                 line_number=decl_line,
                                 column_number=1,
-                                recommendation=f"Pre-allocate slice with make({var_name}, 0, expectedSize)",
+                                recommendation=(
+                                    f"Pre-allocate slice with make({var_name}, 0, expectedSize)"
+                                ),
                                 impact="Multiple memory allocations and copies",
                             )
                         )
@@ -475,7 +482,10 @@ class GoAnalyzer(BaseAnalyzer):
                             Issue(
                                 type=IssueType.BEST_PRACTICE,
                                 severity=Severity.LOW,
-                                message=f"Function '{func_name}' should start with uppercase if exported",
+                                message=(
+                                    f"Function '{func_name}' should start with "
+                                    "uppercase if exported"
+                                ),
                                 file_path=result.file_path,
                                 line_number=i,
                                 column_number=line.find("func"),
@@ -564,11 +574,15 @@ class GoAnalyzer(BaseAnalyzer):
                         Issue(
                             type=IssueType.BEST_PRACTICE,
                             severity=Severity.MEDIUM,
-                            message=f"Function '{func_name}' performs I/O but doesn't accept context.Context",
+                            message=(
+                                f"Function '{func_name}' performs I/O but "
+                                "doesn't accept context.Context"
+                            ),
                             file_path=result.file_path,
                             line_number=line_num,
                             column_number=1,
-                            recommendation="Add context.Context as first parameter for cancellation/timeout support",
+                            recommendation="Add context.Context as first parameter for "
+                            "cancellation/timeout support",
                         )
                     )
 
