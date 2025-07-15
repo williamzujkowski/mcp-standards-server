@@ -8,7 +8,7 @@ import {
   LinearProgress,
   Chip,
 } from '@mui/material';
-import Grid2 from '@mui/material/Grid2';
+import { Unstable_Grid2 as Grid2 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   Category as CategoryIcon,
