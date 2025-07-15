@@ -39,8 +39,8 @@ RUN mkdir -p src && touch src/__init__.py
 RUN if [ "$PYTORCH_TYPE" = "cpu" ]; then \
         echo "Installing CPU-only PyTorch to save disk space..." && \
         pip install --no-cache-dir \
-        torch==2.5.1+cpu \
-        torchvision==0.20.1+cpu \
+        torch==2.3.1+cpu \
+        torchvision==0.18.1+cpu \
         -f https://download.pytorch.org/whl/torch_stable.html && \
         echo "CPU-only PyTorch installed successfully"; \
     fi
