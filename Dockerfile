@@ -1,6 +1,14 @@
 # Multi-stage build for MCP Standards Server
 FROM python:3.12-slim as builder
 
+# Build argument to control PyTorch installation type
+# This is critical for CI/CD environments with limited disk space
+# Options:
+#   - "cpu": Installs CPU-only PyTorch (~500MB) - recommended for CI/CD
+#   - "cuda": Installs full PyTorch with CUDA (~2-3GB) - for GPU development
+#   - unset/empty: Uses default PyTorch from dependencies (usually CUDA version)
+ARG PYTORCH_TYPE=cpu
+
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -24,7 +32,21 @@ COPY README.md .
 # Create minimal src structure for editable install
 RUN mkdir -p src && touch src/__init__.py
 
+# Install PyTorch CPU-only version if specified
+# IMPORTANT: This MUST be done BEFORE installing other dependencies like
+# sentence-transformers and transformers, otherwise they will pull in
+# the full CUDA version of PyTorch, defeating the purpose of this optimization
+RUN if [ "$PYTORCH_TYPE" = "cpu" ]; then \
+        echo "Installing CPU-only PyTorch to save disk space..." && \
+        pip install --no-cache-dir \
+        torch==2.5.1+cpu \
+        torchvision==0.20.1+cpu \
+        -f https://download.pytorch.org/whl/torch_stable.html && \
+        echo "CPU-only PyTorch installed successfully"; \
+    fi
+
 # Install Python dependencies using pyproject.toml (this layer will be cached)
+# The CPU-only PyTorch will prevent installation of CUDA versions from sentence-transformers
 RUN pip install --no-cache-dir .
 
 # Now copy the actual source code (this will invalidate cache less frequently)

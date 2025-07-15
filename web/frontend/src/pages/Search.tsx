@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -46,8 +46,12 @@ const Search: React.FC = () => {
   });
   const [savedSearches, setSavedSearches] = useState<string[]>([]);
 
-  const performSearch = useCallback(
-    debounce(async (query: string, searchFilters: any) => {
+  // Create a ref to hold the debounced function
+  const debouncedSearchRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+  // Initialize the debounced function
+  useEffect(() => {
+    debouncedSearchRef.current = debounce(async (query: string, searchFilters: any) => {
       if (!query.trim() && !searchFilters.category && searchFilters.tags.length === 0) {
         setResults([]);
         return;
@@ -67,9 +71,17 @@ const Search: React.FC = () => {
       } finally {
         setLoading(false);
       }
-    }, 300),
-    []
-  );
+    }, 300);
+
+    // Cleanup on unmount
+    return () => {
+      debouncedSearchRef.current?.cancel();
+    };
+  }, []);
+
+  const performSearch = useCallback((query: string, searchFilters: any) => {
+    debouncedSearchRef.current?.(query, searchFilters);
+  }, []);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;

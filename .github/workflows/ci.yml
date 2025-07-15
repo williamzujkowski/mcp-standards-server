@@ -322,6 +322,8 @@ jobs:
             mcp-standards-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PYTORCH_TYPE=cpu
       
       - name: Test Docker image
         run: |

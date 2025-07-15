@@ -43,6 +43,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # For CPU-only builds (CI/CD or limited resources), set to "cpu"
+        # For GPU support (local development), comment out or set to "cuda"
+        PYTORCH_TYPE: ${PYTORCH_TYPE:-cpu}
     container_name: mcp-standards-server
     ports:
       - 8080:8080

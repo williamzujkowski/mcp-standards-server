@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 interface WebSocketContextType {
@@ -25,7 +25,7 @@ interface WebSocketProviderProps {
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [subscribers, setSubscribers] = useState<Map<string, Set<(data: any) => void>>>(new Map());
+  const subscribersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
 
   useEffect(() => {
     const ws = new WebSocket('ws://localhost:8000/ws');
@@ -49,7 +49,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       try {
         const message = JSON.parse(event.data);
         const topic = message.type || 'default';
-        const callbacks = subscribers.get(topic);
+        const callbacks = subscribersRef.current.get(topic);
         if (callbacks) {
           callbacks.forEach(callback => callback(message));
         }
@@ -82,22 +82,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   }, [socket]);
 
   const subscribe = useCallback((topic: string, callback: (data: any) => void) => {
-    setSubscribers(prev => {
-      const updated = new Map(prev);
-      if (!updated.has(topic)) {
-        updated.set(topic, new Set());
-      }
-      updated.get(topic)!.add(callback);
-      return updated;
-    });
+    if (!subscribersRef.current.has(topic)) {
+      subscribersRef.current.set(topic, new Set());
+    }
+    subscribersRef.current.get(topic)!.add(callback);
   }, []);
 
   const unsubscribe = useCallback((topic: string) => {
-    setSubscribers(prev => {
-      const updated = new Map(prev);
-      updated.delete(topic);
-      return updated;
-    });
+    subscribersRef.current.delete(topic);
   }, []);
 
   return (
