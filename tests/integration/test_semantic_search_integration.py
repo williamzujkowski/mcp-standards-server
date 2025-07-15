@@ -242,7 +242,7 @@ class TestSemanticSearchMCPIntegration:
             # Create mock engine instance
             mock_engine = AsyncMock()
             mock_engine_class.return_value = mock_engine
-            
+
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -271,7 +271,7 @@ class TestSemanticSearchMCPIntegration:
             # Create mock engine instance
             mock_engine = AsyncMock()
             mock_engine_class.return_value = mock_engine
-            
+
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -328,7 +328,7 @@ class TestSemanticSearchMCPIntegration:
             # Create mock engine instance
             mock_engine = AsyncMock()
             mock_engine_class.return_value = mock_engine
-            
+
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -384,7 +384,7 @@ class TestSemanticSearchMCPIntegration:
             # Create mock engine instance
             mock_engine = AsyncMock()
             mock_engine_class.return_value = mock_engine
-            
+
             # Create mock semantic search
             mock_search = SemanticSearch()
 
