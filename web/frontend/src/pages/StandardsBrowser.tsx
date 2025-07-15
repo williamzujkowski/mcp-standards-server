@@ -218,8 +218,6 @@ const StandardsBrowser: React.FC = () => {
               Categories
             </Typography>
             <TreeView
-              defaultCollapseIcon={<ExpandMoreIcon />}
-              defaultExpandIcon={<ChevronRightIcon />}
               expanded={expanded}
               selected={selectedCategory}
               onNodeToggle={handleToggle}
