@@ -83,8 +83,13 @@ class TestMCPTools:
 
         # Verify returned standards are relevant
         standards = result["standards"]
-        assert any("react" in s.lower() for s in standards)
-        assert any("javascript" in s.lower() for s in standards)
+        # Standards are now dictionaries with id, title, description, etc.
+        standard_ids = [s.get("id", "").lower() for s in standards]
+        standard_titles = [s.get("title", "").lower() for s in standards]
+        
+        # Check either IDs or titles contain relevant keywords
+        assert any("react" in sid or "react" in title for sid, title in zip(standard_ids, standard_titles))
+        assert any("javascript" in sid or "javascript" in title for sid, title in zip(standard_ids, standard_titles))
 
     @pytest.mark.asyncio
     async def test_validate_against_standard(self, mcp_client):
@@ -109,12 +114,12 @@ class TestMCPTools:
             },
         )
 
-        # Check for validation_results structure
-        assert "validation_results" in result
-        validation_results = result["validation_results"]
-        assert "violations" in validation_results
-        assert "compliant" in validation_results
-        assert isinstance(validation_results["violations"], list)
+        # Check for validation structure (it's at the top level now)
+        assert "passed" in result
+        assert "violations" in result
+        assert "standard" in result
+        assert isinstance(result["violations"], list)
+        assert result["standard"] == "react-18-patterns"
 
     @pytest.mark.asyncio
     async def test_search_standards(self, mcp_client):

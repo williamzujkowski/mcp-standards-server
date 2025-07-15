@@ -25,7 +25,7 @@ import {
   Alert,
   Snackbar,
 } from '@mui/material';
-import { TreeView, TreeItem } from '@mui/x-tree-view';
+import { SimpleTreeView, TreeItem } from '@mui/x-tree-view';
 import {
   ExpandMore as ExpandMoreIcon,
   ChevronRight as ChevronRightIcon,
@@ -37,7 +37,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useStandards } from '../contexts/StandardsContext';
-import { Standard } from '../types';
 import { StandardsService } from '../services/standardsService';
 
 const StandardsBrowser: React.FC = () => {
@@ -54,13 +53,13 @@ const StandardsBrowser: React.FC = () => {
   const [exportSuccess, setExportSuccess] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
 
-  const handleToggle = (event: React.SyntheticEvent, nodeIds: string[]) => {
-    setExpanded(nodeIds);
+  const handleToggle = (event: React.SyntheticEvent, itemIds: string[]) => {
+    setExpanded(itemIds);
   };
 
-  const handleSelect = (event: React.SyntheticEvent, nodeId: string) => {
-    if (!nodeId.includes('-')) {
-      setSelectedCategory(nodeId);
+  const handleSelect = (event: React.SyntheticEvent, itemIds: string | null) => {
+    if (itemIds && !itemIds.includes('-')) {
+      setSelectedCategory(itemIds);
     }
   };
 
@@ -217,18 +216,22 @@ const StandardsBrowser: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Categories
             </Typography>
-            <TreeView
-              expanded={expanded}
-              selected={selectedCategory}
-              onNodeToggle={handleToggle}
-              onNodeSelect={handleSelect}
+            <SimpleTreeView
+              expandedItems={expanded}
+              selectedItems={selectedCategory}
+              onExpandedItemsChange={handleToggle}
+              onSelectedItemsChange={handleSelect}
+              slots={{
+                collapseIcon: ExpandMoreIcon,
+                expandIcon: ChevronRightIcon,
+              }}
               sx={{ flexGrow: 1, overflowY: 'auto' }}
             >
-              <TreeItem nodeId="all" label="All Standards" />
+              <TreeItem itemId="all" label="All Standards" />
               {Object.entries(standards).map(([category, categoryStandards]) => (
                 <TreeItem
                   key={category}
-                  nodeId={category}
+                  itemId={category}
                   label={
                     <Box display="flex" alignItems="center" justifyContent="space-between">
                       <Typography>{category}</Typography>
@@ -239,14 +242,14 @@ const StandardsBrowser: React.FC = () => {
                   {categoryStandards.map((standard) => (
                     <TreeItem
                       key={standard.id}
-                      nodeId={`${category}-${standard.id}`}
+                      itemId={`${category}-${standard.id}`}
                       label={standard.title}
                       onClick={() => handleViewStandard(standard.id)}
                     />
                   ))}
                 </TreeItem>
               ))}
-            </TreeView>
+            </SimpleTreeView>
           </Paper>
         </Grid>
 
