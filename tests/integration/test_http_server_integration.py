@@ -345,9 +345,17 @@ class TestHealthCheckerIntegration:
         # Mock Redis cache
         with patch("src.core.cache.redis_client.get_cache") as mock_get_cache:
             mock_cache = Mock()
-            mock_cache.set = AsyncMock()
-            mock_cache.get = AsyncMock(return_value="test_value")
-            mock_cache.delete = AsyncMock()
+            # Store the value that was set so we can return it in get
+            stored_value = None
+            def mock_set(key, value, ttl=None):
+                nonlocal stored_value
+                stored_value = value
+            def mock_get(key):
+                return stored_value
+            # Make the cache methods synchronous since they're called synchronously in the health check
+            mock_cache.set = Mock(side_effect=mock_set)
+            mock_cache.get = Mock(side_effect=mock_get)
+            mock_cache.delete = Mock()
             mock_get_cache.return_value = mock_cache
 
             result = await health_checker.check_health(["redis_connection"])
