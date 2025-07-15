@@ -54,7 +54,9 @@ class TestSemanticSearchStandardsIntegration:
             engine.semantic_search = SemanticSearch()
             yield engine
 
-    def test_standards_indexing_integration(self, standards_engine, temp_dir, use_ml_mocks):
+    def test_standards_indexing_integration(
+        self, standards_engine, temp_dir, use_ml_mocks
+    ):
         """Test indexing standards for semantic search."""
         # Create test standards
         standards = [
@@ -174,7 +176,9 @@ class TestSemanticSearchStandardsIntegration:
             assert result.metadata.get("category") == "security"
             assert result.metadata.get("language") in ["python", "javascript"]
 
-    @pytest.mark.skip(reason="Complex mocking issue with multiple SemanticSearch instances")
+    @pytest.mark.skip(
+        reason="Complex mocking issue with multiple SemanticSearch instances"
+    )
     @patch_ml_dependencies()
     def test_incremental_indexing(self, temp_dir, use_ml_mocks):
         """Test incremental indexing of new standards."""
@@ -203,8 +207,16 @@ class TestSemanticSearchStandardsIntegration:
 
             # Add new standards incrementally
             new_docs = [
-                ("std-003", "Security standards and best practices", {"category": "security"}),
-                ("std-004", "Testing standards and methodologies", {"category": "testing"}),
+                (
+                    "std-003",
+                    "Security standards and best practices",
+                    {"category": "security"},
+                ),
+                (
+                    "std-004",
+                    "Testing standards and methodologies",
+                    {"category": "testing"},
+                ),
             ]
 
             for doc_id, content, metadata in new_docs:
@@ -328,7 +340,10 @@ class TestSemanticSearchMCPIntegration:
                     "name": "search_standards",
                     "arguments": {
                         "query": "testing standards",
-                        "filters": {"category": "testing", "framework": ["react", "vue"]},
+                        "filters": {
+                            "category": "testing",
+                            "framework": ["react", "vue"],
+                        },
                         "top_k": 10,
                     },
                 },
@@ -398,7 +413,10 @@ class TestSemanticSearchMCPIntegration:
             response = await server.handle_request(analytics_request)
 
             # Verify response - either tool not found or analytics data
-            if response.get("error") in ["Tool not found: get_search_analytics", "Tool not found: search_standards"]:
+            if response.get("error") in [
+                "Tool not found: get_search_analytics",
+                "Tool not found: search_standards",
+            ]:
                 # Tools not implemented yet, that's expected
                 pass
             else:

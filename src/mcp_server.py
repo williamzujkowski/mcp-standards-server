@@ -960,8 +960,16 @@ class MCPStandardsServer:
                 # Transform to expected format for MCP compliance
                 transformed_standard = {
                     "id": standard_details.get("id", standard_id),
-                    "title": standard_details.get("name", standard_details.get("title", standard_id.replace("-", " ").title())),
-                    "description": standard_details.get("content", {}).get("summary", standard_details.get("description", f"Standard: {standard_id}")),
+                    "title": standard_details.get(
+                        "name",
+                        standard_details.get(
+                            "title", standard_id.replace("-", " ").title()
+                        ),
+                    ),
+                    "description": standard_details.get("content", {}).get(
+                        "summary",
+                        standard_details.get("description", f"Standard: {standard_id}"),
+                    ),
                     "category": standard_details.get("category", "unknown"),
                     "version": standard_details.get("version"),
                     "tags": standard_details.get("tags", []),
@@ -972,12 +980,14 @@ class MCPStandardsServer:
             except Exception as e:
                 logger.warning(f"Failed to get details for standard {standard_id}: {e}")
                 # Fallback to basic structure
-                standards.append({
-                    "id": standard_id,
-                    "title": standard_id.replace("-", " ").title(),
-                    "description": f"Standard: {standard_id}",
-                    "category": "unknown"
-                })
+                standards.append(
+                    {
+                        "id": standard_id,
+                        "title": standard_id.replace("-", " ").title(),
+                        "description": f"Standard: {standard_id}",
+                        "category": "unknown",
+                    }
+                )
 
         response = {
             "standards": standards,
