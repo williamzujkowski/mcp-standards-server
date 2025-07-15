@@ -91,7 +91,7 @@ class TestMCPStandardsServer:
             "evaluation_path": ["rule1", "rule2"],
         }
         server.rule_engine.evaluate = Mock(return_value=mock_result)
-        
+
         # Mock _get_standard_details to return standard info
         mock_standard_details = {
             "id": "test-standard",

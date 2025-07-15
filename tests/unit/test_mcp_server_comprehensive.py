@@ -337,7 +337,7 @@ class TestMCPServerToolExecution:
             "version": "1.0",
             "tags": [std_id]
         })
-        
+
         result = await server._get_applicable_standards(context, True)
 
         # Now standards is a list of dicts, not strings
@@ -806,7 +806,7 @@ class TestMCPServerIntegration:
             "resolved_standards": ["test-standard"],
             "evaluation_path": ["rule1"],
         }
-        
+
         # Mock standard details
         configured_server._get_standard_details = AsyncMock(return_value={
             "id": "test-standard",
@@ -897,7 +897,7 @@ class TestMCPServerIntegration:
             "resolved_standards": ["test-standard"],
             "evaluation_path": ["rule1"],
         }
-        
+
         # Mock standard details
         configured_server._get_standard_details = AsyncMock(return_value={
             "id": "test-standard",
