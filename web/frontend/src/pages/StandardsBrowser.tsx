@@ -212,7 +212,7 @@ const StandardsBrowser: React.FC = () => {
       </Box>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={3}>
+        <Grid size={{xs: 12, md: 3}}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Categories
@@ -252,7 +252,7 @@ const StandardsBrowser: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={9}>
+        <Grid size={{xs: 12, md: 9}}>
           <Box mb={2}>
             <TextField
               fullWidth
@@ -271,7 +271,7 @@ const StandardsBrowser: React.FC = () => {
 
           <Grid container spacing={2}>
             {searchFilteredStandards.map((standard) => (
-              <Grid item xs={12} md={6} key={standard.id}>
+              <Grid size={{xs: 12, md: 6}} key={standard.id}>
                 <Card>
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start">

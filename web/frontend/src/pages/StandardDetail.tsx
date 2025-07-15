@@ -138,25 +138,25 @@ const StandardDetail: React.FC = () => {
         </Typography>
         
         <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{xs: 12, sm: 6}}>
             <Typography variant="subtitle2" color="text.secondary">
               Category
             </Typography>
             <Typography variant="body1">{standard.category}</Typography>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{xs: 12, sm: 6}}>
             <Typography variant="subtitle2" color="text.secondary">
               Subcategory
             </Typography>
             <Typography variant="body1">{standard.subcategory}</Typography>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{xs: 12, sm: 6}}>
             <Typography variant="subtitle2" color="text.secondary">
               Priority
             </Typography>
             <Chip label={standard.priority} color="primary" size="small" />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{xs: 12, sm: 6}}>
             <Typography variant="subtitle2" color="text.secondary">
               Version
             </Typography>
@@ -189,7 +189,7 @@ const StandardDetail: React.FC = () => {
           ) : (
             <Grid container spacing={2}>
               {standard.examples.map((example, index) => (
-                <Grid item xs={12} key={index}>
+                <Grid size={{xs: 12}} key={index}>
                   <Card>
                     <CardContent>
                       {example.title && (

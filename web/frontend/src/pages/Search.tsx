@@ -157,7 +157,7 @@ const Search: React.FC = () => {
         <Collapse in={showFilters}>
           <Box mt={2}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{xs: 12, sm: 6}}>
                 <FormControl fullWidth>
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -194,7 +194,7 @@ const Search: React.FC = () => {
           </Typography>
           <Grid container spacing={2}>
             {results.map((result) => (
-              <Grid item xs={12} key={result.standard.id}>
+              <Grid size={{xs: 12}} key={result.standard.id}>
                 <Card>
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="start">

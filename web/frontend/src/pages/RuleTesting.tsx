@@ -134,7 +134,7 @@ const RuleTesting: React.FC = () => {
                 {steps[0].description}
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{xs: 12, sm: 6}}>
                   <FormControl fullWidth>
                     <InputLabel>Project Type</InputLabel>
                     <Select
@@ -151,7 +151,7 @@ const RuleTesting: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{xs: 12, sm: 6}}>
                   <FormControl fullWidth>
                     <InputLabel>Deployment Target</InputLabel>
                     <Select
@@ -167,7 +167,7 @@ const RuleTesting: React.FC = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{xs: 12, sm: 6}}>
                   <FormControl fullWidth>
                     <InputLabel>Team Size</InputLabel>
                     <Select
@@ -198,7 +198,7 @@ const RuleTesting: React.FC = () => {
                 {steps[1].description}
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid size={{xs: 12}}>
                   <TextField
                     fullWidth
                     label="Programming Languages"
@@ -213,7 +213,7 @@ const RuleTesting: React.FC = () => {
                     helperText="Comma-separated list"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{xs: 12}}>
                   <TextField
                     fullWidth
                     label="Frameworks"
@@ -228,7 +228,7 @@ const RuleTesting: React.FC = () => {
                     helperText="Comma-separated list"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{xs: 12}}>
                   <TextField
                     fullWidth
                     label="Existing Tools"
@@ -262,7 +262,7 @@ const RuleTesting: React.FC = () => {
                 {steps[2].description}
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid size={{xs: 12}}>
                   <TextField
                     fullWidth
                     label="Compliance Requirements"
