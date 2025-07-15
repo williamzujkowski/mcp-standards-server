@@ -198,11 +198,18 @@ sync:
             assert "standards" in result
             assert "evaluation_path" in result
 
-            # Verify standards content
-            assert result["standards"] == [
-                "python-coding-standards",
+            # Verify standards content - now returns full standard objects
+            assert len(result["standards"]) == 2
+            standard_ids = [std["id"] for std in result["standards"]]
+            assert standard_ids == [
+                "python-coding-standards", 
                 "web-security-standards",
             ]
+            # Verify each standard has required fields
+            for standard in result["standards"]:
+                assert "id" in standard
+                assert "title" in standard  
+                assert "description" in standard
             assert result["evaluation_path"] == ["python_web_rule"]
 
     async def test_validate_against_standard_tool(
