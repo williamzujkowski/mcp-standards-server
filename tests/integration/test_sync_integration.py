@@ -217,17 +217,21 @@ class TestFullSyncWorkflow:
                 # Repository listing
                 path = url.split("/contents/")[-1]
                 mock_response.status = 200
+
                 # Create an async function that will be awaited
                 async def get_contents():
                     return await mock_github_api.list_contents(path)
+
                 mock_response.json = AsyncMock(side_effect=get_contents)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
             else:
                 # File download
                 mock_response.status = 200
+
                 # Create an async function that will be awaited
                 async def get_content():
                     return await mock_github_api.get_content(url)
+
                 mock_response.read = AsyncMock(side_effect=get_content)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
 
@@ -278,14 +282,18 @@ class TestFullSyncWorkflow:
             if "api.github.com/repos" in url and "/contents/" in url:
                 path = url.split("/contents/")[-1]
                 mock_response.status = 200
+
                 async def get_contents():
                     return await mock_github_api.list_contents(path)
+
                 mock_response.json = AsyncMock(side_effect=get_contents)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
             else:
                 mock_response.status = 200
+
                 async def get_content():
                     return await mock_github_api.get_content(url)
+
                 mock_response.read = AsyncMock(side_effect=get_content)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
 
@@ -327,14 +335,18 @@ class TestFullSyncWorkflow:
             if "api.github.com/repos" in url and "/contents/" in url:
                 path = url.split("/contents/")[-1]
                 mock_response.status = 200
+
                 async def get_contents():
                     return await mock_github_api.list_contents(path)
+
                 mock_response.json = AsyncMock(side_effect=get_contents)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
             else:
                 mock_response.status = 200
+
                 async def get_content():
                     return await mock_github_api.get_content(url)
+
                 mock_response.read = AsyncMock(side_effect=get_content)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
 
@@ -343,7 +355,9 @@ class TestFullSyncWorkflow:
         # Initial sync
         with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
-                __aenter__=AsyncMock(return_value=create_mock_response_v1(url, **kwargs))
+                __aenter__=AsyncMock(
+                    return_value=create_mock_response_v1(url, **kwargs)
+                )
             )
             await synchronizer.sync()
 
@@ -360,14 +374,18 @@ class TestFullSyncWorkflow:
             if "api.github.com/repos" in url and "/contents/" in url:
                 path = url.split("/contents/")[-1]
                 mock_response.status = 200
+
                 async def get_contents():
                     return await mock_github_api.list_contents(path)
+
                 mock_response.json = AsyncMock(side_effect=get_contents)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
             else:
                 mock_response.status = 200
+
                 async def get_content():
                     return await mock_github_api.get_content(url)
+
                 mock_response.read = AsyncMock(side_effect=get_content)
                 mock_response.headers = mock_github_api.get_rate_limit_headers()
 
@@ -376,7 +394,9 @@ class TestFullSyncWorkflow:
         # Sync with updates
         with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
-                __aenter__=AsyncMock(return_value=create_mock_response_v2(url, **kwargs))
+                __aenter__=AsyncMock(
+                    return_value=create_mock_response_v2(url, **kwargs)
+                )
             )
             await synchronizer.sync()
 
@@ -522,7 +542,7 @@ class TestErrorRecovery:
         # We'll make certain files always fail by URL
         failing_files = {
             "https://raw.githubusercontent.com/test/repo/main/docs/standards/README.md",
-            "https://raw.githubusercontent.com/test/repo/main/docs/standards/api-design.yaml"
+            "https://raw.githubusercontent.com/test/repo/main/docs/standards/api-design.yaml",
         }
 
         def create_mock_response(url, **kwargs):
@@ -532,8 +552,10 @@ class TestErrorRecovery:
                 if "api.github.com/repos" in url and "/contents/" in url:
                     path = url.split("/contents/")[-1]
                     mock_response.status = 200
+
                     async def get_contents():
                         return await mock_github_api.list_contents(path)
+
                     mock_response.json = AsyncMock(side_effect=get_contents)
                     mock_response.headers = mock_github_api.get_rate_limit_headers()
                 else:
@@ -544,8 +566,10 @@ class TestErrorRecovery:
                         raise aiohttp.ClientError(f"Permanent failure for {url}")
                     else:
                         mock_response.status = 200
+
                         async def get_content():
                             return await mock_github_api.get_content(url)
+
                         mock_response.read = AsyncMock(side_effect=get_content)
                         mock_response.headers = mock_github_api.get_rate_limit_headers()
             except Exception as e:
@@ -600,7 +624,9 @@ class TestErrorRecovery:
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
-                __aenter__=AsyncMock(return_value=create_mock_response_with_retry(url, **kwargs))
+                __aenter__=AsyncMock(
+                    return_value=create_mock_response_with_retry(url, **kwargs)
+                )
             )
 
             async with aiohttp.ClientSession() as session:
@@ -630,19 +656,30 @@ class TestRateLimitHandling:
 
         # Mock files to sync
         files = [
-            {"path": "file1.md", "sha": "sha1", "download_url": "https://raw.githubusercontent.com/test/repo/main/file1.md", "size": 100},
-            {"path": "file2.md", "sha": "sha2", "download_url": "https://raw.githubusercontent.com/test/repo/main/file2.md", "size": 100},
+            {
+                "path": "file1.md",
+                "sha": "sha1",
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/file1.md",
+                "size": 100,
+            },
+            {
+                "path": "file2.md",
+                "sha": "sha2",
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/file2.md",
+                "size": 100,
+            },
         ]
 
         # Pre-populate file metadata to avoid KeyError
         from src.core.standards.sync import FileMetadata
+
         for file in files:
             synchronizer.file_metadata[file["path"]] = FileMetadata(
                 path=file["path"],
                 sha=file["sha"],
                 size=file["size"],
                 last_modified="",
-                local_path=synchronizer.cache_dir / file["path"]
+                local_path=synchronizer.cache_dir / file["path"],
             )
 
         with patch.object(synchronizer, "_list_repository_files", return_value=files):
@@ -692,7 +729,9 @@ class TestRateLimitHandling:
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
             mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
-                __aenter__=AsyncMock(return_value=create_mock_response_with_headers(url, **kwargs))
+                __aenter__=AsyncMock(
+                    return_value=create_mock_response_with_headers(url, **kwargs)
+                )
             )
 
             # Make several API calls
@@ -756,7 +795,12 @@ class TestMetadataManagement:
 
         # Should recover and continue
         files = [
-            {"path": "docs/standards/test.md", "sha": "sha1", "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/test.md", "size": 100}
+            {
+                "path": "docs/standards/test.md",
+                "sha": "sha1",
+                "download_url": "https://raw.githubusercontent.com/test/repo/main/docs/standards/test.md",
+                "size": 100,
+            }
         ]
 
         with patch.object(synchronizer, "_list_repository_files", return_value=files):
@@ -818,7 +862,9 @@ class TestConcurrentOperations:
         sequential_time = num_files * 0.1
         # Very relaxed constraint - just ensure it's not fully sequential
         # In CI environments, parallelism benefits can be minimal
-        assert total_time < sequential_time * 1.5  # Just ensure it's not slower than sequential
+        assert (
+            total_time < sequential_time * 1.5
+        )  # Just ensure it's not slower than sequential
 
     @pytest.mark.asyncio
     async def test_concurrent_metadata_updates(self, sync_config, temp_sync_dir):
@@ -886,7 +932,9 @@ class TestEnvironmentIntegration:
 
             with patch("aiohttp.ClientSession.get") as mock_session_get:
                 mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
-                    __aenter__=AsyncMock(return_value=create_mock_response(url, **kwargs))
+                    __aenter__=AsyncMock(
+                        return_value=create_mock_response(url, **kwargs)
+                    )
                 )
 
                 async with aiohttp.ClientSession() as session:

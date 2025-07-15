@@ -219,11 +219,13 @@ class TestHTTPServerIntegration:
                 "content": "# Test Standard\n\nThis is test content.",
                 "version": "1.0.0",
                 "tags": ["test"],
-                "metadata": {"status": "active"}
+                "metadata": {"status": "active"},
             }
 
             os.makedirs(os.path.join(temp_dir, "standards"), exist_ok=True)
-            with open(os.path.join(temp_dir, "standards", "test-standard.json"), "w") as f:
+            with open(
+                os.path.join(temp_dir, "standards", "test-standard.json"), "w"
+            ) as f:
                 json.dump(test_standard, f)
 
             # Patch the data directory
@@ -347,11 +349,14 @@ class TestHealthCheckerIntegration:
             mock_cache = Mock()
             # Store the value that was set so we can return it in get
             stored_value = None
+
             def mock_set(key, value, ttl=None):
                 nonlocal stored_value
                 stored_value = value
+
             def mock_get(key):
                 return stored_value
+
             # Make the cache methods synchronous since they're called synchronously in the health check
             mock_cache.set = Mock(side_effect=mock_set)
             mock_cache.get = Mock(side_effect=mock_get)
