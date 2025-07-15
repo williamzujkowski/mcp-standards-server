@@ -257,8 +257,8 @@ class TestSemanticSearchMCPIntegration:
 
             yield server
 
-    @pytest.mark.asyncio
     @patch_ml_dependencies()
+    @pytest.mark.asyncio
     async def test_mcp_search_tool(self, use_ml_mocks):
         """Test MCP search tool integration."""
         # Create MCP server inline
@@ -309,8 +309,8 @@ class TestSemanticSearchMCPIntegration:
                 # If tool exists, verify it returns valid data
                 assert isinstance(response, dict)
 
-    @pytest.mark.asyncio
     @patch_ml_dependencies()
+    @pytest.mark.asyncio
     async def test_mcp_filtered_search(self, use_ml_mocks):
         """Test MCP search with filters."""
         # Create MCP server inline
@@ -360,8 +360,8 @@ class TestSemanticSearchMCPIntegration:
                 # If tool exists, verify it returns valid data
                 assert isinstance(response, dict)
 
-    @pytest.mark.asyncio
     @patch_ml_dependencies()
+    @pytest.mark.asyncio
     async def test_mcp_search_analytics(self, use_ml_mocks):
         """Test MCP search analytics tracking."""
         # Create MCP server inline
