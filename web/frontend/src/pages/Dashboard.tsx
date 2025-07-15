@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Grid,
   Paper,
   Typography,
   Box,
@@ -9,6 +8,7 @@ import {
   LinearProgress,
   Chip,
 } from '@mui/material';
+import Grid2 from '@mui/material/Grid2';
 import {
   TrendingUp as TrendingUpIcon,
   Category as CategoryIcon,
@@ -66,9 +66,9 @@ const Dashboard: React.FC = () => {
         Overview of standards and compliance requirements
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid2 container spacing={3}>
         {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid2 xs={12} sm={6} md={3} key={index}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" mb={2}>
@@ -96,10 +96,10 @@ const Dashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Grid2>
         ))}
 
-        <Grid item xs={12} md={8}>
+        <Grid2 xs={12} md={8}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Standards by Category
@@ -120,9 +120,9 @@ const Dashboard: React.FC = () => {
               ))}
             </Box>
           </Paper>
-        </Grid>
+        </Grid2>
 
-        <Grid item xs={12} md={4}>
+        <Grid2 xs={12} md={4}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Popular Tags
@@ -140,9 +140,9 @@ const Dashboard: React.FC = () => {
               ))}
             </Box>
           </Paper>
-        </Grid>
+        </Grid2>
 
-        <Grid item xs={12}>
+        <Grid2 xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Recent Activity
@@ -151,8 +151,8 @@ const Dashboard: React.FC = () => {
               No recent activity to display
             </Typography>
           </Paper>
-        </Grid>
-      </Grid>
+        </Grid2>
+      </Grid2>
     </Box>
   );
 };
