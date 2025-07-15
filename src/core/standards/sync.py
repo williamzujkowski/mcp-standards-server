@@ -974,7 +974,9 @@ def sync_standards(force: bool = False, config_path: Path | None = None) -> Sync
     return asyncio.run(synchronizer.sync(force=force))
 
 
-def check_for_updates(config_path: Path | None = None, cache_dir: Path | None = None) -> dict[str, Any]:
+def check_for_updates(
+    config_path: Path | None = None, cache_dir: Path | None = None
+) -> dict[str, Any]:
     """Check for available updates."""
     synchronizer = StandardsSynchronizer(config_path=config_path, cache_dir=cache_dir)
     return synchronizer.check_updates()
