@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  TreeView,
-  TreeItem,
   Paper,
   Grid,
   Card,
@@ -27,6 +25,7 @@ import {
   Alert,
   Snackbar,
 } from '@mui/material';
+import { TreeView, TreeItem } from '@mui/x-tree-view';
 import {
   ExpandMore as ExpandMoreIcon,
   ChevronRight as ChevronRightIcon,
