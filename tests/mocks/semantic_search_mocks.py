@@ -981,25 +981,44 @@ class MockAsyncio:
 def patch_ml_dependencies():
     """Decorator to patch ML dependencies for a test."""
     import functools
+    import asyncio
     from unittest.mock import patch
 
     def decorator(func):
-        @functools.wraps(func)
-        @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
-        @patch("redis.Redis", MockRedisClient)
-        @patch("nltk.stem.PorterStemmer", MockPorterStemmer)
-        @patch("nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize)
-        @patch("nltk.corpus.stopwords", MockStopwords)
-        @patch("fuzzywuzzy.fuzz", MockFuzz)
-        @patch("fuzzywuzzy.process", MockProcess)
-        @patch(
-            "sklearn.metrics.pairwise.cosine_similarity",
-            MockCosineSimilarity.cosine_similarity,
-        )
-        @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
-        def wrapped(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        return wrapped
+        # Check if the function is async
+        if asyncio.iscoroutinefunction(func):
+            @functools.wraps(func)
+            @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+            @patch("redis.Redis", MockRedisClient)
+            @patch("nltk.stem.PorterStemmer", MockPorterStemmer)
+            @patch("nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize)
+            @patch("nltk.corpus.stopwords", MockStopwords)
+            @patch("fuzzywuzzy.fuzz", MockFuzz)
+            @patch("fuzzywuzzy.process", MockProcess)
+            @patch(
+                "sklearn.metrics.pairwise.cosine_similarity",
+                MockCosineSimilarity.cosine_similarity,
+            )
+            @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
+            async def async_wrapped(*args, **kwargs):
+                return await func(*args, **kwargs)
+            return async_wrapped
+        else:
+            @functools.wraps(func)
+            @patch("sentence_transformers.SentenceTransformer", MockSentenceTransformer)
+            @patch("redis.Redis", MockRedisClient)
+            @patch("nltk.stem.PorterStemmer", MockPorterStemmer)
+            @patch("nltk.tokenize.word_tokenize", MockNLTKComponents.word_tokenize)
+            @patch("nltk.corpus.stopwords", MockStopwords)
+            @patch("fuzzywuzzy.fuzz", MockFuzz)
+            @patch("fuzzywuzzy.process", MockProcess)
+            @patch(
+                "sklearn.metrics.pairwise.cosine_similarity",
+                MockCosineSimilarity.cosine_similarity,
+            )
+            @patch("sklearn.neighbors.NearestNeighbors", MockNearestNeighbors)
+            def wrapped(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapped
 
     return decorator

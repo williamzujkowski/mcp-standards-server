@@ -11,7 +11,7 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import pytest
 
@@ -238,7 +238,7 @@ class TestSemanticSearchMCPIntegration:
     @patch_ml_dependencies()
     def mcp_server(self):
         """Create MCP server with semantic search enabled."""
-        with patch("src.core.mcp.server.StandardsEngine") as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -248,6 +248,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Configure mock engine
             mock_engine.return_value.semantic_search = mock_search
+            mock_engine.return_value.initialize = AsyncMock()
 
             server = MCPServer()
 
@@ -262,7 +263,7 @@ class TestSemanticSearchMCPIntegration:
     async def test_mcp_search_tool(self, use_ml_mocks):
         """Test MCP search tool integration."""
         # Create MCP server inline
-        with patch("src.core.mcp.server.StandardsEngine") as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -272,6 +273,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Configure mock engine
             mock_engine.return_value.semantic_search = mock_search
+            mock_engine.return_value.initialize = AsyncMock()
 
             server = MCPServer()
 
@@ -314,7 +316,7 @@ class TestSemanticSearchMCPIntegration:
     async def test_mcp_filtered_search(self, use_ml_mocks):
         """Test MCP search with filters."""
         # Create MCP server inline
-        with patch("src.core.mcp.server.StandardsEngine") as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -324,6 +326,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Configure mock engine
             mock_engine.return_value.semantic_search = mock_search
+            mock_engine.return_value.initialize = AsyncMock()
 
             server = MCPServer()
 
@@ -365,7 +368,7 @@ class TestSemanticSearchMCPIntegration:
     async def test_mcp_search_analytics(self, use_ml_mocks):
         """Test MCP search analytics tracking."""
         # Create MCP server inline
-        with patch("src.core.mcp.server.StandardsEngine") as mock_engine:
+        with patch("src.core.standards.engine.StandardsEngine") as mock_engine:
             # Create mock semantic search
             mock_search = SemanticSearch()
 
@@ -375,6 +378,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Configure mock engine
             mock_engine.return_value.semantic_search = mock_search
+            mock_engine.return_value.initialize = AsyncMock()
 
             server = MCPServer()
 
