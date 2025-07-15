@@ -952,8 +952,35 @@ class MCPStandardsServer:
         """Get applicable standards based on project context."""
         result = self.rule_engine.evaluate(context)
 
+        # Convert standard IDs to full standard objects
+        standards = []
+        for standard_id in result["resolved_standards"]:
+            try:
+                standard_details = await self._get_standard_details(standard_id)
+                # Transform to expected format for MCP compliance
+                transformed_standard = {
+                    "id": standard_details.get("id", standard_id),
+                    "title": standard_details.get("name", standard_details.get("title", standard_id.replace("-", " ").title())),
+                    "description": standard_details.get("content", {}).get("summary", standard_details.get("description", f"Standard: {standard_id}")),
+                    "category": standard_details.get("category", "unknown"),
+                    "version": standard_details.get("version"),
+                    "tags": standard_details.get("tags", []),
+                }
+                # Include original details for full functionality
+                transformed_standard.update(standard_details)
+                standards.append(transformed_standard)
+            except Exception as e:
+                logger.warning(f"Failed to get details for standard {standard_id}: {e}")
+                # Fallback to basic structure
+                standards.append({
+                    "id": standard_id,
+                    "title": standard_id.replace("-", " ").title(),
+                    "description": f"Standard: {standard_id}",
+                    "category": "unknown"
+                })
+
         response = {
-            "standards": result["resolved_standards"],
+            "standards": standards,
             "evaluation_path": result.get("evaluation_path", []),
         }
 
@@ -985,11 +1012,9 @@ class MCPStandardsServer:
                 )
 
         return {
-            "validation_results": {
-                "standard": standard,
-                "compliant": len(violations) == 0,
-                "violations": violations,
-            }
+            "standard": standard,
+            "passed": len(violations) == 0,
+            "violations": violations,
         }
 
     async def _search_standards(
