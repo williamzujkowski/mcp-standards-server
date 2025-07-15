@@ -104,7 +104,18 @@ class MockSentenceTransformer:
         """Generate deterministic embedding from text."""
         # Check for strong negative sentiment first
         text_lower = text.lower()
-        has_strong_negative = any(neg_word in text_lower for neg_word in ["remove", "disable", "without", "issues", "problems", "slow", "degrade"])
+        has_strong_negative = any(
+            neg_word in text_lower
+            for neg_word in [
+                "remove",
+                "disable",
+                "without",
+                "issues",
+                "problems",
+                "slow",
+                "degrade",
+            ]
+        )
 
         # For negative sentiment, modify the text to reduce positive keyword influence
         if has_strong_negative:
@@ -149,9 +160,11 @@ class MockSentenceTransformer:
                     # For negative sentiment text, invert the positive features
                     feature_idx = i % len(semantic_features) if semantic_features else 0
                     if feature_idx in [2, 4]:  # Auth positive and DB positive indices
-                        weight = -2.0  # Strongly invert positive sentiment for negative queries
+                        weight = (
+                            -2.0
+                        )  # Strongly invert positive sentiment for negative queries
                     elif feature_idx in [3, 5]:  # Auth negative and DB negative indices
-                        weight = 3.0   # Strongly amplify negative sentiment
+                        weight = 3.0  # Strongly amplify negative sentiment
                 base_embedding[i] += feature * weight
 
         return base_embedding
@@ -166,9 +179,24 @@ class MockSentenceTransformer:
         features.append(text_lower.count(" ") / 10.0)  # Word count
 
         # Enhanced keyword features with semantic groups and sentiment
-        auth_positive = ["authentication", "login", "auth", "implement", "setup", "enable", "secure"]
+        auth_positive = [
+            "authentication",
+            "login",
+            "auth",
+            "implement",
+            "setup",
+            "enable",
+            "secure",
+        ]
         auth_negative = ["remove", "disable", "without", "public", "unsecured"]
-        database_positive = ["optimize", "improve", "faster", "performance", "speed", "efficiency"]
+        database_positive = [
+            "optimize",
+            "improve",
+            "faster",
+            "performance",
+            "speed",
+            "efficiency",
+        ]
         database_negative = ["slow", "degrade", "issues", "problems", "bottleneck"]
         security_keywords = ["security", "secure", "protection", "vulnerability"]
         tech_keywords = ["test", "api", "react", "python", "standard", "mcp"]
@@ -176,18 +204,22 @@ class MockSentenceTransformer:
         # Calculate positive and negative sentiment scores
         auth_pos_score = sum(1.0 for keyword in auth_positive if keyword in text_lower)
         auth_neg_score = sum(1.0 for keyword in auth_negative if keyword in text_lower)
-        db_pos_score = sum(1.0 for keyword in database_positive if keyword in text_lower)
-        db_neg_score = sum(1.0 for keyword in database_negative if keyword in text_lower)
+        db_pos_score = sum(
+            1.0 for keyword in database_positive if keyword in text_lower
+        )
+        db_neg_score = sum(
+            1.0 for keyword in database_negative if keyword in text_lower
+        )
 
         # Add semantic features with sentiment differentiation
         features.append(auth_pos_score / len(auth_positive))  # Auth positive sentiment
-        features.append(auth_neg_score / len(auth_negative))   # Auth negative sentiment
-        features.append(db_pos_score / len(database_positive)) # DB positive sentiment
-        features.append(db_neg_score / len(database_negative)) # DB negative sentiment
+        features.append(auth_neg_score / len(auth_negative))  # Auth negative sentiment
+        features.append(db_pos_score / len(database_positive))  # DB positive sentiment
+        features.append(db_neg_score / len(database_negative))  # DB negative sentiment
 
         # Add overall sentiment polarity
         features.append(max(0, auth_pos_score - auth_neg_score))  # Auth polarity
-        features.append(max(0, db_pos_score - db_neg_score))     # DB polarity
+        features.append(max(0, db_pos_score - db_neg_score))  # DB polarity
 
         # Traditional keyword groups
         for keyword_group in [security_keywords, tech_keywords]:
@@ -195,7 +227,16 @@ class MockSentenceTransformer:
             features.append(group_score / len(keyword_group))
 
         # Individual keyword features for important discriminators
-        important_keywords = ["implement", "remove", "setup", "disable", "optimize", "slow", "improve", "degrade"]
+        important_keywords = [
+            "implement",
+            "remove",
+            "setup",
+            "disable",
+            "optimize",
+            "slow",
+            "improve",
+            "degrade",
+        ]
         for keyword in important_keywords:
             features.append(1.0 if keyword in text_lower else 0.0)
 
@@ -702,7 +743,7 @@ class TestDataGenerator:
 
                 Keywords: authentication, user login, auth, security, login implementation, implement, setup, enable
                 """,
-                "category": "authentication"
+                "category": "authentication",
             },
             {
                 "title": "Public Access Configuration",
@@ -727,7 +768,7 @@ class TestDataGenerator:
 
                 Keywords: public, access, open, remove, disable, without, unrestricted
                 """,
-                "category": "public_access"
+                "category": "public_access",
             },
             {
                 "title": "Disable User Login Procedures",
@@ -752,7 +793,7 @@ class TestDataGenerator:
 
                 Keywords: disable, user, login, remove, deactivate, turn off, authentication
                 """,
-                "category": "disable_auth"
+                "category": "disable_auth",
             },
             {
                 "title": "Database Performance Optimization",
@@ -776,7 +817,7 @@ class TestDataGenerator:
 
                 Keywords: database, performance, optimization, speed, improve database, optimize, faster
                 """,
-                "category": "performance"
+                "category": "performance",
             },
             {
                 "title": "Database Performance Issues",
@@ -801,8 +842,8 @@ class TestDataGenerator:
 
                 Keywords: database, slow, issues, problems, degrade, bottleneck, troubleshooting
                 """,
-                "category": "troubleshooting"
-            }
+                "category": "troubleshooting",
+            },
         ]
 
         documents = []
@@ -818,19 +859,27 @@ class TestDataGenerator:
                 template = auth_templates[0]  # Use auth template
                 content = template["content"]
                 category = template["category"]
-            elif category == "security" and (i % 15) < 3:  # Some security docs about public access
+            elif (
+                category == "security" and (i % 15) < 3
+            ):  # Some security docs about public access
                 template = auth_templates[1]  # Use public access template
                 content = template["content"]
                 category = template["category"]
-            elif category == "security" and (i % 15) >= 3 and (i % 15) < 6:  # Some security docs about disabling auth
+            elif (
+                category == "security" and (i % 15) >= 3 and (i % 15) < 6
+            ):  # Some security docs about disabling auth
                 template = auth_templates[2]  # Use disable login template
                 content = template["content"]
                 category = template["category"]
-            elif category == "performance" and (i % 20) < 8:  # Some performance docs about database optimization
+            elif (
+                category == "performance" and (i % 20) < 8
+            ):  # Some performance docs about database optimization
                 template = auth_templates[3]  # Use database performance template
                 content = template["content"]
                 category = template["category"]
-            elif category == "performance" and (i % 20) >= 8 and (i % 20) < 12:  # Some performance docs about issues
+            elif (
+                category == "performance" and (i % 20) >= 8 and (i % 20) < 12
+            ):  # Some performance docs about issues
                 template = auth_templates[4]  # Use database issues template
                 content = template["content"]
                 category = template["category"]

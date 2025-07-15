@@ -329,14 +329,16 @@ class TestMCPServerToolExecution:
         }
 
         # Mock standard details
-        server._get_standard_details = AsyncMock(side_effect=lambda std_id: {
-            "id": std_id,
-            "name": std_id.replace("-", " ").title(),
-            "category": "web" if "web" in std_id else "patterns",
-            "content": {"summary": f"Standard: {std_id}"},
-            "version": "1.0",
-            "tags": [std_id]
-        })
+        server._get_standard_details = AsyncMock(
+            side_effect=lambda std_id: {
+                "id": std_id,
+                "name": std_id.replace("-", " ").title(),
+                "category": "web" if "web" in std_id else "patterns",
+                "content": {"summary": f"Standard: {std_id}"},
+                "version": "1.0",
+                "tags": [std_id],
+            }
+        )
 
         result = await server._get_applicable_standards(context, True)
 
@@ -808,14 +810,16 @@ class TestMCPServerIntegration:
         }
 
         # Mock standard details
-        configured_server._get_standard_details = AsyncMock(return_value={
-            "id": "test-standard",
-            "name": "Test Standard",
-            "category": "testing",
-            "content": {"summary": "A test standard"},
-            "version": "1.0",
-            "tags": ["test"]
-        })
+        configured_server._get_standard_details = AsyncMock(
+            return_value={
+                "id": "test-standard",
+                "name": "Test Standard",
+                "category": "testing",
+                "content": {"summary": "A test standard"},
+                "version": "1.0",
+                "tags": ["test"],
+            }
+        )
 
         # Test the internal tool execution directly
         result = await configured_server._execute_tool(
@@ -899,14 +903,16 @@ class TestMCPServerIntegration:
         }
 
         # Mock standard details
-        configured_server._get_standard_details = AsyncMock(return_value={
-            "id": "test-standard",
-            "name": "Test Standard",
-            "category": "testing",
-            "content": {"summary": "A test standard"},
-            "version": "1.0",
-            "tags": ["test"]
-        })
+        configured_server._get_standard_details = AsyncMock(
+            return_value={
+                "id": "test-standard",
+                "name": "Test Standard",
+                "category": "testing",
+                "content": {"summary": "A test standard"},
+                "version": "1.0",
+                "tags": ["test"],
+            }
+        )
 
         # Execute multiple tools concurrently
         tasks = []

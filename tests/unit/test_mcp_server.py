@@ -99,7 +99,7 @@ class TestMCPStandardsServer:
             "category": "testing",
             "content": {"summary": "A test standard"},
             "version": "1.0",
-            "tags": ["test", "standard"]
+            "tags": ["test", "standard"],
         }
         server._get_standard_details = AsyncMock(return_value=mock_standard_details)
 
