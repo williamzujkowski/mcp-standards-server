@@ -86,10 +86,10 @@ class TestMCPTools:
         # Standards are now dictionaries with id, title, description, etc.
         standard_ids = [s.get("id", "").lower() for s in standards]
         standard_titles = [s.get("title", "").lower() for s in standards]
-        
+
         # Check either IDs or titles contain relevant keywords
-        assert any("react" in sid or "react" in title for sid, title in zip(standard_ids, standard_titles))
-        assert any("javascript" in sid or "javascript" in title for sid, title in zip(standard_ids, standard_titles))
+        assert any("react" in sid or "react" in title for sid, title in zip(standard_ids, standard_titles, strict=True))
+        assert any("javascript" in sid or "javascript" in title for sid, title in zip(standard_ids, standard_titles, strict=True))
 
     @pytest.mark.asyncio
     async def test_validate_against_standard(self, mcp_client):
