@@ -699,19 +699,19 @@ class TestSemanticSearchPerformanceIntegration:
         engine = create_search_engine()
 
         # Generate large corpus
-        print(f"\nGenerating corpus with {corpus_size} documents...")
+        print(f"\nGenerating corpus with {corpus_size} documents...")  # noqa: T201
         docs = TestDataGenerator.generate_standards_corpus(corpus_size)
 
         # Benchmark batch indexing
-        print("Indexing documents...")
+        print("Indexing documents...")  # noqa: T201
         start = time.time()
         if isinstance(engine, SemanticSearch):
             engine.index_documents_batch(docs)
         else:
             raise TypeError("Expected SemanticSearch instance for sync test")
         index_time = time.time() - start
-        print(f"Indexed {corpus_size} documents in {index_time:.2f}s")
-        print(f"Rate: {corpus_size/index_time:.2f} docs/second")
+        print(f"Indexed {corpus_size} documents in {index_time:.2f}s")  # noqa: T201
+        print(f"Rate: {corpus_size/index_time:.2f} docs/second")  # noqa: T201
 
         # Benchmark various search patterns
         search_patterns = [
@@ -724,7 +724,7 @@ class TestSemanticSearchPerformanceIntegration:
             ("Filtered search", "standards", {"category": "testing"}),
         ]
 
-        print("\nBenchmarking search patterns:")
+        print("\nBenchmarking search patterns:")  # noqa: T201
         for pattern_name, query, *args in search_patterns:
             filters = args[0] if args else None
 
@@ -741,7 +741,7 @@ class TestSemanticSearchPerformanceIntegration:
                     times.append(elapsed)
 
                 avg_time = sum(times) / len(times)
-                print(
+                print(  # noqa: T201
                     f"{pattern_name}: {avg_time*1000:.2f}ms avg, {len(results)} results"
                 )
             else:
@@ -750,8 +750,8 @@ class TestSemanticSearchPerformanceIntegration:
         # Check memory usage
         if isinstance(engine, SemanticSearch):
             report = engine.get_analytics_report()
-            print(f"\nTotal queries: {report['total_queries']}")
-            print(f"Cache hit rate: {report['cache_hit_rate']:.2%}")
+            print(f"\nTotal queries: {report['total_queries']}")  # noqa: T201
+            print(f"Cache hit rate: {report['cache_hit_rate']:.2%}")  # noqa: T201
 
             engine.close()
         else:
