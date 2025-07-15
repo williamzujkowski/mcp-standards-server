@@ -458,11 +458,12 @@ class TestResponseTimeBenchmarks:
 
         result = await benchmark(operation)
 
-        # Check for validation_results structure
-        assert "validation_results" in result
-        validation_results = result["validation_results"]
-        assert "violations" in validation_results
-        assert "compliant" in validation_results
+        # Check for validation structure (it's at the top level now)
+        assert "passed" in result
+        assert "violations" in result
+        assert "standard" in result
+        assert isinstance(result["violations"], list)
+        assert result["standard"] == "react-18-patterns"
 
 
 class TestScalabilityLimits:
