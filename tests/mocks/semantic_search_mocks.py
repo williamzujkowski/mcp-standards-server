@@ -132,7 +132,7 @@ class MockSentenceTransformer:
             seed = base_seed ^ 0xFFFFFFFF  # XOR with all 1s to flip bits
         else:
             seed = base_seed
-            
+
         rng = np.random.RandomState(seed)
 
         # Generate embedding with semantic properties
@@ -141,7 +141,7 @@ class MockSentenceTransformer:
         # Add semantic features based on text content (use original text for feature extraction)
         semantic_features = self._extract_semantic_features(text)
 
-        # Blend base with semantic features 
+        # Blend base with semantic features
         for i, feature in enumerate(semantic_features):
             if i < self.embedding_dim:
                 weight = 0.5
@@ -150,7 +150,7 @@ class MockSentenceTransformer:
                     feature_idx = i % len(semantic_features) if semantic_features else 0
                     if feature_idx in [2, 4]:  # Auth positive and DB positive indices
                         weight = -2.0  # Strongly invert positive sentiment for negative queries
-                    elif feature_idx in [3, 5]:  # Auth negative and DB negative indices  
+                    elif feature_idx in [3, 5]:  # Auth negative and DB negative indices
                         weight = 3.0   # Strongly amplify negative sentiment
                 base_embedding[i] += feature * weight
 
@@ -172,28 +172,28 @@ class MockSentenceTransformer:
         database_negative = ["slow", "degrade", "issues", "problems", "bottleneck"]
         security_keywords = ["security", "secure", "protection", "vulnerability"]
         tech_keywords = ["test", "api", "react", "python", "standard", "mcp"]
-        
+
         # Calculate positive and negative sentiment scores
         auth_pos_score = sum(1.0 for keyword in auth_positive if keyword in text_lower)
         auth_neg_score = sum(1.0 for keyword in auth_negative if keyword in text_lower)
         db_pos_score = sum(1.0 for keyword in database_positive if keyword in text_lower)
         db_neg_score = sum(1.0 for keyword in database_negative if keyword in text_lower)
-        
+
         # Add semantic features with sentiment differentiation
         features.append(auth_pos_score / len(auth_positive))  # Auth positive sentiment
-        features.append(auth_neg_score / len(auth_negative))   # Auth negative sentiment  
+        features.append(auth_neg_score / len(auth_negative))   # Auth negative sentiment
         features.append(db_pos_score / len(database_positive)) # DB positive sentiment
         features.append(db_neg_score / len(database_negative)) # DB negative sentiment
-        
+
         # Add overall sentiment polarity
         features.append(max(0, auth_pos_score - auth_neg_score))  # Auth polarity
         features.append(max(0, db_pos_score - db_neg_score))     # DB polarity
-        
+
         # Traditional keyword groups
         for keyword_group in [security_keywords, tech_keywords]:
             group_score = sum(1.0 for keyword in keyword_group if keyword in text_lower)
             features.append(group_score / len(keyword_group))
-        
+
         # Individual keyword features for important discriminators
         important_keywords = ["implement", "remove", "setup", "disable", "optimize", "slow", "improve", "degrade"]
         for keyword in important_keywords:
@@ -676,30 +676,30 @@ class TestDataGenerator:
             "deployment",
         ]
         languages = ["Python", "JavaScript", "Java", "Go", "TypeScript", "Rust"]
-        
+
         # Specific authentication and security content templates
         auth_templates = [
             {
                 "title": "User Authentication Implementation",
                 "content": """
                 # User Authentication Implementation Standards
-                
-                This document outlines authentication standards for secure user login 
+
+                This document outlines authentication standards for secure user login
                 and authentication system setup in web applications.
-                
+
                 ## Authentication Best Practices
                 - Implement secure user login workflows
                 - Use strong password policies
                 - Enable multi-factor authentication
                 - Secure session management
                 - Authentication token handling
-                
+
                 ## User Login Implementation
                 - Implement proper authentication flows
                 - Secure user credential validation
                 - Login session security
                 - Authentication system architecture
-                
+
                 Keywords: authentication, user login, auth, security, login implementation, implement, setup, enable
                 """,
                 "category": "authentication"
@@ -708,23 +708,23 @@ class TestDataGenerator:
                 "title": "Public Access Configuration",
                 "content": """
                 # Public Access Configuration Standards
-                
-                Guidelines for configuring public access systems without authentication 
+
+                Guidelines for configuring public access systems without authentication
                 requirements for open content and public resources.
-                
+
                 ## Public Access Best Practices
                 - Remove unnecessary authentication barriers
                 - Disable authentication for public content
                 - Configure open access policies
                 - Public resource management
                 - Open content delivery
-                
+
                 ## Public System Configuration
                 - Public access without authentication requirements
                 - Open system architecture
                 - Unrestricted content access
                 - Public resource optimization
-                
+
                 Keywords: public, access, open, remove, disable, without, unrestricted
                 """,
                 "category": "public_access"
@@ -733,47 +733,47 @@ class TestDataGenerator:
                 "title": "Disable User Login Procedures",
                 "content": """
                 # Disable User Login Procedures
-                
+
                 Documentation for procedures to disable user login functionality
                 and remove user authentication from systems when needed.
-                
+
                 ## Disable Login Best Practices
                 - Disable user login safely
                 - Remove user authentication flows
                 - Deactivate login systems
                 - Turn off user access controls
                 - Disable authentication mechanisms
-                
+
                 ## User Login Removal
                 - Procedures to disable user login
                 - Steps to remove login functionality
                 - Deactivate user authentication
                 - Turn off login systems
-                
+
                 Keywords: disable, user, login, remove, deactivate, turn off, authentication
                 """,
                 "category": "disable_auth"
             },
             {
-                "title": "Database Performance Optimization", 
+                "title": "Database Performance Optimization",
                 "content": """
                 # Database Performance Optimization Standards
-                
+
                 Guidelines for optimizing database performance and improving database speed
                 through various database optimization techniques.
-                
+
                 ## Performance Best Practices
                 - Optimize database queries
                 - Implement proper indexing strategies
                 - Database connection pooling
                 - Query performance tuning
                 - Make database faster through caching
-                
+
                 ## Database Speed Improvements
                 - Improve database speed through optimization
                 - Database optimization techniques and patterns
                 - Performance monitoring and profiling
-                
+
                 Keywords: database, performance, optimization, speed, improve database, optimize, faster
                 """,
                 "category": "performance"
@@ -782,23 +782,23 @@ class TestDataGenerator:
                 "title": "Database Performance Issues",
                 "content": """
                 # Database Performance Issues and Troubleshooting
-                
+
                 Documentation of common database performance issues and problems
                 that cause slow database operations and degraded performance.
-                
+
                 ## Performance Problems
                 - Slow database query execution
                 - Database performance bottlenecks
                 - Query performance issues
                 - Database speed problems
                 - Performance degradation patterns
-                
+
                 ## Troubleshooting Slow Operations
                 - Identify slow database operations
                 - Diagnose performance issues
                 - Database slowdown causes
                 - Performance problem analysis
-                
+
                 Keywords: database, slow, issues, problems, degrade, bottleneck, troubleshooting
                 """,
                 "category": "troubleshooting"
@@ -812,7 +812,7 @@ class TestDataGenerator:
             language = languages[i % len(languages)]
 
             doc_id = f"std-{i:04d}"
-            
+
             # Use specific templates for different categories
             if category == "authentication":
                 template = auth_templates[0]  # Use auth template
@@ -827,7 +827,7 @@ class TestDataGenerator:
                 content = template["content"]
                 category = template["category"]
             elif category == "performance" and (i % 20) < 8:  # Some performance docs about database optimization
-                template = auth_templates[3]  # Use database performance template  
+                template = auth_templates[3]  # Use database performance template
                 content = template["content"]
                 category = template["category"]
             elif category == "performance" and (i % 20) >= 8 and (i % 20) < 12:  # Some performance docs about issues
