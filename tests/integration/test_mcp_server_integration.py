@@ -202,13 +202,13 @@ sync:
             assert len(result["standards"]) == 2
             standard_ids = [std["id"] for std in result["standards"]]
             assert standard_ids == [
-                "python-coding-standards", 
+                "python-coding-standards",
                 "web-security-standards",
             ]
             # Verify each standard has required fields
             for standard in result["standards"]:
                 assert "id" in standard
-                assert "title" in standard  
+                assert "title" in standard
                 assert "description" in standard
             assert result["evaluation_path"] == ["python_web_rule"]
 
