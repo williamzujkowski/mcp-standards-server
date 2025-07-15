@@ -387,3 +387,5 @@ const RuleTesting: React.FC = () => {
     </Box>
   );
 };
+
+export default RuleTesting;

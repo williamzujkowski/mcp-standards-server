@@ -409,3 +409,5 @@ const StandardsBrowser: React.FC = () => {
     </Box>
   );
 };
+
+export default StandardsBrowser;

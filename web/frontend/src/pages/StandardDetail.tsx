@@ -250,3 +250,5 @@ const StandardDetail: React.FC = () => {
     </Box>
   );
 };
+
+export default StandardDetail;

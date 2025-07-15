@@ -156,3 +156,5 @@ const Dashboard: React.FC = () => {
     </Box>
   );
 };
+
+export default Dashboard;

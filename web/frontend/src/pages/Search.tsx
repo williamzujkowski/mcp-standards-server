@@ -280,3 +280,5 @@ const Search: React.FC = () => {
     </Box>
   );
 };
+
+export default Search;
