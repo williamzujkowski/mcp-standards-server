@@ -448,7 +448,7 @@ class TestCLIIntegration:
         synchronizer._save_metadata()
 
         # Test the convenience function
-        updates = check_for_updates(config_path=sync_config)
+        updates = check_for_updates(config_path=sync_config, cache_dir=temp_sync_dir / "cache")
 
         assert "outdated_files" in updates
         assert "current_files" in updates

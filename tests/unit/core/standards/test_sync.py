@@ -476,7 +476,7 @@ class TestConvenienceFunctions:
 
         result = check_for_updates(config_path=Path("test.yaml"))
 
-        mock_synchronizer_class.assert_called_once_with(config_path=Path("test.yaml"))
+        mock_synchronizer_class.assert_called_once_with(config_path=Path("test.yaml"), cache_dir=None)
         mock_synchronizer.check_updates.assert_called_once()
         assert result == mock_updates
 
