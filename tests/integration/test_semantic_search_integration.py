@@ -140,7 +140,7 @@ class TestSemanticSearchStandardsIntegration:
             assert any("api-security-001" in r.id for r in results)
 
     @patch_ml_dependencies()
-    def test_standards_query_with_filters(self, standards_engine):
+    def test_standards_query_with_filters(self, standards_engine, use_ml_mocks):
         """Test semantic search with standards-specific filters."""
         # Create mock semantic search
         mock_search = SemanticSearch()

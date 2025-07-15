@@ -75,7 +75,9 @@ class TestMCPProtocolCompliance:
     def test_mcp_server_tools_compliance(self, mcp_server):
         """Test MCP server tools compliance."""
         # Test that server has required tool methods
-        assert hasattr(mcp_server, "_execute_tool")
+        # Check that server has tool methods
+        assert hasattr(mcp_server, "_get_applicable_standards")
+        assert hasattr(mcp_server, "_validate_against_standard")
 
         # Test that server has the expected tools registered
         # Note: This would require checking the actual MCP server's tool registry
@@ -102,10 +104,9 @@ class TestMCPProtocolCompliance:
             }
         )
 
-        # Test tool execution
-        result = await mcp_server._execute_tool(
-            "get_applicable_standards", {"context": {"project_type": "web"}}
-        )
+        # Test tool execution directly
+        context = {"project_type": "web"}
+        result = await mcp_server._get_applicable_standards(context)
 
         # Verify result structure
         assert isinstance(result, dict)
@@ -168,12 +169,12 @@ class TestMCPProtocolCompliance:
     async def test_error_handling_compliance(self, mcp_server):
         """Test error handling compliance."""
         # Test that server handles invalid tool names gracefully
-        with patch.object(mcp_server, "_execute_tool") as mock_execute:
-            mock_execute.side_effect = Exception("Tool not found")
+        with patch.object(mcp_server, "_get_applicable_standards") as mock_tool:
+            mock_tool.side_effect = Exception("Tool execution failed")
 
             # This should be handled gracefully by the server
             try:
-                await mcp_server._execute_tool("invalid_tool", {})
+                await mcp_server._get_applicable_standards({})
             except Exception as e:
                 # Server should handle this appropriately
                 assert isinstance(e, Exception)

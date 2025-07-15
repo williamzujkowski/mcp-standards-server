@@ -114,7 +114,7 @@ class TestHTTPServerIntegration:
 
     async def test_liveness_endpoint(self, http_server, client_session):
         """Test liveness endpoint."""
-        with patch("src.core.health.liveness_check") as mock_liveness:
+        with patch("src.http_server.liveness_check") as mock_liveness:
             mock_liveness.return_value = {
                 "alive": True,
                 "status": "healthy",
@@ -131,7 +131,7 @@ class TestHTTPServerIntegration:
 
     async def test_readiness_endpoint(self, http_server, client_session):
         """Test readiness endpoint."""
-        with patch("src.core.health.readiness_check") as mock_readiness:
+        with patch("src.http_server.readiness_check") as mock_readiness:
             mock_readiness.return_value = {
                 "ready": True,
                 "status": "healthy",
