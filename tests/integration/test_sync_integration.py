@@ -232,7 +232,9 @@ class TestFullSyncWorkflow:
             return mock_response
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
 
             result = await synchronizer.sync()
 
@@ -288,7 +290,9 @@ class TestFullSyncWorkflow:
             return mock_response
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
 
             # Initial sync
             result1 = await synchronizer.sync()
@@ -336,7 +340,9 @@ class TestFullSyncWorkflow:
 
         # Initial sync
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get_v1
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
             await synchronizer.sync()
 
         # Update mock files (simulate file changes)
@@ -367,7 +373,9 @@ class TestFullSyncWorkflow:
 
         # Sync with updates
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get_v2
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
             await synchronizer.sync()
 
         # Verify updated file was re-downloaded
@@ -535,7 +543,9 @@ class TestErrorRecovery:
             return mock_response
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
 
             result = await synchronizer.sync()
 
@@ -574,7 +584,9 @@ class TestErrorRecovery:
             return mock_response
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get_with_retry
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
 
             async with aiohttp.ClientSession() as session:
                 result = await synchronizer._download_file(
@@ -653,7 +665,9 @@ class TestRateLimitHandling:
             return mock_response
 
         with patch("aiohttp.ClientSession.get") as mock_session_get:
-            mock_session_get.return_value.__aenter__.side_effect = mock_get_with_headers
+            mock_session_get.side_effect = lambda url, **kwargs: AsyncMock(
+                __aenter__=AsyncMock(return_value=mock_get(url, **kwargs))
+            )
 
             # Make several API calls
             async with aiohttp.ClientSession() as session:

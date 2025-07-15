@@ -244,9 +244,30 @@ def mock_ml_dependencies():
     class MockNeighborsModule:
         NearestNeighbors = MockNearestNeighbors
 
+    class MockPCA:
+        """Mock PCA for sklearn.decomposition."""
+        def __init__(self, n_components=None, **kwargs):
+            self.n_components = n_components
+            
+        def fit(self, X):
+            return self
+            
+        def transform(self, X):
+            # Return data with reduced dimensions if specified
+            if self.n_components and hasattr(X, 'shape'):
+                return X[:, :self.n_components]
+            return X
+            
+        def fit_transform(self, X):
+            return self.fit(X).transform(X)
+    
+    class MockDecompositionModule:
+        PCA = MockPCA
+
     class MockSklearnModule:
         neighbors = MockNeighborsModule()
         metrics = MockMetricsModule()
+        decomposition = MockDecompositionModule()
 
     # Mock NLTK download function - this is the main issue with timeouts
     def mock_nltk_download(*args, **kwargs):
@@ -358,6 +379,7 @@ def mock_ml_dependencies():
         "sklearn.neighbors": MockNeighborsModule(),
         "sklearn.metrics": MockMetricsModule(),
         "sklearn.metrics.pairwise": MockPairwiseModule(),
+        "sklearn.decomposition": MockDecompositionModule(),
         "fuzzywuzzy": MockFuzzyWuzzyModule(),
         "huggingface_hub": MockHuggingFaceHub(),
         "torch": MockTorch(),
