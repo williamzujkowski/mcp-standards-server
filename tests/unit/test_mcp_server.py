@@ -85,19 +85,23 @@ class TestMCPStandardsServer:
 
     async def test_get_applicable_standards_success(self, server):
         """Test successful get_applicable_standards operation."""
-        # Mock rule engine response
+        # Mock rule engine response - should return list of IDs
         mock_result = {
-            "resolved_standards": [
-                {
-                    "id": "test-standard",
-                    "title": "Test Standard",
-                    "category": "testing",
-                    "description": "A test standard",
-                }
-            ],
+            "resolved_standards": ["test-standard"],
             "evaluation_path": ["rule1", "rule2"],
         }
         server.rule_engine.evaluate = Mock(return_value=mock_result)
+        
+        # Mock _get_standard_details to return standard info
+        mock_standard_details = {
+            "id": "test-standard",
+            "name": "Test Standard",
+            "category": "testing",
+            "content": {"summary": "A test standard"},
+            "version": "1.0",
+            "tags": ["test", "standard"]
+        }
+        server._get_standard_details = AsyncMock(return_value=mock_standard_details)
 
         # Test arguments
         context = {
@@ -161,14 +165,14 @@ class TestMCPStandardsServer:
 
             result = await server._validate_against_standard(code, standard, language)
 
-            assert "validation_results" in result
-            validation_results = result["validation_results"]
-            assert "standard" in validation_results
-            assert "compliant" in validation_results
-            assert "violations" in validation_results
-            assert validation_results["standard"] == "test-standard"
-            assert isinstance(validation_results["compliant"], bool)
-            assert isinstance(validation_results["violations"], list)
+            assert "standard" in result
+            assert "passed" in result
+            assert "violations" in result
+            assert result["standard"] == "test-standard"
+            assert isinstance(result["passed"], bool)
+            assert result["passed"] is True  # No violations for simple test code
+            assert result["violations"] == []
+            assert isinstance(result["violations"], list)
 
     async def test_search_standards_success(self, server):
         """Test successful search_standards operation."""

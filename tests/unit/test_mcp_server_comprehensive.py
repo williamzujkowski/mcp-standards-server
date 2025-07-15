@@ -328,9 +328,22 @@ class TestMCPServerToolExecution:
             "priority_order": ["react-patterns", "web-security"],
         }
 
+        # Mock standard details
+        server._get_standard_details = AsyncMock(side_effect=lambda std_id: {
+            "id": std_id,
+            "name": std_id.replace("-", " ").title(),
+            "category": "web" if "web" in std_id else "patterns",
+            "content": {"summary": f"Standard: {std_id}"},
+            "version": "1.0",
+            "tags": [std_id]
+        })
+        
         result = await server._get_applicable_standards(context, True)
 
-        assert result["standards"] == ["react-patterns", "web-security"]
+        # Now standards is a list of dicts, not strings
+        assert len(result["standards"]) == 2
+        assert result["standards"][0]["id"] == "react-patterns"
+        assert result["standards"][1]["id"] == "web-security"
         assert "resolution_details" in result
         assert result["resolution_details"]["matched_rules"] == ["rule1"]
 
@@ -343,12 +356,11 @@ class TestMCPServerToolExecution:
 
         result = await server._validate_against_standard(code, standard, language)
 
-        # The result has a validation_results wrapper
-        validation_results = result["validation_results"]
-        assert validation_results["standard"] == standard
-        assert validation_results["compliant"] is False
-        assert len(validation_results["violations"]) == 1
-        assert "functional components" in validation_results["violations"][0]["message"]
+        # The result doesn't have a validation_results wrapper
+        assert result["standard"] == standard
+        assert result["passed"] is False
+        assert len(result["violations"]) == 1
+        assert "functional components" in result["violations"][0]["message"]
 
     @pytest.mark.asyncio
     async def test_search_standards_with_search_enabled(self, server):
@@ -794,13 +806,25 @@ class TestMCPServerIntegration:
             "resolved_standards": ["test-standard"],
             "evaluation_path": ["rule1"],
         }
+        
+        # Mock standard details
+        configured_server._get_standard_details = AsyncMock(return_value={
+            "id": "test-standard",
+            "name": "Test Standard",
+            "category": "testing",
+            "content": {"summary": "A test standard"},
+            "version": "1.0",
+            "tags": ["test"]
+        })
 
         # Test the internal tool execution directly
         result = await configured_server._execute_tool(
             "get_applicable_standards", {"context": {"project_type": "web"}}
         )
 
-        assert result["standards"] == ["test-standard"]
+        # Standards now returns list of dicts
+        assert len(result["standards"]) == 1
+        assert result["standards"][0]["id"] == "test-standard"
         assert result["evaluation_path"] == ["rule1"]
 
     @pytest.mark.asyncio
@@ -873,6 +897,16 @@ class TestMCPServerIntegration:
             "resolved_standards": ["test-standard"],
             "evaluation_path": ["rule1"],
         }
+        
+        # Mock standard details
+        configured_server._get_standard_details = AsyncMock(return_value={
+            "id": "test-standard",
+            "name": "Test Standard",
+            "category": "testing",
+            "content": {"summary": "A test standard"},
+            "version": "1.0",
+            "tags": ["test"]
+        })
 
         # Execute multiple tools concurrently
         tasks = []
@@ -887,7 +921,8 @@ class TestMCPServerIntegration:
         # Verify all results
         assert len(results) == 5
         for result in results:
-            assert result["standards"] == ["test-standard"]
+            assert len(result["standards"]) == 1
+            assert result["standards"][0]["id"] == "test-standard"
 
 
 class TestMCPServerAdvancedToolExecution:
