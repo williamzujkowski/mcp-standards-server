@@ -251,18 +251,8 @@ jobs:
           REDIS_URL: redis://localhost:6379
           MCP_TEST_MODE: "true"
         run: |
-          # Start the server in background
-          python -m src.mcp_server &
-          SERVER_PID=$!
-          
-          # Wait for server to be ready
-          sleep 10
-          
-          # Run E2E tests
+          # E2E tests will manage the server lifecycle themselves
           pytest tests/e2e -v --timeout=300
-          
-          # Stop the server
-          kill $SERVER_PID || true
       
       - name: Upload test artifacts
         if: failure()
@@ -326,6 +316,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: |
             mcp-standards-server:latest
             mcp-standards-server:${{ github.sha }}
@@ -334,7 +325,7 @@ jobs:
       
       - name: Test Docker image
         run: |
-          docker run --rm mcp-standards-server:latest python -m src.cli --version || echo "No version command"
+          docker run --rm mcp-standards-server:latest python -m src.cli.enhanced_cli --version || echo "No version command"
           docker run --rm mcp-standards-server:latest python -c "import src; print('Import successful')"
 
   check-standards:
