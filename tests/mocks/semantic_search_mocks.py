@@ -105,12 +105,12 @@ class MockSentenceTransformer:
         # Check for strong negative sentiment first
         text_lower = text.lower()
         has_strong_negative = any(neg_word in text_lower for neg_word in ["remove", "disable", "without", "issues", "problems", "slow", "degrade"])
-        
+
         # For negative sentiment, modify the text to reduce positive keyword influence
         if has_strong_negative:
             # Replace positive keywords with negative equivalents for embedding generation
             modified_text = text_lower
-            modified_text = modified_text.replace("performance", "failure") 
+            modified_text = modified_text.replace("performance", "failure")
             modified_text = modified_text.replace("optimization", "degradation")
             modified_text = modified_text.replace("improve", "worsen")
             modified_text = modified_text.replace("speed", "slowness")
@@ -120,7 +120,7 @@ class MockSentenceTransformer:
             text_for_embedding = modified_text
         else:
             text_for_embedding = text.lower()
-        
+
         # Use SHA256 for deterministic hashing
         text_bytes = text_for_embedding.encode("utf-8")
         hash_hex = hashlib.sha256(text_bytes).hexdigest()
