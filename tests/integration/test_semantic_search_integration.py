@@ -26,7 +26,6 @@ from src.core.standards.semantic_search import (
 )
 from tests.mocks.semantic_search_mocks import (
     MockRedisClient,
-    MockSentenceTransformer,
     TestDataGenerator,
     patch_ml_dependencies,
 )
@@ -210,19 +209,9 @@ class TestSemanticSearchStandardsIntegration:
 
             for doc_id, content, metadata in new_docs:
                 mock_search.index_document(doc_id, content, metadata)
-                print(f"Indexed document: {doc_id}")
-
-            # Debug: Check all documents with a broader search
-            all_results = mock_search.search("")  # Empty query to get all
-            print(f"Total documents in index: {len(all_results)}")
-            for r in all_results:
-                print(f"  - {r.id}: {r.content}")
 
             # Verify incremental indexing
             results = mock_search.search("standards")
-            print(f"Search results for 'standards': {len(results)} documents")
-            for r in results:
-                print(f"  - {r.id}: {r.content}")
             assert len(results) == initial_count + 2
 
             # Verify new documents are searchable
@@ -280,7 +269,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Start the server
             await server.start()
-        
+
             # Create mock request for semantic search
             search_request = {
                 "method": "call_tool",
@@ -299,7 +288,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Verify response structure (handle_tool returns tool-specific format)
             assert "error" not in response or response["error"] is None
-            
+
             # If tool is not found, that's OK for this test
             if response.get("error") == "Tool not found: search_standards":
                 # Tool not implemented yet, that's expected
@@ -332,7 +321,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Start the server
             await server.start()
-        
+
             search_request = {
                 "method": "call_tool",
                 "params": {
@@ -347,7 +336,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Execute search
             response = await server.handle_request(search_request)
-            
+
             # Verify no error or expected error
             if response.get("error") == "Tool not found: search_standards":
                 # Tool not implemented yet, that's expected
@@ -380,7 +369,7 @@ class TestSemanticSearchMCPIntegration:
 
             # Start the server
             await server.start()
-        
+
             # Perform multiple searches
             queries = [
                 "python security",
@@ -407,7 +396,7 @@ class TestSemanticSearchMCPIntegration:
             }
 
             response = await server.handle_request(analytics_request)
-            
+
             # Verify response - either tool not found or analytics data
             if response.get("error") in ["Tool not found: get_search_analytics", "Tool not found: search_standards"]:
                 # Tools not implemented yet, that's expected
@@ -591,28 +580,28 @@ class TestSemanticSearchErrorRecovery:
         """Test recovery from model loading failures."""
         # Since we're using mocked dependencies, we test error recovery differently
         # Create an engine and simulate a recovery scenario
-        
+
         # First, create an engine that will simulate failures
         engine = create_search_engine()
-    
+
         # Simulate a failure scenario by corrupting the engine's state
         original_search = engine.search
         fail_count = 0
-        
+
         def failing_search(*args, **kwargs):
             nonlocal fail_count
             if fail_count < 2:
                 fail_count += 1
                 raise RuntimeError("Search operation failed")
             return original_search(*args, **kwargs)
-        
+
         engine.search = failing_search
-        
+
         # First two attempts should fail
         for _i in range(2):
             with pytest.raises(RuntimeError):
                 engine.search("test query")
-        
+
         # Third attempt should succeed
         results = engine.search("test query")
         assert results is not None
