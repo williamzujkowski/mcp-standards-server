@@ -93,17 +93,17 @@ PYTORCH_TYPE=cpu
 ## Performance Impact
 
 For the MCP Standards Server use case:
-- **Semantic Search**: CPU version is sufficient for moderate workloads
+- **Semantic Search**: CPU version 0.1.0
 - **Model Loading**: Initial model loading might be slightly slower on CPU
 - **Inference**: For small to medium batch sizes, CPU performance is acceptable
 
-For production deployments with high throughput requirements, consider using the GPU version on appropriate hardware.
+For production deployments with high throughput requirements, consider using the GPU version 0.1.0
 
 ## Troubleshooting
 
 ### Verifying PyTorch Installation
 
-To check which version of PyTorch is installed in a container:
+To check which version 0.1.0
 
 ```bash
 docker run --rm mcp-standards-server:latest python -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"

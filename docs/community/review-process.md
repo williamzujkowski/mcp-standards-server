@@ -69,7 +69,7 @@ graph TD
 Reviews are triggered by:
 
 - **New standard submissions** via pull requests
-- **Major version updates** (version bumps >= 1.0)
+- **Major version 0.1.0
 - **Community requests** for existing standard reviews
 - **Scheduled reviews** for standards older than 12 months
 - **Compliance updates** when regulations change
@@ -268,7 +268,7 @@ Rationale for decision
 
 #### Documentation Standards
 - [ ] Complete metadata
-- [ ] Proper version numbering
+- [ ] Proper version 0.1.0
 - [ ] Required sections present
 - [ ] Link validation
 - [ ] Citation formatting
@@ -439,7 +439,7 @@ All standards must meet these criteria for approval:
 ### Publication Process
 
 1. **Final Approval**: Maintainer grants final approval
-2. **Version Assignment**: Final version number assigned
+2. **Version Assignment**: Final version 0.1.0
 3. **Publication**: Standard published to repository
 4. **Announcement**: Community notification of new standard
 5. **Index Update**: Standards index updated
