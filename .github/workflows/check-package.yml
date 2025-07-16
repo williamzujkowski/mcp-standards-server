@@ -50,7 +50,7 @@ jobs:
           python -m venv test-env
           source test-env/bin/activate
           pip install dist/*.whl
-          mcp-standards --version
+          mcp-standards --help
           deactivate
           rm -rf test-env
       
@@ -59,6 +59,6 @@ jobs:
           python -m venv test-env-sdist
           source test-env-sdist/bin/activate
           pip install dist/*.tar.gz
-          mcp-standards --version
+          mcp-standards --help
           deactivate
           rm -rf test-env-sdist
