@@ -39,7 +39,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
-    
+
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
