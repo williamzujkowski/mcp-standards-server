@@ -15,15 +15,7 @@ from typing import Any
 
 from core.standards.sync import StandardsSynchronizer, sync_standards
 
-try:
-    # When running as installed package
-    from __version__ import __version__
-except ImportError:
-    # When running in development
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from __version__ import __version__
+from .__version__ import __version__
 
 
 def setup_logging(verbose: bool = False) -> None:
