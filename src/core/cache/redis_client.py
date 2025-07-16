@@ -13,6 +13,8 @@ from datetime import datetime
 from functools import wraps
 from typing import Any, cast
 
+logger = logging.getLogger(__name__)
+
 import msgpack
 import redis
 from cachetools import TTLCache
@@ -1002,9 +1004,12 @@ class RedisCache:
                 # No running loop - try to close synchronously
                 try:
                     asyncio.run(_async_cleanup())
-                except Exception:
+                except Exception as e:
                     # If all else fails, just clear references without calling async methods
-                    pass
+                    logger.warning(
+                        "Failed to close Redis connections gracefully during cleanup: %s", 
+                        str(e)
+                    )
             self._async_client = None
             self._async_pool = None
 
