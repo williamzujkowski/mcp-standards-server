@@ -176,9 +176,6 @@ class TestSemanticSearchStandardsIntegration:
             assert result.metadata.get("category") == "security"
             assert result.metadata.get("language") in ["python", "javascript"]
 
-    @pytest.mark.skip(
-        reason="Complex mocking issue with multiple SemanticSearch instances"
-    )
     @patch_ml_dependencies()
     def test_incremental_indexing(self, temp_dir, use_ml_mocks):
         """Test incremental indexing of new standards."""
@@ -222,8 +219,11 @@ class TestSemanticSearchStandardsIntegration:
             for doc_id, content, metadata in new_docs:
                 mock_search.index_document(doc_id, content, metadata)
 
+            # Clear cache to ensure fresh search results include new documents
+            mock_search.result_cache.clear()
+
             # Verify incremental indexing
-            results = mock_search.search("standards")
+            results = mock_search.search("standards", use_cache=False)
             assert len(results) == initial_count + 2
 
             # Verify new documents are searchable

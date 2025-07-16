@@ -53,54 +53,91 @@ class StandardsEngine:
                 with open(yaml_file) as f:
                     data = yaml.safe_load(f)
 
-                if isinstance(data, dict) and "standards" in data:
-                    category = (
-                        yaml_file.stem.replace("_STANDARDS", "")
-                        .replace("_", " ")
-                        .title()
-                    )
+                category = (
+                    yaml_file.stem.replace("_STANDARDS", "")
+                    .replace("_", " ")
+                    .title()
+                )
+                
+                standards_list = []
+                
+                if isinstance(data, dict):
+                    if "standards" in data and isinstance(data["standards"], dict):
+                        # Format: standards -> category_name -> sections -> section -> standards -> [list]
+                        for std_key, std_category in data["standards"].items():
+                            if isinstance(std_category, dict) and "sections" in std_category:
+                                for section_key, section in std_category["sections"].items():
+                                    if isinstance(section, dict) and "standards" in section:
+                                        for std in section["standards"]:
+                                            if isinstance(std, dict):
+                                                standards_list.append(std)
+                    elif "standards" in data and isinstance(data["standards"], list):
+                        # Format: standards -> [list]
+                        for std in data["standards"]:
+                            if isinstance(std, dict):
+                                standards_list.append(std)
+                    else:
+                        # Flat YAML file - treat the whole data as a single standard
+                        if any(key in data for key in ["id", "title", "description", "author"]):
+                            # Create a standard from the flat structure
+                            standard_data = {
+                                "id": data.get("id", yaml_file.stem.lower()),
+                                "title": data.get("title", category),
+                                "description": data.get("description", f"Standards for {category}"),
+                                "tags": data.get("tags", []),
+                                "version": data.get("version", "1.0.0"),
+                                "priority": data.get("priority", "medium"),
+                                "examples": data.get("code_examples", []),
+                                "rules": {k: v for k, v in data.items() if k not in ["id", "title", "description", "tags", "version", "priority", "code_examples"]},
+                                "metadata": {"author": data.get("author"), "created_date": data.get("created_date")}
+                            }
+                            standards_list.append(standard_data)
+                
+                if standards_list:
                     self._standards_cache[category] = []
+                    
+                    for std in standards_list:
+                        if isinstance(std, dict):
+                            # Create standard object
+                            standard = type(
+                                "Standard",
+                                (),
+                                {
+                                    "id": std.get("id", f"{category.lower().replace(' ', '_')}_{len(self._standards_cache[category])}"),
+                                    "title": std.get("title", ""),
+                                    "description": std.get("description", ""),
+                                    "category": category,
+                                    "subcategory": std.get("subcategory", ""),
+                                    "tags": std.get("tags", []),
+                                    "priority": std.get("priority", "medium"),
+                                    "version": std.get("version", "1.0.0"),
+                                    "examples": std.get("examples", std.get("implementation_examples", [])),
+                                    "rules": std.get("rules", {}),
+                                    "created_at": None,
+                                    "updated_at": None,
+                                    "metadata": std.get("metadata", {}),
+                                },
+                            )()
 
-                    for std in data["standards"]:
-                        # Create standard object
-                        standard = type(
-                            "Standard",
-                            (),
-                            {
-                                "id": std.get("id", ""),
-                                "title": std.get("title", ""),
-                                "description": std.get("description", ""),
-                                "category": category,
-                                "subcategory": std.get("subcategory", ""),
-                                "tags": std.get("tags", []),
-                                "priority": std.get("priority", "medium"),
-                                "version": std.get("version", "1.0.0"),
-                                "examples": std.get("examples", []),
-                                "rules": std.get("rules", {}),
-                                "created_at": None,
-                                "updated_at": None,
-                                "metadata": std.get("metadata", {}),
-                            },
-                        )()
+                            self._standards_cache[category].append(standard)
 
-                        self._standards_cache[category].append(standard)
-
-                        # Collect tags
-                        for tag in standard.tags:
-                            self._tags_cache.add(tag)
-
-                    # Add category
-                    self._categories_cache.append(
-                        type(
-                            "Category",
-                            (),
-                            {
-                                "name": category,
-                                "description": data.get("description", ""),
-                                "count": len(self._standards_cache[category]),
-                            },
-                        )()
-                    )
+                            # Collect tags
+                            for tag in standard.tags:
+                                self._tags_cache.add(tag)
+                    
+                    # Add category if it has standards
+                    if self._standards_cache[category]:
+                        self._categories_cache.append(
+                            type(
+                                "Category",
+                                (),
+                                {
+                                    "name": category,
+                                    "description": data.get("description", ""),
+                                    "count": len(self._standards_cache[category]),
+                                },
+                            )()
+                        )
 
             except Exception as e:
                 print(f"Error loading {yaml_file}: {e}")
