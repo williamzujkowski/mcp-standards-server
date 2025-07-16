@@ -15,6 +15,8 @@ from typing import Any
 
 from core.standards.sync import StandardsSynchronizer, sync_standards
 
+from __version__ import __version__
+
 
 def setup_logging(verbose: bool = False) -> None:
     """Configure logging for CLI."""
@@ -36,6 +38,10 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
+    )
+    
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     parser.add_argument(

@@ -17,6 +17,7 @@ on:
       - 'setup.py'
       - 'setup.cfg'
       - 'MANIFEST.in'
+  workflow_dispatch:
 
 jobs:
   build-check:
