@@ -1,37 +1,22 @@
 {
-  "timestamp": "20250710_102815",
-  "total_tools": 6,
-  "successful_tools": 6,
-  "tool_performance": {
-    "get_sync_status": {
-      "avg_time": "0.0000s",
-      "min_time": "0.0000s",
-      "max_time": "0.0000s"
+  "suite": "Quick Performance Check",
+  "timestamp": "2025-07-15T23:46:55.850704",
+  "benchmarks": [
+    "MCP Response Time",
+    "MCP Cold/Warm Start"
+  ],
+  "summary": {
+    "MCP Response Time": {
+      "mean_time": 0.011934048996772617,
+      "throughput": 83.4493063306653,
+      "peak_memory_mb": 1.5,
+      "errors": 0
     },
-    "list_available_standards": {
-      "avg_time": "0.0023s",
-      "min_time": "0.0023s",
-      "max_time": "0.0025s"
-    },
-    "get_standard_details": {
-      "avg_time": "0.0001s",
-      "min_time": "0.0001s",
-      "max_time": "0.0001s"
-    },
-    "search_standards": {
-      "avg_time": "0.0000s",
-      "min_time": "0.0000s",
-      "max_time": "0.0000s"
-    },
-    "get_applicable_standards": {
-      "avg_time": "0.0000s",
-      "min_time": "0.0000s",
-      "max_time": "0.0000s"
-    },
-    "estimate_token_usage": {
-      "avg_time": "0.0065s",
-      "min_time": "0.0062s",
-      "max_time": "0.0077s"
+    "MCP Cold/Warm Start": {
+      "mean_time": 0.2666149594122544,
+      "throughput": 3.750093432608535,
+      "peak_memory_mb": 0.125,
+      "errors": 0
     }
   }
 }
