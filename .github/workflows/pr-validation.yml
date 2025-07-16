@@ -223,7 +223,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/labeler@v4
+      - uses: actions/labeler@v5
         continue-on-error: true
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
