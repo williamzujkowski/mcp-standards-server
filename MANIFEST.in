@@ -1,0 +1,44 @@
+# Include the license file
+include LICENSE
+
+# Include documentation
+include README.md
+include STANDARDS_COMPLETE_CATALOG.md
+include CLAUDE.md
+
+# Include configuration files
+include pyproject.toml
+include setup.py
+include setup.cfg
+include pytest.ini
+
+# Include all data files
+recursive-include src *.json *.yaml *.yml *.md *.txt
+recursive-include data *.json *.yaml *.yml *.md *.txt *.npy
+
+# Include test data
+recursive-include tests *.json *.yaml *.yml *.md *.txt *.py
+
+# Include templates
+recursive-include templates *.j2 *.yaml *.json *.md
+
+# Include documentation
+recursive-include docs *.md *.txt *.yml *.yaml
+
+# Exclude unwanted files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.swp
+global-exclude .DS_Store
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude .mypy_cache
+global-exclude .coverage
+global-exclude *.egg-info
+prune .git
+prune .github
+prune htmlcov
+prune site
+prune web
+prune archive
+prune logs

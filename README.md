@@ -5,6 +5,8 @@
 [![Benchmark](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/benchmark.yml/badge.svg)](https://github.com/williamzujkowski/mcp-standards-server/actions/workflows/benchmark.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://badge.fury.io/py/mcp-standards-server.svg)](https://badge.fury.io/py/mcp-standards-server)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/mcp-standards-server)](https://pypi.org/project/mcp-standards-server/)
 
 A Model Context Protocol (MCP) server that provides intelligent, context-aware access to development standards. This system enables LLMs to automatically select and apply appropriate standards based on project requirements.
 
@@ -89,6 +91,21 @@ python -m src.cli.main cache --list  # View cached standards
 ## Full Installation Guide
 
 ### Installation
+
+#### Install from PyPI (Recommended)
+
+```bash
+# Install the latest release
+pip install mcp-standards-server
+
+# Or install with specific feature sets:
+pip install "mcp-standards-server[full]"         # All features including web API
+pip install "mcp-standards-server[test]"         # Testing tools only
+pip install "mcp-standards-server[dev]"          # Development tools
+pip install "mcp-standards-server[performance]"  # Performance monitoring tools
+```
+
+#### Install from Source
 
 ```bash
 # Clone the repository

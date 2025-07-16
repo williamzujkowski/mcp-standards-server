@@ -10,17 +10,40 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "William Zujkowski"},
+    {name = "William Zujkowski", email = "williamzujkowski@users.noreply.github.com"},
+]
+maintainers = [
+    {name = "William Zujkowski", email = "williamzujkowski@users.noreply.github.com"},
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "development-standards",
+    "llm",
+    "ai-tools",
+    "code-quality",
+    "software-standards",
+    "compliance",
+    "best-practices",
+    "semantic-search",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
 ]
 dependencies = [
     # Core dependencies
@@ -66,7 +89,7 @@ Repository = "https://github.com/williamzujkowski/mcp-standards-server"
 Issues = "https://github.com/williamzujkowski/mcp-standards-server/issues"
 
 [project.scripts]
-mcp-standards = "src.cli.main:main"
+mcp-standards = "cli.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -290,6 +313,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.json", "*.yaml", "*.yml", "*.md"]
