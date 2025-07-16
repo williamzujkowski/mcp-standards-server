@@ -16,7 +16,7 @@ compliance_frameworks:
   - WebXR
   - OpenXR
   - IEEE VR
-created_date: '2025-07-07T23:26:05.883806'
+created_date: '2025-07-11T00:00:00.000000'
 dependencies:
   - performance_standards
   - security_standards
@@ -93,5 +93,5 @@ tracking_systems:
   - markerless
   - hybrid
 type: technical
-updated_date: '2025-07-07T23:26:05.883814'
+updated_date: '2025-07-16T01:51:30.078048'
 version: 1.0.0

@@ -13,7 +13,7 @@ compliance_frameworks:
   - NIST AI Risk Management Framework
   - ISO/IEC 23053
   - IEEE 2857
-created_date: '2025-07-07T23:25:49.985996'
+created_date: '2025-07-11T00:00:00.000000'
 data_sources:
   - structured_data
   - unstructured_data
@@ -86,5 +86,5 @@ tags:
   - automation
 title: AI/ML Operations Standards
 type: technical
-updated_date: '2025-07-07T23:25:49.986003'
+updated_date: '2025-07-16T01:51:30.073024'
 version: 1.0.0

@@ -18,7 +18,7 @@ compliance_frameworks:
   - CE
   - FCC Part 15
   - IEC 62443
-created_date: '2025-07-07T23:25:58.065037'
+created_date: '2025-07-11T00:00:00.000000'
 dependencies:
   - security_standards
   - cloud_native_standards
@@ -98,5 +98,5 @@ tags:
   - connectivity
 title: IoT/Edge Computing Standards
 type: technical
-updated_date: '2025-07-07T23:25:58.065043'
+updated_date: '2025-07-16T01:51:30.102647'
 version: 1.0.0

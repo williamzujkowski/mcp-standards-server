@@ -24,7 +24,7 @@ compliance_frameworks:
   - OpenAPI
   - JSON:API
   - GraphQL Spec
-created_date: '2025-07-07T23:26:10.027417'
+created_date: '2025-07-11T00:00:00.000000'
 data_formats:
   - json
   - xml
@@ -96,7 +96,7 @@ tags:
   - documentation
 title: Advanced API Design Standards
 type: technical
-updated_date: '2025-07-07T23:26:10.027426'
+updated_date: '2025-07-16T01:51:30.110083'
 version: 1.0.0
 versioning_strategies:
   - uri_versioning

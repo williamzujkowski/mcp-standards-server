@@ -20,7 +20,7 @@ compliance_frameworks:
   - GDPR
   - SOX
   - PCI DSS
-created_date: '2025-07-07T23:25:53.608556'
+created_date: '2025-07-11T00:00:00.000000'
 dependencies:
   - security_standards
   - api_design_standards
@@ -88,7 +88,7 @@ tags:
   - decentralized
 title: Blockchain/Web3 Development Standards
 type: technical
-updated_date: '2025-07-07T23:25:53.608563'
+updated_date: '2025-07-16T01:51:30.092727'
 version: 1.0.0
 wallet_integration:
   - metamask

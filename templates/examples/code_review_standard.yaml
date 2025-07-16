@@ -246,6 +246,6 @@ compliance:
     requirement: Segregation of duties
     evidence: Author cannot approve own PR
 
-effective_date: 2024-02-01
+effective_date: "{{ effective_date | default('TBD') }}"
 review_frequency: Quarterly
 owner: Engineering Excellence Team

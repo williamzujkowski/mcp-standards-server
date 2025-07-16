@@ -13,7 +13,7 @@ compliance_frameworks:
   - ESRB
   - PEGI
   - PCI DSS
-created_date: '2025-07-07T23:26:02.248322'
+created_date: '2025-07-11T00:00:00.000000'
 dependencies:
   - performance_standards
   - security_standards
@@ -99,5 +99,5 @@ testing_requirements:
   - user_acceptance_testing
 title: Gaming Development Standards
 type: technical
-updated_date: '2025-07-07T23:26:02.248330'
+updated_date: '2025-07-16T01:51:30.085812'
 version: 1.0.0

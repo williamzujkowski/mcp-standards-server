@@ -157,5 +157,5 @@ references:
   - title: AWS Well-Architected Framework - Operational Excellence
     url: https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/
 
-last_updated: 2024-01-15
+last_updated: "{{ last_updated | default(now().strftime('%Y-%m-%d')) }}"
 maintainer: Platform Team
