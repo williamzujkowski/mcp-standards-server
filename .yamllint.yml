@@ -47,6 +47,7 @@ rules:
 
 ignore: |
   .github/workflows/
+  templates/examples/
   node_modules/
   .venv/
   venv/
