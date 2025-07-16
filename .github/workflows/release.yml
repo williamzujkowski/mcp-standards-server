@@ -217,10 +217,10 @@ jobs:
         uses: docker/setup-buildx-action@v3
       
       - name: Log in to Docker Hub
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && vars.DOCKERHUB_USERNAME != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Log in to GitHub Container Registry
@@ -235,7 +235,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/mcp-standards-server
+            ${{ vars.DOCKERHUB_USERNAME != '' && format('{0}/mcp-standards-server', vars.DOCKERHUB_USERNAME) || '' }}
             ghcr.io/${{ github.repository }}
           tags: |
             type=semver,pattern={{version}},value=${{ needs.validate-version.outputs.version_number }}
@@ -314,10 +314,13 @@ jobs:
         run: |
           if [ "${{ needs.create-release.result }}" = "success" ] && \
              [ "${{ needs.publish-pypi.result }}" = "success" ] && \
-             [ "${{ needs.publish-docker.result }}" = "success" ]; then
+             ([ "${{ needs.publish-docker.result }}" = "success" ] || [ "${{ needs.publish-docker.result }}" = "skipped" ]); then
             echo "✅ Release ${{ needs.validate-version.outputs.version }} completed successfully!"
             echo "📦 PyPI: https://pypi.org/project/mcp-standards-server/"
-            echo "🐳 Docker Hub: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/mcp-standards-server"
+            echo "🐳 GitHub Container Registry: https://ghcr.io/${{ github.repository }}"
+            if [ "${{ vars.DOCKERHUB_USERNAME }}" != "" ]; then
+              echo "🐳 Docker Hub: https://hub.docker.com/r/${{ vars.DOCKERHUB_USERNAME }}/mcp-standards-server"
+            fi
             echo "📚 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-version.outputs.version }}"
           else
             echo "❌ Release ${{ needs.validate-version.outputs.version }} failed!"
