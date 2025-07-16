@@ -68,8 +68,8 @@ jobs:
     - name: Run Bandit - Static Application Security Testing
       run: |
         # Run Bandit on source code
-        bandit -r src/ -f json -o bandit-report.json || true
-        bandit -r src/ -f txt -o bandit-report.txt || true
+        bandit -r src/ -f json -o bandit-report.json
+        bandit -r src/ -f txt -o bandit-report.txt
         
         # Display summary
         echo "=== Bandit Security Scan Summary ==="
@@ -140,8 +140,8 @@ jobs:
     - name: Run Semgrep Security Analysis
       run: |
         pip install semgrep
-        semgrep --config=p/security-audit --config=p/python --config=p/owasp-top-ten --config=p/cwe-top-25 --sarif --output=semgrep.sarif . || true
-        semgrep --config=p/security-audit --config=p/python --config=p/owasp-top-ten --config=p/cwe-top-25 --json --output=semgrep.json . || true
+        semgrep --config=p/security-audit --config=p/python --config=p/owasp-top-ten --config=p/cwe-top-25 --sarif --output=semgrep.sarif .
+        semgrep --config=p/security-audit --config=p/python --config=p/owasp-top-ten --config=p/cwe-top-25 --json --output=semgrep.json .
 
     - name: Upload Semgrep results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
