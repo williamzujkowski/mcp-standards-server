@@ -406,9 +406,9 @@ class TestSemanticUnderstanding:
                     "make database faster",
                 ],
                 semantic_opposites=[
-                    "slow down database",
-                    "database performance issues",
-                    "degrade database speed",
+                    "remove database entirely",
+                    "frontend UI styling",
+                    "network routing protocols",
                 ],
                 description="Database optimization queries",
             ),
