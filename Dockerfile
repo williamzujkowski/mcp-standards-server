@@ -1,5 +1,5 @@
 # Multi-stage build for MCP Standards Server
-FROM python:3.12-slim as builder
+FROM python:3.13-slim as builder
 
 # Build argument to control PyTorch installation type
 # This is critical for CI/CD environments with limited disk space
@@ -53,7 +53,7 @@ RUN pip install --no-cache-dir .
 COPY src/ ./src/
 
 # Production stage
-FROM python:3.12-slim as production
+FROM python:3.13-slim as production
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
