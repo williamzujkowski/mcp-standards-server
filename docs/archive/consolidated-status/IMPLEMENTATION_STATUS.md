@@ -23,7 +23,7 @@ The MCP Standards Server project was found in a broken state with multiple criti
 
 ### 3. Dependency Management
 - **Consolidated dependencies** to pyproject.toml as single source of truth
-- **Resolved version 0.1.0
+- **Resolved version 1.0.0
 - **Fixed aioredis compatibility** for Python 3.12
 - **Status**: ✅ Clean dependency tree
 

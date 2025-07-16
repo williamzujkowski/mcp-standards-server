@@ -158,7 +158,7 @@ mcp-standards sync
 
 ```bash
 # 1. Review proposed standard changes
-mcp-standards diff --standard react-patterns --version 0.1.0
+mcp-standards diff --standard react-patterns --version 1.0.0
 
 # 2. Test impact on codebase
 mcp-standards validate \

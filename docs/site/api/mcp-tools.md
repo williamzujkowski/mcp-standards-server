@@ -344,7 +344,7 @@ The MCP server includes many additional tools:
 - `get_sync_status` - Check synchronization status
 
 ### Token Optimization
-- `get_optimized_standard` - Get token-optimized version 0.1.0
+- `get_optimized_standard` - Get token-optimized version 1.0.0
 - `auto_optimize_standards` - Automatically optimize based on context
 - `progressive_load_standard` - Load standard progressively
 - `estimate_token_usage` - Estimate tokens for standards
@@ -533,7 +533,7 @@ The MCP API follows semantic versioning:
 - **New tools**: Will increment minor version
 - **Bug fixes**: Will increment patch version
 
-Check version 0.1.0
+Check version 1.0.0
 
 ```json
 {

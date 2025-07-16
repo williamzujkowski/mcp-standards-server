@@ -9,7 +9,7 @@ This document summarizes the fixes applied to resolve GitHub workflow failures a
 - **Problem**: Conflicting dependencies between `setup.py` and `pyproject.toml`
 - **Fix**: 
   - Removed invalid `asyncio>=3.4.3` dependency (asyncio is built-in)
-  - Aligned Python version 0.1.0
+  - Aligned Python version 1.0.0
   - Added missing dependencies: tree-sitter, aiofiles, jsonschema, pydantic
 
 ### 2. Critical Python Syntax Error

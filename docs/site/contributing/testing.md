@@ -107,7 +107,7 @@ class TestExternalIntegration:
     ("  spaces  ", "  SPACES  "),
 ])
 def test_uppercase_conversion(input_str, expected):
-    """Test uppercase conversion 0.1.0
+    """Test uppercase conversion 1.0.0
     assert input_str.upper() == expected
 
 @pytest.mark.parametrize("code,language,expected_issues", [
@@ -451,7 +451,7 @@ test:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version 0.1.0
+        python-version: ${{ matrix.python-version 1.0.0
     
     - name: Install dependencies
       run: |
