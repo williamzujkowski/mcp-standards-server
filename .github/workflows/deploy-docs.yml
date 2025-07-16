@@ -20,25 +20,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: docs/site/package-lock.json
+          python-version: '3.12'
       
-      - name: Install dependencies
-        working-directory: docs/site
-        run: npm ci
+      - name: Install MkDocs and dependencies
+        run: |
+          pip install mkdocs mkdocs-material mkdocstrings[python] pymdown-extensions
+          pip install mkdocs-git-revision-date-localized-plugin
       
       - name: Build documentation
-        working-directory: docs/site
-        run: npm run build
+        run: mkdocs build
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/site/build
+          path: site
 
   deploy:
     environment:
