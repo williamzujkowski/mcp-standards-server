@@ -32,7 +32,10 @@
     "web-vitals": "^2.1.4"
   },
   "overrides": {
-    "prismjs": "^1.30.0"
+    "prismjs": "^1.30.0",
+    "nth-check": "^2.1.1",
+    "postcss": "^8.4.31",
+    "webpack-dev-server": "^5.2.1"
   },
   "scripts": {
     "start": "react-scripts start",
