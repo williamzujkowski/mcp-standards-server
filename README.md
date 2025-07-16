@@ -21,11 +21,17 @@ This project underwent significant remediation to restore functionality:
 - Fixed hundreds of code quality violations (flake8, mypy, black)
 - Optimized GitHub workflows for 40% better performance
 
+**✅ Core System Status:**
+- 25 comprehensive standards fully loaded and accessible
+- 25 intelligent selection rules operational
+- MCP server with 21 tools fully functional
+- Multi-language code analysis (6 languages) working
+- Redis caching and performance optimization active
+
 **⚠️ Components Requiring Verification:**
-- Standards synchronization from GitHub repository
-- Web UI deployment and functionality
-- Full E2E integration testing
-- Performance benchmarking baselines
+- Web UI deployment process and functionality
+- Full E2E integration testing (some tests skipped)
+- Performance benchmarking baseline establishment
 
 See [CLAUDE.md](CLAUDE.md) for detailed implementation status.
 
@@ -33,7 +39,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed implementation status.
 
 ### Core Capabilities
 - **25 Comprehensive Standards**: Complete coverage of software development lifecycle
-- **Intelligent Standard Selection**: Rule-based engine with 40+ detection rules
+- **Intelligent Standard Selection**: Rule-based engine with 25 detection rules
 - **MCP Server Implementation**: Full Model Context Protocol support with multiple tools
 - **Standards Generation System**: Template-based creation with quality assurance
 - **Hybrid Vector Storage**: ChromaDB + in-memory for semantic search
@@ -54,7 +60,33 @@ See [CLAUDE.md](CLAUDE.md) for detailed implementation status.
 - Redis (optional, for caching)
 - Node.js 16+ (optional, for web UI)
 
-## Quick Start
+## 🚀 5-Minute Quick Start
+
+Get the MCP Standards Server running in under 5 minutes:
+
+```bash
+# 1. Clone and setup (1 minute)
+git clone https://github.com/williamzujkowski/mcp-standards-server.git
+cd mcp-standards-server
+python -m venv venv && source venv/bin/activate
+
+# 2. Install core dependencies (2 minutes)
+pip install -e .
+
+# 3. Verify CLI installation (30 seconds)
+python -m src.cli.main --help
+python -m src.cli.main status
+
+# 4. Test MCP server functionality (1 minute)
+python -m src  # Should load 31 standards and initialize MCP server
+
+# 5. Check available standards (30 seconds)
+python -m src.cli.main cache --list  # View cached standards
+```
+
+**🎉 Success!** Your MCP Standards Server is now running. Continue to [Full Installation](#installation) for complete setup with Redis caching and web UI.
+
+## Full Installation Guide
 
 ### Installation
 

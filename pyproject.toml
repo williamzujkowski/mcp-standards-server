@@ -66,7 +66,7 @@ Repository = "https://github.com/williamzujkowski/mcp-standards-server"
 Issues = "https://github.com/williamzujkowski/mcp-standards-server/issues"
 
 [project.scripts]
-mcp-standards = "cli.main:main"
+mcp-standards = "src.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
