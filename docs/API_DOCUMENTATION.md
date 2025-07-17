@@ -356,7 +356,7 @@ Retrieves a specific standard by its ID.
   },
   "version": {
     "type": "string",
-    "description": "Specific version 1.0.0
+    "description": "Specific version 1.0.1
     "default": "latest"
   }
 }

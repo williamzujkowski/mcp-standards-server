@@ -7,7 +7,7 @@ Complete reference for all MCP Standards Server CLI commands.
 All commands support these global options:
 
 - `--help` - Show help message
-- `--version` - Show version 1.0.0
+- `--version` - Show version 1.0.1
 - `--verbose`, `-v` - Enable verbose output
 - `--quiet`, `-q` - Suppress output
 - `--config CONFIG` - Use specific configuration file

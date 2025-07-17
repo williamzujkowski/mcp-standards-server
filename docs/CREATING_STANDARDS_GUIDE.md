@@ -112,7 +112,7 @@ Depending on the standard type, include:
 
 Before submitting your standard, ensure it:
 
-- [ ] Has complete metadata with version 1.0.0
+- [ ] Has complete metadata with version 1.0.1
 - [ ] Includes clear overview and scope
 - [ ] Contains actionable requirements
 - [ ] Provides concrete examples
@@ -246,7 +246,7 @@ See `data/standards/DATA_PRIVACY_COMPLIANCE_STANDARDS.md` for a compliance stand
 - ❌ Assume prior knowledge
 - ❌ Ignore edge cases
 - ❌ Skip validation
-- ❌ Forget version 1.0.0
+- ❌ Forget version 1.0.1
 - ❌ Omit testing methods
 
 ## Getting Help
