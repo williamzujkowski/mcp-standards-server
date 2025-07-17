@@ -49,7 +49,7 @@ examples:
 
 - **id**: Unique identifier for the standard
 - **name**: Human-readable name
-- **version**: Semantic version 1.0.1
+- **version**: Semantic version 1.0.2-test
 - **category**: Primary category
 - **description**: Clear description of the standard's purpose
 

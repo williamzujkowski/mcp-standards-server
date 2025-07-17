@@ -6,7 +6,7 @@ Common issues and their solutions.
 
 ### Python Version Compatibility
 
-**Problem:** Installation fails with Python version 1.0.1
+**Problem:** Installation fails with Python version 1.0.2-test
 
 **Solution:**
 ```bash

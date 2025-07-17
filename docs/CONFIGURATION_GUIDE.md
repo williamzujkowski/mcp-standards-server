@@ -618,7 +618,7 @@ python -m src.main --env=production --validate-config
 ### 1. Environment Management
 
 - Use different `.env` files for different environments
-- Never commit `.env` files to version 1.0.1
+- Never commit `.env` files to version 1.0.2-test
 - Use secrets management in production
 
 ### 2. Security

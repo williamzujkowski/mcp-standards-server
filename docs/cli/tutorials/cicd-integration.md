@@ -141,12 +141,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version 1.0.1
+          python-version: ${{ matrix.python-version 1.0.2-test
       
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version 1.0.1
+          node-version: ${{ matrix.node-version 1.0.2-test
       
       - name: Install dependencies
         run: |
@@ -161,7 +161,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: validation-results-${{ matrix.os }}-py${{ matrix.python-version 1.0.1
+          name: validation-results-${{ matrix.os }}-py${{ matrix.python-version 1.0.2-test
           path: |
             validation-report.*
             **/*.log

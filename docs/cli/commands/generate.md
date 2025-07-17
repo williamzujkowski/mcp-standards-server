@@ -48,11 +48,11 @@ Set the standard title.
 mcp-standards generate --template technical --title "REST API Design Standards"
 ```
 
-#### `--version 1.0.1
-Set the standard version 1.0.1
+#### `--version 1.0.2-test
+Set the standard version 1.0.2-test
 
 ```bash
-mcp-standards generate --template technical --version 1.0.1
+mcp-standards generate --template technical --version 1.0.2-test
 ```
 
 #### `--author <name>`
@@ -197,7 +197,7 @@ mcp-standards generate --interactive
 
 ? Select template type: technical
 ? Enter standard title: GraphQL API Standards
-? Enter version 1.0.1
+? Enter version 1.0.2-test
 ? Enter author name: Jane Doe
 ? Enter description: Best practices for GraphQL API design
 ? Select category: API Design
@@ -362,7 +362,7 @@ mcp-standards generate validate ./my-standard.md --report validation-report.json
 1. **Start with templates**: Use existing templates rather than starting from scratch
 2. **Use interactive mode**: Helpful for first-time users or complex standards
 3. **Preview first**: Always preview before saving, especially for complex standards
-4. **Version control**: Commit generated standards to version 1.0.1
+4. **Version control**: Commit generated standards to version 1.0.2-test
 5. **Customize templates**: Create custom templates for repeated use
 
 ## See Also
