@@ -28,7 +28,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -92,7 +92,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.32.0
@@ -135,7 +135,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Run Semgrep Security Analysis
       run: |
@@ -166,7 +166,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Build Docker image for scanning
       run: |
@@ -202,7 +202,7 @@ jobs:
     
     steps:
     - name: Download all security reports
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
 
     - name: Generate security summary
       run: |
@@ -263,7 +263,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
