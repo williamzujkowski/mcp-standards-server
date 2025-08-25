@@ -27,7 +27,7 @@ jobs:
     name: Lint Code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -89,7 +89,7 @@ jobs:
           --health-retries 5
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -156,7 +156,7 @@ jobs:
         python-version: ["3.12"]  # Only test Python 3.12 on Windows
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -206,7 +206,7 @@ jobs:
           --health-retries 5
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -269,7 +269,7 @@ jobs:
     needs: [lint]
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -304,7 +304,7 @@ jobs:
     needs: [lint]
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -336,7 +336,7 @@ jobs:
     needs: [lint]
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5

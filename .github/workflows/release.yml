@@ -27,7 +27,7 @@ jobs:
       version_number: ${{ steps.get_version.outputs.version_number }}
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Get version
         id: get_version
@@ -68,7 +68,7 @@ jobs:
           --health-retries 5
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -112,7 +112,7 @@ jobs:
       contents: write
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 50  # Limit history to last 50 commits for changelog
       
@@ -160,7 +160,7 @@ jobs:
           } >> $GITHUB_OUTPUT
       
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist-${{ needs.validate-version.outputs.version }}
           path: dist/
@@ -188,10 +188,10 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist-${{ needs.validate-version.outputs.version }}
           path: dist/
@@ -211,7 +211,7 @@ jobs:
       contents: read
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -265,7 +265,7 @@ jobs:
       contents: write
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
