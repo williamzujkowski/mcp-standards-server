@@ -105,7 +105,7 @@ jobs:
         exit-code: '0'  # Report but don't fail on vulnerabilities
 
     - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
@@ -144,7 +144,7 @@ jobs:
         semgrep --config=p/security-audit --config=p/python --config=p/owasp-top-ten --config=p/cwe-top-25 --json --output=semgrep.json .
 
     - name: Upload Semgrep results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: semgrep.sarif
@@ -189,7 +189,7 @@ jobs:
         severity: 'CRITICAL,HIGH'
 
     - name: Upload container scan results
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: 'trivy-container-results.sarif'
