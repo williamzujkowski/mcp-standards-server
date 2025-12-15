@@ -30,10 +30,10 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           
@@ -98,7 +98,7 @@ jobs:
             --pr ${{ github.event.pull_request.number }}
             
       - name: Create review checklist
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const domain = "${{ steps.detect-domain.outputs.domain }}";
@@ -159,10 +159,10 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           
@@ -173,7 +173,7 @@ jobs:
           
       - name: Parse review command
         id: parse-command
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           result-encoding: string
           script: |
@@ -233,10 +233,10 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           
@@ -262,7 +262,7 @@ jobs:
           
       - name: Create issue for overdue reviews
         if: steps.check-overdue.outputs.has_overdue == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -304,10 +304,10 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           
@@ -343,7 +343,7 @@ jobs:
           fi
           
       - name: Comment quality results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -386,7 +386,7 @@ jobs:
             });
             
       - name: Set PR status
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const qualityScore = parseFloat("${{ steps.quality-check.outputs.quality_score }}");
