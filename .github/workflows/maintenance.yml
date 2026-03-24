@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/stale@v9  # pinning deferred - no SHA available
+      - uses: actions/stale@v10  # pinning deferred - no SHA available
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           
