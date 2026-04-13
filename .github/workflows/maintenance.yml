@@ -57,7 +57,7 @@ jobs:
     
     steps:
       - name: Delete old artifacts
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const days = 30;
@@ -104,7 +104,7 @@ jobs:
     
     steps:
       - name: Cleanup caches
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -170,7 +170,7 @@ jobs:
           pip list --outdated >> outdated-deps.md || echo "No outdated dependencies found" >> outdated-deps.md
       
       - name: Create issue for outdated dependencies
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -228,7 +228,7 @@ jobs:
           echo "Security audit triggered. Check the Security workflow for detailed results." >> $GITHUB_STEP_SUMMARY
       
       - name: Trigger security workflow
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
