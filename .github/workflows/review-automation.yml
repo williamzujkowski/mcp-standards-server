@@ -98,7 +98,7 @@ jobs:
             --pr ${{ github.event.pull_request.number }}
             
       - name: Create review checklist
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const domain = "${{ steps.detect-domain.outputs.domain }}";
@@ -173,7 +173,7 @@ jobs:
           
       - name: Parse review command
         id: parse-command
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           result-encoding: string
           script: |
@@ -262,7 +262,7 @@ jobs:
           
       - name: Create issue for overdue reviews
         if: steps.check-overdue.outputs.has_overdue == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -343,7 +343,7 @@ jobs:
           fi
           
       - name: Comment quality results
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -386,7 +386,7 @@ jobs:
             });
             
       - name: Set PR status
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const qualityScore = parseFloat("${{ steps.quality-check.outputs.quality_score }}");
