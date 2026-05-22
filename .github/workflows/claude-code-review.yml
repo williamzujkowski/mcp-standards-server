@@ -12,12 +12,12 @@ on:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-    
+    # Skip automated review for bot-authored PRs (e.g. Dependabot).
+    # claude-code-action refuses to run for non-human actors unless they are
+    # explicitly allow-listed, which otherwise fails as a required check and
+    # blocks dependency-update PRs from merging.
+    if: github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
+
     runs-on: ubuntu-latest
     permissions:
       contents: read

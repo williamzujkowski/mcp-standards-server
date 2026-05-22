@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-standards-server"
-version = "1.0.2-test"
+version = "1.0.2"
 description = "A Model Context Protocol server for intelligent access to development standards"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -86,6 +86,7 @@ dependencies = [
     "faiss-cpu>=1.7.0",  # For vector operations
     "psutil>=5.9.0",  # For system monitoring
     "msgpack>=1.0.0",  # For efficient serialization
+    "cachetools>=5.0.0",  # In-memory TTL caches used by the cache layer
 ]
 
 [project.urls]
@@ -166,7 +167,7 @@ security-constraints = [
 ]
 
 [tool.pytest.ini_options]
-minversion = "1.0.2-test"
+minversion = "7.0"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
@@ -214,7 +215,7 @@ show_missing = true
 directory = "htmlcov"
 
 [tool.ruff]
-target-version = "1.0.2-test"
+target-version = "py310"
 line-length = 100
 
 [tool.ruff.lint]
@@ -237,7 +238,7 @@ ignore = [
 "tests/*" = ["S101", "S105", "S106"]
 
 [tool.mypy]
-python_version = "1.0.2-test"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
